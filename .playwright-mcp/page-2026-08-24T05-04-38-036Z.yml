@@ -1,0 +1,173 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e93]:
+    - complementary [ref=f1e95]:
+      - generic [ref=f1e96]:
+        - generic [ref=f1e97]:
+          - generic [ref=f1e98]: Discover
+          - button "Home Feed" [ref=f1e99] [cursor=pointer]
+          - button "Discover" [ref=f1e103] [cursor=pointer]
+          - button "AI Search" [ref=f1e108] [cursor=pointer]
+          - button "Unified Search" [ref=f1e113] [cursor=pointer]
+          - button "Daily Picks" [ref=f1e118] [cursor=pointer]
+          - button "Eye Candy" [ref=f1e123] [cursor=pointer]
+          - button "Tribes" [ref=f1e128] [cursor=pointer]
+          - button "Feed" [ref=f1e133] [cursor=pointer]
+          - button "Fresh Faces" [ref=f1e139] [cursor=pointer]
+          - button "Right Now" [ref=f1e144] [cursor=pointer]
+          - button "Cascade Filters" [ref=f1e148] [cursor=pointer]
+          - button "Blog" [ref=f1e153] [cursor=pointer]
+          - button "Social Feed" [ref=f1e159] [cursor=pointer]
+          - button "Venues" [ref=f1e165] [cursor=pointer]
+          - button "Calendar" [ref=f1e171] [cursor=pointer]
+          - button "Map View" [ref=f1e175] [cursor=pointer]
+        - generic [ref=f1e180]:
+          - generic [ref=f1e181]: Connect
+          - button "Messages" [ref=f1e182] [cursor=pointer]
+          - button "Matches" [ref=f1e186] [cursor=pointer]
+          - button "Likes You" [ref=f1e190] [cursor=pointer]
+          - button "Visitors" [ref=f1e194] [cursor=pointer]
+          - button "Favorites" [ref=f1e199] [cursor=pointer]
+          - button "Fansites" [ref=f1e203] [cursor=pointer]
+          - button "Groups" [ref=f1e208] [cursor=pointer]
+          - button "Events" [ref=f1e214] [cursor=pointer]
+          - button "Stories" [ref=f1e219] [cursor=pointer]
+          - button "Threads" [ref=f1e224] [cursor=pointer]
+          - button "Linked Profiles" [ref=f1e228] [cursor=pointer]
+          - button "Contact Folders" [ref=f1e235] [cursor=pointer]
+          - button "Speed Match" [ref=f1e239] [cursor=pointer]
+          - button "Buddy System" [ref=f1e243] [cursor=pointer]
+          - button "Companions" [ref=f1e249] [cursor=pointer]
+          - button "Listings" [ref=f1e254] [cursor=pointer]
+          - button "Video Call" [ref=f1e260] [cursor=pointer]
+          - button "Chat Backup" [ref=f1e265] [cursor=pointer]
+        - generic [ref=f1e269]:
+          - generic [ref=f1e270]: Tools
+          - button "Meet Now" [ref=f1e271] [cursor=pointer]
+          - button "Boost" [ref=f1e275] [cursor=pointer]
+          - button "Date Plans" [ref=f1e280] [cursor=pointer]
+          - button "Agenda" [ref=f1e285] [cursor=pointer]
+          - button "Albums" [ref=f1e290] [cursor=pointer]
+          - button "Vault" [ref=f1e296] [cursor=pointer]
+          - button "Footprints" [ref=f1e301] [cursor=pointer]
+          - button "Gaymoji" [ref=f1e306] [cursor=pointer]
+          - button "Pickup Lines" [ref=f1e311] [cursor=pointer]
+          - button "Audio Msgs" [ref=f1e315] [cursor=pointer]
+          - button "Photo Deco" [ref=f1e318] [cursor=pointer]
+          - button "Consent Media" [ref=f1e326] [cursor=pointer]
+          - button "Reset Swipes" [ref=f1e330] [cursor=pointer]
+          - button "Proximity Search" [ref=f1e335] [cursor=pointer]
+          - button "Quick Replies" [ref=f1e340] [cursor=pointer]
+          - button "Sessions" [ref=f1e346] [cursor=pointer]
+          - button "My Pet" [ref=f1e352] [cursor=pointer]
+          - button "Travel" [ref=f1e359] [cursor=pointer]
+        - generic [ref=f1e363]:
+          - generic [ref=f1e364]: AI & Insights
+          - button "AI Coach" [ref=f1e365] [cursor=pointer]
+          - button "Edge AI" [ref=f1e370] [cursor=pointer]
+          - button "Voice Control" [ref=f1e375] [cursor=pointer]
+          - button "Icebreaker" [ref=f1e380] [cursor=pointer]
+          - button "Match Insight" [ref=f1e384] [cursor=pointer]
+          - button "Predictions" [ref=f1e398] [cursor=pointer]
+          - button "Event Detector" [ref=f1e402] [cursor=pointer]
+          - button "Auto Reply" [ref=f1e411] [cursor=pointer]
+          - button "Translate" [ref=f1e416] [cursor=pointer]
+          - button "Conv. Analyzer" [ref=f1e422] [cursor=pointer]
+          - button "AI Characters" [ref=f1e427] [cursor=pointer]
+          - button "Profile Analyzer" [ref=f1e432] [cursor=pointer]
+          - button "Voice Clone" [ref=f1e446] [cursor=pointer]
+          - button "Video Roulette" [ref=f1e449] [cursor=pointer]
+          - button "Live Streams" [ref=f1e454] [cursor=pointer]
+          - button "Auto Reply Stats" [ref=f1e462] [cursor=pointer]
+        - generic [ref=f1e466]:
+          - generic [ref=f1e467]: Gamechangers
+          - button "Overview" [ref=f1e468] [cursor=pointer]
+          - button "Ambient Presence" [ref=f1e473] [cursor=pointer]
+          - button "Anti-Ghost" [ref=f1e478] [cursor=pointer]
+          - button "The Pact" [ref=f1e482] [cursor=pointer]
+          - button "Dark Pool Reveal" [ref=f1e487] [cursor=pointer]
+          - button "Pause Mode" [ref=f1e494] [cursor=pointer]
+          - button "Personas" [ref=f1e499] [cursor=pointer]
+          - button "Voice Profile" [ref=f1e507] [cursor=pointer]
+          - button "Music Match" [ref=f1e512] [cursor=pointer]
+          - button "Post-Date Feedback" [ref=f1e518] [cursor=pointer]
+          - button "Moderation" [ref=f1e522] [cursor=pointer]
+        - generic [ref=f1e526]:
+          - generic [ref=f1e527]: Account
+          - button "My Profile" [ref=f1e528] [cursor=pointer]
+          - button "Edit Profile" [ref=f1e533] [cursor=pointer]
+          - button "Pro Profile" [ref=f1e547] [cursor=pointer]
+          - button "Account Settings" [ref=f1e552] [cursor=pointer]
+          - button "Verification" [ref=f1e557] [cursor=pointer]
+          - button "Push Settings" [ref=f1e561] [cursor=pointer]
+          - button "Alerts" [ref=f1e566] [cursor=pointer]
+          - button "Safety" [ref=f1e571] [cursor=pointer]
+          - button "Wallet" [ref=f1e575] [cursor=pointer]
+          - button "Premium" [ref=f1e579] [cursor=pointer]
+          - button "Settings" [ref=f1e586] [cursor=pointer]
+          - button "Health Center" [ref=f1e591] [cursor=pointer]
+          - button "Exit Survey" [ref=f1e595] [cursor=pointer]
+        - generic [ref=f1e600]:
+          - generic [ref=f1e601]: Legal
+          - button "Privacy Policy" [ref=f1e602] [cursor=pointer]
+          - button "Terms of Service" [ref=f1e606] [cursor=pointer]
+          - button "Cookie Policy" [ref=f1e611] [cursor=pointer]
+          - button "Child Safety" [ref=f1e615] [cursor=pointer]
+      - generic [ref=f1e619]:
+        - generic [ref=f1e620]:
+          - generic [ref=f1e621]: Status
+          - generic [ref=f1e622]:
+            - button "ONLINE" [ref=f1e623]
+            - button "DATE" [ref=f1e626]
+            - button "NOW" [ref=f1e629]
+            - button "INVISIBLE ★" [ref=f1e632]:
+              - generic [ref=f1e634]: INVISIBLE
+              - generic [ref=f1e635]: ★
+        - button "GO KING" [ref=f1e636] [cursor=pointer]
+        - generic [ref=f1e639]:
+          - generic [ref=f1e640]: FYK PWA v1.0.0
+          - generic [ref=f1e641]: Online
+    - banner [ref=f1e643]:
+      - generic [ref=f1e644]:
+        - button "Go to landing" [ref=f1e645]:
+          - img "Find Your King" [ref=f1e647]
+        - navigation "Primary navigation" [ref=f1e656]:
+          - button "Home (1)" [ref=f1e657]
+          - button "Matches (2)" [ref=f1e660]
+          - button "Events (3)" [ref=f1e663]
+          - button "Chat (4)" [ref=f1e667]
+          - button "Profile (5)" [ref=f1e670]
+          - button [ref=f1e675]
+        - generic [ref=f1e682]:
+          - button "Notifications" [ref=f1e683]
+          - button "⌘ K" [ref=f1e687]:
+            - generic [ref=f1e691]: ⌘
+            - generic [ref=f1e692]: K
+          - button "GO KING" [ref=f1e693]
+          - button "Toggle theme" [ref=f1e697]
+    - main "chat view" [ref=f1e700]:
+      - generic [ref=f1e702]:
+        - heading "Something went wrong" [level=3] [ref=f1e706]
+        - paragraph [ref=f1e707]: The chat view encountered an unexpected error.
+        - generic [ref=f1e708]:
+          - button "Try Again" [ref=f1e709]
+          - button "Go Home" [ref=f1e715]
+        - button "Show Error Details" [ref=f1e720]
+    - contentinfo [ref=f1e723]:
+      - generic [ref=f1e724]:
+        - img "Find Your King" [ref=f1e727]
+        - paragraph [ref=f1e736]: FYK v∞.18 — Version Zenith
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=f1e77] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=f1e737]
+    - generic [ref=f1e741]:
+      - button "Open issues overlay" [ref=f1e742]:
+        - generic [ref=f1e743]:
+          - generic [ref=f1e744]: "3"
+          - generic [ref=f1e745]: "4"
+        - generic [ref=f1e746]:
+          - text: Issue
+          - generic [ref=f1e747]: s
+      - button "Collapse issues badge" [ref=f1e748]
+  - alert [ref=f1e86]

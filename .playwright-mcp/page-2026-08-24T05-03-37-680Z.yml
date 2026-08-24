@@ -1,0 +1,171 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e27]:
+    - complementary [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]: Discover
+          - button "Home Feed" [ref=e33] [cursor=pointer]
+          - button "Discover" [ref=e37] [cursor=pointer]
+          - button "AI Search" [ref=e42] [cursor=pointer]
+          - button "Unified Search" [ref=e47] [cursor=pointer]
+          - button "Daily Picks" [ref=e52] [cursor=pointer]
+          - button "Eye Candy" [ref=e57] [cursor=pointer]
+          - button "Tribes" [ref=e62] [cursor=pointer]
+          - button "Feed" [ref=e67] [cursor=pointer]
+          - button "Fresh Faces" [ref=e73] [cursor=pointer]
+          - button "Right Now" [ref=e78] [cursor=pointer]
+          - button "Cascade Filters" [ref=e82] [cursor=pointer]
+          - button "Blog" [ref=e87] [cursor=pointer]
+          - button "Social Feed" [ref=e93] [cursor=pointer]
+          - button "Venues" [ref=e99] [cursor=pointer]
+          - button "Calendar" [ref=e105] [cursor=pointer]
+          - button "Map View" [ref=e109] [cursor=pointer]
+        - generic [ref=e114]:
+          - generic [ref=e115]: Connect
+          - button "Messages" [ref=e116] [cursor=pointer]
+          - button "Matches" [ref=e120] [cursor=pointer]
+          - button "Likes You" [ref=e124] [cursor=pointer]
+          - button "Visitors" [ref=e128] [cursor=pointer]
+          - button "Favorites" [ref=e133] [cursor=pointer]
+          - button "Fansites" [ref=e137] [cursor=pointer]
+          - button "Groups" [ref=e142] [cursor=pointer]
+          - button "Events" [ref=e148] [cursor=pointer]
+          - button "Stories" [ref=e153] [cursor=pointer]
+          - button "Threads" [ref=e158] [cursor=pointer]
+          - button "Linked Profiles" [ref=e162] [cursor=pointer]
+          - button "Contact Folders" [ref=e169] [cursor=pointer]
+          - button "Speed Match" [ref=e173] [cursor=pointer]
+          - button "Buddy System" [ref=e177] [cursor=pointer]
+          - button "Companions" [ref=e183] [cursor=pointer]
+          - button "Listings" [ref=e188] [cursor=pointer]
+          - button "Video Call" [ref=e194] [cursor=pointer]
+          - button "Chat Backup" [ref=e199] [cursor=pointer]
+        - generic [ref=e203]:
+          - generic [ref=e204]: Tools
+          - button "Meet Now" [ref=e205] [cursor=pointer]
+          - button "Boost" [ref=e209] [cursor=pointer]
+          - button "Date Plans" [ref=e214] [cursor=pointer]
+          - button "Agenda" [ref=e219] [cursor=pointer]
+          - button "Albums" [ref=e224] [cursor=pointer]
+          - button "Vault" [ref=e230] [cursor=pointer]
+          - button "Footprints" [ref=e235] [cursor=pointer]
+          - button "Gaymoji" [ref=e240] [cursor=pointer]
+          - button "Pickup Lines" [ref=e245] [cursor=pointer]
+          - button "Audio Msgs" [ref=e249] [cursor=pointer]
+          - button "Photo Deco" [ref=e252] [cursor=pointer]
+          - button "Consent Media" [ref=e260] [cursor=pointer]
+          - button "Reset Swipes" [ref=e264] [cursor=pointer]
+          - button "Proximity Search" [ref=e269] [cursor=pointer]
+          - button "Quick Replies" [ref=e274] [cursor=pointer]
+          - button "Sessions" [ref=e280] [cursor=pointer]
+          - button "My Pet" [ref=e286] [cursor=pointer]
+          - button "Travel" [ref=e293] [cursor=pointer]
+        - generic [ref=e297]:
+          - generic [ref=e298]: AI & Insights
+          - button "AI Coach" [ref=e299] [cursor=pointer]
+          - button "Edge AI" [ref=e304] [cursor=pointer]
+          - button "Voice Control" [ref=e309] [cursor=pointer]
+          - button "Icebreaker" [ref=e314] [cursor=pointer]
+          - button "Match Insight" [ref=e318] [cursor=pointer]
+          - button "Predictions" [ref=e332] [cursor=pointer]
+          - button "Event Detector" [ref=e336] [cursor=pointer]
+          - button "Auto Reply" [ref=e345] [cursor=pointer]
+          - button "Translate" [ref=e350] [cursor=pointer]
+          - button "Conv. Analyzer" [ref=e356] [cursor=pointer]
+          - button "AI Characters" [ref=e361] [cursor=pointer]
+          - button "Profile Analyzer" [ref=e366] [cursor=pointer]
+          - button "Voice Clone" [ref=e380] [cursor=pointer]
+          - button "Video Roulette" [ref=e383] [cursor=pointer]
+          - button "Live Streams" [ref=e388] [cursor=pointer]
+          - button "Auto Reply Stats" [ref=e396] [cursor=pointer]
+        - generic [ref=e400]:
+          - generic [ref=e401]: Gamechangers
+          - button "Overview" [ref=e402] [cursor=pointer]
+          - button "Ambient Presence" [ref=e407] [cursor=pointer]
+          - button "Anti-Ghost" [ref=e412] [cursor=pointer]
+          - button "The Pact" [ref=e416] [cursor=pointer]
+          - button "Dark Pool Reveal" [ref=e421] [cursor=pointer]
+          - button "Pause Mode" [ref=e428] [cursor=pointer]
+          - button "Personas" [ref=e433] [cursor=pointer]
+          - button "Voice Profile" [ref=e441] [cursor=pointer]
+          - button "Music Match" [ref=e446] [cursor=pointer]
+          - button "Post-Date Feedback" [ref=e452] [cursor=pointer]
+          - button "Moderation" [ref=e456] [cursor=pointer]
+        - generic [ref=e460]:
+          - generic [ref=e461]: Account
+          - button "My Profile" [ref=e462] [cursor=pointer]
+          - button "Edit Profile" [ref=e467] [cursor=pointer]
+          - button "Pro Profile" [ref=e481] [cursor=pointer]
+          - button "Account Settings" [ref=e486] [cursor=pointer]
+          - button "Verification" [ref=e491] [cursor=pointer]
+          - button "Push Settings" [ref=e495] [cursor=pointer]
+          - button "Alerts" [ref=e500] [cursor=pointer]
+          - button "Safety" [ref=e505] [cursor=pointer]
+          - button "Wallet" [ref=e509] [cursor=pointer]
+          - button "Premium" [ref=e513] [cursor=pointer]
+          - button "Settings" [ref=e520] [cursor=pointer]
+          - button "Health Center" [ref=e525] [cursor=pointer]
+          - button "Exit Survey" [ref=e529] [cursor=pointer]
+        - generic [ref=e534]:
+          - generic [ref=e535]: Legal
+          - button "Privacy Policy" [ref=e536] [cursor=pointer]
+          - button "Terms of Service" [ref=e540] [cursor=pointer]
+          - button "Cookie Policy" [ref=e545] [cursor=pointer]
+          - button "Child Safety" [ref=e549] [cursor=pointer]
+      - generic [ref=e553]:
+        - generic [ref=e554]:
+          - generic [ref=e555]: Status
+          - generic [ref=e556]:
+            - button "ONLINE" [ref=e557]
+            - button "DATE" [ref=e560]
+            - button "NOW" [ref=e563]
+            - button "INVISIBLE ★" [ref=e566]:
+              - generic [ref=e568]: INVISIBLE
+              - generic [ref=e569]: ★
+        - button "GO KING" [ref=e570] [cursor=pointer]
+        - generic [ref=e573]:
+          - generic [ref=e574]: FYK PWA v1.0.0
+          - generic [ref=e575]: Online
+    - banner [ref=e577]:
+      - generic [ref=e578]:
+        - button "Go to landing" [ref=e579]:
+          - img "Find Your King" [ref=e581]
+        - navigation "Primary navigation" [ref=e590]:
+          - button "Home (1)" [ref=e591]
+          - button "Matches (2)" [ref=e594]
+          - button "Events (3)" [ref=e597]
+          - button "Chat (4)" [ref=e601]
+          - button "Profile (5)" [ref=e604]
+          - button [ref=e609]
+        - generic [ref=e616]:
+          - button "Notifications" [ref=e617]
+          - button "⌘ K" [ref=e621]:
+            - generic [ref=e625]: ⌘
+            - generic [ref=e626]: K
+          - button "GO KING" [ref=e627]
+          - button "Toggle theme" [ref=e631]
+    - main "landing view" [ref=e634]:
+      - generic [ref=e636]:
+        - img "Find Your King" [ref=e639]
+        - generic [ref=e648]:
+          - button "ENTER KINGDOM" [ref=e649]
+          - button "MY PROFILE" [ref=e650]
+        - generic [ref=e651]:
+          - generic [ref=e652]:
+            - paragraph [ref=e653]: 24+
+            - paragraph [ref=e654]: Kings Online
+          - generic [ref=e655]:
+            - paragraph [ref=e656]: "8"
+            - paragraph [ref=e657]: New Matches
+          - generic [ref=e658]:
+            - paragraph [ref=e659]: "12"
+            - paragraph [ref=e660]: Events This Week
+    - contentinfo [ref=e678]:
+      - generic [ref=e679]:
+        - img "Find Your King" [ref=e682]
+        - paragraph [ref=e691]: FYK v∞.18 — Version Zenith
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e697] [cursor=pointer]
+  - alert [ref=e701]

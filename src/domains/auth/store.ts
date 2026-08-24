@@ -1,8 +1,9 @@
-import { create } from 'zustand';
+import { create } from "zustand";
+import type { User } from "@supabase/supabase-js";
 
 interface AuthState {
-	auth: { userId: string } | null;
-	setAuth: (auth: { userId: string } | null) => void;
+	auth: { userId: string; user: User } | null;
+	setAuth: (auth: { userId: string; user: User } | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({

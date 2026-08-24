@@ -1,17 +1,17 @@
-import { clearAccountCaches } from '#/core/api/account-caches';
-import { clearAccountPreferences } from '#/domains/settings/preferences';
+import { supabase } from "#/integrations/supabase/client";
+import { clearAccountCaches } from "#/core/api/account-caches";
+import { clearAccountPreferences } from "#/domains/settings/preferences";
 
 export async function signOut(): Promise<void> {
 	try {
-		// Call the logout API method
-		// await callMethod('logout');
+		await supabase.auth.signOut();
 	} catch (error) {
-		console.error(error);
+		console.error("[auth/sign-out] Failed to sign out:", error);
 	}
 
 	// Navigate to sign-in
-	if (typeof window !== 'undefined') {
-		window.location.href = '/auth/sign-in';
+	if (typeof window !== "undefined") {
+		window.location.href = "/auth/sign-in";
 	}
 
 	clearAccountCaches();
@@ -19,6 +19,6 @@ export async function signOut(): Promise<void> {
 	try {
 		await clearAccountPreferences();
 	} catch (error) {
-		console.error(error);
+		console.error("[auth/sign-out] Failed to clear preferences:", error);
 	}
 }

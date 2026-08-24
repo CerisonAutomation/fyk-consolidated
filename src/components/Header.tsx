@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import BetterAuthHeader from '../integrations/better-auth/header-user.tsx'
+import { useSupabaseSession } from '#/integrations/supabase/session-provider'
+import { supabase } from '#/integrations/supabase/client'
 import TanChatAIAssistant from './demo-AIAssistant.tsx'
 import ThemeToggle from './ThemeToggle'
 
@@ -126,12 +127,51 @@ export default function Header() {
               />
             </svg>
           </a>
-          <BetterAuthHeader />
+          <SupabaseAuthHeader />
           <TanChatAIAssistant />
 
           <ThemeToggle />
         </div>
       </nav>
     </header>
+  )
+}
+
+function SupabaseAuthHeader() {
+  const { user, isLoading } = useSupabaseSession()
+
+  if (isLoading) {
+    return (
+      <div className="h-8 w-8 bg-neutral-100 dark:bg-neutral-800 animate-pulse" />
+    )
+  }
+
+  if (user) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+            {user.email?.charAt(0).toUpperCase() || 'U'}
+          </span>
+        </div>
+        <button
+          onClick={() => {
+            void supabase.auth.signOut()
+          }}
+          className="flex-1 h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+        >
+          Sign out
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      to="/auth/sign-in"
+      className="h-9 px-4 text-sm font-medium bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-50 border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors inline-flex items-center"
+    >
+      Sign in
+    </Link>
   )
 }
