@@ -1,3 +1,1 @@
-{
-  "target": "react"
-}
+{"early":true,"experimental":true,"enabled":true,"quoteStyle":"double","autoCodeSplitting":true,"routesDirectory":"./src/routes","generatedRouteTree":"./src/routeTree.gen.ts"}

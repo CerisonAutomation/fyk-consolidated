@@ -20,6 +20,7 @@ import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as GridIndexRouteImport } from './routes/grid/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as RightNowIndexRouteImport } from './routes/right-now/index'
@@ -99,6 +100,11 @@ const DemoTableRoute = DemoTableRouteImport.update({
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GridIndexRoute = GridIndexRouteImport.update({
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/chat/': typeof ChatIndexRoute
+  '/events/': typeof EventsIndexRoute
   '/grid/': typeof GridIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/right-now/': typeof RightNowIndexRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByTo {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/chat': typeof ChatIndexRoute
+  '/events': typeof EventsIndexRoute
   '/grid': typeof GridIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/right-now': typeof RightNowIndexRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/chat/': typeof ChatIndexRoute
+  '/events/': typeof EventsIndexRoute
   '/grid/': typeof GridIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/right-now/': typeof RightNowIndexRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/chat/'
+    | '/events/'
     | '/grid/'
     | '/onboarding/'
     | '/right-now/'
@@ -394,6 +404,7 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/chat'
+    | '/events'
     | '/grid'
     | '/onboarding'
     | '/right-now'
@@ -432,6 +443,7 @@ export interface FileRouteTypes {
     | '/demo/table'
     | '/demo/tanstack-query'
     | '/chat/'
+    | '/events/'
     | '/grid/'
     | '/onboarding/'
     | '/right-now/'
@@ -471,6 +483,7 @@ export interface RootRouteChildren {
   DemoTableRoute: typeof DemoTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ChatIndexRoute: typeof ChatIndexRoute
+  EventsIndexRoute: typeof EventsIndexRoute
   GridIndexRoute: typeof GridIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   RightNowIndexRoute: typeof RightNowIndexRoute
@@ -575,6 +588,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/tanstack-query'
       fullPath: '/demo/tanstack-query'
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/grid/': {
@@ -767,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoTableRoute: DemoTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ChatIndexRoute: ChatIndexRoute,
+  EventsIndexRoute: EventsIndexRoute,
   GridIndexRoute: GridIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   RightNowIndexRoute: RightNowIndexRoute,

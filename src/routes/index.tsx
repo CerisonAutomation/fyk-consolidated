@@ -1,21 +1,22 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import {
-  Crown,
-  ArrowRight,
-  BrainCircuit,
-  Shield,
-  MessageCircle,
-  Compass,
-  ChevronDown,
-  CheckCircle2,
-  Sparkles,
-  Bot,
-  Mic,
-  Star,
-  Heart,
-  TrendingUp,
-  Quote,
+	Crown,
+	ArrowRight,
+	BrainCircuit,
+	Shield,
+	MessageCircle,
+	Compass,
+	CalendarHeart,
+	ChevronDown,
+	CheckCircle2,
+	Sparkles,
+	Bot,
+	Mic,
+	Star,
+	Heart,
+	TrendingUp,
+	Quote,
 } from 'lucide-react'
 
 export const Route = createFileRoute('/')({
@@ -287,48 +288,55 @@ function HeroParticles() {
 
 /* ─── Feature Card Data ─── */
 const FEATURES = [
-  {
-    icon: BrainCircuit,
-    label: 'AI Matching',
-    desc: 'Smart compatibility powered by deep learning',
-    color: '#EAAB08',
-    href: '/discover',
-  },
-  {
-    icon: Shield,
-    label: 'Verified Kings',
-    desc: 'Every profile confirmed and authenticated',
-    color: '#22c55e',
-    href: '/profile',
-  },
-  {
-    icon: MessageCircle,
-    label: 'Real-time Chat',
-    desc: 'Instant encrypted messaging',
-    color: '#06b6d4',
-    href: '/chat',
-  },
-  {
-    icon: Compass,
-    label: 'Right Now',
-    desc: 'Live spatial radar nearby',
-    color: '#a855f7',
-    href: '/right-now',
-  },
-  {
-    icon: Bot,
-    label: 'AI Dating Coach',
-    desc: 'Your personal wingman for icebreakers',
-    color: '#EAAB08',
-    href: '/chat',
-  },
-  {
-    icon: Mic,
-    label: 'Voice Control',
-    desc: 'Navigate hands-free with natural language',
-    color: '#06b6d4',
-    href: '/settings',
-  },
+	{
+		icon: BrainCircuit,
+		label: 'AI Matching',
+		desc: 'Smart compatibility powered by deep learning',
+		color: '#EAAB08',
+		href: '/discover',
+	},
+	{
+		icon: Shield,
+		label: 'Verified Kings',
+		desc: 'Every profile confirmed and authenticated',
+		color: '#22c55e',
+		href: '/profile',
+	},
+	{
+		icon: MessageCircle,
+		label: 'Real-time Chat',
+		desc: 'Instant encrypted messaging',
+		color: '#06b6d4',
+		href: '/chat',
+	},
+	{
+		icon: Compass,
+		label: 'Right Now',
+		desc: 'Live spatial radar nearby',
+		color: '#a855f7',
+		href: '/right-now',
+	},
+	{
+		icon: CalendarHeart,
+		label: 'IRL Events',
+		desc: 'Curated meetups, dinners, and experiences',
+		color: '#f97316',
+		href: '/events',
+	},
+	{
+		icon: Bot,
+		label: 'AI Dating Coach',
+		desc: 'Your personal wingman for icebreakers',
+		color: '#EAAB08',
+		href: '/chat',
+	},
+	{
+		icon: Mic,
+		label: 'Voice Control',
+		desc: 'Navigate hands-free with natural language',
+		color: '#06b6d4',
+		href: '/settings',
+	},
 ]
 
 const HERO_STATS = [

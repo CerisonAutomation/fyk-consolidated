@@ -1,21 +1,22 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-  Compass,
-  MessageCircle,
-  Rss,
-  CalendarHeart,
-  User,
-  Crown,
-  Search,
-  Bell,
-  Settings,
-  Heart,
-  Zap,
-  X,
-  Command,
-  MoreHorizontal,
-  LogOut,
+	Compass,
+	MessageCircle,
+	Rss,
+	CalendarHeart,
+	CalendarDays,
+	User,
+	Crown,
+	Search,
+	Bell,
+	Settings,
+	Heart,
+	Zap,
+	X,
+	Command,
+	MoreHorizontal,
+	LogOut,
 } from "lucide-react";
 import { cn } from "#/lib/utils";
 
@@ -79,7 +80,7 @@ const MOBILE_TABS: NavItem[] = [
   { href: "/grid", label: "Discover", icon: Compass },
   { href: "/chat", label: "Chat", icon: MessageCircle, badge: "chat" },
   { href: "/interest", label: "Feed", icon: Rss },
-  { href: "/right-now", label: "Events", icon: CalendarHeart },
+  { href: "/events", label: "Events", icon: CalendarHeart },
   { href: "/profile", label: "Me", icon: User, matchPattern: "^/profile" },
 ];
 
@@ -94,6 +95,7 @@ const DESKTOP_SIDEBAR_GROUPS: SidebarGroup[] = [
     items: [
       { href: "/grid", label: "Nearby", icon: Crown },
       { href: "/right-now", label: "Right Now", icon: Zap },
+      { href: "/events", label: "Events", icon: CalendarDays },
       { href: "/interest", label: "Discover", icon: Compass },
     ],
   },
