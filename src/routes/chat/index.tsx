@@ -1,11 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
 import { MessageCircle, Pin, Star, VolumeX } from "lucide-react";
-import { useConversationsStore, type Conversation } from "#/domains/chat/store";
-import {
-	EmptyState,
-	ChatListSkeleton,
-} from "#/core/ui/fyk-primitives";
+import { useEffect, useMemo } from "react";
+import { useConversations } from "#/core/api/hooks/use-conversations";
+import { ChatListSkeleton, EmptyState } from "#/core/ui/fyk-primitives";
+import { type Conversation, useConversationsStore } from "#/domains/chat/store";
 
 export const Route = createFileRoute("/chat/")({
 	component: ChatListPage,
@@ -16,7 +14,29 @@ export const Route = createFileRoute("/chat/")({
 /* ================================================================== */
 
 function ChatListPage() {
-	const { entries, loading, error } = useConversationsStore();
+	const { entries, loading, error, setEntries, setLoading, setError } =
+		useConversationsStore();
+	const conversations = useConversations();
+
+	useEffect(() => {
+		setLoading(conversations.isLoading);
+		setError(conversations.error ?? null);
+		if (conversations.data) {
+			setEntries(
+				conversations.data.entries.flatMap((entry) => {
+					const conversation = toConversation(entry);
+					return conversation ? [conversation] : [];
+				}),
+			);
+		}
+	}, [
+		conversations.data,
+		conversations.error,
+		conversations.isLoading,
+		setEntries,
+		setError,
+		setLoading,
+	]);
 
 	const sortedEntries = useMemo(() => {
 		return [...entries].sort((a, b) => {
@@ -69,7 +89,11 @@ function ChatListPage() {
 			) : (
 				<div className="px-2">
 					{sortedEntries.map((entry, idx) => (
-						<ChatRow key={entry.data.conversationId} entry={entry} index={idx} />
+						<ChatRow
+							key={entry.data.conversationId}
+							entry={entry}
+							index={idx}
+						/>
 					))}
 				</div>
 			)}
@@ -77,17 +101,27 @@ function ChatListPage() {
 	);
 }
 
+function toConversation(value: Record<string, unknown>): Conversation | null {
+	if (value.type !== "full_conversation_v1") return null;
+	if (!value.data || typeof value.data !== "object") return null;
+	const data = value.data as Record<string, unknown>;
+	if (
+		typeof data.conversationId !== "string" ||
+		typeof data.name !== "string" ||
+		!Array.isArray(data.participants) ||
+		typeof data.lastActivityTimestamp !== "number" ||
+		typeof data.unreadCount !== "number"
+	) {
+		return null;
+	}
+	return value as unknown as Conversation;
+}
+
 /* ================================================================== */
 /*  Chat Row                                                           */
 /* ================================================================== */
 
-function ChatRow({
-	entry,
-	index,
-}: {
-	entry: Conversation;
-	index: number;
-}) {
+function ChatRow({ entry, index }: { entry: Conversation; index: number }) {
 	const d = entry.data;
 	const hasUnread = d.unreadCount > 0;
 

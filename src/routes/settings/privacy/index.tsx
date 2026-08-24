@@ -1,26 +1,48 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, Shield, Lock, Globe, Eye, EyeOff, MapPin } from "lucide-react";
-import { useState, useCallback } from "react";
-import { getPreferencesSnapshot, setPreferences } from "#/domains/settings/preferences";
+import {
+	ChevronLeft,
+	Eye,
+	EyeOff,
+	Globe,
+	Lock,
+	MapPin,
+	Shield,
+} from "lucide-react";
+import { useCallback, useState } from "react";
+import {
+	getPreferencesSnapshot,
+	hydratePreferences,
+	type Preferences,
+	setPreferences,
+} from "#/domains/settings/preferences";
 
 export const Route = createFileRoute("/settings/privacy/")({
 	component: PrivacySettingsPage,
+	loader: () => hydratePreferences(),
 });
 
 function PrivacySettingsPage() {
 	const prefs = getPreferencesSnapshot();
-	const [showDistance, setShowDistance] = useState(true);
+	const [local, setLocal] = useState(prefs);
 	const [saved, setSaved] = useState(false);
 
 	const handleToggle = useCallback(
-		async (_field: string, _value: boolean) => {
+		async (
+			field:
+				| "showDistance"
+				| "showOnlineStatus"
+				| "showLastOnline"
+				| "incognitoMode"
+				| "hideFromSearch",
+		) => {
+			const value = !local[field];
+			setLocal((current) => ({ ...current, [field]: value }));
 			setSaved(false);
-			// Wire to Supabase user_metadata when connected
-			await setPreferences({});
+			await setPreferences({ [field]: value } satisfies Partial<Preferences>);
 			setSaved(true);
 			setTimeout(() => setSaved(false), 2000);
 		},
-		[prefs],
+		[local],
 	);
 
 	return (
@@ -78,11 +100,19 @@ function PrivacySettingsPage() {
 							{
 								icon: Lock,
 								label: "Hide from Search",
-								description: "Prevent your profile from appearing in search results",
+								description:
+									"Prevent your profile from appearing in search results",
 								field: "hideFromSearch",
 							},
 						].map((item) => {
 							const Icon = item.icon;
+							const field = item.field as
+								| "showDistance"
+								| "showOnlineStatus"
+								| "showLastOnline"
+								| "incognitoMode"
+								| "hideFromSearch";
+							const enabled = local[field];
 							return (
 								<div
 									key={item.field}
@@ -98,35 +128,31 @@ function PrivacySettingsPage() {
 										<Icon className="h-5 w-5 text-amber-400" />
 									</div>
 									<div className="min-w-0 flex-1">
-										<p className="text-sm font-medium text-white/90">{item.label}</p>
-										<p className="mt-0.5 text-xs text-white/40">{item.description}</p>
+										<p className="text-sm font-medium text-white/90">
+											{item.label}
+										</p>
+										<p className="mt-0.5 text-xs text-white/40">
+											{item.description}
+										</p>
 									</div>
 									<button
 										type="button"
-										onClick={() =>
-											item.field === "showDistance"
-												? setShowDistance(!showDistance)
-												: handleToggle(item.field, false)
-										}
+										onClick={() => handleToggle(field)}
+										aria-pressed={enabled}
 										className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
 										style={{
-											background:
-												item.field === "showDistance" && showDistance
-													? "rgba(234,179,8,0.3)"
-													: "rgba(255,255,255,0.08)",
+											background: enabled
+												? "rgba(234,179,8,0.3)"
+												: "rgba(255,255,255,0.08)",
 										}}
 									>
 										<div
 											className="absolute top-0.5 h-5 w-5 rounded-full shadow-sm transition-all"
 											style={{
-												left:
-													item.field === "showDistance" && showDistance
-														? "22px"
-														: "2px",
-												background:
-													item.field === "showDistance" && showDistance
-														? "#EAAB08"
-														: "rgba(255,255,255,0.3)",
+												left: enabled ? "22px" : "2px",
+												background: enabled
+													? "#EAAB08"
+													: "rgba(255,255,255,0.3)",
 											}}
 										/>
 									</button>
@@ -152,10 +178,15 @@ function PrivacySettingsPage() {
 								<Shield className="h-5 w-5 text-red-400" />
 							</div>
 							<div className="min-w-0 flex-1">
-								<p className="text-sm font-medium text-white/90">Blocked Users</p>
-								<p className="mt-0.5 text-xs text-white/40">Manage who can see you</p>
+								<p className="text-sm font-medium text-white/90">
+									Blocked Users
+								</p>
+								<p className="mt-0.5 text-xs text-white/40">
+									Manage who can see you
+								</p>
 							</div>
 							<svg
+								aria-hidden="true"
 								className="h-4 w-4 text-white/30"
 								viewBox="0 0 24 24"
 								fill="none"

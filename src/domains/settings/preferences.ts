@@ -1,13 +1,13 @@
-import { z } from 'zod';
+import { z } from "zod";
 
-const PREFIX = 'fyk:app-data:';
+const PREFIX = "fyk:app-data:";
 
 function key(path: string): string {
 	return `${PREFIX}${path}`;
 }
 
 function isBrowser(): boolean {
-	return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+	return typeof window !== "undefined" && typeof localStorage !== "undefined";
 }
 
 function readLocal(path: string): Uint8Array | null {
@@ -17,23 +17,29 @@ function readLocal(path: string): Uint8Array | null {
 	return Uint8Array.from(atob(stored), (char) => char.charCodeAt(0));
 }
 
-function writeLocal({ path, content }: { path: string; content: Uint8Array }): void {
+function writeLocal({
+	path,
+	content,
+}: {
+	path: string;
+	content: Uint8Array;
+}): void {
 	if (!isBrowser()) return;
-	const binary = Array.from(content, (byte) =>
-		String.fromCharCode(byte),
-	).join('');
+	const binary = Array.from(content, (byte) => String.fromCharCode(byte)).join(
+		"",
+	);
 	localStorage.setItem(key(path), btoa(binary));
 }
 
 function removeLocal(path: string): void {
 	if (!isBrowser()) return;
-	localStorage.removeItem(path);
+	localStorage.removeItem(key(path));
 }
 
 // --- Preferences schema ---
 
 const geohashSchema = z.string().regex(/^[0-9b-hjkmnp-z]+$/);
-const unitSystemSchema = z.enum(['metric', 'imperial']);
+const unitSystemSchema = z.enum(["metric", "imperial"]);
 
 const gridSearchFiltersSchema = z.object({
 	isFavorite: z.boolean().default(false),
@@ -48,7 +54,9 @@ const gridSearchFiltersSchema = z.object({
 	positionEnabled: z.boolean().default(false),
 	positions: z.array(z.string()).default([]),
 	photosEnabled: z.boolean().default(false),
-	photos: z.array(z.enum(['has-photos', 'has-face-pics', 'has-albums'])).default([]),
+	photos: z
+		.array(z.enum(["has-photos", "has-face-pics", "has-albums"]))
+		.default([]),
 	tribesEnabled: z.boolean().default(false),
 	tribes: z.array(z.string()).default([]),
 	bodyTypesEnabled: z.boolean().default(false),
@@ -73,7 +81,9 @@ const gridSearchFiltersSchema = z.object({
 
 export type GridSearchFilters = z.infer<typeof gridSearchFiltersSchema>;
 
-export const defaultFilters: GridSearchFilters = gridSearchFiltersSchema.parse({});
+export const defaultFilters: GridSearchFilters = gridSearchFiltersSchema.parse(
+	{},
+);
 
 const preferencesSchema = z.object({
 	autoUpdateLocation: z.boolean().default(false),
@@ -83,7 +93,12 @@ const preferencesSchema = z.object({
 	revealMessageRead: z.boolean().default(false),
 	revealProfileViews: z.boolean().default(false),
 	stayOnline: z.boolean().default(true),
-	units: unitSystemSchema.default('metric'),
+	units: unitSystemSchema.default("metric"),
+	showDistance: z.boolean().default(true),
+	showOnlineStatus: z.boolean().default(true),
+	showLastOnline: z.boolean().default(true),
+	incognitoMode: z.boolean().default(false),
+	hideFromSearch: z.boolean().default(false),
 });
 
 export type Preferences = z.infer<typeof preferencesSchema>;
@@ -120,13 +135,13 @@ function decodeJson(bytes: Uint8Array): Preferences {
 }
 
 function readFromDisk(): Preferences | null {
-	const bytes = readLocal('preferences.data');
+	const bytes = readLocal("preferences.data");
 	if (bytes === null) return null;
 	return decodeJson(bytes);
 }
 
 function writeToDisk(preferences: Preferences): void {
-	writeLocal({ path: 'preferences.data', content: encodeJson(preferences) });
+	writeLocal({ path: "preferences.data", content: encodeJson(preferences) });
 }
 
 export function getPreferencesSnapshot(): Preferences {

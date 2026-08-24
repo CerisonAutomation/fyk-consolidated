@@ -1,22 +1,53 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useCallback } from "react";
-import { useTapsStore } from "#/domains/interest/store";
-import {
-	Heart,
-	Sparkles,
-	MoreVertical,
-} from "lucide-react";
+import { Heart, MoreVertical, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useReceivedTaps } from "#/core/api/hooks/use-taps";
+import { type TapProfile, useTapsStore } from "#/domains/interest/store";
+
+const TAP_SKELETON_IDS = ["one", "two", "three", "four", "five", "six"];
 
 export const Route = createFileRoute("/interest/taps/")({
 	component: TapsPage,
 });
 
 function TapsPage() {
-	const { taps, loading, error, hasUnseen, hasMore, loadMore, markViewed } =
-		useTapsStore();
+	const {
+		taps,
+		loading,
+		error,
+		hasUnseen,
+		hasMore,
+		loadMore,
+		markViewed,
+		setAll,
+		setLoading,
+		setError,
+	} = useTapsStore();
+	const receivedTaps = useReceivedTaps();
 	const [activeTab, setActiveTab] = useState<"all" | "mutual">("all");
 
-	const filteredTaps = activeTab === "mutual" ? taps.filter((t) => t.isMutual) : taps;
+	useEffect(() => {
+		setLoading(receivedTaps.isLoading);
+		setError(receivedTaps.error ?? null);
+		if (receivedTaps.data) {
+			setAll(
+				receivedTaps.data.profiles.flatMap((profile) => {
+					const tap = toTapProfile(profile);
+					return tap ? [tap] : [];
+				}),
+			);
+		}
+	}, [
+		receivedTaps.data,
+		receivedTaps.error,
+		receivedTaps.isLoading,
+		setAll,
+		setError,
+		setLoading,
+	]);
+
+	const filteredTaps =
+		activeTab === "mutual" ? taps.filter((t) => t.isMutual) : taps;
 
 	const handleMarkAllSeen = useCallback(() => {
 		markViewed();
@@ -68,9 +99,7 @@ function TapsPage() {
 											? "rgba(234,179,8,0.12)"
 											: "transparent",
 									color:
-										activeTab === tab.key
-											? "#EAAB08"
-											: "rgba(255,255,255,0.4)",
+										activeTab === tab.key ? "#EAAB08" : "rgba(255,255,255,0.4)",
 								}}
 							>
 								{tab.label}
@@ -94,9 +123,9 @@ function TapsPage() {
 					{/* Content */}
 					{loading ? (
 						<div className="flex flex-col gap-2">
-							{Array.from({ length: 6 }).map((_, i) => (
+							{TAP_SKELETON_IDS.map((id, i) => (
 								<div
-									key={i}
+									key={id}
 									className="flex items-center gap-3 animate-pulse"
 									style={{ animationDelay: `${i * 60}ms` }}
 								>
@@ -173,7 +202,8 @@ function TapsPage() {
 										</div>
 										<p className="text-xs text-white/40">
 											Tapped {formatTimeAgo(tap.timestamp)}
-											{tap.distance !== null && ` · ${formatDistance(tap.distance)}`}
+											{tap.distance !== null &&
+												` · ${formatDistance(tap.distance)}`}
 										</p>
 									</div>
 									<div className="flex items-center gap-2">
@@ -211,6 +241,19 @@ function TapsPage() {
 			</div>
 		</main>
 	);
+}
+
+function toTapProfile(value: Record<string, unknown>): TapProfile | null {
+	if (
+		typeof value.profileId !== "number" ||
+		(value.displayName !== null && typeof value.displayName !== "string") ||
+		typeof value.timestamp !== "number" ||
+		typeof value.isMutual !== "boolean" ||
+		typeof value.isFavorite !== "boolean"
+	) {
+		return null;
+	}
+	return value as unknown as TapProfile;
 }
 
 function formatTimeAgo(timestamp: number): string {

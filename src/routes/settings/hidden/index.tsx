@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, EyeOff, UserCircle } from "lucide-react";
-import { useState } from "react";
+import { useHiddenUsers, useUnhideUser } from "#/core/api/hooks/use-hides";
+import { useProfiles } from "#/core/api/hooks/use-profiles";
 
 export const Route = createFileRoute("/settings/hidden/")({
 	component: HiddenUsersPage,
@@ -14,11 +15,26 @@ interface HiddenUser {
 }
 
 function HiddenUsersPage() {
-	const [hiddenUsers] = useState<HiddenUser[]>([]);
+	const hiddenQuery = useHiddenUsers();
+	const profileIds = hiddenQuery.data?.map((user) => user.profileId) ?? [];
+	const profilesQuery = useProfiles(profileIds);
+	const unhide = useUnhideUser();
+	const hiddenUsers: HiddenUser[] = profileIds.map((profileId) => {
+		const profile = profilesQuery.data?.find(
+			(item) => item.profileId === profileId,
+		);
+		return {
+			profileId,
+			displayName:
+				typeof profile?.displayName === "string"
+					? profile.displayName
+					: "Anonymous",
+			hiddenAt: new Date(),
+		};
+	});
 
 	const handleUnhide = (profileId: number) => {
-		// TODO: Wire to Supabase API
-		console.log("Unhide user:", profileId);
+		unhide.mutate({ profileId });
 	};
 
 	return (
@@ -44,19 +60,31 @@ function HiddenUsersPage() {
 						</div>
 					</div>
 
-					{hiddenUsers.length === 0 ? (
+					{hiddenQuery.isLoading || profilesQuery.isLoading ? (
+						<div className="flex justify-center py-20">
+							<div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-400/20 border-t-amber-400" />
+						</div>
+					) : hiddenQuery.error ? (
+						<p className="py-16 text-center text-sm text-red-400">
+							Could not load hidden users. Please try again.
+						</p>
+					) : hiddenUsers.length === 0 ? (
 						<div className="flex flex-col items-center justify-center py-20">
 							<div
 								className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl"
 								style={{
-									background: "color-mix(in srgb, var(--accent-primary) 8%, transparent)",
+									background:
+										"color-mix(in srgb, var(--accent-primary) 8%, transparent)",
 								}}
 							>
 								<EyeOff className="h-10 w-10 text-amber-400/30" />
 							</div>
-							<h3 className="font-display text-lg text-white/60">No hidden users</h3>
+							<h3 className="font-display text-lg text-white/60">
+								No hidden users
+							</h3>
 							<p className="mt-1 max-w-xs text-center text-sm text-white/30">
-								Hidden profiles won't appear in your grid. You can unhide them here.
+								Hidden profiles won't appear in your grid. You can unhide them
+								here.
 							</p>
 						</div>
 					) : (
@@ -70,7 +98,9 @@ function HiddenUsersPage() {
 										<UserCircle className="h-6 w-6 text-white/30" />
 									</div>
 									<div className="min-w-0 flex-1">
-										<p className="font-medium text-white/90">{user.displayName}</p>
+										<p className="font-medium text-white/90">
+											{user.displayName}
+										</p>
 										<p className="text-xs text-white/40">
 											Hidden {user.hiddenAt.toLocaleDateString()}
 										</p>
@@ -78,6 +108,7 @@ function HiddenUsersPage() {
 									<button
 										type="button"
 										onClick={() => handleUnhide(user.profileId)}
+										disabled={unhide.isPending}
 										className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400 transition hover:bg-amber-500/20"
 									>
 										Unhide

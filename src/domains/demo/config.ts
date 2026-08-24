@@ -1,7 +1,8 @@
-export const demoEnabled =
-	typeof process !== 'undefined'
-		? process.env.PUBLIC_ENABLE_DEMO === 'true'
-		: false;
+/**
+ * The standalone MVP uses the in-browser Open Grind compatibility adapter.
+ * Set VITE_ENABLE_DEMO=false when a production API proxy is available.
+ */
+export const demoEnabled = import.meta.env.VITE_ENABLE_DEMO !== "false";
 
 export const demoMeProfileId = 123456000;
 

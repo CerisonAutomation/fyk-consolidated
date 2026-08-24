@@ -1,18 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { memo, useCallback, useRef, useState } from "react";
-import { useGridStore } from "#/domains/grid/store";
+import { Compass, SlidersHorizontal } from "lucide-react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import type { GridSearchFilters } from "#/core/model/grid";
+import {
+	GridFilters,
+	type GridFiltersState,
+} from "#/core/ui/organisms/filters/GridFilters";
 import { useGridSearchFiltersStore } from "#/domains/grid/filters-store";
+import { useGridStore } from "#/domains/grid/store";
 import {
 	getPreferencesSnapshot,
 	hydratePreferences,
 	setPreferences,
 } from "#/domains/settings/preferences";
-import {
-	GridFilters,
-	type GridFiltersState,
-} from "#/core/ui/organisms/filters/GridFilters";
-import { Compass, SlidersHorizontal } from "lucide-react";
-import type { GridSearchFilters } from "#/core/model/grid";
 
 export const Route = createFileRoute("/grid/")({
 	component: GridPage,
@@ -28,6 +28,17 @@ export const Route = createFileRoute("/grid/")({
 		}
 	},
 });
+
+const GRID_SKELETON_IDS = Array.from(
+	{ length: 12 },
+	(_, index) => `grid-loading-${index}`,
+);
+const LOAD_MORE_SKELETON_IDS = [
+	"more-one",
+	"more-two",
+	"more-three",
+	"more-four",
+];
 
 /* ================================================================== */
 /*  FYK Premium Grid (Discover)                                        */
@@ -90,7 +101,8 @@ function GridPage() {
 					<div
 						className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2"
 						style={{
-							background: "color-mix(in srgb, var(--accent-primary) 10%, transparent)",
+							background:
+								"color-mix(in srgb, var(--accent-primary) 10%, transparent)",
 						}}
 					>
 						<Compass className="w-8 h-8 text-gold/50" />
@@ -174,9 +186,9 @@ function GridPage() {
 				<div className="@container/photo-grid flex min-h-[calc(100vh-4rem)] flex-col gap-4 px-4 pt-2 pb-24">
 					{loading && items.length === 0 ? (
 						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-							{Array.from({ length: 12 }).map((_, i) => (
+							{GRID_SKELETON_IDS.map((id) => (
 								<div
-									key={i}
+									key={id}
 									className="aspect-[3/4] rounded-2xl overflow-hidden glass-card"
 								>
 									<div className="h-full w-full skeleton-pulse" />
@@ -225,9 +237,9 @@ function GridPage() {
 								<GridCell key={item.id} item={item} />
 							))}
 							{loadingMore &&
-								Array.from({ length: 4 }).map((_, i) => (
+								LOAD_MORE_SKELETON_IDS.map((id) => (
 									<div
-										key={`skeleton-${i}`}
+										key={id}
 										className="aspect-[3/4] rounded-2xl overflow-hidden glass-card"
 									>
 										<div className="h-full w-full skeleton-pulse" />
@@ -291,14 +303,7 @@ const GridCell = memo(function GridCell({
 	item: import("#/domains/grid/service").GridProfile;
 }) {
 	if (item.type === "lazy") {
-		return (
-			<div className="group relative aspect-[3/4] overflow-hidden rounded-2xl glass-card">
-				<div className="h-full w-full skeleton-pulse" />
-				<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2.5">
-					<div className="h-3 w-16 rounded skeleton-pulse" />
-				</div>
-			</div>
-		);
+		return <LazyGridCell profileId={item.id} />;
 	}
 
 	return (
@@ -327,7 +332,9 @@ const GridCell = memo(function GridCell({
 			<div className="absolute inset-x-0 bottom-0 p-2.5 pt-8 z-10">
 				<div className="flex items-center gap-1">
 					{item.isFavorite && (
-						<span className="text-amber-400 drop-shadow-md text-xs">&#9733;</span>
+						<span className="text-amber-400 drop-shadow-md text-xs">
+							&#9733;
+						</span>
 					)}
 					<span className="text-sm font-medium text-white drop-shadow-md">
 						{item.displayName ?? "Anonymous"}
@@ -356,6 +363,21 @@ const GridCell = memo(function GridCell({
 		</Link>
 	);
 });
+
+function LazyGridCell({ profileId }: { profileId: number }) {
+	useEffect(() => {
+		void useGridStore.getState().resolveProfile(profileId);
+	}, [profileId]);
+
+	return (
+		<div className="group relative aspect-[3/4] overflow-hidden rounded-2xl glass-card">
+			<div className="h-full w-full skeleton-pulse" />
+			<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2.5">
+				<div className="h-3 w-16 rounded skeleton-pulse" />
+			</div>
+		</div>
+	);
+}
 
 /* ================================================================== */
 /*  Grid Filters Drawer                                                */

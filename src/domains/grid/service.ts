@@ -1,7 +1,7 @@
-import { TtlCache } from '#/core/lib/ttl-cache';
+import { TtlCache } from "#/core/lib/ttl-cache";
 
 export type RenderedGridProfile = {
-	type: 'rendered';
+	type: "rendered";
 	id: number;
 	displayName: string | null;
 	distance: number | null;
@@ -14,7 +14,7 @@ export type RenderedGridProfile = {
 };
 
 export type LazyGridProfile = {
-	type: 'lazy';
+	type: "lazy";
 	id: number;
 	unread: number | null;
 	isVisiting: boolean;
@@ -29,7 +29,7 @@ export interface GridResponse {
 }
 
 function primaryImageHashes(url: string | null | undefined): string[] | null {
-	const hash = url?.split('/').pop();
+	const hash = url?.split("/").pop();
 	return hash ? [hash] : null;
 }
 
@@ -47,14 +47,14 @@ export function gridProfile(profile: {
 	const { favorite, chatted } = profile;
 	if (favorite === undefined || chatted === undefined) {
 		return {
-			type: 'lazy',
+			type: "lazy",
 			id: profile.profileId,
 			unread: profile.unreadCount ?? 0,
 			isVisiting: profile.isVisiting ?? false,
 		};
 	}
 	return {
-		type: 'rendered',
+		type: "rendered",
 		id: profile.profileId,
 		displayName: profile.displayName ?? null,
 		distance: profile.distanceMeters ?? null,
@@ -96,17 +96,18 @@ export async function getGrid(query: {
 	fresh?: boolean;
 }): Promise<GridResponse> {
 	// Demo data (Supabase data layer not yet wired)
-	const { demoCascadeV4 } = await import('#/domains/demo/mock/grid');
+	const { demoCascadeV4 } = await import("#/domains/demo/mock/grid");
 	const params = new URLSearchParams();
-	if (query.nearbyGeoHash) params.set('nearbyGeoHash', query.nearbyGeoHash);
-	if (query.pageNumber !== undefined) params.set('pageNumber', String(query.pageNumber));
-	if (query.favorites) params.set('favorites', 'true');
-	if (query.onlineOnly) params.set('onlineOnly', 'true');
-	if (query.ageMin !== undefined) params.set('ageMin', String(query.ageMin));
-	if (query.ageMax !== undefined) params.set('ageMax', String(query.ageMax));
+	if (query.nearbyGeoHash) params.set("nearbyGeoHash", query.nearbyGeoHash);
+	if (query.pageNumber !== undefined)
+		params.set("pageNumber", String(query.pageNumber));
+	if (query.favorites) params.set("favorites", "true");
+	if (query.onlineOnly) params.set("onlineOnly", "true");
+	if (query.ageMin !== undefined) params.set("ageMin", String(query.ageMin));
+	if (query.ageMax !== undefined) params.set("ageMax", String(query.ageMax));
 	const demoResult = demoCascadeV4(params);
 	return {
-		items: demoResult.items.map((item: any) => {
+		items: demoResult.items.map((item) => {
 			const d = item.data;
 			return gridProfile({
 				profileId: d.profileId,
@@ -148,8 +149,25 @@ export function patchCachedProfile({
 }
 
 export async function resolveLazyProfile(
-	_profile: LazyGridProfile,
+	profile: LazyGridProfile,
 ): Promise<RenderedGridProfile | null> {
-	// This will be wired to the actual API transport layer
-	return null;
+	const [{ demoFavoriteOf }, { onlineUntilOf, photosOf, profileSeed }] =
+		await Promise.all([
+			import("#/domains/demo/mock/grid"),
+			import("#/domains/demo/mock/profiles"),
+		]);
+	const seed = profileSeed(profile.id);
+	const photos = photosOf(profile.id);
+	return {
+		type: "rendered",
+		id: profile.id,
+		displayName: seed.name,
+		distance: seed.distanceM,
+		profilePhotosHashes: photos.length > 0 ? photos : null,
+		unread: profile.unread,
+		onlineUntil: onlineUntilOf(seed),
+		isFavorite: demoFavoriteOf({ profileId: profile.id }),
+		isVisiting: profile.isVisiting,
+		hasChattedInLast24Hrs: seed.unread > 0,
+	};
 }

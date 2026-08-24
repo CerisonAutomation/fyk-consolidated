@@ -1,6 +1,23 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState, useCallback } from "react";
-import { ChevronLeft, Send, Paperclip, Smile, MoreVertical, Pin, VolumeX } from "lucide-react";
+import {
+	ChevronLeft,
+	MoreVertical,
+	Paperclip,
+	Pin,
+	Send,
+	Smile,
+	VolumeX,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	useMuteConversation,
+	usePinConversation,
+} from "#/core/api/hooks/use-conversations";
+import {
+	useConversationMessages,
+	useSendMessage,
+} from "#/core/api/hooks/use-messages";
+import { Drafts } from "#/domains/chat/drafts-store";
 import { useConversationsStore } from "#/domains/chat/store";
 
 export const Route = createFileRoute("/chat/$conversationId/")({
@@ -16,55 +33,18 @@ interface Message {
 	type: "text" | "image" | "tap";
 }
 
-const DEMO_MESSAGES: Message[] = [
-	{
-		id: "1",
-		text: "Hey! What's up?",
-		sentByMe: false,
-		timestamp: Date.now() - 3600000,
-		read: true,
-		type: "text",
-	},
-	{
-		id: "2",
-		text: "Not much, just browsing. You?",
-		sentByMe: true,
-		timestamp: Date.now() - 3500000,
-		read: true,
-		type: "text",
-	},
-	{
-		id: "3",
-		text: "Same here! This app is pretty cool though",
-		sentByMe: false,
-		timestamp: Date.now() - 3400000,
-		read: true,
-		type: "text",
-	},
-	{
-		id: "4",
-		text: "Yeah, I like the design a lot. The gold accents are 🔥",
-		sentByMe: true,
-		timestamp: Date.now() - 3300000,
-		read: true,
-		type: "text",
-	},
-	{
-		id: "5",
-		text: "For real! Wanna grab coffee sometime?",
-		sentByMe: false,
-		timestamp: Date.now() - 1800000,
-		read: true,
-		type: "text",
-	},
-];
+const drafts = new Drafts();
 
 function ConversationPage() {
 	const { conversationId } = Route.useParams();
 	const { entries, setActive } = useConversationsStore();
-	const [draft, setDraft] = useState("");
-	const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
-	const [sending, setSending] = useState(false);
+	const [draft, setDraft] = useState(() => drafts.open(conversationId));
+	const draftRef = useRef(draft);
+	const [messages, setMessages] = useState<Message[]>([]);
+	const messagesQuery = useConversationMessages(conversationId);
+	const sendMessage = useSendMessage();
+	const pinConversation = usePinConversation();
+	const muteConversation = useMuteConversation();
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -74,59 +54,56 @@ function ConversationPage() {
 
 	useEffect(() => {
 		setActive(conversationId);
-		return () => setActive(null);
+		return () => {
+			drafts.save({ conversationId, text: draftRef.current });
+			setActive(null);
+		};
 	}, [conversationId, setActive]);
 
 	useEffect(() => {
+		if (!messagesQuery.data) return;
+		const otherProfileId = messagesQuery.data.profile.profileId;
+		setMessages(
+			messagesQuery.data.messages
+				.flatMap((message) => {
+					const parsed = toMessage(message, otherProfileId);
+					return parsed ? [parsed] : [];
+				})
+				.sort((a, b) => a.timestamp - b.timestamp),
+		);
+	}, [messagesQuery.data]);
+
+	useEffect(() => {
+		if (messages.length === 0) return;
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [messages]);
+	}, [messages.length]);
 
 	const handleSend = useCallback(() => {
-		if (!draft.trim() || sending) return;
+		if (!draft.trim() || sendMessage.isPending) return;
 		const text = draft.trim();
 		setDraft("");
-		setSending(true);
-
-		const newMessage: Message = {
-			id: `msg-${Date.now()}`,
-			text,
-			sentByMe: true,
-			timestamp: Date.now(),
-			read: false,
-			type: "text",
-		};
-
-		setMessages((prev) => [...prev, newMessage]);
-
-		// Simulate delivery
-		setTimeout(() => {
-			setSending(false);
-			setMessages((prev) =>
-				prev.map((m) => (m.id === newMessage.id ? { ...m, read: true } : m)),
-			);
-		}, 800);
-
-		// Simulate reply after delay
-		setTimeout(() => {
-			const replies = [
-				"That's interesting!",
-				"Haha nice 😄",
-				"Cool, tell me more",
-				"I agree!",
-				"👍",
-				"What do you think about that?",
-			];
-			const reply: Message = {
-				id: `msg-${Date.now() + 1}`,
-				text: replies[Math.floor(Math.random() * replies.length)],
-				sentByMe: false,
-				timestamp: Date.now(),
-				read: true,
-				type: "text",
-			};
-			setMessages((prev) => [...prev, reply]);
-		}, 2000 + Math.random() * 3000);
-	}, [draft, sending]);
+		draftRef.current = "";
+		drafts.discard(conversationId);
+		const participantId =
+			conversation?.data.participants[0]?.profileId ??
+			Number(conversationId.split(":").at(-1));
+		sendMessage.mutate(
+			{
+				toUserId: participantId,
+				message: { type: 1, body: text },
+			},
+			{
+				onSuccess: (message) => {
+					const parsed = toMessage(message, participantId);
+					if (parsed) setMessages((current) => [...current, parsed]);
+				},
+				onError: () => {
+					draftRef.current = text;
+					setDraft(text);
+				},
+			},
+		);
+	}, [conversation, conversationId, draft, sendMessage]);
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === "Enter" && !e.shiftKey) {
@@ -140,7 +117,11 @@ function ConversationPage() {
 		return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 	};
 
-	const isOnline = conversation?.data.onlineUntil !== null;
+	const isOnline =
+		(conversation?.data.onlineUntil ??
+			messagesQuery.data?.profile.onlineUntil) !== null;
+	const displayName =
+		conversation?.data.name ?? messagesQuery.data?.profile.name ?? "Unknown";
 
 	return (
 		<div className="flex h-full flex-col bg-[#0a0014]">
@@ -160,20 +141,19 @@ function ConversationPage() {
 						<div
 							className="flex h-full w-full items-center justify-center rounded-full text-sm font-bold"
 							style={{
-								background: "linear-gradient(135deg, rgba(234,179,8,0.2), rgba(168,85,247,0.2))",
+								background:
+									"linear-gradient(135deg, rgba(234,179,8,0.2), rgba(168,85,247,0.2))",
 								color: "#EAAB08",
 							}}
 						>
-							{conversation?.data.name?.charAt(0) ?? "?"}
+							{displayName.charAt(0) || "?"}
 						</div>
 						{isOnline && (
 							<div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-[#0a0014]" />
 						)}
 					</div>
 					<div>
-						<p className="text-sm font-medium text-white">
-							{conversation?.data.name ?? "Unknown"}
-						</p>
+						<p className="text-sm font-medium text-white">{displayName}</p>
 						<p className="text-[11px] text-white/40">
 							{isOnline ? "Online" : "Last seen recently"}
 						</p>
@@ -182,12 +162,26 @@ function ConversationPage() {
 				<div className="ml-auto flex items-center gap-1">
 					<button
 						type="button"
+						onClick={() =>
+							pinConversation.mutate({
+								conversationId,
+								pinned: !(conversation?.data.pinned ?? false),
+							})
+						}
+						aria-pressed={conversation?.data.pinned ?? false}
 						className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white/60"
 					>
 						<Pin className="h-4 w-4" />
 					</button>
 					<button
 						type="button"
+						onClick={() =>
+							muteConversation.mutate({
+								conversationId,
+								muted: !(conversation?.data.muted ?? false),
+							})
+						}
+						aria-pressed={conversation?.data.muted ?? false}
 						className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white/60"
 					>
 						<VolumeX className="h-4 w-4" />
@@ -202,8 +196,11 @@ function ConversationPage() {
 			</div>
 
 			{/* Messages */}
-			<div className="flex-1 overflow-y-auto px-4 py-4" style={{ scrollbarWidth: "thin" }}>
-				{!conversation ? (
+			<div
+				className="flex-1 overflow-y-auto px-4 py-4"
+				style={{ scrollbarWidth: "thin" }}
+			>
+				{messagesQuery.isLoading ? (
 					<div className="flex h-full items-center justify-center">
 						<p className="text-sm text-white/40">Loading conversation...</p>
 					</div>
@@ -230,15 +227,15 @@ function ConversationPage() {
 									>
 										<div
 											className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
-												msg.sentByMe
-													? "rounded-br-md"
-													: "rounded-bl-md"
+												msg.sentByMe ? "rounded-br-md" : "rounded-bl-md"
 											}`}
 											style={{
 												background: msg.sentByMe
 													? "linear-gradient(135deg, rgba(234,179,8,0.25), rgba(234,179,8,0.15))"
 													: "rgba(255,255,255,0.06)",
-												color: msg.sentByMe ? "#f5d76e" : "rgba(255,255,255,0.85)",
+												color: msg.sentByMe
+													? "#f5d76e"
+													: "rgba(255,255,255,0.85)",
 											}}
 										>
 											<p>{msg.text}</p>
@@ -279,7 +276,11 @@ function ConversationPage() {
 						<textarea
 							ref={inputRef}
 							value={draft}
-							onChange={(e) => setDraft(e.target.value)}
+							onChange={(e) => {
+								draftRef.current = e.target.value;
+								setDraft(e.target.value);
+								drafts.autosave({ conversationId, text: e.target.value });
+							}}
 							onKeyDown={handleKeyDown}
 							placeholder="Type a message..."
 							rows={1}
@@ -296,17 +297,20 @@ function ConversationPage() {
 					<button
 						type="button"
 						onClick={handleSend}
-						disabled={!draft.trim() || sending}
+						disabled={!draft.trim() || sendMessage.isPending}
 						className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
 						style={{
 							background:
-								draft.trim() && !sending
+								draft.trim() && !sendMessage.isPending
 									? "linear-gradient(135deg, #EAAB08, #D4AF37)"
 									: "rgba(255,255,255,0.05)",
-							color: draft.trim() && !sending ? "#000" : "rgba(255,255,255,0.3)",
+							color:
+								draft.trim() && !sendMessage.isPending
+									? "#000"
+									: "rgba(255,255,255,0.3)",
 						}}
 					>
-						{sending ? (
+						{sendMessage.isPending ? (
 							<span className="h-4 w-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
 						) : (
 							<Send className="h-5 w-5" />
@@ -316,4 +320,29 @@ function ConversationPage() {
 			</div>
 		</div>
 	);
+}
+
+function toMessage(
+	value: Record<string, unknown>,
+	otherProfileId: number,
+): Message | null {
+	if (
+		typeof value.messageId !== "string" ||
+		typeof value.timestamp !== "number"
+	) {
+		return null;
+	}
+	const body =
+		value.body && typeof value.body === "object"
+			? (value.body as Record<string, unknown>)
+			: null;
+	if (!body || typeof body.text !== "string") return null;
+	return {
+		id: value.messageId,
+		text: body.text,
+		sentByMe: value.senderId !== otherProfileId,
+		timestamp: value.timestamp,
+		read: true,
+		type: "text",
+	};
 }

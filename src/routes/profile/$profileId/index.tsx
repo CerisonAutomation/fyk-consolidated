@@ -1,24 +1,42 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useState, useCallback, useRef } from "react";
 import {
-	Star,
 	ChevronLeft,
-	MoreVertical,
-	MessageCircle,
-	MapPin,
 	ExternalLink,
 	Globe,
+	MapPin,
+	MessageCircle,
+	MoreVertical,
+	Star,
 	Stethoscope,
 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useBlockUser } from "#/core/api/hooks/use-blocks";
+import {
+	useAddFavorite,
+	useRemoveFavorite,
+} from "#/core/api/hooks/use-favorites";
+import { useHideUser } from "#/core/api/hooks/use-hides";
 import { useProfile } from "#/core/api/hooks/use-profiles";
-import { useAddFavorite, useRemoveFavorite } from "#/core/api/hooks/use-favorites";
+import { useSendTap } from "#/core/api/hooks/use-taps";
+import { useRecordView } from "#/core/api/hooks/use-views";
 import { cn } from "#/lib/utils";
+
+const PROFILE_STAT_SKELETON_IDS = ["height", "weight", "body", "position"];
 
 // ─── Inline: Tap Icon ────────────────────────────────────────────────────────
 
 function TapIcon({ className }: { className?: string }) {
 	return (
-		<svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+		<svg
+			aria-hidden="true"
+			className={className}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+		>
 			<path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
 			<path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
 			<path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
@@ -26,7 +44,6 @@ function TapIcon({ className }: { className?: string }) {
 		</svg>
 	);
 }
-
 
 // ─── Route ───────────────────────────────────────────────────────────────────
 
@@ -78,38 +95,67 @@ function formatHeight(cm: number | null): string {
 
 const SOCIAL_ICONS: Record<string, React.FC<{ className?: string }>> = {
 	instagram: ({ className }) => (
-		<svg className={className} viewBox="0 0 24 24" fill="currentColor">
+		<svg
+			aria-hidden="true"
+			className={className}
+			viewBox="0 0 24 24"
+			fill="currentColor"
+		>
 			<path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
 		</svg>
 	),
 	tiktok: ({ className }) => (
-		<svg className={className} viewBox="0 0 24 24" fill="currentColor">
+		<svg
+			aria-hidden="true"
+			className={className}
+			viewBox="0 0 24 24"
+			fill="currentColor"
+		>
 			<path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.46V13a8.28 8.28 0 005.58 2.16V11.7a4.83 4.83 0 01-3.77-1.54V6.69h3.77z" />
 		</svg>
 	),
 	twitter: ({ className }) => (
-		<svg className={className} viewBox="0 0 24 24" fill="currentColor">
+		<svg
+			aria-hidden="true"
+			className={className}
+			viewBox="0 0 24 24"
+			fill="currentColor"
+		>
 			<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
 		</svg>
 	),
 	spotify: ({ className }) => (
-		<svg className={className} viewBox="0 0 24 24" fill="currentColor">
+		<svg
+			aria-hidden="true"
+			className={className}
+			viewBox="0 0 24 24"
+			fill="currentColor"
+		>
 			<path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
 		</svg>
 	),
 	discord: ({ className }) => (
-		<svg className={className} viewBox="0 0 24 24" fill="currentColor">
+		<svg
+			aria-hidden="true"
+			className={className}
+			viewBox="0 0 24 24"
+			fill="currentColor"
+		>
 			<path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
 		</svg>
 	),
-	bluesky: ({ className }) => (
-		<Globe className={className} />
-	),
+	bluesky: ({ className }) => <Globe className={className} />,
 };
 
 // ─── Inline: Verified Badge ──────────────────────────────────────────────────
 
-function VerifiedBadge({ size = 16, className }: { size?: number; className?: string }) {
+function VerifiedBadge({
+	size = 16,
+	className,
+}: {
+	size?: number;
+	className?: string;
+}) {
 	return (
 		<svg
 			width={size}
@@ -168,7 +214,8 @@ function StatItem({
 			<div
 				className="w-9 h-9 rounded-xl flex items-center justify-center"
 				style={{
-					background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+					background:
+						"color-mix(in srgb, var(--accent-primary) 12%, transparent)",
 				}}
 			>
 				<Icon className="w-4 h-4 text-gold" />
@@ -222,7 +269,13 @@ function SectionHeader({ label }: { label: string }) {
 
 // ─── Inline: Social Link ─────────────────────────────────────────────────────
 
-function SocialLinkItem({ platform, handle }: { platform: string; handle: string }) {
+function SocialLinkItem({
+	platform,
+	handle,
+}: {
+	platform: string;
+	handle: string;
+}) {
 	const Icon = SOCIAL_ICONS[platform] || Globe;
 	const colors: Record<string, string> = {
 		instagram: "#E1306C",
@@ -266,22 +319,25 @@ function PhotoCarousel({
 	const [activeIndex, setActiveIndex] = useState(0);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
-	const scrollTo = useCallback(
-		(index: number) => {
-			setActiveIndex(index);
-			const container = scrollRef.current;
-			if (container) {
-				const child = container.children[index] as HTMLElement;
-				child?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
-			}
-		},
-		[]
-	);
+	const scrollTo = useCallback((index: number) => {
+		setActiveIndex(index);
+		const container = scrollRef.current;
+		if (container) {
+			const child = container.children[index] as HTMLElement;
+			child?.scrollIntoView({
+				behavior: "smooth",
+				inline: "center",
+				block: "nearest",
+			});
+		}
+	}, []);
 
 	if (medias.length === 0) {
 		return (
 			<div className="aspect-[3/4] w-full bg-muted flex items-center justify-center">
-				<span className="text-muted-foreground font-mono text-sm">No photos</span>
+				<span className="text-muted-foreground font-mono text-sm">
+					No photos
+				</span>
 			</div>
 		);
 	}
@@ -301,7 +357,7 @@ function PhotoCarousel({
 					>
 						<img
 							src={`https://cdns.grindr.com/images/profile/480x480/${media.mediaHash}`}
-							alt={`${displayName}'s photo ${i + 1}`}
+							alt={`${displayName}, ${i + 1} of ${medias.length}`}
 							className="w-full aspect-[3/4] object-cover"
 							loading={i === 0 ? "eager" : "lazy"}
 						/>
@@ -311,15 +367,16 @@ function PhotoCarousel({
 			{/* Photo dots indicator */}
 			{medias.length > 1 && (
 				<div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-1.5">
-					{medias.map((_, i) => (
+					{medias.map((media, i) => (
 						<button
-							key={i}
+							type="button"
+							key={media.mediaHash}
 							onClick={() => scrollTo(i)}
 							className={cn(
 								"rounded-full transition-all duration-300",
 								i === activeIndex
 									? "w-5 h-1.5 bg-white"
-									: "w-1.5 h-1.5 bg-white/40"
+									: "w-1.5 h-1.5 bg-white/40",
 							)}
 							aria-label={`Go to photo ${i + 1}`}
 						/>
@@ -340,8 +397,20 @@ function ProfilePage() {
 	const { data: profile, isLoading, error } = useProfile(numericId);
 	const addFavorite = useAddFavorite();
 	const removeFavorite = useRemoveFavorite();
+	const sendTap = useSendTap();
+	const { mutate: recordView } = useRecordView();
+	const hideUser = useHideUser();
+	const blockUser = useBlockUser();
 
 	const [localFavorite, setLocalFavorite] = useState(false);
+	const [actionsOpen, setActionsOpen] = useState(false);
+	const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (Number.isFinite(numericId)) {
+			recordView({ profileId: numericId });
+		}
+	}, [numericId, recordView]);
 
 	const p = profile as ProfileData | undefined;
 	const isOnline = p?.onlineUntil !== null && p?.onlineUntil !== undefined;
@@ -380,8 +449,11 @@ function ProfilePage() {
 							<div className="h-8 w-48 rounded bg-muted/50 animate-pulse" />
 							<div className="h-4 w-32 rounded bg-muted/30 animate-pulse" />
 							<div className="grid grid-cols-4 gap-2">
-								{[...Array(4)].map((_, i) => (
-									<div key={i} className="h-20 rounded-xl bg-muted/30 animate-pulse" />
+								{PROFILE_STAT_SKELETON_IDS.map((id) => (
+									<div
+										key={id}
+										className="h-20 rounded-xl bg-muted/30 animate-pulse"
+									/>
 								))}
 							</div>
 						</div>
@@ -397,8 +469,12 @@ function ProfilePage() {
 			<div className="relative h-screen overflow-hidden bg-background">
 				<div className="h-full flex flex-col items-center justify-center p-8">
 					<div className="glass-card p-6 text-center max-w-sm">
-						<p className="text-destructive font-display text-lg">Failed to load profile</p>
-						<p className="text-muted-foreground text-xs mt-2 font-mono">{error.message}</p>
+						<p className="text-destructive font-display text-lg">
+							Failed to load profile
+						</p>
+						<p className="text-muted-foreground text-xs mt-2 font-mono">
+							{error.message}
+						</p>
 						<Link
 							to="/grid"
 							className="mt-4 inline-block px-5 py-2 rounded-xl border border-gold/25 text-gold font-display tracking-wider hover:border-gold/60 hover:bg-gold/5 transition-all"
@@ -417,7 +493,9 @@ function ProfilePage() {
 			<div className="relative h-screen overflow-hidden bg-background">
 				<div className="h-full flex flex-col items-center justify-center p-8">
 					<div className="glass-card p-6 text-center max-w-sm">
-						<p className="text-muted-foreground font-display text-lg">Profile not found</p>
+						<p className="text-muted-foreground font-display text-lg">
+							Profile not found
+						</p>
 						<Link
 							to="/grid"
 							className="mt-4 inline-block px-5 py-2 rounded-xl border border-gold/25 text-gold font-display tracking-wider hover:border-gold/60 hover:bg-gold/5 transition-all"
@@ -432,9 +510,10 @@ function ProfilePage() {
 
 	const tribes = (p.grindrTribes as string[] | null) || [];
 	const lookingFor = (p.lookingFor as string[] | null) || [];
-	const socialLinks = (p.socialNetworks as Record<string, string | null> | null) || {};
+	const socialLinks =
+		(p.socialNetworks as Record<string, string | null> | null) || {};
 	const socialEntries = Object.entries(socialLinks).filter(
-		([, v]) => v && v.length > 0
+		([, v]) => v && v.length > 0,
 	) as Array<[string, string]>;
 
 	return (
@@ -442,7 +521,10 @@ function ProfilePage() {
 			<div className="h-full overflow-y-auto overscroll-contain">
 				<main className="relative mx-auto min-h-[calc(100vh-4rem)] w-full max-w-2xl">
 					{/* ── Photo carousel (full-width) ── */}
-					<PhotoCarousel medias={medias} displayName={p.displayName ?? "User"} />
+					<PhotoCarousel
+						medias={medias}
+						displayName={p.displayName ?? "User"}
+					/>
 
 					{/* ── Glass card overlay for profile info ── */}
 					<div className="relative -mt-24 z-10">
@@ -497,6 +579,7 @@ function ProfilePage() {
 												value={formatHeight(p.height)}
 												icon={({ className }) => (
 													<svg
+														aria-hidden="true"
 														className={className}
 														viewBox="0 0 24 24"
 														fill="none"
@@ -514,6 +597,7 @@ function ProfilePage() {
 												value={`${p.weight}kg`}
 												icon={({ className }) => (
 													<svg
+														aria-hidden="true"
 														className={className}
 														viewBox="0 0 24 24"
 														fill="none"
@@ -521,7 +605,14 @@ function ProfilePage() {
 														strokeWidth="2"
 													>
 														<circle cx="12" cy="12" r="10" />
-														<text x="12" y="16" textAnchor="middle" fontSize="10" fill="currentColor" stroke="none">
+														<text
+															x="12"
+															y="16"
+															textAnchor="middle"
+															fontSize="10"
+															fill="currentColor"
+															stroke="none"
+														>
 															w
 														</text>
 													</svg>
@@ -534,6 +625,7 @@ function ProfilePage() {
 												value={String(p.bodyType)}
 												icon={({ className }) => (
 													<svg
+														aria-hidden="true"
 														className={className}
 														viewBox="0 0 24 24"
 														fill="none"
@@ -552,6 +644,7 @@ function ProfilePage() {
 												value={String(p.sexualPosition)}
 												icon={({ className }) => (
 													<svg
+														aria-hidden="true"
 														className={className}
 														viewBox="0 0 24 24"
 														fill="none"
@@ -628,6 +721,7 @@ function ProfilePage() {
 			<div className="fixed top-0 inset-x-0 z-30">
 				<div className="flex items-center justify-between px-3 py-3 bg-background/60 backdrop-blur-xl safe-area-top">
 					<button
+						type="button"
 						onClick={() => router.history.back()}
 						className="w-10 h-10 rounded-xl bg-background/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/80 hover:text-foreground hover:bg-background/60 transition-all btn-press"
 						aria-label="Go back"
@@ -636,6 +730,7 @@ function ProfilePage() {
 					</button>
 					<div className="flex items-center gap-2">
 						<button
+							type="button"
 							onClick={handleFavoriteToggle}
 							className="w-10 h-10 rounded-xl bg-background/40 backdrop-blur-md border border-white/10 flex items-center justify-center transition-all btn-press"
 							aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
@@ -645,16 +740,47 @@ function ProfilePage() {
 									"w-5 h-5 transition-all duration-200",
 									isFav
 										? "fill-gold text-gold drop-shadow-[0_0_6px_rgba(247,181,0,0.5)]"
-										: "text-foreground/60"
+										: "text-foreground/60",
 								)}
 							/>
 						</button>
-						<button
-							className="w-10 h-10 rounded-xl bg-background/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-background/60 transition-all btn-press"
-							aria-label="More options"
-						>
-							<MoreVertical className="w-5 h-5" />
-						</button>
+						<div className="relative">
+							<button
+								type="button"
+								onClick={() => setActionsOpen((open) => !open)}
+								className="w-10 h-10 rounded-xl bg-background/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/60 hover:text-foreground hover:bg-background/60 transition-all btn-press"
+								aria-label="More options"
+								aria-expanded={actionsOpen}
+							>
+								<MoreVertical className="w-5 h-5" />
+							</button>
+							{actionsOpen && (
+								<div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-xl border border-white/10 bg-background/95 p-1 shadow-2xl backdrop-blur-xl">
+									<button
+										type="button"
+										onClick={() => {
+											hideUser.mutate({ profileId: numericId });
+											setActionMessage("Profile hidden");
+											setActionsOpen(false);
+										}}
+										className="w-full rounded-lg px-3 py-2 text-left text-sm text-foreground/80 hover:bg-white/5"
+									>
+										Hide profile
+									</button>
+									<button
+										type="button"
+										onClick={() => {
+											blockUser.mutate({ profileId: numericId });
+											setActionMessage("Profile blocked");
+											setActionsOpen(false);
+										}}
+										className="w-full rounded-lg px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10"
+									>
+										Block profile
+									</button>
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>
@@ -664,31 +790,27 @@ function ProfilePage() {
 				<div className="px-4 pb-3 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent">
 					<div className="flex items-center gap-3">
 						{/* Message (gold) */}
-						<a
-							href="/chat"
+						<Link
+							to="/chat"
 							className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl gold-gradient text-black font-display tracking-wider hover:shadow-[0_0_24px_-2px_rgba(212,175,55,0.45)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 shimmer-btn btn-press"
 							style={{ fontSize: "var(--fs-sm)" }}
 						>
 							<MessageCircle className="w-4 h-4" />
 							<span>Message</span>
-						</a>
+						</Link>
 						{/* Tap (outline) */}
 						<button
+							type="button"
 							onClick={() => {
-								// Optimistic tap feedback
-								const btn = document.activeElement as HTMLButtonElement;
-								if (btn) {
-									btn.style.borderColor = "rgba(234,179,8,0.6)";
-									btn.style.color = "#EAAB08";
-									btn.style.boxShadow =
-										"0 0 20px rgba(234,179,8,0.2)";
-									setTimeout(() => {
-										btn.style.borderColor = "";
-										btn.style.color = "";
-										btn.style.boxShadow = "";
-									}, 1500);
-								}
+								sendTap.mutate(
+									{ recipientId: numericId, tapType: 0 },
+									{
+										onSuccess: () => setActionMessage("Tap sent"),
+										onError: () => setActionMessage("Tap could not be sent"),
+									},
+								);
 							}}
+							disabled={sendTap.isPending}
 							className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-gold/25 bg-transparent backdrop-blur text-foreground font-display tracking-wider hover:border-gold/60 hover:text-gold hover:bg-gold/5 hover:shadow-[0_0_16px_-4px_rgba(212,175,55,0.2)] active:scale-[0.97] transition-all duration-200 btn-press"
 							style={{ fontSize: "var(--fs-sm)" }}
 						>
@@ -696,6 +818,11 @@ function ProfilePage() {
 							<span>Tap</span>
 						</button>
 					</div>
+					{actionMessage && (
+						<output className="block pt-2 text-center text-xs text-gold">
+							{actionMessage}
+						</output>
+					)}
 				</div>
 			</div>
 		</div>
@@ -718,7 +845,8 @@ function SectionLabel({
 			<div
 				className="w-9 h-9 rounded-xl flex items-center justify-center"
 				style={{
-					background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+					background:
+						"color-mix(in srgb, var(--accent-primary) 12%, transparent)",
 				}}
 			>
 				<Icon className="w-4 h-4 text-gold" />

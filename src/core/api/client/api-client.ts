@@ -1,5 +1,7 @@
 import type { z } from "zod";
 
+import { demoEnabled } from "#/domains/demo/config";
+import { demoRoute } from "#/domains/demo/router";
 import { ApiError } from "./api-error";
 
 type RequestInfo = { method: string; path: string; body: unknown };
@@ -109,11 +111,26 @@ export async function fetchRest(
 		headers["Content-Type"] = "application/json";
 	}
 
+	if (
+		demoEnabled &&
+		(path.startsWith("/v") ||
+			path.startsWith("/public/") ||
+			path.startsWith("/api/auth/"))
+	) {
+		const response = demoRoute({ path, method, body: options.body });
+		return buildRestResponse({
+			status: response.status,
+			responseBody: JSON.stringify(response.body),
+			requestInfo,
+		});
+	}
+
 	try {
 		const res = await globalThis.fetch(path, {
 			method,
 			headers,
-			body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+			body:
+				options.body !== undefined ? JSON.stringify(options.body) : undefined,
 			signal: options.signal,
 		});
 
@@ -127,8 +144,7 @@ export async function fetchRest(
 	} catch (error) {
 		if (error instanceof ApiError) throw error;
 
-		const message =
-			error instanceof Error ? error.message : String(error);
+		const message = error instanceof Error ? error.message : String(error);
 
 		// Detect network-level blocks
 		if (
