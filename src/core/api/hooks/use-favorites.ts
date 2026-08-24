@@ -1,13 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import {
-	addFavorite as addFavoriteDb,
-	removeFavorite as removeFavoriteDb,
-} from "../supabase/index";
-import { supabase } from "#/integrations/supabase/client";
+import { fetchRest } from "../client/api-client";
+import { ApiError } from "../client/api-error";
 
-// -- Schemas --
+// -- Schemas (inlined from open-grind model) --
 
 export const favoriteNoteSchema = z.object({
 	notes: z.string(),
@@ -27,14 +24,17 @@ export const favoriteKeys = {
 
 /**
  * Add a user to favorites.
- * Now powered by Supabase.
+ * Maps to addFavoriteUser from open-grind.
  */
 export function useAddFavorite() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, Error, { profileId: number }>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			await addFavoriteDb(profileId);
+			const res = await fetchRest(`/v3/me/favorites/${profileId}`, {
+				method: "POST",
+			});
+			res.assertOk();
 		},
 		onSuccess: (_data, { profileId }) => {
 			queryClient.invalidateQueries({
@@ -46,14 +46,17 @@ export function useAddFavorite() {
 
 /**
  * Remove a user from favorites.
- * Now powered by Supabase.
+ * Maps to removeFavoriteUser from open-grind.
  */
 export function useRemoveFavorite() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, Error, { profileId: number }>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			await removeFavoriteDb(profileId);
+			const res = await fetchRest(`/v3/me/favorites/${profileId}`, {
+				method: "DELETE",
+			});
+			res.assertOk();
 		},
 		onSuccess: (_data, { profileId }) => {
 			queryClient.invalidateQueries({
@@ -65,48 +68,39 @@ export function useRemoveFavorite() {
 
 /**
  * Get a favorite note for a profile.
- * Now powered by Supabase.
+ * Maps to getFavoriteNote from open-grind.
  */
 export function useFavoriteNote(profileId: number | null | undefined) {
-	return useQuery<FavoriteNote, Error>({
+	return useQuery<FavoriteNote, ApiError>({
 		queryKey: favoriteKeys.note(profileId ?? 0),
 		queryFn: async () => {
-			const { data } = await supabase
-				.from("Profile")
-				.select("favoriteNote, favoritePhone")
-				.eq("id", profileId!)
-				.single();
-			return {
-				notes: (data?.favoriteNote as string) ?? "",
-				phoneNumber: (data?.favoritePhone as string) ?? "",
-			};
+			const res = await fetchRest(`/v1/favorites/notes/${profileId}`);
+			return res.jsonParsed(favoriteNoteSchema);
 		},
 		enabled: profileId !== null && profileId !== undefined,
 		staleTime: 60_000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Update a favorite note.
- * Now powered by Supabase.
+ * Maps to putFavoriteNote from open-grind.
  */
 export function usePutFavoriteNote() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		void,
-		Error,
+		ApiError,
 		{ profileId: number; note: FavoriteNote }
 	>({
 		mutationFn: async ({ profileId, note }) => {
-			const { error } = await supabase
-				.from("Profile")
-				.update({
-					favoriteNote: note.notes,
-					favoritePhone: note.phoneNumber,
-				})
-				.eq("id", profileId);
-			if (error) throw new Error(error.message);
+			const res = await fetchRest(`/v1/favorites/notes/${profileId}`, {
+				method: "PUT",
+				body: note,
+			});
+			res.assertOk();
 		},
 		onSuccess: (_data, { profileId, note }) => {
 			queryClient.setQueryData<FavoriteNote>(

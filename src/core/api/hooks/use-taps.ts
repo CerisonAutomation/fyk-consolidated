@@ -1,17 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import {
-	getReceivedTaps as getReceivedTapsDb,
-	sendTap as sendTapDb,
-} from "../supabase/index";
+import { fetchRest } from "../client/api-client";
+import { ApiError } from "../client/api-error";
 
-// -- Schemas --
+// -- Schemas (inlined from open-grind model) --
 
-export const tapProfileSchema = z.record(z.unknown());
-export type TapProfile = Record<string, unknown>;
+export const tapProfileSchema = z.record(z.string(), z.unknown());
+export type TapProfile = z.infer<typeof tapProfileSchema>;
 
 export type TapType = number;
+
+const getReceivedTapsResponseSchema = z.object({
+	profiles: z.array(tapProfileSchema),
+});
+
+const sendTapResponseSchema = z.object({ isMutual: z.boolean() });
 
 // -- Query keys --
 
@@ -24,36 +28,41 @@ export const tapKeys = {
 
 /**
  * Fetch received taps.
- * Now powered by Supabase.
+ * Maps to getReceivedTaps from open-grind.
  */
 export function useReceivedTaps() {
-	return useQuery<{ profiles: TapProfile[] }, Error>({
+	return useQuery<{ profiles: TapProfile[] }, ApiError>({
 		queryKey: tapKeys.received(),
 		queryFn: async () => {
-			const taps = await getReceivedTapsDb();
-			return { profiles: taps as unknown as TapProfile[] };
+			const res = await fetchRest("/v2/taps/received");
+			return res.jsonParsed(getReceivedTapsResponseSchema);
 		},
 		staleTime: 60_000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Send a tap.
- * Now powered by Supabase.
+ * Maps to sendTap from open-grind.
  */
 export function useSendTap() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		{ isMutual: boolean },
-		Error,
+		ApiError,
 		{
 			recipientId: number;
 			tapType: TapType;
 		}
 	>({
 		mutationFn: async ({ recipientId, tapType }) => {
-			return await sendTapDb(recipientId, tapType);
+			const res = await fetchRest("/v2/taps/add", {
+				method: "POST",
+				body: { recipientId, tapType },
+			});
+			return res.jsonParsed(sendTapResponseSchema);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: tapKeys.all });

@@ -1,19 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import {
-	getViews as getViewsDb,
-	recordView as recordViewDb,
-} from "../supabase/index";
+import { fetchRest } from "../client/api-client";
+import { ApiError } from "../client/api-error";
 
-// -- Schemas --
-
-export const viewerProfileSchema = z.record(z.unknown());
-export const viewPreviewSchema = z.record(z.unknown());
+// -- Schemas (inlined from open-grind model) --
 
 const viewsListResponseSchema = z.object({
-	profiles: z.array(z.record(z.unknown())),
-	previews: z.array(z.record(z.unknown())),
+	profiles: z.array(z.record(z.string(), z.unknown())),
+	previews: z.array(z.record(z.string(), z.unknown())),
 });
 
 // -- Query keys --
@@ -27,36 +22,34 @@ export const viewKeys = {
 
 /**
  * Fetch views list (who viewed your profile).
- * Now powered by Supabase.
+ * Maps to getViews from open-grind.
  */
 export function useViews() {
-	return useQuery<z.infer<typeof viewsListResponseSchema>, Error>({
+	return useQuery<z.infer<typeof viewsListResponseSchema>, ApiError>({
 		queryKey: viewKeys.list(),
 		queryFn: async () => {
-			const result = await getViewsDb();
-			return {
-				profiles: result.profiles as unknown as z.infer<typeof viewerProfileSchema>[],
-				previews: result.previews as unknown as z.infer<typeof viewPreviewSchema>[],
-			};
+			const res = await fetchRest("/v7/views/list");
+			return res.jsonParsed(viewsListResponseSchema);
 		},
 		staleTime: 60_000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Record a profile view.
- * Now powered by Supabase.
+ * Maps to recordProfileView from open-grind.
  */
 export function useRecordView() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		Error,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			await recordViewDb(profileId);
+			const res = await fetchRest(`/v5/views/${profileId}`, {
+				method: "POST",
+				body: { source: "UNKNOWN", foundVia: null },
+			});
+			res.assertOk();
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: viewKeys.all });

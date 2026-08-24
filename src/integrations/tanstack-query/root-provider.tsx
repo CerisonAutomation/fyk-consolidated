@@ -1,28 +1,10 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-let sharedQueryClient: QueryClient | null = null;
+import { QueryClient } from '@tanstack/react-query'
 
 export function getContext() {
-	const queryClient = new QueryClient();
-	sharedQueryClient = queryClient;
-	return { queryClient };
-}
+  const queryClient = new QueryClient()
 
-export function getSharedQueryClient(): QueryClient {
-	if (!sharedQueryClient) {
-		sharedQueryClient = new QueryClient();
-	}
-	return sharedQueryClient;
+  return {
+    queryClient,
+  }
 }
-
-export default function TanstackQueryProvider({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
-	return (
-		<QueryClientProvider client={getSharedQueryClient()}>
-			{children}
-		</QueryClientProvider>
-	);
-}
+export default function TanstackQueryProvider() {}

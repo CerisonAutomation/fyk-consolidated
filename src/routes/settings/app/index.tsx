@@ -1,22 +1,16 @@
-import { requireAuth } from "#/domains/auth/guard";
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { usePreferences } from '#/domains/settings/use-preferences';
-import { Switch } from '#/components/ui/switch';
+import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/settings/app/')({
-	beforeLoad: requireAuth,
-		component: AppSettingsPage,
+	component: AppSettingsPage,
 });
 
 function AppSettingsPage() {
-	const { prefs, update, pending } = usePreferences();
-
 	return (
 		<main className="screen-nav-host">
 			<div className="flex items-center gap-3 border-b border-border px-4 py-3">
-				<Link to="/settings" className="text-muted-foreground hover:text-foreground">
+				<a href="/settings" className="text-muted-foreground hover:text-foreground">
 					←
-				</Link>
+				</a>
 				<h1 className="text-lg font-semibold">App Settings</h1>
 			</div>
 			<div className="flex flex-col gap-4 p-4">
@@ -27,11 +21,9 @@ function AppSettingsPage() {
 							Appear online even when app is in background
 						</div>
 					</div>
-					<Switch
-						checked={prefs.stayOnline}
-						disabled={pending}
-						onCheckedChange={(checked) => update({ stayOnline: checked })}
-					/>
+					<button className="h-6 w-11 rounded-full bg-primary/20 transition-colors">
+						<div className="h-5 w-5 rounded-full bg-primary shadow-sm" />
+					</button>
 				</div>
 				<div className="flex items-center justify-between">
 					<div>
@@ -40,11 +32,9 @@ function AppSettingsPage() {
 							Show when your messages have been read
 						</div>
 					</div>
-					<Switch
-						checked={prefs.revealMessageRead}
-						disabled={pending}
-						onCheckedChange={(checked) => update({ revealMessageRead: checked })}
-					/>
+					<button className="h-6 w-11 rounded-full bg-primary/20 transition-colors">
+						<div className="h-5 w-5 rounded-full bg-primary shadow-sm" />
+					</button>
 				</div>
 				<div className="flex items-center justify-between">
 					<div>
@@ -53,11 +43,9 @@ function AppSettingsPage() {
 							Show when others view your profile
 						</div>
 					</div>
-					<Switch
-						checked={prefs.revealProfileViews}
-						disabled={pending}
-						onCheckedChange={(checked) => update({ revealProfileViews: checked })}
-					/>
+					<button className="h-6 w-11 rounded-full bg-primary/20 transition-colors">
+						<div className="h-5 w-5 rounded-full bg-primary shadow-sm" />
+					</button>
 				</div>
 				<div className="flex items-center justify-between">
 					<div>
@@ -66,14 +54,7 @@ function AppSettingsPage() {
 							Choose between metric and imperial
 						</div>
 					</div>
-					<select
-						value={prefs.units}
-						disabled={pending}
-						onChange={(e) =>
-							update({ units: e.target.value as 'metric' | 'imperial' })
-						}
-						className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-					>
+					<select className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
 						<option value="metric">Metric</option>
 						<option value="imperial">Imperial</option>
 					</select>
@@ -85,11 +66,9 @@ function AppSettingsPage() {
 							Automatically update your location
 						</div>
 					</div>
-					<Switch
-						checked={prefs.autoUpdateLocation}
-						disabled={pending}
-						onCheckedChange={(checked) => update({ autoUpdateLocation: checked })}
-					/>
+					<button className="h-6 w-11 rounded-full bg-primary/20 transition-colors">
+						<div className="h-5 w-5 rounded-full bg-primary shadow-sm" />
+					</button>
 				</div>
 			</div>
 		</main>

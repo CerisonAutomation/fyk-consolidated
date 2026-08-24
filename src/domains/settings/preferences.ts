@@ -19,6 +19,10 @@ function writeLocal({ path, content }: { path: string; content: Uint8Array }): v
 	localStorage.setItem(key(path), btoa(binary));
 }
 
+function removeLocal(path: string): void {
+	localStorage.removeItem(path);
+}
+
 // --- Preferences schema ---
 
 const geohashSchema = z.string().regex(/^[0-9b-hjkmnp-z]+$/);
@@ -72,8 +76,6 @@ const preferencesSchema = z.object({
 	revealMessageRead: z.boolean().default(false),
 	revealProfileViews: z.boolean().default(false),
 	stayOnline: z.boolean().default(true),
-	showDistance: z.boolean().default(true),
-	showOnlineStatus: z.boolean().default(true),
 	units: unitSystemSchema.default('metric'),
 });
 

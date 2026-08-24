@@ -1,12 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import {
-	getConversationMessages as getConversationMessagesDb,
-	sendMessage as sendMessageDb,
-} from "../supabase/index";
+import { fetchRest } from "../client/api-client";
+import { ApiError } from "../client/api-error";
 
-// -- Schemas --
+// -- Schemas (inlined from open-grind model) --
 
 export const apiResponseMessageSchema = z.record(z.string(), z.unknown());
 export type ApiResponseMessage = z.infer<typeof apiResponseMessageSchema>;
@@ -16,6 +14,19 @@ export const outboundMessageSchema = z.object({
 	body: z.string(),
 });
 export type OutboundMessage = z.infer<typeof outboundMessageSchema>;
+
+const conversationMessagesSchema = z.object({
+	lastReadTimestamp: z.number().nullable(),
+	messages: z.array(apiResponseMessageSchema),
+	profile: z.object({
+		distance: z.number().nullable(),
+		mediaHash: z.string().nullable(),
+		name: z.string().nullable(),
+		onlineUntil: z.number().nullable(),
+		profileId: z.number(),
+		showDistance: z.boolean(),
+	}),
+});
 
 // -- Query keys --
 
@@ -29,48 +40,68 @@ export const messageKeys = {
 
 /**
  * Fetch messages for a conversation.
- * Now powered by Supabase.
+ * Maps to getConversationMessages from open-grind.
  */
 export function useConversationMessages(
 	conversationId: string | null | undefined,
 ) {
-	return useQuery<{
-		lastReadTimestamp: null;
-		messages: unknown[];
-		profile: unknown;
-	}, Error>({
+	return useQuery<z.infer<typeof conversationMessagesSchema>, ApiError>({
 		queryKey: messageKeys.conversation(conversationId ?? ""),
 		queryFn: async () => {
-			return await getConversationMessagesDb(conversationId!);
+			const params = new URLSearchParams({ profile: "true" });
+			const res = await fetchRest(
+				`/v5/chat/conversation/${conversationId}/message?${params.toString()}`,
+				{ method: "GET" },
+			);
+			if (res.status === 403) {
+				throw new ApiError({
+					message: `Conversation ${conversationId} is no longer available`,
+					request: {
+						method: "GET",
+						path: `/v5/chat/conversation/${conversationId}/message`,
+					},
+					response: { status: 403, body: res.text() },
+				});
+			}
+			res.assertOk();
+			return res.jsonParsed(conversationMessagesSchema);
 		},
 		enabled: conversationId !== null && conversationId !== undefined,
 		staleTime: 10_000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Send a message.
- * Now powered by Supabase.
+ * Maps to sendMessage from open-grind.
  */
 export function useSendMessage() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		ApiResponseMessage,
-		Error,
+		ApiError,
 		{
 			toUserId: number;
 			message: OutboundMessage;
 			replyToMessageId?: string;
 		}
 	>({
-		mutationFn: async ({ toUserId, message }) => {
-			const result = await sendMessageDb({
-				type: "Text",
-				target: { targetId: toUserId },
+		mutationFn: async ({ toUserId, message, replyToMessageId }) => {
+			const body: Record<string, unknown> = {
+				type: message.type,
+				target: { type: "Direct", targetId: toUserId },
 				body: message.body,
+			};
+			if (replyToMessageId !== undefined) {
+				body.replyToMessageId = replyToMessageId;
+			}
+			const res = await fetchRest("/v4/chat/message/send", {
+				method: "POST",
+				body,
 			});
-			return (result ?? {}) as ApiResponseMessage;
+			return res.jsonParsed(apiResponseMessageSchema);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({
@@ -82,22 +113,25 @@ export function useSendMessage() {
 
 /**
  * React to a message.
- * Now powered by Supabase.
+ * Maps to reactToMessage from open-grind.
  */
 export function useReactToMessage() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		void,
-		Error,
+		ApiError,
 		{
 			conversationId: string;
 			messageId: string;
 			reactionType: number;
 		}
 	>({
-		mutationFn: async () => {
-			// Reactions could be implemented via Supabase update on Message.reactions
+		mutationFn: async ({ conversationId, messageId, reactionType }) => {
+			await fetchRest("/v4/chat/message/reaction", {
+				method: "POST",
+				body: { conversationId, messageId, reactionType },
+			});
 		},
 		onSuccess: (_data, { conversationId }) => {
 			queryClient.invalidateQueries({
@@ -109,22 +143,25 @@ export function useReactToMessage() {
 
 /**
  * Delete a message for the current user.
- * Now powered by Supabase.
+ * Maps to deleteMessageForMe from open-grind.
  */
 export function useDeleteMessage() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		void,
-		Error,
+		ApiError,
 		{
 			conversationId: string;
 			messageId: string;
 		}
 	>({
-		mutationFn: async ({ messageId }) => {
-			const { supabase } = await import("#/integrations/supabase/client");
-			await supabase.from("Message").delete().eq("id", Number(messageId));
+		mutationFn: async ({ conversationId, messageId }) => {
+			const res = await fetchRest("/v4/chat/message/delete", {
+				method: "POST",
+				body: { conversationId, messageId },
+			});
+			res.assertOk();
 		},
 		onSuccess: (_data, { conversationId }) => {
 			queryClient.invalidateQueries({

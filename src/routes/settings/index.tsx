@@ -1,10 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { requireAuth } from "#/domains/auth/guard";
-import { signOut } from "#/domains/auth/services/sign-out";
-import { useAuthStore } from "#/domains/auth/store";
+import { createFileRoute } from '@tanstack/react-router';
+import { useAuthStore } from '#/domains/auth/store';
+import { signOut } from '#/domains/auth/services/sign-out';
 
-export const Route = createFileRoute("/settings/")({
-	beforeLoad: requireAuth,
+export const Route = createFileRoute('/settings/')({
 	component: SettingsPage,
 });
 
@@ -18,9 +16,8 @@ function SettingsPage() {
 					<div className="m-auto flex w-full max-w-sm flex-col gap-3 pb-16">
 						{/* Profile Link */}
 						{auth?.userId && (
-							<Link
-								to="/profile/$profileId"
-								params={{ profileId: auth.userId }}
+							<a
+								href={`/profile/${auth.userId}`}
 								className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
 							>
 								<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-medium">
@@ -32,18 +29,18 @@ function SettingsPage() {
 										View and edit your profile
 									</div>
 								</div>
-							</Link>
+							</a>
 						)}
 
 						<hr className="border-border" />
 
 						{/* Account Settings */}
-						<Link
-							to="/settings/account"
+						<a
+							href="/settings/account"
 							className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
 						>
 							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-								&#x1F464;
+								👤
 							</div>
 							<div>
 								<div className="font-medium">Account</div>
@@ -51,31 +48,15 @@ function SettingsPage() {
 									Manage your account settings
 								</div>
 							</div>
-						</Link>
-
-						{/* Profile Edit */}
-						<Link
-							to="/settings/profile"
-							className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-						>
-							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-								&#x270F;&#xFE0F;
-							</div>
-							<div>
-								<div className="font-medium">Edit Profile</div>
-								<div className="text-sm text-muted-foreground">
-									Update your profile information
-								</div>
-							</div>
-						</Link>
+						</a>
 
 						{/* App Settings */}
-						<Link
-							to="/settings/app"
+						<a
+							href="/settings/app"
 							className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
 						>
 							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-								&#x2699;&#xFE0F;
+								⚙️
 							</div>
 							<div>
 								<div className="font-medium">App</div>
@@ -83,55 +64,23 @@ function SettingsPage() {
 									Notifications, units, and preferences
 								</div>
 							</div>
-						</Link>
+						</a>
 
-						{/* Privacy */}
-						<Link
-							to="/settings/privacy"
+						{/* Profile Edit */}
+						<a
+							href="/settings/profile"
 							className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
 						>
 							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-								&#x1F512;
+								✏️
 							</div>
 							<div>
-								<div className="font-medium">Privacy</div>
+								<div className="font-medium">Edit Profile</div>
 								<div className="text-sm text-muted-foreground">
-									Show distance, online status, and visibility
+									Update your profile information
 								</div>
 							</div>
-						</Link>
-
-						{/* Blocked Users */}
-						<Link
-							to="/settings/blocked"
-							className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-						>
-							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-								&#x1F6AB;
-							</div>
-							<div>
-								<div className="font-medium">Blocked Users</div>
-								<div className="text-sm text-muted-foreground">
-									Manage blocked profiles
-								</div>
-							</div>
-						</Link>
-
-						{/* Hidden Users */}
-						<Link
-							to="/settings/hidden"
-							className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
-						>
-							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-								&#x1F441;
-							</div>
-							<div>
-								<div className="font-medium">Hidden Users</div>
-								<div className="text-sm text-muted-foreground">
-									Manage hidden profiles
-								</div>
-							</div>
-						</Link>
+						</a>
 
 						<button
 							onClick={() => signOut()}

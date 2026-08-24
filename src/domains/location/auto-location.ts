@@ -19,6 +19,7 @@ class AutoLocation {
 	#promptAllowed = true;
 	#failureReported = false;
 	#lastFixAt: number | null = null;
+	#lastCoords: Coordinates | null = null;
 
 	suspend(): void {
 		this.#suspended = true;
@@ -44,6 +45,7 @@ class AutoLocation {
 		if (outcome.status === 'ok' && outcome.coords) {
 			this.#failureReported = false;
 			this.#lastFixAt = now();
+			this.#lastCoords = outcome.coords;
 			const moved =
 				distanceMeters({
 					from: decodeGeohash(current),

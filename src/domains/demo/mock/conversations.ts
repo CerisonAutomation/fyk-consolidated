@@ -65,6 +65,7 @@ const demoConversationSeeds: DemoConversation[] = [
 ];
 
 const MESSAGE_GAP = 7 * MINUTE;
+const MESSAGES_PER_PAGE = 8;
 
 export function conversationIdFor(withId: number): string {
 	return `${Math.min(demoMeProfileId, withId)}:${Math.max(demoMeProfileId, withId)}`;
@@ -162,13 +163,23 @@ export function demoConversations({
 }
 
 export function demoConversationMessages({
-	conversationId: _conversationId,
-	pageKey: _pageKey,
+	conversationId,
+	pageKey,
 }: {
 	conversationId: string;
 	pageKey?: string;
 }) {
 	return { lastReadTimestamp: null, messages: [], profile: null };
+}
+
+export function demoSingleMessage({
+	conversationId,
+	messageId,
+}: {
+	conversationId: string;
+	messageId: string;
+}) {
+	return { message: null };
 }
 
 let demoSentCounter = 0;

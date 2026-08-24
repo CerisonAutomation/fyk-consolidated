@@ -54,7 +54,6 @@ export function ContextMenu({
     const list = listRef.current;
     if (!trigger || !list || !contextMenuOpen) return;
 
-    let cancelled = false;
     computePosition(trigger, list, {
       placement: preferredPlacement,
       middleware: [
@@ -65,13 +64,9 @@ export function ContextMenu({
       strategy: "fixed",
     })
       .then(({ x, y, placement }: { x: number; y: number; placement: Placement }) => {
-        if (!cancelled) setListPosition({ x, y, placement });
+        setListPosition({ x, y, placement });
       })
       .catch(console.error);
-
-    return () => {
-      cancelled = true;
-    };
   }, [contextMenuOpen, preferredPlacement, fallbackPlacements]);
 
   // Show dialog

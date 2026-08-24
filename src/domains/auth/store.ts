@@ -1,25 +1,11 @@
-import { Store } from "@tanstack/store";
-import { useStore } from "@tanstack/react-store";
+import { create } from 'zustand';
 
 interface AuthState {
 	auth: { userId: string } | null;
+	setAuth: (auth: { userId: string } | null) => void;
 }
 
-const authStore = new Store<AuthState>({
+export const useAuthStore = create<AuthState>((set) => ({
 	auth: null,
-});
-
-export function setAuth(auth: { userId: string } | null): void {
-	authStore.setState(() => ({ auth }));
-}
-
-export function getAuthSnapshot(): AuthState {
-	return authStore.get();
-}
-
-export function useAuthStore(): AuthState & {
-	setAuth: typeof setAuth;
-} {
-	const auth = useStore(authStore, (s) => s.auth);
-	return { auth, setAuth };
-}
+	setAuth: (auth) => set({ auth }),
+}));

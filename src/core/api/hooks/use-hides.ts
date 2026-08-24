@@ -1,13 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import {
-	getHiddenUsers as getHiddenUsersDb,
-	hideUser as hideUserDb,
-	unhideUser as unhideUserDb,
-} from "../supabase/index";
+import { fetchRest } from "../client/api-client";
+import { ApiError } from "../client/api-error";
 
-// -- Schemas --
+// -- Schemas (inlined from open-grind model) --
 
 const getHiddenUsersResponseSchema = z.object({
 	hides: z.array(z.object({ profileId: z.coerce.number() })),
@@ -26,28 +23,33 @@ export const hideKeys = {
 
 /**
  * Fetch hidden users list.
- * Now powered by Supabase.
+ * Maps to getHiddenUsers from open-grind.
  */
 export function useHiddenUsers() {
-	return useQuery<HiddenUsers, Error>({
+	return useQuery<HiddenUsers, ApiError>({
 		queryKey: hideKeys.list(),
 		queryFn: async () => {
-			return await getHiddenUsersDb();
+			const res = await fetchRest("/v1/hides");
+			return res.jsonParsed(getHiddenUsersResponseSchema).hides;
 		},
 		staleTime: 5_000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Hide a user.
- * Now powered by Supabase.
+ * Maps to hideUser from open-grind.
  */
 export function useHideUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, Error, { profileId: number }>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			await hideUserDb(profileId);
+			const res = await fetchRest(`/v1/me/hides/${profileId}`, {
+				method: "POST",
+			});
+			res.assertOk();
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: hideKeys.all });
@@ -57,14 +59,17 @@ export function useHideUser() {
 
 /**
  * Unhide a user.
- * Now powered by Supabase.
+ * Maps to unhideUser from open-grind.
  */
 export function useUnhideUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, Error, { profileId: number }>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			await unhideUserDb(profileId);
+			const res = await fetchRest(`/v1/hides/${profileId}`, {
+				method: "DELETE",
+			});
+			res.assertOk();
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: hideKeys.all });

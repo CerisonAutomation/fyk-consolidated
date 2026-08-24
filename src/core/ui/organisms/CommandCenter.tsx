@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { Terminal, User, Funnel, Search, MapPin } from "lucide-react";
-import { cn } from "../../cn";
 import { Kbd } from "../atoms/Kbd";
 
 interface CommandSuggestionItem {
@@ -35,8 +34,6 @@ export function CommandCenter({
 }: CommandCenterProps): ReactNode {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const queryRef = useRef(query);
-  queryRef.current = query;
 
   // Keyboard shortcut to open
   useEffect(() => {
@@ -70,10 +67,10 @@ export function CommandCenter({
         setSelectedIndex((i) => Math.max(0, i - 1));
       } else if (e.key === "Enter") {
         e.preventDefault();
-        onCommand?.(queryRef.current);
+        onCommand?.(query);
       }
     },
-    [onOpenChange, onCommand],
+    [onOpenChange, onCommand, query],
   );
 
   if (!open) return null;
@@ -122,12 +119,11 @@ export function CommandCenter({
                   <button
                     key={suggestion.prefix}
                     type="button"
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors",
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors ${
                       index === selectedIndex
                         ? "bg-accent text-accent-foreground"
-                        : "text-foreground hover:bg-muted",
-                    )}
+                        : "text-foreground hover:bg-muted"
+                    }`}
                     onClick={() => {
                       setQuery(suggestion.prefix);
                       setSelectedIndex(0);

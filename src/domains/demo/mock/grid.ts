@@ -18,6 +18,24 @@ export function demoFavoriteOf({ profileId }: { profileId: number; seed?: boolea
 	return demoFavoriteSet.has(profileId);
 }
 
+function hashString(str: string): number {
+	let hash = 0;
+	for (let i = 0; i < str.length; i++) {
+		const char = str.charCodeAt(i);
+		hash = ((hash << 5) - hash + char) | 0;
+	}
+	return hash;
+}
+
+function mulberry32(seed: number): () => number {
+	return () => {
+		let t = (seed += 0x6d2b79f5);
+		t = Math.imul(t ^ (t >>> 15), t | 1);
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
 function num(value: string | null): number | undefined {
 	if (value === null) return undefined;
 	const n = Number(value);

@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
-// -- Schemas --
+import { fetchRest } from "../client/api-client";
+import { ApiError } from "../client/api-error";
+
+// -- Schemas (inlined from open-grind model) --
 
 const placesResponseSchema = z.object({
 	places: z.array(
@@ -29,42 +32,20 @@ export const placeKeys = {
 
 /**
  * Search for places by name.
- * Uses Nominatim (OpenStreetMap) geocoding API — free, no key needed.
+ * Maps to getPlaces from open-grind.
  */
 export function usePlaces(query: string | null | undefined) {
-	return useQuery<PlacesResponse, Error>({
+	return useQuery<PlacesResponse, ApiError>({
 		queryKey: placeKeys.search(query ?? ""),
 		queryFn: async () => {
-			const params = new URLSearchParams({
-				q: query!,
-				format: "json",
-				limit: "10",
-			});
-			const res = await fetch(
-				`https://nominatim.openstreetmap.org/search?${params.toString()}`,
-				{
-					headers: {
-						"User-Agent": "FYK-App/1.0",
-					},
-				},
+			const params = new URLSearchParams({ placeName: query! });
+			const res = await fetchRest(
+				`/v3/places/search?${params.toString()}`,
 			);
-			const data = (await res.json()) as Array<{
-				display_name: string;
-				lat: string;
-				lon: string;
-				importance: number;
-			}>;
-			return {
-				places: data.map((p) => ({
-					name: p.display_name.split(",")[0] ?? p.display_name,
-					address: p.display_name,
-					lat: Number.parseFloat(p.lat),
-					lon: Number.parseFloat(p.lon),
-					importance: p.importance,
-				})),
-			};
+			return res.jsonParsed(placesResponseSchema);
 		},
 		enabled: query !== null && query !== undefined && query.length > 0,
 		staleTime: 5 * 60 * 1000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }

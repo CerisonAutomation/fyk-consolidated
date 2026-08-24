@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { getMyProfileId } from "../supabase/index";
-import { authClient } from "#/lib/auth-client";
+import { fetchRest } from "../client/api-client";
+import { ApiError } from "../client/api-error";
 
-// -- Schemas --
+// -- Schemas (inlined from open-grind methods) --
 
 const restrictionSchema = z.object({
 	kind: z.string(),
@@ -44,28 +44,22 @@ export const authKeys = {
 
 /**
  * Login with email and password.
- * Uses better-auth client for session management.
+ * Maps to login method from open-grind.
  */
 export function useLogin() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		LoginResult,
-		Error,
+		ApiError,
 		{ email: string; password: string }
 	>({
 		mutationFn: async ({ email, password }) => {
-			const { error } = await authClient.signIn.email({
-					email,
-					password,
-				});
-				if (error) throw new Error(error.message ?? "Login failed");
-
-			const profileId = await getMyProfileId();
-			return {
-				profileId: profileId ?? 0,
-				restriction: null,
-			};
+			const res = await fetchRest("/api/auth/login", {
+				method: "POST",
+				body: { email, password },
+			});
+			return res.jsonParsed(loginResultSchema);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: authKeys.all });
@@ -75,14 +69,17 @@ export function useLogin() {
 
 /**
  * Logout.
- * Uses better-auth client for session management.
+ * Maps to logout method from open-grind.
  */
 export function useLogout() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, Error>({
+	return useMutation<void, ApiError>({
 		mutationFn: async () => {
-			await authClient.signOut();
+			const res = await fetchRest("/api/auth/logout", {
+				method: "POST",
+			});
+			res.assertOk();
 		},
 		onSuccess: () => {
 			queryClient.clear();
@@ -92,14 +89,14 @@ export function useLogout() {
 
 /**
  * Check authentication state.
- * Returns the current user's profile ID from Supabase.
+ * Maps to auth_state method from open-grind.
  */
 export function useAuthState() {
-	return useQuery<number | null, Error>({
+	return useQuery<number | null, ApiError>({
 		queryKey: authKeys.authState(),
 		queryFn: async () => {
-			const profileId = await getMyProfileId();
-			return profileId;
+			const res = await fetchRest("/api/auth/state");
+			return res.json() as number | null;
 		},
 		staleTime: 30_000,
 		retry: false,
@@ -108,19 +105,16 @@ export function useAuthState() {
 
 /**
  * Check session health.
- * Uses better-auth session.
+ * Maps to session_health method from open-grind.
  */
 export function useSessionHealth() {
-	return useQuery<SessionHealth, Error>({
+	return useQuery<SessionHealth, ApiError>({
 		queryKey: authKeys.sessionHealth(),
 		queryFn: async () => {
-			const { data: session } = await authClient.getSession();
-			return {
-				signedIn: !!session,
-				expiresAt: null,
-				stale: false,
-			};
+			const res = await fetchRest("/api/auth/session-health");
+			return res.jsonParsed(sessionHealthSchema);
 		},
 		staleTime: 60_000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }

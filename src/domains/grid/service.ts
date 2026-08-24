@@ -1,8 +1,7 @@
-import { TtlCache } from "#/core/lib/ttl-cache";
-import { getGridProfiles } from "#/core/api/supabase/index";
+import { TtlCache } from '#/core/lib/ttl-cache';
 
 export type RenderedGridProfile = {
-	type: "rendered";
+	type: 'rendered';
 	id: number;
 	displayName: string | null;
 	distance: number | null;
@@ -15,7 +14,7 @@ export type RenderedGridProfile = {
 };
 
 export type LazyGridProfile = {
-	type: "lazy";
+	type: 'lazy';
 	id: number;
 	unread: number | null;
 	isVisiting: boolean;
@@ -30,9 +29,7 @@ export interface GridResponse {
 }
 
 function primaryImageHashes(url: string | null | undefined): string[] | null {
-	if (!url) return null;
-	const parts = url.split("/");
-	const hash = parts[parts.length - 1];
+	const hash = url?.split('/').pop();
 	return hash ? [hash] : null;
 }
 
@@ -42,7 +39,7 @@ export function gridProfile(profile: {
 	distanceMeters?: number | null;
 	primaryImageUrl?: string | null;
 	unreadCount?: number;
-	onlineUntil?: number | string | null;
+	onlineUntil?: number | null;
 	favorite?: boolean;
 	isVisiting?: boolean;
 	chatted?: boolean;
@@ -50,23 +47,20 @@ export function gridProfile(profile: {
 	const { favorite, chatted } = profile;
 	if (favorite === undefined || chatted === undefined) {
 		return {
-			type: "lazy",
+			type: 'lazy',
 			id: profile.profileId,
 			unread: profile.unreadCount ?? 0,
 			isVisiting: profile.isVisiting ?? false,
 		};
 	}
 	return {
-		type: "rendered",
+		type: 'rendered',
 		id: profile.profileId,
 		displayName: profile.displayName ?? null,
 		distance: profile.distanceMeters ?? null,
 		profilePhotosHashes: primaryImageHashes(profile.primaryImageUrl),
 		unread: profile.unreadCount ?? null,
-		onlineUntil:
-			typeof profile.onlineUntil === "string"
-				? new Date(profile.onlineUntil).getTime()
-				: (profile.onlineUntil ?? null),
+		onlineUntil: profile.onlineUntil ?? null,
 		isFavorite: favorite,
 		isVisiting: profile.isVisiting ?? false,
 		hasChattedInLast24Hrs: chatted,
@@ -81,100 +75,29 @@ export async function getGrid(query: {
 	rightNow?: boolean;
 	ageMin?: number;
 	ageMax?: number;
+	genders?: number[];
+	sexualPositions?: string[];
+	photoOnly?: boolean;
+	hasAlbum?: boolean;
+	faceOnly?: boolean;
+	tribes?: string[];
+	bodyTypes?: string[];
+	heightCmMin?: number;
+	heightCmMax?: number;
+	weightGramsMin?: number;
+	weightGramsMax?: number;
+	relationshipStatuses?: string[];
+	nsfwPics?: boolean;
+	lookingFor?: string[];
+	meetAt?: string[];
+	notRecentlyChatted?: boolean;
+	sexualHealth?: string[];
+	tags?: string[];
+	fresh?: boolean;
 }): Promise<GridResponse> {
-	// Try Supabase first
-	const result = await getGridProfiles({
-		nearbyGeoHash: query.nearbyGeoHash,
-		pageNumber: query.pageNumber,
-		favorites: query.favorites,
-		onlineOnly: query.onlineOnly,
-		ageMin: query.ageMin,
-		ageMax: query.ageMax,
-	});
-
-	// If Supabase has data, use it
-	if (result.items.length > 0) {
-		const items: GridProfile[] = result.items.map((item) => {
-			const isPartial = item.type === "partial_profile_v1";
-			if (isPartial) {
-				return {
-					type: "lazy" as const,
-					id: item.data.profileId,
-					unread: item.data.unreadCount,
-					isVisiting: item.data.isVisiting,
-				};
-			}
-			return gridProfile({
-				profileId: item.data.profileId,
-				displayName: item.data.displayName,
-				distanceMeters: item.data.distanceMeters,
-				primaryImageUrl: item.data.primaryImageUrl,
-				unreadCount: item.data.unreadCount,
-				onlineUntil: item.data.onlineUntil,
-				favorite: item.data.favorite,
-				isVisiting: item.data.isVisiting,
-				chatted: item.data.chatted,
-			});
-		});
-
-		return {
-			items,
-			nextPage: result.nextPage,
-			shuffled: false,
-		};
-	}
-
-	// Fallback to demo data
-	const { demoRoute } = await import("#/domains/demo/router");
-	const params = new URLSearchParams();
-	if (query.pageNumber !== undefined)
-		params.set("pageNumber", String(query.pageNumber));
-	if (query.favorites) params.set("favorites", "true");
-	if (query.onlineOnly) params.set("onlineOnly", "true");
-	if (query.ageMin !== undefined)
-		params.set("ageMin", String(query.ageMin));
-	if (query.ageMax !== undefined)
-		params.set("ageMax", String(query.ageMax));
-
-	const resp = demoRoute({
-		path: `/v4/cascade?${params.toString()}`,
-		method: "GET",
-		body: null,
-	});
-	const data = resp.body as {
-		items: Array<{ type: string; data: Record<string, unknown> }>;
-		nextPage: number | null;
-		shuffled: boolean;
-	};
-
-	const demoItems: GridProfile[] = data.items.map((item) => {
-		const d = item.data;
-		if (item.type === "partial_profile_v1") {
-			return {
-				type: "lazy" as const,
-				id: d.profileId as number,
-				unread: (d.unreadCount as number) ?? 0,
-				isVisiting: (d.isVisiting as boolean) ?? false,
-			};
-		}
-		return gridProfile({
-			profileId: d.profileId as number,
-			displayName: d.displayName as string | null,
-			distanceMeters: d.distanceMeters as number | null,
-			primaryImageUrl: d.primaryImageUrl as string | null,
-			unreadCount: d.unreadCount as number,
-			onlineUntil: d.onlineUntil as number | null,
-			favorite: d.favorite as boolean,
-			isVisiting: d.isVisiting as boolean,
-			chatted: d.chatted as boolean,
-		});
-	});
-
-	return {
-		items: demoItems,
-		nextPage: data.nextPage,
-		shuffled: data.shuffled,
-	};
+	// This will be wired to the actual API transport layer
+	// For now, return empty results
+	return { items: [], nextPage: null, shuffled: false };
 }
 
 const profileCache = new TtlCache<number, RenderedGridProfile>({
@@ -202,26 +125,6 @@ export function patchCachedProfile({
 export async function resolveLazyProfile(
 	profile: LazyGridProfile,
 ): Promise<RenderedGridProfile | null> {
-	const { getProfileById } = await import("#/core/api/supabase/index");
-	const dbProfile = await getProfileById(profile.id);
-	if (!dbProfile) return null;
-
-	const { getPhotosForProfile } = await import("#/core/api/supabase/index");
-	const photos = await getPhotosForProfile(profile.id);
-	const primaryHash = photos[0]?.hash;
-
-	return {
-		type: "rendered",
-		id: dbProfile.id,
-		displayName: dbProfile.displayName,
-		distance: null,
-		profilePhotosHashes: primaryHash ? [primaryHash] : null,
-		unread: dbProfile.unreadCount,
-		onlineUntil: dbProfile.onlineUntil
-			? new Date(dbProfile.onlineUntil).getTime()
-			: null,
-		isFavorite: dbProfile.isFavorite,
-		isVisiting: dbProfile.isVisiting,
-		hasChattedInLast24Hrs: dbProfile.hasChatted24h,
-	};
+	// This will be wired to the actual API transport layer
+	return null;
 }
