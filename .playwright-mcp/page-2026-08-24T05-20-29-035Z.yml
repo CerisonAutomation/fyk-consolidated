@@ -1,0 +1,8 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e4]:
+    - img "Find Your King" [ref=f1e7]
+    - paragraph [ref=f1e20]: Loading..
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f1e32] [cursor=pointer]

@@ -10,22 +10,30 @@ function AuthCallback() {
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		supabase.auth.onAuthStateChange((event, _session) => {
-			if (event === "PASSWORD_RECOVERY") {
-				// Redirect to password reset page if you have one
-				navigate({ to: "/auth/sign-in" });
-			} else if (event === "SIGNED_IN") {
-				navigate({ to: "/" });
-			}
-		});
+		// Handle the URL hash for email confirmation / magic link
+		const handleAuth = async () => {
+			const { data: { session } } = await supabase.auth.getSession();
 
-		// Handle the URL hash for email confirmation
-		const hash = window.location.hash;
-		if (hash) {
-			supabase.auth.onAuthStateChange(() => {
-				navigate({ to: "/" });
+			if (session) {
+				navigate({ to: "/grid", replace: true });
+				return;
+			}
+
+			// Listen for auth state changes
+			const {
+				data: { subscription },
+			} = supabase.auth.onAuthStateChange((event, newSession) => {
+				if (event === "PASSWORD_RECOVERY") {
+					navigate({ to: "/auth/sign-in", replace: true });
+				} else if (newSession) {
+					navigate({ to: "/grid", replace: true });
+				}
 			});
-		}
+
+			return () => subscription.unsubscribe();
+		};
+
+		handleAuth();
 	}, [navigate]);
 
 	return (

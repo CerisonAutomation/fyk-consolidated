@@ -1,0 +1,44 @@
+- generic [active] [ref=f4e1]:
+  - banner [ref=f4e2]:
+    - navigation [ref=f4e3]:
+      - heading [level=2] [ref=f4e4]:
+        - link "TanStack Start" [ref=f4e5] [cursor=pointer]:
+          - /url: /
+      - generic [ref=f4e7]:
+        - link "Home" [ref=f4e8] [cursor=pointer]:
+          - /url: /
+        - link "About" [ref=f4e9] [cursor=pointer]:
+          - /url: /about
+        - link "Docs" [ref=f4e10] [cursor=pointer]:
+          - /url: https://tanstack.com/start/latest/docs/framework/react/overview
+        - group [ref=f4e11]:
+          - generic "Demos" [ref=f4e12] [cursor=pointer]
+      - generic [ref=f4e13]:
+        - link "Follow TanStack on X" [ref=f4e14] [cursor=pointer]:
+          - /url: https://x.com/tan_stack
+        - link "Go to TanStack GitHub" [ref=f4e18] [cursor=pointer]:
+          - /url: https://github.com/TanStack
+        - link "Sign in" [ref=f4e22] [cursor=pointer]:
+          - /url: /auth/sign-in
+        - button "AI Assistant" [ref=f4e24]
+        - 'button "Theme mode: auto (system). Click to switch to light mode." [ref=f4e32]': Auto
+  - main [ref=f4e33]:
+    - generic [ref=f4e34]:
+      - heading "Discover" [level=1] [ref=f4e35]
+      - button "Open filters" [ref=f4e37]:
+        - generic [ref=f4e39]: Filters
+    - generic [ref=f4e40]:
+      - button "Favorites" [ref=f4e41]
+      - button "Online" [ref=f4e42]
+    - generic [ref=f4e45]:
+      - paragraph [ref=f4e46]: No profiles found
+      - button "Retry" [ref=f4e47]
+  - contentinfo [ref=f4e48]:
+    - generic [ref=f4e49]:
+      - paragraph [ref=f4e50]: © 2026 Your name here. All rights reserved.
+      - paragraph [ref=f4e51]: Built with TanStack Start
+    - generic [ref=f4e52]:
+      - link "Follow TanStack on X" [ref=f4e53] [cursor=pointer]:
+        - /url: https://x.com/tan_stack
+      - link "Go to TanStack GitHub" [ref=f4e57] [cursor=pointer]:
+        - /url: https://github.com/TanStack

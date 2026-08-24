@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { setPreferences } from '#/domains/settings/preferences';
-import { useAuthStore } from '#/domains/auth/store';
+import { useSupabaseSession } from '#/integrations/supabase/session-provider';
 
 export const Route = createFileRoute('/onboarding/')({
 	component: OnboardingPage,
@@ -9,13 +9,12 @@ export const Route = createFileRoute('/onboarding/')({
 
 function OnboardingPage() {
 	const [starting, setStarting] = useState(false);
-	const { setAuth } = useAuthStore();
+	const { user } = useSupabaseSession();
 
 	const handleStart = async () => {
 		setStarting(true);
 		try {
 			await setPreferences({ onboardingComplete: true });
-			setAuth({ userId: '123456000' });
 			if (typeof window !== 'undefined') {
 				window.location.href = '/grid';
 			}

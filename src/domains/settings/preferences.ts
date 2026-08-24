@@ -6,13 +6,19 @@ function key(path: string): string {
 	return `${PREFIX}${path}`;
 }
 
+function isBrowser(): boolean {
+	return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+}
+
 function readLocal(path: string): Uint8Array | null {
+	if (!isBrowser()) return null;
 	const stored = localStorage.getItem(key(path));
 	if (stored === null) return null;
 	return Uint8Array.from(atob(stored), (char) => char.charCodeAt(0));
 }
 
 function writeLocal({ path, content }: { path: string; content: Uint8Array }): void {
+	if (!isBrowser()) return;
 	const binary = Array.from(content, (byte) =>
 		String.fromCharCode(byte),
 	).join('');
@@ -20,6 +26,7 @@ function writeLocal({ path, content }: { path: string; content: Uint8Array }): v
 }
 
 function removeLocal(path: string): void {
+	if (!isBrowser()) return;
 	localStorage.removeItem(path);
 }
 

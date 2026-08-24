@@ -1,22 +1,50 @@
+/**
+ * Deep equality comparison for React state updates and store comparisons.
+ * Handles NaN, Date objects, arrays, and plain objects.
+ * Converted from open-grind with added prototype checking.
+ */
 export function deepEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
-	if (a === null || b === null) return false;
-	if (typeof a !== typeof b) return false;
-	if (typeof a !== 'object') return false;
-	if (Array.isArray(a) !== Array.isArray(b)) return false;
-	if (Array.isArray(a) && Array.isArray(b)) {
-		if (a.length !== b.length) return false;
-		return a.every((item, i) => deepEqual(item, b[i]));
+	if (typeof a === 'number' && typeof b === 'number') {
+		return Number.isNaN(a) && Number.isNaN(b);
 	}
-	const keysA = Object.keys(a as Record<string, unknown>);
-	const keysB = Object.keys(b as Record<string, unknown>);
-	if (keysA.length !== keysB.length) return false;
-	return keysA.every(
-		(key) =>
-			key in (b as Record<string, unknown>) &&
-			deepEqual(
-				(a as Record<string, unknown>)[key],
-				(b as Record<string, unknown>)[key],
-			),
+	if (
+		typeof a !== 'object' ||
+		typeof b !== 'object' ||
+		a === null ||
+		b === null
+	) {
+		return false;
+	}
+	if (a instanceof Date || b instanceof Date) {
+		return (
+			a instanceof Date &&
+			b instanceof Date &&
+			deepEqual(a.getTime(), b.getTime())
+		);
+	}
+	if (Array.isArray(a) || Array.isArray(b)) {
+		return (
+			Array.isArray(a) &&
+			Array.isArray(b) &&
+			a.length === b.length &&
+			a.every((item, index) => deepEqual(item, b[index]))
+		);
+	}
+	// Reject non-plain objects (Map, Set, etc.)
+	if (
+		Object.getPrototypeOf(a) !== Object.prototype ||
+		Object.getPrototypeOf(b) !== Object.prototype
+	) {
+		return false;
+	}
+	const entries = Object.entries(a);
+	return (
+		entries.length === Object.keys(b).length &&
+		entries.every(
+			([key, value]) =>
+				Object.hasOwn(b, key) &&
+				deepEqual(value, (b as Record<string, unknown>)[key]),
+		)
 	);
 }

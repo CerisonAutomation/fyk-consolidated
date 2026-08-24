@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useAuthStore } from '#/domains/auth/store'
+import { supabase } from '#/integrations/supabase/client'
 import {
 	Eye,
 	EyeOff,
@@ -42,7 +42,6 @@ export function FYKAuthPage({
 	const [password, setPassword] = useState('')
 	const [name, setName] = useState('')
 	const [handle, setHandle] = useState('')
-	const [resetToken, setResetToken] = useState('')
 	const [newPassword, setNewPassword] = useState('')
 
 	const { setAuth } = useAuthStore()
@@ -77,20 +76,28 @@ export function FYKAuthPage({
 			setLoading(true)
 			setError(null)
 			try {
-				// Demo mode: accept any credentials
 				if (!email || !password) {
 					setError('Email and password are required')
 					return
 				}
-				setAuth({ userId: '123456000' })
-				onLoginSuccess?.() || navigate({ to: '/grid' })
+				const { data, error: authError } = await supabase.auth.signInWithPassword({
+					email,
+					password,
+				})
+				if (authError) {
+					setError(authError.message)
+					return
+				}
+				if (data.session) {
+					onLoginSuccess?.() || navigate({ to: '/grid', replace: true })
+				}
 			} catch (err) {
 				setError(extractError(err))
 			} finally {
 				setLoading(false)
 			}
 		},
-		[email, password, setAuth, navigate, onLoginSuccess],
+		[email, password, navigate, onLoginSuccess],
 	)
 
 	const handleSignup = useCallback(
@@ -103,15 +110,30 @@ export function FYKAuthPage({
 					setError('Name, email, and password are required')
 					return
 				}
-				setAuth({ userId: '123456000' })
-				onLoginSuccess?.() || navigate({ to: '/grid' })
+				const { data, error: authError } = await supabase.auth.signUp({
+					email,
+					password,
+					options: {
+						data: { first_name: name || undefined, handle: handle || undefined },
+					},
+				})
+				if (authError) {
+					setError(authError.message)
+					return
+				}
+				if (data.session) {
+					navigate({ to: '/onboarding', replace: true })
+				} else if (data.user) {
+					setMode('login')
+					setError(null)
+				}
 			} catch (err) {
 				setError(extractError(err))
 			} finally {
 				setLoading(false)
 			}
 		},
-		[email, password, name, setAuth, navigate, onLoginSuccess],
+		[email, password, name, handle, navigate],
 	)
 
 	const handleForgotPassword = useCallback(
@@ -120,7 +142,13 @@ export function FYKAuthPage({
 			setLoading(true)
 			setError(null)
 			try {
-				// Demo: just show success
+				const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
+					redirectTo: `${window.location.origin}/auth/callback`,
+				})
+				if (authError) {
+					setError(authError.message)
+					return
+				}
 				setMode('login')
 				setError(null)
 			} catch (err) {
@@ -129,7 +157,7 @@ export function FYKAuthPage({
 				setLoading(false)
 			}
 		},
-		[],
+		[email],
 	)
 
 	const handleResetPassword = useCallback(
@@ -138,6 +166,13 @@ export function FYKAuthPage({
 			setLoading(true)
 			setError(null)
 			try {
+				const { error: authError } = await supabase.auth.updateUser({
+					password: newPassword,
+				})
+				if (authError) {
+					setError(authError.message)
+					return
+				}
 				setMode('login')
 				setPassword('')
 			} catch (err) {
@@ -146,7 +181,7 @@ export function FYKAuthPage({
 				setLoading(false)
 			}
 		},
-		[],
+		[newPassword],
 	)
 
 	const handleMagicLink = useCallback(
@@ -155,6 +190,14 @@ export function FYKAuthPage({
 			setLoading(true)
 			setError(null)
 			try {
+				const { error: authError } = await supabase.auth.signInWithOtp({
+					email,
+					options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+				})
+				if (authError) {
+					setError(authError.message)
+					return
+				}
 				setMode('login')
 			} catch (err) {
 				setError(extractError(err))
@@ -162,7 +205,7 @@ export function FYKAuthPage({
 				setLoading(false)
 			}
 		},
-		[],
+		[email],
 	)
 
 	const modeLabels: Record<AuthMode, string> = {

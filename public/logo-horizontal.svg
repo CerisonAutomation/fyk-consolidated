@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="294" viewBox="0 0 1360 294" role="img" aria-labelledby="title desc" shape-rendering="geometricPrecision">
+  <title id="title">FYKING horizontal logo</title>
+  <desc id="desc">Solid white F, transparent outlined white Y, solid red KING, white dot, outlined gold crown, and white underline on a transparent background.</desc>
+  <g id="f" transform="translate(0 -65)" fill="#FFFFFF">
+    <path d="m65.625 292h48.92188v-61.75781h70.23437v-38.50782h-70.23437v-40.6875h77.98437v-39.47656H65.625Z"/>
+  </g>
+  <g id="y" transform="translate(20 -65)" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="miter" stroke-miterlimit="4">
+    <path d="m262.77734 292h48.67969v-62.72656l65.26953-117.70313h-57.27734l-24.33985 54.49219c-3.02734 6.66016-5.44921 13.32031-7.75 20.82812-2.54296-7.50781-5.08593-14.16796-8.23437-20.82812l-26.03516-54.49219h-57.51953l67.20703 117.70313Z"/>
+  </g>
+  <g id="king" transform="translate(52 -65)" fill="#FF073A">
+    <path d="m355.625 292h48.92187v-45.04688l22.28125-25.55078L469.08984 292h57.64063L460.25 189.19141l63.08984-77.6211h-58.0039l-35.84375 46.37891c-11.98828 15.62109-19.4961 26.64062-25.79297 38.26562l.84765-45.89453v-38.75H355.625Zm227.22266-180.42969h-48.92188V292h48.92188ZM596.09766 292h50.375v-65.875c0-11.86719-1.33204-31.72656-2.78516-52.43359 8.71875 20.22265 15.37891 34.02734 26.64062 52.43359L710.41016 292h53.28125V111.57031h-50.375v66.11719c0 13.32031 1.57421 35.35937 2.78515 53.76562-7.38672-20.34375-14.65234-34.14843-23.73437-49.04296l-42.98828-70.83985h-53.28125Zm266.09375 2.42187c47.22656 0 81.13281-28.82031 81.13281-78.22656V191.25h-79.92188v34.875h32.69532c-.48438 15.74219-11.625 25.67187-33.42188 25.67187-25.42969 0-38.50781-18.64843-38.50781-50.375 0-31.24218 14.16797-49.64843 38.75-49.64843 15.3789 0 25.79297 7.02343 28.82031 19.375h49.40625c-3.75391-36.20703-36.69141-62-79.19531-62-48.67969 0-88.15625 33.54297-88.15625 93 0 57.03515 35.72265 92.27343 88.39844 92.27343Z"/>
+  </g>
+  <circle id="dot" cx="1028" cy="205" r="19" fill="#FFFFFF"/>
+  <path id="crown" d="M1094 206 1070 67l69 51 59-101 60 102 72-52-26 139Zm0-32h210" fill="none" stroke="#F7B500" stroke-width="18" stroke-linejoin="round" stroke-linecap="round"/>
+  <path id="underline" d="M54 273H1330" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="square"/>
+</svg>

@@ -1,0 +1,38 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - navigation [ref=e3]:
+      - heading [level=2] [ref=e4]:
+        - link "TanStack Start" [ref=e5] [cursor=pointer]:
+          - /url: /
+      - generic [ref=e7]:
+        - link "Home" [ref=e8] [cursor=pointer]:
+          - /url: /
+        - link "About" [ref=e9] [cursor=pointer]:
+          - /url: /about
+        - link "Docs" [ref=e10] [cursor=pointer]:
+          - /url: https://tanstack.com/start/latest/docs/framework/react/overview
+        - group [ref=e11]:
+          - generic "Demos" [ref=e12] [cursor=pointer]
+      - generic [ref=e13]:
+        - link "Follow TanStack on X" [ref=e14] [cursor=pointer]:
+          - /url: https://x.com/tan_stack
+        - link "Go to TanStack GitHub" [ref=e18] [cursor=pointer]:
+          - /url: https://github.com/TanStack
+        - link "Sign in" [ref=e22] [cursor=pointer]:
+          - /url: /auth/sign-in
+        - button "AI Assistant" [ref=e24]
+        - 'button "Theme mode: auto (system). Click to switch to light mode." [ref=e32]': Auto
+  - generic [ref=e33]:
+    - generic [ref=e34]:
+      - strong [ref=e35]: Something went wrong!
+      - button "Hide Error" [ref=e36]
+    - code [ref=e40]: Cannot read properties of undefined (reading 'getItem')
+  - contentinfo [ref=e41]:
+    - generic [ref=e42]:
+      - paragraph [ref=e43]: © 2026 Your name here. All rights reserved.
+      - paragraph [ref=e44]: Built with TanStack Start
+    - generic [ref=e45]:
+      - link "Follow TanStack on X" [ref=e46] [cursor=pointer]:
+        - /url: https://x.com/tan_stack
+      - link "Go to TanStack GitHub" [ref=e50] [cursor=pointer]:
+        - /url: https://github.com/TanStack

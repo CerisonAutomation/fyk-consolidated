@@ -1,0 +1,44 @@
+{
+  "name": "FYKING — Find Your King",
+  "short_name": "FYKING",
+  "description": "Premium geosocial discovery platform for men. AI-powered matching, real-time chat, and curated IRL events.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#d4af37",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["dating", "social", "lifestyle"],
+  "icons": [
+    {
+      "src": "/logo-square.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-square.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse",
+      "url": "/grid",
+      "description": "Browse nearby profiles"
+    },
+    {
+      "name": "Chat",
+      "url": "/chat",
+      "description": "View conversations"
+    },
+    {
+      "name": "Right Now",
+      "url": "/right-now",
+      "description": "See who's nearby right now"
+    }
+  ]
+}

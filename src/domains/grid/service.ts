@@ -95,9 +95,34 @@ export async function getGrid(query: {
 	tags?: string[];
 	fresh?: boolean;
 }): Promise<GridResponse> {
-	// This will be wired to the actual API transport layer
-	// For now, return empty results
-	return { items: [], nextPage: null, shuffled: false };
+	// Demo data (Supabase data layer not yet wired)
+	const { demoCascadeV4 } = await import('#/domains/demo/mock/grid');
+	const params = new URLSearchParams();
+	if (query.nearbyGeoHash) params.set('nearbyGeoHash', query.nearbyGeoHash);
+	if (query.pageNumber !== undefined) params.set('pageNumber', String(query.pageNumber));
+	if (query.favorites) params.set('favorites', 'true');
+	if (query.onlineOnly) params.set('onlineOnly', 'true');
+	if (query.ageMin !== undefined) params.set('ageMin', String(query.ageMin));
+	if (query.ageMax !== undefined) params.set('ageMax', String(query.ageMax));
+	const demoResult = demoCascadeV4(params);
+	return {
+		items: demoResult.items.map((item: any) => {
+			const d = item.data;
+			return gridProfile({
+				profileId: d.profileId,
+				displayName: d.displayName,
+				distanceMeters: d.distanceMeters,
+				primaryImageUrl: d.primaryImageUrl,
+				unreadCount: d.unreadCount,
+				onlineUntil: d.onlineUntil,
+				favorite: d.favorite,
+				isVisiting: d.isVisiting,
+				chatted: d.chatted,
+			});
+		}),
+		nextPage: demoResult.nextPage,
+		shuffled: false,
+	};
 }
 
 const profileCache = new TtlCache<number, RenderedGridProfile>({
