@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { authClient } from '#/lib/auth-client'
 
 export const Route = createFileRoute('/demo/better-auth')({
@@ -7,13 +7,23 @@ export const Route = createFileRoute('/demo/better-auth')({
 })
 
 function BetterAuthDemo() {
-  const { data: session, isPending } = authClient.useSession()
+  const [session, setSession] = useState<{ user: { email?: string | null; name?: string | null; image?: string | null } } | null>(null)
+  const [isPending, setIsPending] = useState(true)
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    authClient.getSession().then(({ data }) => {
+      setSession(data?.session ?? null)
+      setIsPending(false)
+    }).catch(() => {
+      setIsPending(false)
+    })
+  }, [])
 
   if (isPending) {
     return (

@@ -61,7 +61,7 @@ function DemoPrisma() {
         <h2 className="demo-section-title mb-4">Todos</h2>
 
         <ul className="space-y-3 mb-6">
-          {todos.map((todo) => (
+          {todos.map((todo: { id: number; title: string; createdAt: Date }) => (
             <li key={todo.id} className="demo-list-item">
               <div className="flex items-center justify-between">
                 <span className="font-medium">{todo.title}</span>

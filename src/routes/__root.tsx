@@ -1,9 +1,5 @@
-import {
-  HeadContent,
-  Scripts,
-  createRootRouteWithContext,
-} from '@tanstack/react-router'
-import { useEffect } from 'react'
+import { HeadContent, Scripts, createRootRouteWithContext } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
@@ -41,6 +37,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, loading, user } = useSupabaseSession();
   const setAuth = useAuthStore((s) => s.setAuth);
 
+  // Track pathname with useState to avoid SSR hydration mismatch
+  const [pathname, setPathname] = useState<string>('');
+  useEffect(() => {
+    setPathname(window.location.pathname);
+    const onPop = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   useAutoSavePreferences();
 
   // Keep Zustand auth store in sync with Supabase session
@@ -53,7 +58,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   }, [user, session, loading, setAuth]);
 
   // Auth pages: no NavBar, full-screen content
-  if (typeof window !== 'undefined' && isNavHiddenRoute(window.location.pathname)) {
+  if (isNavHiddenRoute(pathname)) {
     return <>{children}</>;
   }
 
@@ -69,6 +74,16 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'dark';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
+
+function NotFoundComponent() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center px-4">
+      <h1 className="text-2xl font-bold text-[var(--foreground)]">Page Not Found</h1>
+      <p className="text-[var(--muted-foreground)]">The page you are looking for does not exist.</p>
+      <a href="/" className="text-[var(--primary)] hover:underline font-medium">Go Home</a>
+    </div>
+  );
+}
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
@@ -190,6 +205,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
+  notFoundComponent: NotFoundComponent,
   shellComponent: RootDocument,
 })
 
@@ -202,10 +218,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       data-scroll-behavior="smooth"
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <HeadContent />
       </head>
       <body className="antialiased bg-background text-foreground min-h-screen font-[family-name:var(--font-sans)] safe-area-top">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <SupabaseSessionProvider>
           <AppLayout>{children}</AppLayout>
           <TanStackDevtools

@@ -65,7 +65,7 @@ export const Route = createFileRoute('/demo/api/ai/chat')({
             ollama: () => ollamaText((model || 'mistral:7b') as any),
           }
 
-          const adapter = adapterConfig[provider]()
+          const adapter = adapterConfig[provider as keyof typeof adapterConfig]()
 
           const stream = chat({
             adapter,

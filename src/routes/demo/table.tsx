@@ -38,7 +38,7 @@ declare module '@tanstack/react-table' {
 }
 
 // Define a custom fuzzy filter function that will apply ranking info to rows (using match-sorter utils)
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+const fuzzyFilter: FilterFn<unknown> = (row, columnId, value, addMeta) => {
   // Rank the item
   const itemRank = rankItem(row.getValue(columnId), value)
 
@@ -52,7 +52,7 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
 }
 
 // Define a custom fuzzy sort function that will sort by rank if the row has ranking information
-const fuzzySort: SortingFn<any> = (rowA, rowB, columnId) => {
+const fuzzySort: SortingFn<unknown> = (rowA, rowB, columnId) => {
   let dir = 0
 
   // Only sort by rank if the column has ranking information
@@ -75,7 +75,7 @@ function TableDemo() {
   )
   const [globalFilter, setGlobalFilter] = React.useState('')
 
-  const columns = React.useMemo<ColumnDef<Person, any>[]>(
+  const columns = React.useMemo<ColumnDef<Person, unknown>[]>(
     () => [
       {
         accessorKey: 'id',
@@ -305,7 +305,7 @@ function TableDemo() {
   )
 }
 
-function Filter({ column }: { column: Column<any, unknown> }) {
+function Filter({ column }: { column: Column<unknown, unknown> }) {
   const columnFilterValue = column.getFilterValue()
 
   return (
