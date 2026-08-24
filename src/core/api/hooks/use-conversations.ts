@@ -6,7 +6,7 @@ import { ApiError } from "../client/api-error";
 
 // -- Schemas (inlined from open-grind model) --
 
-export const fullConversationSchema = z.record(z.unknown());
+export const fullConversationSchema = z.record(z.string(), z.unknown());
 export type Conversation = z.infer<typeof fullConversationSchema>;
 
 const conversationsSchema = z.object({
@@ -42,24 +42,18 @@ export function useConversations(
 	page: number = 1,
 	filters: InboxFilterRequest | null = null,
 ) {
-	return useQuery<
-		z.infer<typeof conversationsSchema>,
-		ApiError
-	>({
+	return useQuery<z.infer<typeof conversationsSchema>, ApiError>({
 		queryKey: conversationKeys.page(page, filters),
 		queryFn: async () => {
 			const params = new URLSearchParams({ page: String(page) });
-			const res = await fetchRest(
-				`/v4/inbox?${params.toString()}`,
-				{
-					method: "POST",
-					...(filters ? { body: filters } : {}),
-				},
-			);
+			const res = await fetchRest(`/v4/inbox?${params.toString()}`, {
+				method: "POST",
+				...(filters ? { body: filters } : {}),
+			});
 			return res.jsonParsed(conversationsSchema);
 		},
 		staleTime: 30_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -101,11 +95,7 @@ export function useMarkRead() {
 export function useDeleteConversation() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ conversationId: string }
-	>({
+	return useMutation<void, ApiError, { conversationId: string }>({
 		mutationFn: async ({ conversationId }) => {
 			const res = await fetchRest(
 				`/v4/chat/conversation/${conversationId}`,

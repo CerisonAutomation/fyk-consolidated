@@ -35,7 +35,7 @@ export function useBlockedUsers() {
 			return res.jsonParsed(getBlockedUsersResponseSchema).blocking;
 		},
 		staleTime: 5_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -46,20 +46,14 @@ export function useBlockedUsers() {
 export function useBlockUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(
-				`/v3/me/blocks/${profileId}`,
-				{ method: "POST" },
-			);
+			const res = await fetchRest(`/v3/me/blocks/${profileId}`, {
+				method: "POST",
+			});
 			res.assertOk();
 		},
 		onSuccess: () => {
-			// Refetch blocked users list
 			queryClient.invalidateQueries({ queryKey: blockKeys.all });
 		},
 	});
@@ -72,16 +66,11 @@ export function useBlockUser() {
 export function useUnblockUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(
-				`/v3/me/blocks/${profileId}`,
-				{ method: "DELETE" },
-			);
+			const res = await fetchRest(`/v3/me/blocks/${profileId}`, {
+				method: "DELETE",
+			});
 			res.assertOk();
 		},
 		onSuccess: () => {

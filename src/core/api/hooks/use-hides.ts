@@ -33,7 +33,7 @@ export function useHiddenUsers() {
 			return res.jsonParsed(getHiddenUsersResponseSchema).hides;
 		},
 		staleTime: 5_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -44,16 +44,11 @@ export function useHiddenUsers() {
 export function useHideUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(
-				`/v1/me/hides/${profileId}`,
-				{ method: "POST" },
-			);
+			const res = await fetchRest(`/v1/me/hides/${profileId}`, {
+				method: "POST",
+			});
 			res.assertOk();
 		},
 		onSuccess: () => {
@@ -69,16 +64,11 @@ export function useHideUser() {
 export function useUnhideUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(
-				`/v1/hides/${profileId}`,
-				{ method: "DELETE" },
-			);
+			const res = await fetchRest(`/v1/hides/${profileId}`, {
+				method: "DELETE",
+			});
 			res.assertOk();
 		},
 		onSuccess: () => {

@@ -6,7 +6,7 @@ import { ApiError } from "../client/api-error";
 
 // -- Schemas (inlined from open-grind model) --
 
-export const apiResponseMessageSchema = z.record(z.unknown());
+export const apiResponseMessageSchema = z.record(z.string(), z.unknown());
 export type ApiResponseMessage = z.infer<typeof apiResponseMessageSchema>;
 
 export const outboundMessageSchema = z.object({
@@ -56,7 +56,10 @@ export function useConversationMessages(
 			if (res.status === 403) {
 				throw new ApiError({
 					message: `Conversation ${conversationId} is no longer available`,
-					request: { method: "GET", path: `/v5/chat/conversation/${conversationId}/message` },
+					request: {
+						method: "GET",
+						path: `/v5/chat/conversation/${conversationId}/message`,
+					},
 					response: { status: 403, body: res.text() },
 				});
 			}
@@ -65,14 +68,13 @@ export function useConversationMessages(
 		},
 		enabled: conversationId !== null && conversationId !== undefined,
 		staleTime: 10_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Send a message.
  * Maps to sendMessage from open-grind.
- * Note: replyToMessageId requires websocket, not handled here.
  */
 export function useSendMessage() {
 	const queryClient = useQueryClient();
@@ -101,8 +103,7 @@ export function useSendMessage() {
 			});
 			return res.jsonParsed(apiResponseMessageSchema);
 		},
-		onSuccess: (_data, variables) => {
-			// Invalidate conversation messages to refetch with the new message
+		onSuccess: () => {
 			queryClient.invalidateQueries({
 				queryKey: messageKeys.all,
 			});

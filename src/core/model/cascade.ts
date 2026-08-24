@@ -1,8 +1,8 @@
 import z from "zod";
 
-import { mediaUrlSchema } from "#core/model/media";
-import { unixTimestampMsSchema } from "#core/model/types";
-import { bodyTypeSchema, sexualPositionSchema } from "#core/model/profiles";
+import { mediaUrlSchema } from "./media";
+import { unixTimestampMsSchema } from "./types";
+import { bodyTypeSchema, sexualPositionSchema } from "./profiles";
 import {
 	filterAcceptNSFWPicsSchema,
 	filterBodyTypeSchema,
@@ -13,7 +13,7 @@ import {
 	filterRelationshipStatusSchema,
 	filterTagsSchema,
 	filterTribesSchema,
-} from "#core/model/grid";
+} from "./grid";
 
 // --- Cascade query ---
 

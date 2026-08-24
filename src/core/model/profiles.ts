@@ -1,12 +1,12 @@
 import z from "zod";
 
-import { tapTypeOrNoneSchema } from "#core/model/taps";
-import { viewSourceEnumSchema } from "#core/model/views-source";
-import { mediaHashPublicSchema } from "#core/model/media";
+import { tapTypeOrNoneSchema } from "./taps";
+import { viewSourceEnumSchema } from "./views-source";
+import { mediaHashPublicSchema } from "./media";
 import {
 	rightNowShareLocationSchema,
 	rightNowStatusSchema,
-} from "#core/model/right-now";
+} from "./right-now";
 
 export const SexualPosition = {
 	Top: 1,

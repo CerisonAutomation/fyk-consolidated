@@ -12,19 +12,12 @@ export const favoriteNoteSchema = z.object({
 });
 export type FavoriteNote = z.infer<typeof favoriteNoteSchema>;
 
-const favoriteNotesResponseSchema = z.object({
-	notes: z.array(
-		favoriteNoteSchema.extend({
-			counterpartyId: z.number(),
-		}),
-	),
-});
-
 // -- Query keys --
 
 export const favoriteKeys = {
 	all: ["favorites"] as const,
-	note: (profileId: number) => [...favoriteKeys.all, "note", profileId] as const,
+	note: (profileId: number) =>
+		[...favoriteKeys.all, "note", profileId] as const,
 };
 
 // -- Hooks --
@@ -36,20 +29,14 @@ export const favoriteKeys = {
 export function useAddFavorite() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(
-				`/v3/me/favorites/${profileId}`,
-				{ method: "POST" },
-			);
+			const res = await fetchRest(`/v3/me/favorites/${profileId}`, {
+				method: "POST",
+			});
 			res.assertOk();
 		},
 		onSuccess: (_data, { profileId }) => {
-			// Invalidate favorite note for this profile
 			queryClient.invalidateQueries({
 				queryKey: favoriteKeys.note(profileId),
 			});
@@ -64,16 +51,11 @@ export function useAddFavorite() {
 export function useRemoveFavorite() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(
-				`/v3/me/favorites/${profileId}`,
-				{ method: "DELETE" },
-			);
+			const res = await fetchRest(`/v3/me/favorites/${profileId}`, {
+				method: "DELETE",
+			});
 			res.assertOk();
 		},
 		onSuccess: (_data, { profileId }) => {
@@ -97,7 +79,7 @@ export function useFavoriteNote(profileId: number | null | undefined) {
 		},
 		enabled: profileId !== null && profileId !== undefined,
 		staleTime: 60_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -120,11 +102,10 @@ export function usePutFavoriteNote() {
 			});
 			res.assertOk();
 		},
-		onSuccess: (_data, { profileId }) => {
-			// Optimistic: set the note in cache
+		onSuccess: (_data, { profileId, note }) => {
 			queryClient.setQueryData<FavoriteNote>(
 				favoriteKeys.note(profileId),
-				() => _data as unknown as FavoriteNote,
+				note,
 			);
 		},
 	});

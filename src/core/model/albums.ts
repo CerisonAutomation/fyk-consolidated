@@ -1,7 +1,7 @@
 import z from "zod";
 
-import { mediaUrlSchema } from "#core/model/media";
-import { unixTimestampMsSchema } from "#core/model/types";
+import { mediaUrlSchema } from "./media";
+import { unixTimestampMsSchema } from "./types";
 
 export const albumPreviewSchema = z.object({
 	albumId: z.int(),

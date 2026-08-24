@@ -1,9 +1,9 @@
 import z from "zod";
 
-import { mediaHashPublicSchema } from "#core/model/media";
-import { rightNowStatusSchema } from "#core/model/right-now";
-import { unixTimestampMsSchema, unmodeledSchema } from "#core/model/types";
-import { sexualPositionSchema } from "#core/model/profiles";
+import { mediaHashPublicSchema } from "./media";
+import { rightNowStatusSchema } from "./right-now";
+import { unixTimestampMsSchema, unmodeledSchema } from "./types";
+import { sexualPositionSchema } from "./profiles";
 
 export const fullConversationSchema = z.object({
 	type: z.literal("full_conversation_v1"),

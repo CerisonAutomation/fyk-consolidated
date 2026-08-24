@@ -6,12 +6,9 @@ import { ApiError } from "../client/api-error";
 
 // -- Schemas (inlined from open-grind model) --
 
-export const viewerProfileSchema = z.record(z.unknown());
-export const viewPreviewSchema = z.record(z.unknown());
-
 const viewsListResponseSchema = z.object({
-	profiles: z.array(viewerProfileSchema),
-	previews: z.array(viewPreviewSchema),
+	profiles: z.array(z.record(z.string(), z.unknown())),
+	previews: z.array(z.record(z.string(), z.unknown())),
 });
 
 // -- Query keys --
@@ -35,7 +32,7 @@ export function useViews() {
 			return res.jsonParsed(viewsListResponseSchema);
 		},
 		staleTime: 60_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -46,11 +43,7 @@ export function useViews() {
 export function useRecordView() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number }
-	>({
+	return useMutation<void, ApiError, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
 			const res = await fetchRest(`/v5/views/${profileId}`, {
 				method: "POST",
@@ -59,7 +52,6 @@ export function useRecordView() {
 			res.assertOk();
 		},
 		onSuccess: () => {
-			// Invalidate views list
 			queryClient.invalidateQueries({ queryKey: viewKeys.all });
 		},
 	});

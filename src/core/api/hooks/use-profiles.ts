@@ -6,14 +6,14 @@ import { ApiError } from "../client/api-error";
 
 // -- Schemas (inlined from open-grind model) --
 
-export const profileSchema = z.record(z.unknown());
+export const profileSchema = z.record(z.string(), z.unknown());
 export type Profile = z.infer<typeof profileSchema>;
 
 const profileResponseSchema = z.object({
 	profiles: z.array(profileSchema).length(1),
 });
 
-const profileShortWithRightNowSchema = z.record(z.unknown());
+const profileShortWithRightNowSchema = z.record(z.string(), z.unknown());
 
 const getProfilesResponseSchema = z.object({
 	profiles: z.array(profileShortWithRightNowSchema),
@@ -25,7 +25,8 @@ const GET_PROFILES_MAX_IDS = 150;
 
 export const profileKeys = {
 	all: ["profiles"] as const,
-	detail: (profileId: number) => [...profileKeys.all, "detail", profileId] as const,
+	detail: (profileId: number) =>
+		[...profileKeys.all, "detail", profileId] as const,
 	list: (ids: number[]) => [...profileKeys.all, "list", ids] as const,
 };
 
@@ -47,7 +48,7 @@ export function useProfile(profileId: number | null | undefined) {
 		},
 		enabled: profileId !== null && profileId !== undefined,
 		staleTime: 60_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -83,7 +84,7 @@ export function useProfiles(profileIds: number[]) {
 		},
 		enabled: profileIds.length > 0,
 		staleTime: 60_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -107,7 +108,6 @@ export function usePatchProfile() {
 			res.assertOk();
 		},
 		onSuccess: (_data, { cacheProfileId, patch }) => {
-			// Optimistic update: merge patch into cached profile
 			queryClient.setQueryData<Profile>(
 				profileKeys.detail(cacheProfileId),
 				(old) => {

@@ -20,7 +20,7 @@ export const cascadeV4QuerySchema = z.object({
 export type CascadeV4Query = z.infer<typeof cascadeV4QuerySchema>;
 
 export const cascadeV4ResponseSchema = z.object({
-	profiles: z.array(z.record(z.unknown())),
+	profiles: z.array(z.record(z.string(), z.unknown())),
 	more: z.boolean().optional(),
 	error: z.string().optional(),
 });
@@ -43,7 +43,7 @@ export const searchQuerySchema = z.object({
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 
 export const searchProfilesResponseSchema = z.object({
-	profiles: z.array(z.record(z.unknown())),
+	profiles: z.array(z.record(z.string(), z.unknown())),
 	total: z.number().optional(),
 });
 
@@ -52,7 +52,6 @@ export type SearchProfilesResponse = z.infer<
 >;
 
 function coarsenGeohash(geohash: string): string {
-	// Coarsen geohash to ~5km precision by truncating
 	return geohash.slice(0, Math.min(geohash.length, 4));
 }
 
@@ -60,8 +59,10 @@ function coarsenGeohash(geohash: string): string {
 
 export const gridKeys = {
 	all: ["grid"] as const,
-	cascade: (query: CascadeV4Query) => [...gridKeys.all, "cascade", query] as const,
-	search: (query: SearchQuery) => [...gridKeys.all, "search", query] as const,
+	cascade: (query: CascadeV4Query) =>
+		[...gridKeys.all, "cascade", query] as const,
+	search: (query: SearchQuery) =>
+		[...gridKeys.all, "search", query] as const,
 };
 
 // -- Hooks --
@@ -90,8 +91,8 @@ export function useCascadeV4(query: CascadeV4Query) {
 			const res = await fetchRest(`/v4/cascade?${params.toString()}`);
 			return res.jsonParsed(cascadeV4ResponseSchema);
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		staleTime: 5 * 60 * 1000,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -119,6 +120,6 @@ export function useSearchProfiles(query: SearchQuery) {
 			return res.jsonParsed(searchProfilesResponseSchema);
 		},
 		staleTime: 5 * 60 * 1000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }

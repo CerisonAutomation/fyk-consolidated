@@ -1,6 +1,4 @@
-import { now } from '#/core/lib/clock';
 import { TtlCache } from '#/core/lib/ttl-cache';
-import type { GridSearchFilters } from '#/domains/settings/preferences';
 
 export type RenderedGridProfile = {
 	type: 'rendered';

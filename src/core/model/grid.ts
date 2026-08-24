@@ -9,9 +9,9 @@ import {
 	RelationshipStatus,
 	SexualPosition,
 	Tribe,
-} from "#core/model/profiles";
-import { geohashSchema } from "#core/model/geohash";
-import { mediaHashPublicSchema } from "#core/model/media";
+} from "./profiles";
+import { geohashSchema } from "./geohash";
+import { mediaHashPublicSchema } from "./media";
 
 // --- Filter schemas ---
 

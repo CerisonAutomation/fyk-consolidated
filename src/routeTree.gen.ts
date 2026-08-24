@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as ChatIndexRouteImport } from './routes/chat/index'
 import { Route as DemoAiChatRouteImport } from './routes/demo/ai-chat'
 import { Route as DemoAiImageRouteImport } from './routes/demo/ai-image'
 import { Route as DemoAiStructuredRouteImport } from './routes/demo/ai-structured'
@@ -19,9 +20,24 @@ import { Route as DemoPrismaRouteImport } from './routes/demo/prisma'
 import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as GridIndexRouteImport } from './routes/grid/index'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
+import { Route as RightNowIndexRouteImport } from './routes/right-now/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
+import { Route as ChatConversationIdIndexRouteImport } from './routes/chat/$conversationId/index'
 import { Route as DemoGuitarsIndexRouteImport } from './routes/demo/guitars/index'
 import { Route as DemoGuitarsGuitarIdRouteImport } from './routes/demo/guitars/$guitarId'
+import { Route as InterestTapsIndexRouteImport } from './routes/interest/taps/index'
+import { Route as InterestViewsIndexRouteImport } from './routes/interest/views/index'
+import { Route as ProfileProfileIdIndexRouteImport } from './routes/profile/$profileId/index'
+import { Route as SettingsAccountIndexRouteImport } from './routes/settings/account/index'
+import { Route as SettingsAppIndexRouteImport } from './routes/settings/app/index'
+import { Route as SettingsBlockedIndexRouteImport } from './routes/settings/blocked/index'
+import { Route as SettingsHiddenIndexRouteImport } from './routes/settings/hidden/index'
+import { Route as SettingsPrivacyIndexRouteImport } from './routes/settings/privacy/index'
+import { Route as SettingsProfileIndexRouteImport } from './routes/settings/profile/index'
 import { Route as DemoApiAiChatRouteImport } from './routes/demo/api.ai.chat'
 import { Route as DemoApiAiImageRouteImport } from './routes/demo/api.ai.image'
 import { Route as DemoApiAiStructuredRouteImport } from './routes/demo/api.ai.structured'
@@ -36,6 +52,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatIndexRoute = ChatIndexRouteImport.update({
+  id: '/chat/',
+  path: '/chat/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoAiChatRoute = DemoAiChatRouteImport.update({
@@ -78,9 +99,39 @@ const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   path: '/demo/tanstack-query',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GridIndexRoute = GridIndexRouteImport.update({
+  id: '/grid/',
+  path: '/grid/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RightNowIndexRoute = RightNowIndexRouteImport.update({
+  id: '/right-now/',
+  path: '/right-now/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
+  id: '/auth/sign-in/',
+  path: '/auth/sign-in/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChatConversationIdIndexRoute = ChatConversationIdIndexRouteImport.update({
+  id: '/chat/$conversationId/',
+  path: '/chat/$conversationId/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoGuitarsIndexRoute = DemoGuitarsIndexRouteImport.update({
@@ -91,6 +142,51 @@ const DemoGuitarsIndexRoute = DemoGuitarsIndexRouteImport.update({
 const DemoGuitarsGuitarIdRoute = DemoGuitarsGuitarIdRouteImport.update({
   id: '/demo/guitars/$guitarId',
   path: '/demo/guitars/$guitarId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterestTapsIndexRoute = InterestTapsIndexRouteImport.update({
+  id: '/interest/taps/',
+  path: '/interest/taps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterestViewsIndexRoute = InterestViewsIndexRouteImport.update({
+  id: '/interest/views/',
+  path: '/interest/views/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileProfileIdIndexRoute = ProfileProfileIdIndexRouteImport.update({
+  id: '/profile/$profileId/',
+  path: '/profile/$profileId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAccountIndexRoute = SettingsAccountIndexRouteImport.update({
+  id: '/settings/account/',
+  path: '/settings/account/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAppIndexRoute = SettingsAppIndexRouteImport.update({
+  id: '/settings/app/',
+  path: '/settings/app/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBlockedIndexRoute = SettingsBlockedIndexRouteImport.update({
+  id: '/settings/blocked/',
+  path: '/settings/blocked/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsHiddenIndexRoute = SettingsHiddenIndexRouteImport.update({
+  id: '/settings/hidden/',
+  path: '/settings/hidden/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsPrivacyIndexRoute = SettingsPrivacyIndexRouteImport.update({
+  id: '/settings/privacy/',
+  path: '/settings/privacy/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsProfileIndexRoute = SettingsProfileIndexRouteImport.update({
+  id: '/settings/profile/',
+  path: '/settings/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoApiAiChatRoute = DemoApiAiChatRouteImport.update({
@@ -130,9 +226,25 @@ export interface FileRoutesByFullPath {
   '/demo/store': typeof DemoStoreRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/chat/': typeof ChatIndexRoute
+  '/grid/': typeof GridIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
+  '/right-now/': typeof RightNowIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/guitars/$guitarId': typeof DemoGuitarsGuitarIdRoute
+  '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
   '/demo/guitars/': typeof DemoGuitarsIndexRoute
+  '/interest/taps/': typeof InterestTapsIndexRoute
+  '/interest/views/': typeof InterestViewsIndexRoute
+  '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/settings/account/': typeof SettingsAccountIndexRoute
+  '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/privacy/': typeof SettingsPrivacyIndexRoute
+  '/settings/profile/': typeof SettingsProfileIndexRoute
   '/demo/api/ai/chat': typeof DemoApiAiChatRoute
   '/demo/api/ai/image': typeof DemoApiAiImageRoute
   '/demo/api/ai/structured': typeof DemoApiAiStructuredRoute
@@ -150,9 +262,25 @@ export interface FileRoutesByTo {
   '/demo/store': typeof DemoStoreRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/chat': typeof ChatIndexRoute
+  '/grid': typeof GridIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
+  '/right-now': typeof RightNowIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/guitars/$guitarId': typeof DemoGuitarsGuitarIdRoute
+  '/auth/sign-in': typeof AuthSignInIndexRoute
+  '/chat/$conversationId': typeof ChatConversationIdIndexRoute
   '/demo/guitars': typeof DemoGuitarsIndexRoute
+  '/interest/taps': typeof InterestTapsIndexRoute
+  '/interest/views': typeof InterestViewsIndexRoute
+  '/profile/$profileId': typeof ProfileProfileIdIndexRoute
+  '/settings/account': typeof SettingsAccountIndexRoute
+  '/settings/app': typeof SettingsAppIndexRoute
+  '/settings/blocked': typeof SettingsBlockedIndexRoute
+  '/settings/hidden': typeof SettingsHiddenIndexRoute
+  '/settings/privacy': typeof SettingsPrivacyIndexRoute
+  '/settings/profile': typeof SettingsProfileIndexRoute
   '/demo/api/ai/chat': typeof DemoApiAiChatRoute
   '/demo/api/ai/image': typeof DemoApiAiImageRoute
   '/demo/api/ai/structured': typeof DemoApiAiStructuredRoute
@@ -171,9 +299,25 @@ export interface FileRoutesById {
   '/demo/store': typeof DemoStoreRoute
   '/demo/table': typeof DemoTableRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/chat/': typeof ChatIndexRoute
+  '/grid/': typeof GridIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
+  '/right-now/': typeof RightNowIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/guitars/$guitarId': typeof DemoGuitarsGuitarIdRoute
+  '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
   '/demo/guitars/': typeof DemoGuitarsIndexRoute
+  '/interest/taps/': typeof InterestTapsIndexRoute
+  '/interest/views/': typeof InterestViewsIndexRoute
+  '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/settings/account/': typeof SettingsAccountIndexRoute
+  '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/privacy/': typeof SettingsPrivacyIndexRoute
+  '/settings/profile/': typeof SettingsProfileIndexRoute
   '/demo/api/ai/chat': typeof DemoApiAiChatRoute
   '/demo/api/ai/image': typeof DemoApiAiImageRoute
   '/demo/api/ai/structured': typeof DemoApiAiStructuredRoute
@@ -193,9 +337,25 @@ export interface FileRouteTypes {
     | '/demo/store'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/chat/'
+    | '/grid/'
+    | '/onboarding/'
+    | '/right-now/'
+    | '/settings/'
     | '/api/auth/$'
     | '/demo/guitars/$guitarId'
+    | '/auth/sign-in/'
+    | '/chat/$conversationId/'
     | '/demo/guitars/'
+    | '/interest/taps/'
+    | '/interest/views/'
+    | '/profile/$profileId/'
+    | '/settings/account/'
+    | '/settings/app/'
+    | '/settings/blocked/'
+    | '/settings/hidden/'
+    | '/settings/privacy/'
+    | '/settings/profile/'
     | '/demo/api/ai/chat'
     | '/demo/api/ai/image'
     | '/demo/api/ai/structured'
@@ -213,9 +373,25 @@ export interface FileRouteTypes {
     | '/demo/store'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/chat'
+    | '/grid'
+    | '/onboarding'
+    | '/right-now'
+    | '/settings'
     | '/api/auth/$'
     | '/demo/guitars/$guitarId'
+    | '/auth/sign-in'
+    | '/chat/$conversationId'
     | '/demo/guitars'
+    | '/interest/taps'
+    | '/interest/views'
+    | '/profile/$profileId'
+    | '/settings/account'
+    | '/settings/app'
+    | '/settings/blocked'
+    | '/settings/hidden'
+    | '/settings/privacy'
+    | '/settings/profile'
     | '/demo/api/ai/chat'
     | '/demo/api/ai/image'
     | '/demo/api/ai/structured'
@@ -233,9 +409,25 @@ export interface FileRouteTypes {
     | '/demo/store'
     | '/demo/table'
     | '/demo/tanstack-query'
+    | '/chat/'
+    | '/grid/'
+    | '/onboarding/'
+    | '/right-now/'
+    | '/settings/'
     | '/api/auth/$'
     | '/demo/guitars/$guitarId'
+    | '/auth/sign-in/'
+    | '/chat/$conversationId/'
     | '/demo/guitars/'
+    | '/interest/taps/'
+    | '/interest/views/'
+    | '/profile/$profileId/'
+    | '/settings/account/'
+    | '/settings/app/'
+    | '/settings/blocked/'
+    | '/settings/hidden/'
+    | '/settings/privacy/'
+    | '/settings/profile/'
     | '/demo/api/ai/chat'
     | '/demo/api/ai/image'
     | '/demo/api/ai/structured'
@@ -254,9 +446,25 @@ export interface RootRouteChildren {
   DemoStoreRoute: typeof DemoStoreRoute
   DemoTableRoute: typeof DemoTableRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  ChatIndexRoute: typeof ChatIndexRoute
+  GridIndexRoute: typeof GridIndexRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+  RightNowIndexRoute: typeof RightNowIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   DemoGuitarsGuitarIdRoute: typeof DemoGuitarsGuitarIdRoute
+  AuthSignInIndexRoute: typeof AuthSignInIndexRoute
+  ChatConversationIdIndexRoute: typeof ChatConversationIdIndexRoute
   DemoGuitarsIndexRoute: typeof DemoGuitarsIndexRoute
+  InterestTapsIndexRoute: typeof InterestTapsIndexRoute
+  InterestViewsIndexRoute: typeof InterestViewsIndexRoute
+  ProfileProfileIdIndexRoute: typeof ProfileProfileIdIndexRoute
+  SettingsAccountIndexRoute: typeof SettingsAccountIndexRoute
+  SettingsAppIndexRoute: typeof SettingsAppIndexRoute
+  SettingsBlockedIndexRoute: typeof SettingsBlockedIndexRoute
+  SettingsHiddenIndexRoute: typeof SettingsHiddenIndexRoute
+  SettingsPrivacyIndexRoute: typeof SettingsPrivacyIndexRoute
+  SettingsProfileIndexRoute: typeof SettingsProfileIndexRoute
   DemoApiAiChatRoute: typeof DemoApiAiChatRoute
   DemoApiAiImageRoute: typeof DemoApiAiImageRoute
   DemoApiAiStructuredRoute: typeof DemoApiAiStructuredRoute
@@ -278,6 +486,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/': {
+      id: '/chat/'
+      path: '/chat'
+      fullPath: '/chat/'
+      preLoaderRoute: typeof ChatIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/ai-chat': {
@@ -336,11 +551,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/grid/': {
+      id: '/grid/'
+      path: '/grid'
+      fullPath: '/grid/'
+      preLoaderRoute: typeof GridIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/right-now/': {
+      id: '/right-now/'
+      path: '/right-now'
+      fullPath: '/right-now/'
+      preLoaderRoute: typeof RightNowIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/sign-in/': {
+      id: '/auth/sign-in/'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in/'
+      preLoaderRoute: typeof AuthSignInIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/chat/$conversationId/': {
+      id: '/chat/$conversationId/'
+      path: '/chat/$conversationId'
+      fullPath: '/chat/$conversationId/'
+      preLoaderRoute: typeof ChatConversationIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/guitars/': {
@@ -355,6 +612,69 @@ declare module '@tanstack/react-router' {
       path: '/demo/guitars/$guitarId'
       fullPath: '/demo/guitars/$guitarId'
       preLoaderRoute: typeof DemoGuitarsGuitarIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interest/taps/': {
+      id: '/interest/taps/'
+      path: '/interest/taps'
+      fullPath: '/interest/taps/'
+      preLoaderRoute: typeof InterestTapsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interest/views/': {
+      id: '/interest/views/'
+      path: '/interest/views'
+      fullPath: '/interest/views/'
+      preLoaderRoute: typeof InterestViewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$profileId/': {
+      id: '/profile/$profileId/'
+      path: '/profile/$profileId'
+      fullPath: '/profile/$profileId/'
+      preLoaderRoute: typeof ProfileProfileIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/account/': {
+      id: '/settings/account/'
+      path: '/settings/account'
+      fullPath: '/settings/account/'
+      preLoaderRoute: typeof SettingsAccountIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/app/': {
+      id: '/settings/app/'
+      path: '/settings/app'
+      fullPath: '/settings/app/'
+      preLoaderRoute: typeof SettingsAppIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/blocked/': {
+      id: '/settings/blocked/'
+      path: '/settings/blocked'
+      fullPath: '/settings/blocked/'
+      preLoaderRoute: typeof SettingsBlockedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/hidden/': {
+      id: '/settings/hidden/'
+      path: '/settings/hidden'
+      fullPath: '/settings/hidden/'
+      preLoaderRoute: typeof SettingsHiddenIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/privacy/': {
+      id: '/settings/privacy/'
+      path: '/settings/privacy'
+      fullPath: '/settings/privacy/'
+      preLoaderRoute: typeof SettingsPrivacyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/profile/': {
+      id: '/settings/profile/'
+      path: '/settings/profile'
+      fullPath: '/settings/profile/'
+      preLoaderRoute: typeof SettingsProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/api/ai/chat': {
@@ -406,9 +726,25 @@ const rootRouteChildren: RootRouteChildren = {
   DemoStoreRoute: DemoStoreRoute,
   DemoTableRoute: DemoTableRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  ChatIndexRoute: ChatIndexRoute,
+  GridIndexRoute: GridIndexRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
+  RightNowIndexRoute: RightNowIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   DemoGuitarsGuitarIdRoute: DemoGuitarsGuitarIdRoute,
+  AuthSignInIndexRoute: AuthSignInIndexRoute,
+  ChatConversationIdIndexRoute: ChatConversationIdIndexRoute,
   DemoGuitarsIndexRoute: DemoGuitarsIndexRoute,
+  InterestTapsIndexRoute: InterestTapsIndexRoute,
+  InterestViewsIndexRoute: InterestViewsIndexRoute,
+  ProfileProfileIdIndexRoute: ProfileProfileIdIndexRoute,
+  SettingsAccountIndexRoute: SettingsAccountIndexRoute,
+  SettingsAppIndexRoute: SettingsAppIndexRoute,
+  SettingsBlockedIndexRoute: SettingsBlockedIndexRoute,
+  SettingsHiddenIndexRoute: SettingsHiddenIndexRoute,
+  SettingsPrivacyIndexRoute: SettingsPrivacyIndexRoute,
+  SettingsProfileIndexRoute: SettingsProfileIndexRoute,
   DemoApiAiChatRoute: DemoApiAiChatRoute,
   DemoApiAiImageRoute: DemoApiAiImageRoute,
   DemoApiAiStructuredRoute: DemoApiAiStructuredRoute,

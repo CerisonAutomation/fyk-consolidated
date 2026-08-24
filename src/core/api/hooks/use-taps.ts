@@ -6,7 +6,7 @@ import { ApiError } from "../client/api-error";
 
 // -- Schemas (inlined from open-grind model) --
 
-export const tapProfileSchema = z.record(z.unknown());
+export const tapProfileSchema = z.record(z.string(), z.unknown());
 export type TapProfile = z.infer<typeof tapProfileSchema>;
 
 export type TapType = number;
@@ -38,7 +38,7 @@ export function useReceivedTaps() {
 			return res.jsonParsed(getReceivedTapsResponseSchema);
 		},
 		staleTime: 60_000,
-		retry: (count, error) => error instanceof ApiError && error.retryable,
+		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
@@ -65,7 +65,6 @@ export function useSendTap() {
 			return res.jsonParsed(sendTapResponseSchema);
 		},
 		onSuccess: () => {
-			// Invalidate received taps to reflect new mutual taps
 			queryClient.invalidateQueries({ queryKey: tapKeys.all });
 		},
 	});
