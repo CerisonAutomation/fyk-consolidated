@@ -83,7 +83,8 @@ export const useTapsStore = create<TapsState>((set, get) => ({
 		const index = all.findIndex((tap) => tap.profileId === profileId);
 		const tap = all[index];
 		if (!tap) return;
-		const newAll = all.with(index, { ...tap, isFavorite });
+		const newAll = [...all];
+		newAll[index] = { ...tap, isFavorite };
 		set({ all: newAll });
 	},
 

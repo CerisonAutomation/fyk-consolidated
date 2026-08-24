@@ -18,7 +18,7 @@ export function demoFavoriteOf({ profileId }: { profileId: number; seed?: boolea
 	return demoFavoriteSet.has(profileId);
 }
 
-function hashString(str: string): number {
+export function hashString(str: string): number {
 	let hash = 0;
 	for (let i = 0; i < str.length; i++) {
 		const char = str.charCodeAt(i);
@@ -27,7 +27,7 @@ function hashString(str: string): number {
 	return hash;
 }
 
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
 	return () => {
 		let t = (seed += 0x6d2b79f5);
 		t = Math.imul(t ^ (t >>> 15), t | 1);

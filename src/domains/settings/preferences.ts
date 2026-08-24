@@ -184,3 +184,6 @@ export async function clearAccountPreferences(): Promise<void> {
 		writeToDisk(preferences);
 	});
 }
+
+// removeLocal is exported for account data cleanup flows
+export { removeLocal };

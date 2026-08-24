@@ -36,6 +36,9 @@ interface GridState {
 	setFavorite: (args: { profileId: number; isFavorite: boolean }) => void;
 	removeProfile: (profileId: number) => void;
 	resolveProfile: (id: number) => Promise<void>;
+	_withLiveLocation: (currentGeohash: string, token: number, background: boolean) => Promise<string>;
+	_fetchProfiles: (currentGeohash: string, opts?: { silent?: boolean; background?: boolean; sampleLocation?: boolean }) => Promise<void>;
+	_reset: () => void;
 }
 
 let fetchToken = 0;
@@ -73,7 +76,8 @@ export const useGridStore = create<GridState>((set, get) => ({
 		const { items } = get();
 		const index = items.findIndex((item) => item.id === profileId);
 		if (index === -1) return;
-		const newItems = items.toSpliced(index, 1);
+		const newItems = [...items];
+		newItems.splice(index, 1);
 		set({ items: newItems });
 	},
 
@@ -302,10 +306,16 @@ export const useGridStore = create<GridState>((set, get) => ({
 			nextPage: 0,
 			loadingMore: false,
 			loading: true,
+			refreshing: false,
 			error: null,
 			currentQuery: null,
+			scrollY: 0,
+			viewActive: false,
 		});
 		resolvingIds.clear();
+	},
+	reset() {
+		get()._reset();
 	},
 }));
 

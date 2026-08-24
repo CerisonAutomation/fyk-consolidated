@@ -148,7 +148,7 @@ export function patchCachedProfile({
 }
 
 export async function resolveLazyProfile(
-	profile: LazyGridProfile,
+	_profile: LazyGridProfile,
 ): Promise<RenderedGridProfile | null> {
 	// This will be wired to the actual API transport layer
 	return null;

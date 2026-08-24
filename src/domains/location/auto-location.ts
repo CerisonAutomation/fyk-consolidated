@@ -134,6 +134,10 @@ class AutoLocation {
 		this.#failureReported = true;
 		report();
 	}
+
+	getLastCoords(): Coordinates | null {
+		return this.#lastCoords;
+	}
 }
 
 export const autoLocation = new AutoLocation();

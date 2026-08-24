@@ -1,8 +1,17 @@
 import { authClient } from '#/lib/auth-client'
 import { Link } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
 
 export default function BetterAuthHeader() {
-  const { data: session, isPending } = authClient.useSession()
+  const [session, setSession] = useState<{ user: { name?: string | null; image?: string | null; email?: string | null } } | null>(null)
+  const [isPending, setIsPending] = useState(true)
+
+  useEffect(() => {
+    authClient.getSession().then(({ data }) => {
+      setSession(data as unknown as { user: { name?: string | null; image?: string | null; email?: string | null } } | null)
+      setIsPending(false)
+    }).catch(() => setIsPending(false))
+  }, [])
 
   if (isPending) {
     return (

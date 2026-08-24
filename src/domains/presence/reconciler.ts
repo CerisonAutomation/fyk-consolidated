@@ -12,29 +12,29 @@ class Reconciler {
 	#firstConnect = true;
 
 	constructor() {
-		// Listen for WebSocket connection events
-		useWsStore.subscribe((state, prevState) => {
-			if (state.status === 'connected' && prevState.status !== 'connected') {
-				if (this.#firstConnect) {
-					this.#firstConnect = false;
-					return;
-				}
-				void this.#trigger();
+	// Listen for WebSocket connection events
+	useWsStore.subscribe((state, prevState) => {
+		if (state.status === 'connected' && prevState.status !== 'connected') {
+			if (this.#firstConnect) {
+				this.#firstConnect = false;
+				return;
 			}
-		});
-
-		if (typeof document !== 'undefined') {
-			document.addEventListener('visibilitychange', () => {
-				if (document.visibilityState === 'hidden') {
-					this.#wasHidden = true;
-					return;
-				}
-				if (!this.#wasHidden) return;
-				this.#wasHidden = false;
-				void this.#trigger();
-			});
+			this.#scheduleResync();
 		}
+	});
+
+	if (typeof document !== 'undefined') {
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'hidden') {
+				this.#wasHidden = true;
+				return;
+			}
+			if (!this.#wasHidden) return;
+			this.#wasHidden = false;
+			this.#scheduleResync();
+		});
 	}
+}
 
 	subscribe(handler: ReconcileHandler): () => void {
 		this.#handlers.add(handler);

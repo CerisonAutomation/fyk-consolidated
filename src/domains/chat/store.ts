@@ -89,14 +89,15 @@ export const useConversationsStore = create<ConversationsState>((set, get) => ({
 			(e) => e.data.conversationId === conversationId,
 		);
 		if (index === -1) return;
-		const newEntries = entries.toSpliced(index, 1);
+		const newEntries = [...entries];
+		newEntries.splice(index, 1);
 		set({ entries: newEntries });
 	},
 
 	sortEntries() {
 		const { entries } = get();
-		const sorted = entries.toSorted(
-			(a, b) =>
+		const sorted = [...entries].sort(
+			(a: Conversation, b: Conversation) =>
 				Number(b.data.pinned) - Number(a.data.pinned) ||
 				b.data.lastActivityTimestamp - a.data.lastActivityTimestamp,
 		);
