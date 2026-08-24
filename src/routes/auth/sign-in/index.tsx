@@ -36,7 +36,7 @@ function FYKLogoInline() {
 /* ── Types ── */
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset' | 'magic-link'
 
-const PASSWORD_STRENGTH_LABELS
+const PASSWORD_STRENGTH_LABELS = ['', 'Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong']
 const PASSWORD_STRENGTH_COLORS = [
   '',
   'var(--accent-secondary)',

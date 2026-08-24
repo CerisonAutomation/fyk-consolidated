@@ -372,7 +372,6 @@
     color: var(--color-foreground);
     overscroll-behavior: none;
     min-height: 100dvh;
-    contain: layout style;
   }
 
   /* Focus visible ring for keyboard navigation */

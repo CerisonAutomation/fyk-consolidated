@@ -812,7 +812,7 @@ export function FYKAuthPage({
 					style={{ animation: 'auth-slideUp 0.6s ease-out 0.7s both' }}
 				>
 					<button
-						onClick={onGoToChat || (() => setAuth({ userId: '123456000' }) || navigate({ to: '/grid' }))}
+						onClick={onGoToChat || (() => navigate({ to: '/', replace: true }))}
 						className="text-[11px] font-medium text-white/20 transition hover:text-amber-400/60"
 					>
 						Skip — browse without signing up &rarr;
