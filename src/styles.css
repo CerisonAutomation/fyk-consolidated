@@ -1568,6 +1568,16 @@
 /*  MACHOBBS SIDEBAR STYLES                                           */
 /* ================================================================== */
 
+/* ── Screen layout wrapper (adds scroll + padding for nav) ── */
+@layer base {
+  .screen-nav-host {
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    overscroll-behavior: none;
+  }
+}
+
 @layer base {
   .machobb-sidebar {
     position: fixed;

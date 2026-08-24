@@ -10,7 +10,6 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import { SupabaseSessionProvider, useSupabaseSession } from '../integrations/supabase/session-provider'
 import { NavBar } from '../core/ui/organisms/NavBar'
-import { AuthGuard } from '../domains/auth/auth-guard'
 import { useAuthStore } from '../domains/auth/store'
 import { useAutoSavePreferences } from '../hooks/use-auto-save-preferences'
 
@@ -24,25 +23,24 @@ interface MyRouterContext {
   queryClient: QueryClient
 }
 
-/** Public routes that don't require authentication */
-const PUBLIC_ROUTES = ['/auth/sign-in', '/auth/sign-up', '/auth/callback', '/'];
+/** Routes that hide the NavBar (auth pages get full-screen treatment) */
+const NAV_HIDDEN_ROUTES = ['/auth/sign-in', '/auth/sign-up', '/auth/callback'];
 
-function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some(
+function isNavHiddenRoute(pathname: string): boolean {
+  return NAV_HIDDEN_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(route + '/'),
   );
 }
 
 /**
- * Conditionally renders NavBar + AuthGuard based on current route and session.
- * Auth pages are always public. Protected pages require a session.
+ * Layout wrapper: always shows NavBar except on auth pages.
+ * No auth guard — the app works for everyone; protected actions
+ * check auth at the point of use.
  */
-function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
+function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, loading, user } = useSupabaseSession();
-  const isAuthed = !!session;
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  // Activate auto-save preferences when authenticated
   useAutoSavePreferences();
 
   // Keep Zustand auth store in sync with Supabase session
@@ -54,28 +52,12 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, session, loading, setAuth]);
 
-  // For auth pages, render just the content (no nav, no guard)
-  if (typeof window !== 'undefined' && isPublicRoute(window.location.pathname)) {
+  // Auth pages: no NavBar, full-screen content
+  if (typeof window !== 'undefined' && isNavHiddenRoute(window.location.pathname)) {
     return <>{children}</>;
   }
 
-  // While loading, show a minimal spinner
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-        </div>
-      </div>
-    );
-  }
-
-  // Not authenticated and not on a public route — redirect via AuthGuard
-  if (!isAuthed) {
-    return <AuthGuard>{children}</AuthGuard>;
-  }
-
-  // Authenticated — show full app layout with NavBar
+  // All other pages: NavBar always visible
   return (
     <>
       <NavBar />
@@ -225,7 +207,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="antialiased bg-background text-foreground min-h-screen font-[family-name:var(--font-sans)] safe-area-top">
         <SupabaseSessionProvider>
-          <AuthenticatedLayout>{children}</AuthenticatedLayout>
+          <AppLayout>{children}</AppLayout>
           <TanStackDevtools
             config={{
               position: 'bottom-right',

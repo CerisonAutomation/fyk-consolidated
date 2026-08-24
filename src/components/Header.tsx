@@ -28,14 +28,14 @@ export default function Header() {
         {/* Right-side actions */}
         <div className="flex items-center gap-2">
           <Link
-            to="/notifications"
+            to="/settings"
             className="relative flex size-9 items-center justify-center rounded-xl text-white/60 transition-colors hover:bg-white/[0.08] hover:text-white"
           >
             <Bell className="size-[18px]" />
           </Link>
 
           <Link
-            to="/crown"
+            to="/settings"
             className="flex size-9 items-center justify-center rounded-xl text-yellow-400/70 transition-colors hover:bg-yellow-400/10 hover:text-yellow-400"
           >
             <Crown className="size-[18px]" />

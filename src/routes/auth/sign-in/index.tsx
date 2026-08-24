@@ -11,7 +11,6 @@ import {
   ArrowLeft,
   KeyRound,
   Sparkles,
-  Crown,
   Shield,
   LockKeyhole,
 } from 'lucide-react'
@@ -37,14 +36,7 @@ function FYKLogoInline() {
 /* ── Types ── */
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset' | 'magic-link'
 
-/* ── Helpers ── */
-function extractError(err: unknown, fallback = 'Login failed'): string {
-  if (typeof err === 'string') return err
-  if (err instanceof Error) return err.message
-  return fallback
-}
-
-const PASSWORD_STRENGTH_LABELS = ['', 'Very Weak', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong']
+const PASSWORD_STRENGTH_LABELS
 const PASSWORD_STRENGTH_COLORS = [
   '',
   'var(--accent-secondary)',
@@ -822,18 +814,12 @@ function SignInPage() {
                 <button
                   type="button"
                   onClick={async () => {
-                    try {
-                      const res = await fetch('/api/auth/social/google', {
-                        method: 'POST',
-                      })
-                      if (res.ok) {
-                        const data = await res.json()
-                        if (data.url) window.location.href = data.url
-                      } else {
-                        alert('Google sign-in not configured yet')
-                      }
-                    } catch {
-                      alert('Google sign-in unavailable')
+                    const { error: authError } = await supabase.auth.signInWithOAuth({
+                      provider: 'google',
+                      options: { redirectTo: `${window.location.origin}/auth/callback` },
+                    })
+                    if (authError) {
+                      setError(authError.message)
                     }
                   }}
                   className="w-full h-12 flex items-center justify-center gap-2.5 rounded-xl text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"

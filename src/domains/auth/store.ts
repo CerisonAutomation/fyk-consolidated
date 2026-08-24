@@ -3,7 +3,7 @@ import type { User } from "@supabase/supabase-js";
 
 interface AuthState {
 	auth: { userId: string; user: User } | null;
-	setAuth: (auth: { userId: string; user?: User } | null) => void;
+	setAuth: (auth: { userId: string; user: User } | null) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({

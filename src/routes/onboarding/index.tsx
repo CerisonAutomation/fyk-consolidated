@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { setPreferences } from '#/domains/settings/preferences';
-import { useSupabaseSession } from '#/integrations/supabase/session-provider';
 
 export const Route = createFileRoute('/onboarding/')({
 	component: OnboardingPage,
@@ -9,7 +8,6 @@ export const Route = createFileRoute('/onboarding/')({
 
 function OnboardingPage() {
 	const [starting, setStarting] = useState(false);
-	const { user } = useSupabaseSession();
 
 	const handleStart = async () => {
 		setStarting(true);

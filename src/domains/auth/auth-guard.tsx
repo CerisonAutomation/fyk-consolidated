@@ -22,7 +22,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 	// Sync Supabase session → Zustand auth store
 	useEffect(() => {
 		if (user) {
-			setAuth({ userId: user.id, user });
+			setAuth({ userId: user.id, user: user });
 		} else if (!loading && !session) {
 			setAuth(null);
 		}

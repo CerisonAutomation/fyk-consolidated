@@ -9,11 +9,8 @@ import {
   Lock,
   User,
   ArrowRight,
-  ArrowLeft,
-  Crown,
   Shield,
   LockKeyhole,
-  Sparkles,
 } from "lucide-react";
 
 export const Route = createFileRoute("/auth/sign-up/")({

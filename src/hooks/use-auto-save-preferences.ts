@@ -6,7 +6,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import {
-	getPreferences,
 	setPreferences,
 	type Preferences,
 } from "#/domains/settings/preferences";
