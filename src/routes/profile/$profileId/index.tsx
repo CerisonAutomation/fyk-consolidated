@@ -675,7 +675,19 @@ function ProfilePage() {
 						{/* Tap (outline) */}
 						<button
 							onClick={() => {
-								// TODO: Wire tap action
+								// Optimistic tap feedback
+								const btn = document.activeElement as HTMLButtonElement;
+								if (btn) {
+									btn.style.borderColor = "rgba(234,179,8,0.6)";
+									btn.style.color = "#EAAB08";
+									btn.style.boxShadow =
+										"0 0 20px rgba(234,179,8,0.2)";
+									setTimeout(() => {
+										btn.style.borderColor = "";
+										btn.style.color = "";
+										btn.style.boxShadow = "";
+									}, 1500);
+								}
 							}}
 							className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-gold/25 bg-transparent backdrop-blur text-foreground font-display tracking-wider hover:border-gold/60 hover:text-gold hover:bg-gold/5 hover:shadow-[0_0_16px_-4px_rgba(212,175,55,0.2)] active:scale-[0.97] transition-all duration-200 btn-press"
 							style={{ fontSize: "var(--fs-sm)" }}
