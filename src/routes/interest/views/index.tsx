@@ -1,8 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useViews } from "#/core/api/hooks/use-views";
-import { UserAvatar } from "#/core/ui/molecules/UserAvatar";
-import { RelativeTimeDynamic } from "#/core/ui/molecules/RelativeTimeDynamic";
-import { Eye, Heart } from "lucide-react";
+import { Eye, Heart, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/interest/views/")({
 	component: ViewsPage,
@@ -33,46 +31,59 @@ function ViewsPage() {
 
 	return (
 		<main className="screen-nav-host">
-			<div className="flex items-center justify-between px-4 py-2">
-				<h1 className="text-lg font-semibold">Who Viewed Me</h1>
-				{uniqueViewers.length > 0 && (
-					<span className="text-sm text-muted-foreground">
-						{uniqueViewers.length}{" "}
-						{uniqueViewers.length === 1 ? "viewer" : "viewers"}
-					</span>
-				)}
-			</div>
+			<div className="h-full w-full overflow-y-auto overscroll-none">
+				<div className="mx-auto max-w-lg px-4 py-4 pb-24">
+					{/* Header */}
+					<div className="mb-4 flex items-center justify-between">
+						<div>
+							<h1 className="font-display text-xl font-semibold tracking-wide text-white">
+								Who Viewed Me
+							</h1>
+							<p className="mt-0.5 text-xs text-white/40">
+								{uniqueViewers.length === 0
+									? "No viewers yet"
+									: `${uniqueViewers.length} viewer${uniqueViewers.length === 1 ? "" : "s"}`}
+							</p>
+						</div>
+					</div>
 
-			{isLoading ? (
-				<div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 md:grid-cols-4">
-					{Array.from({ length: 6 }).map((_, i) => (
-						<div
-							key={i}
-							className="aspect-[3/4] animate-pulse rounded-lg bg-muted"
-						/>
-					))}
+					{/* Content */}
+					{isLoading ? (
+						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+							{Array.from({ length: 6 }).map((_, i) => (
+								<div
+									key={i}
+									className="aspect-[3/4] animate-pulse rounded-xl bg-white/5"
+									style={{ animationDelay: `${i * 60}ms` }}
+								/>
+							))}
+						</div>
+					) : uniqueViewers.length === 0 ? (
+						<div className="flex flex-col items-center justify-center py-20">
+							<div
+								className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl"
+								style={{
+									background: "color-mix(in srgb, var(--accent-primary) 8%, transparent)",
+								}}
+							>
+								<Eye className="h-10 w-10 text-amber-400/30" />
+							</div>
+							<h3 className="font-display text-lg text-white/60">
+								No one has viewed you yet
+							</h3>
+							<p className="mt-1 max-w-xs text-center text-sm text-white/30">
+								When someone views your profile, they'll appear here. Keep exploring!
+							</p>
+						</div>
+					) : (
+						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+							{uniqueViewers.map((viewer) => (
+								<ViewCard key={viewer.profileId} viewer={viewer} />
+							))}
+						</div>
+					)}
 				</div>
-			) : uniqueViewers.length === 0 ? (
-				<div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-					<div className="flex size-16 items-center justify-center rounded-full bg-muted">
-						<Eye className="size-8 text-muted-foreground" />
-					</div>
-					<div className="text-center">
-						<h2 className="text-lg font-semibold">
-							No one has viewed your profile yet
-						</h2>
-						<p className="mt-1 text-sm text-muted-foreground">
-							When someone views your profile, they will appear here.
-						</p>
-					</div>
-				</div>
-			) : (
-				<div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 md:grid-cols-4">
-					{uniqueViewers.map((viewer) => (
-						<ViewCard key={viewer.profileId} viewer={viewer} />
-					))}
-				</div>
-			)}
+			</div>
 		</main>
 	);
 }
@@ -80,21 +91,31 @@ function ViewsPage() {
 function ViewCard({ viewer }: { viewer: ViewerItem }) {
 	if (viewer.isSecretAdmirer) {
 		return (
-			<div className="group relative aspect-[3/4] overflow-hidden rounded-lg bg-muted">
-				<div className="flex h-full items-center justify-center bg-gradient-to-br from-pink-500/20 to-purple-500/20">
+			<div className="group relative aspect-[3/4] overflow-hidden rounded-xl">
+				<div
+					className="flex h-full items-center justify-center"
+					style={{
+						background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(168,85,247,0.15))",
+						border: "1px solid rgba(236,72,153,0.15)",
+					}}
+				>
 					<div className="flex flex-col items-center gap-2 text-center">
-						<div className="flex size-12 items-center justify-center rounded-full bg-pink-500/20">
-							<Heart className="size-6 text-pink-500" fill="currentColor" />
+						<div
+							className="flex h-12 w-12 items-center justify-center rounded-full"
+							style={{ background: "rgba(236,72,153,0.15)" }}
+						>
+							<Heart className="h-6 w-6 text-pink-400" fill="currentColor" />
 						</div>
-						<span className="text-sm font-medium text-foreground">
+						<span className="text-sm font-medium text-white/80">
 							Secret Admirer
 						</span>
+						<Lock className="h-3 w-3 text-white/30" />
 					</div>
 				</div>
 				{viewer.lastViewed !== null && (
 					<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-						<span className="text-xs text-white/80">
-							<RelativeTimeDynamic date={viewer.lastViewed / 1000} />
+						<span className="text-[10px] text-white/60">
+							{formatTimeAgo(viewer.lastViewed)}
 						</span>
 					</div>
 				)}
@@ -102,36 +123,57 @@ function ViewCard({ viewer }: { viewer: ViewerItem }) {
 		);
 	}
 
+	const isOnline =
+		viewer.onlineUntil !== null && viewer.onlineUntil > Date.now() / 1000;
+
 	return (
 		<Link
 			to="/profile/$profileId"
 			params={{ profileId: String(viewer.profileId) }}
-			className="group relative aspect-[3/4] overflow-hidden rounded-lg bg-muted"
+			className="group relative aspect-[3/4] overflow-hidden rounded-xl"
+			style={{ border: "1px solid rgba(255,255,255,0.06)" }}
 		>
-			<UserAvatar
-				mediaHash={viewer.profileImageMediaHash}
-				className="size-full"
-				size="xl"
-			/>
-			<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2 pt-6">
-				<span className="text-sm font-medium text-white drop-shadow-md">
+			<div
+				className="flex h-full items-center justify-center text-3xl font-bold"
+				style={{
+					background: "linear-gradient(135deg, rgba(234,179,8,0.12), rgba(168,85,247,0.08))",
+					color: "#EAAB08",
+				}}
+			>
+				{viewer.displayName?.charAt(0) ?? "?"}
+			</div>
+			<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2.5 pt-6">
+				<p className="text-sm font-medium text-white drop-shadow-md">
 					{viewer.displayName ?? "Someone"}
-				</span>
+				</p>
 				{viewer.lastViewed !== null && (
-					<div className="mt-0.5">
-						<span className="text-xs text-white/70">
-							<RelativeTimeDynamic date={viewer.lastViewed / 1000} />
-						</span>
-					</div>
+					<p className="mt-0.5 text-[10px] text-white/60">
+						{formatTimeAgo(viewer.lastViewed)}
+					</p>
 				)}
 			</div>
-			{viewer.onlineUntil !== null &&
-				viewer.onlineUntil > Date.now() / 1000 && (
-					<div
-						className="absolute right-2 top-2 h-3 w-3 rounded-full bg-green-500 ring-2 ring-black/20"
-						title="Online now"
-					/>
-				)}
+			{isOnline && (
+				<div
+					className="absolute right-2 top-2 h-3 w-3 rounded-full bg-green-500 ring-2 ring-black/30"
+					title="Online now"
+				/>
+			)}
+			<div className="absolute left-2 top-2 opacity-0 transition group-hover:opacity-100">
+				<span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-[10px]">
+					<Eye className="h-3 w-3 text-white/70" />
+				</span>
+			</div>
 		</Link>
 	);
+}
+
+function formatTimeAgo(ts: number): string {
+	const seconds = Math.floor((Date.now() - ts) / 1000);
+	if (seconds < 60) return "just now";
+	const minutes = Math.floor(seconds / 60);
+	if (minutes < 60) return `${minutes}m ago`;
+	const hours = Math.floor(minutes / 60);
+	if (hours < 24) return `${hours}h ago`;
+	const days = Math.floor(hours / 24);
+	return `${days}d ago`;
 }
