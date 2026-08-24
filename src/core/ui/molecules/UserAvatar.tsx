@@ -1,0 +1,52 @@
+import type { ReactNode } from "react";
+import { User } from "lucide-react";
+import { cn } from "../cn";
+import { MediaImage } from "./MediaImage";
+
+interface UserAvatarProps {
+  mediaHash: string | null;
+  className?: string;
+  size?: "md" | "lg" | "xl";
+}
+
+const iconSizeClasses = {
+  md: "size-1/2",
+  lg: "size-3/5",
+  xl: "size-3/4",
+} as const;
+
+function profileMediaUrl(opts: {
+  mediaHash: string;
+  size: "thumb" | "full";
+}): string {
+  // Construct URL from media hash - adjust base path to match your API
+  return `/api/media/${opts.mediaHash}/${opts.size}`;
+}
+
+export function UserAvatar({
+  mediaHash,
+  className = "size-80",
+  size = "md",
+}: UserAvatarProps): ReactNode {
+  return (
+    <div className={cn(className)}>
+      {mediaHash ? (
+        <MediaImage
+          src={profileMediaUrl({ mediaHash, size: "thumb" })}
+          className="h-full w-full"
+          imgClassName="bg-neutral-600 blur-2xl"
+          tone="photo"
+          size={size}
+          loading="lazy"
+        />
+      ) : (
+        <div className="flex size-full items-center justify-center bg-neutral-700">
+          <User
+            fill="var(--color-stone-400, #a8a29e)"
+            className={cn("m-auto", iconSizeClasses[size])}
+          />
+        </div>
+      )}
+    </div>
+  );
+}

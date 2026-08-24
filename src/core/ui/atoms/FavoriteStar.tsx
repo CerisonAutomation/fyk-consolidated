@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Star } from "lucide-react";
+import { cn } from "../cn";
 
 interface FavoriteStarProps {
   className?: string;
