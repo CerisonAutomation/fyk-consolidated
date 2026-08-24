@@ -68,9 +68,6 @@ importers:
       '@tanstack/react-start':
         specifier: latest
         version: 1.168.49(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.5)(rollup@4.62.5)(vite@8.2.2(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12))
-      '@tanstack/react-start-server':
-        specifier: latest
-        version: 1.167.37(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tanstack/react-store':
         specifier: latest
         version: 0.11.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
