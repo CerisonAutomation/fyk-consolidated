@@ -98,6 +98,21 @@ export function VideoScrubber({
     [currentTime, duration, seekTo],
   );
 
+  const thumbStyle = useMemo(
+    () => ({
+      left: playhead,
+      transformOrigin: `${played * 100}% center`,
+    }),
+    [playhead, played],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (scrubbing) seekToPointer(e);
+    },
+    [scrubbing, seekToPointer],
+  );
+
   return (
     <div
       ref={trackRef}
@@ -113,9 +128,7 @@ export function VideoScrubber({
         className,
       )}
       onPointerDown={grab}
-      onPointerMove={(e) => {
-        if (scrubbing) seekToPointer(e);
-      }}
+      onPointerMove={handlePointerMove}
       onPointerUp={release}
       onPointerCancel={release}
       onKeyDown={seekByKey}
@@ -141,10 +154,7 @@ export function VideoScrubber({
             ? "scale-150 bg-transparent"
             : "scale-100 bg-white",
         )}
-        style={{
-          left: playhead,
-          transformOrigin: `${played * 100}% center`,
-        }}
+        style={thumbStyle}
       />
     </div>
   );

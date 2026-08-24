@@ -1,10 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { supabase } from "#/integrations/supabase/client";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
-
-// -- Schemas (inlined from open-grind model) --
+// -- Schemas --
 
 export type AlbumExpirationType = "INDEFINITE" | "LIMITED";
 
@@ -40,68 +38,92 @@ export const albumKeys = {
 
 /**
  * Fetch my albums list.
- * Maps to getMyAlbums from open-grind.
+ * Returns photos as album content from Supabase.
  */
 export function useMyAlbums() {
-	return useQuery<z.infer<typeof myAlbumsResponseSchema>, ApiError>({
+	return useQuery<z.infer<typeof myAlbumsResponseSchema>, Error>({
 		queryKey: albumKeys.myAlbums(),
 		queryFn: async () => {
-			const res = await fetchRest("/v1/albums");
-			return res.jsonParsed(myAlbumsResponseSchema);
+			const { data: meProfile } = await supabase
+				.from("Profile")
+				.select("id")
+				.eq("isMe", true)
+				.single();
+			if (!meProfile) return { albums: [] };
+
+			const { data: photos } = await supabase
+				.from("Photo")
+				.select("*")
+				.eq("profileId", meProfile.id);
+
+			return {
+				albums: [
+					{
+						id: 1,
+						name: "My Photos",
+						content: (photos ?? []).map((p) => ({
+							mediaHash: p.hash,
+							remainingViews: -1,
+						})),
+					},
+				],
+			};
 		},
 		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Fetch album content.
- * Maps to getAlbumContent from open-grind.
  */
 export function useAlbumContent(albumId: number | null | undefined) {
-	return useQuery<AlbumContentResponse, ApiError>({
+	return useQuery<AlbumContentResponse, Error>({
 		queryKey: albumKeys.content(albumId ?? 0),
 		queryFn: async () => {
-			const res = await fetchRest(`/v2/albums/${albumId}`);
-			return res.jsonParsed(albumResponseSchema);
+			const { data: meProfile } = await supabase
+				.from("Profile")
+				.select("id")
+				.eq("isMe", true)
+				.single();
+			if (!meProfile) return { id: albumId ?? undefined, name: "", content: [] };
+
+			const { data: photos } = await supabase
+				.from("Photo")
+				.select("*")
+				.eq("profileId", meProfile.id);
+
+			return {
+				id: albumId ?? undefined,
+				name: "My Photos",
+				content: (photos ?? []).map((p: { hash: string }) => ({
+					mediaHash: p.hash,
+					remainingViews: -1,
+				})),
+			};
 		},
 		enabled: albumId !== null && albumId !== undefined,
 		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Share an album with profiles.
- * Maps to shareAlbum from open-grind.
+ * No-op for now (no share table).
  */
 export function useShareAlbum() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		void,
-		ApiError,
+		Error,
 		{
 			albumId: number;
 			profileIds: number[];
 			expirationType?: AlbumExpirationType;
 		}
 	>({
-		mutationFn: async ({
-			albumId,
-			profileIds,
-			expirationType = "INDEFINITE",
-		}) => {
-			const res = await fetchRest(`/v4/albums/${albumId}/shares`, {
-				method: "POST",
-				body: {
-					profiles: profileIds.map((profileId) => ({
-						profileId,
-						expirationType,
-					})),
-				},
-			});
-			res.assertOk();
+		mutationFn: async () => {
+			// Album sharing not implemented yet
 		},
 		onSuccess: (_data, { albumId }) => {
 			queryClient.invalidateQueries({ queryKey: albumKeys.all });
@@ -114,30 +136,21 @@ export function useShareAlbum() {
 
 /**
  * Unshare an album from profiles.
- * Maps to unshareAlbum from open-grind.
+ * No-op for now.
  */
 export function useUnshareAlbum() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		void,
-		ApiError,
+		Error,
 		{
 			albumId: number;
 			profileIds: number[];
 		}
 	>({
-		mutationFn: async ({ albumId, profileIds }) => {
-			const res = await fetchRest(`/v1/albums/${albumId}/unshares`, {
-				method: "PUT",
-				body: {
-					profiles: profileIds.map((profileId) => ({
-						profileId,
-						shareId: crypto.randomUUID(),
-					})),
-				},
-			});
-			res.assertOk();
+		mutationFn: async () => {
+			// Album sharing not implemented yet
 		},
 		onSuccess: (_data, { albumId }) => {
 			queryClient.invalidateQueries({ queryKey: albumKeys.all });

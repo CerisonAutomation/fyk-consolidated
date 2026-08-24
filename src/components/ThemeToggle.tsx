@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 type ThemeMode = 'light' | 'dark' | 'auto'
 
@@ -54,13 +54,15 @@ export default function ThemeToggle() {
     }
   }, [mode])
 
-  function toggleMode() {
-    const nextMode: ThemeMode =
-      mode === 'light' ? 'dark' : mode === 'dark' ? 'auto' : 'light'
-    setMode(nextMode)
-    applyThemeMode(nextMode)
-    window.localStorage.setItem('theme', nextMode)
-  }
+  const toggleMode = useCallback(() => {
+    setMode((prev) => {
+      const nextMode: ThemeMode =
+        prev === 'light' ? 'dark' : prev === 'dark' ? 'auto' : 'light'
+      applyThemeMode(nextMode)
+      window.localStorage.setItem('theme', nextMode)
+      return nextMode
+    })
+  }, [])
 
   const label =
     mode === 'auto'

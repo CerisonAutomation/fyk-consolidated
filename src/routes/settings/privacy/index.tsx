@@ -1,16 +1,22 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { requireAuth } from "#/domains/auth/guard";
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { usePreferences } from '#/domains/settings/use-preferences';
+import { Switch } from '#/components/ui/switch';
 
 export const Route = createFileRoute('/settings/privacy/')({
-	component: PrivacySettingsPage,
+	beforeLoad: requireAuth,
+		component: PrivacySettingsPage,
 });
 
 function PrivacySettingsPage() {
+	const { prefs, update, pending } = usePreferences();
+
 	return (
 		<main className="screen-nav-host">
 			<div className="flex items-center gap-3 border-b border-border px-4 py-3">
-				<a href="/settings/account" className="text-muted-foreground hover:text-foreground">
+				<Link to="/settings" className="text-muted-foreground hover:text-foreground">
 					←
-				</a>
+				</Link>
 				<h1 className="text-lg font-semibold">Privacy</h1>
 			</div>
 			<div className="flex flex-col gap-4 p-4">
@@ -21,9 +27,24 @@ function PrivacySettingsPage() {
 							Display your approximate distance to others
 						</div>
 					</div>
-					<button className="h-6 w-11 rounded-full bg-primary/20 transition-colors">
-						<div className="h-5 w-5 rounded-full bg-primary shadow-sm" />
-					</button>
+					<Switch
+						checked={prefs.showDistance}
+						disabled={pending}
+						onCheckedChange={(checked) => update({ showDistance: checked })}
+					/>
+				</div>
+				<div className="flex items-center justify-between">
+					<div>
+						<div className="font-medium">Show Online Status</div>
+						<div className="text-sm text-muted-foreground">
+							Show when you are online to others
+						</div>
+					</div>
+					<Switch
+						checked={prefs.showOnlineStatus}
+						disabled={pending}
+						onCheckedChange={(checked) => update({ showOnlineStatus: checked })}
+					/>
 				</div>
 			</div>
 		</main>

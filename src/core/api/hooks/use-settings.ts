@@ -1,13 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import {
+	getAccountPreferences as getAccountPreferencesDb,
+	setAccountPreferences as setAccountPreferencesDb,
+} from "../supabase/index";
 
-// -- Schemas (inlined from open-grind model) --
+// -- Schemas --
 
-const accountPreferencesSchema = z.record(z.string(), z.unknown());
-export type AccountPreferences = z.infer<typeof accountPreferencesSchema>;
+export const accountPreferencesSchema = z.record(z.unknown());
+export type AccountPreferences = Record<string, unknown>;
 
 export type AccountPreferencesPatch = {
 	settings: Partial<AccountPreferences>;
@@ -25,34 +27,31 @@ export const settingsKeys = {
 
 /**
  * Fetch account preferences.
- * Maps to getAccountPreferences from open-grind.
+ * Now powered by Supabase.
  */
 export function useAccountPreferences() {
-	return useQuery<AccountPreferences, ApiError>({
+	return useQuery<AccountPreferences, Error>({
 		queryKey: settingsKeys.accountPreferences(),
 		queryFn: async () => {
-			const res = await fetchRest("/v3/me/prefs/settings");
-			return res.jsonParsed(accountPreferencesSchema);
+			const prefs = await getAccountPreferencesDb();
+			return (prefs ?? {}) as AccountPreferences;
 		},
 		staleTime: 5 * 60 * 1000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Update account preferences.
- * Maps to setAccountPreferences from open-grind.
+ * Now powered by Supabase.
  */
 export function useSetAccountPreferences() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, ApiError, AccountPreferencesPatch>({
+	return useMutation<void, Error, AccountPreferencesPatch>({
 		mutationFn: async (settings) => {
-			const res = await fetchRest("/v3/me/prefs/settings", {
-				method: "PUT",
-				body: settings,
-			});
-			res.assertOk();
+			await setAccountPreferencesDb(
+				settings.settings as Record<string, unknown>,
+			);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({

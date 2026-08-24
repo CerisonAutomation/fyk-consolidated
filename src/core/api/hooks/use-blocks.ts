@@ -1,10 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import {
+	getBlockedUsers as getBlockedUsersDb,
+	blockUser as blockUserDb,
+	unblockUser as unblockUserDb,
+} from "../supabase/index";
 
-// -- Schemas (inlined from open-grind model) --
+// -- Schemas --
 
 const getBlockedUsersResponseSchema = z.object({
 	blocking: z.array(
@@ -25,33 +28,28 @@ export const blockKeys = {
 
 /**
  * Fetch blocked users list.
- * Maps to getBlockedUsers from open-grind.
+ * Now powered by Supabase.
  */
 export function useBlockedUsers() {
-	return useQuery<BlockedUsers, ApiError>({
+	return useQuery<BlockedUsers, Error>({
 		queryKey: blockKeys.list(),
 		queryFn: async () => {
-			const res = await fetchRest("/v3.1/me/blocks");
-			return res.jsonParsed(getBlockedUsersResponseSchema).blocking;
+			return await getBlockedUsersDb();
 		},
 		staleTime: 5_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Block a user.
- * Maps to blockUser from open-grind.
+ * Now powered by Supabase.
  */
 export function useBlockUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, ApiError, { profileId: number }>({
+	return useMutation<void, Error, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v3/me/blocks/${profileId}`, {
-				method: "POST",
-			});
-			res.assertOk();
+			await blockUserDb(profileId);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: blockKeys.all });
@@ -61,17 +59,14 @@ export function useBlockUser() {
 
 /**
  * Unblock a user.
- * Maps to unblockUser from open-grind.
+ * Now powered by Supabase.
  */
 export function useUnblockUser() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, ApiError, { profileId: number }>({
+	return useMutation<void, Error, { profileId: number }>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v3/me/blocks/${profileId}`, {
-				method: "DELETE",
-			});
-			res.assertOk();
+			await unblockUserDb(profileId);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: blockKeys.all });

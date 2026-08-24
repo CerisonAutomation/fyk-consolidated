@@ -1,25 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import {
+	getProfileById as getProfileByIdDb,
+	getProfilesByIds as getProfilesByIdsDb,
+} from "../supabase/index";
+import { supabase } from "#/integrations/supabase/client";
 
-// -- Schemas (inlined from open-grind model) --
+// -- Schemas --
 
 export const profileSchema = z.record(z.string(), z.unknown());
 export type Profile = z.infer<typeof profileSchema>;
-
-const profileResponseSchema = z.object({
-	profiles: z.array(profileSchema).length(1),
-});
-
-const profileShortWithRightNowSchema = z.record(z.string(), z.unknown());
-
-const getProfilesResponseSchema = z.object({
-	profiles: z.array(profileShortWithRightNowSchema),
-});
-
-const GET_PROFILES_MAX_IDS = 150;
 
 // -- Query keys --
 
@@ -34,78 +25,55 @@ export const profileKeys = {
 
 /**
  * Fetch a single profile by ID.
- * Maps to getProfile from open-grind.
+ * Now powered by Supabase.
  */
 export function useProfile(profileId: number | null | undefined) {
-	return useQuery<Profile, ApiError>({
+	return useQuery<Profile, Error>({
 		queryKey: profileKeys.detail(profileId ?? 0),
 		queryFn: async () => {
-			const res = await fetchRest(`/v7/profiles/${profileId}`, {
-				method: "GET",
-			});
-			const { profiles } = res.jsonParsed(profileResponseSchema);
-			return profiles[0];
+			const profile = await getProfileByIdDb(profileId!);
+			return (profile as unknown as Profile) ?? ({} as Profile);
 		},
 		enabled: profileId !== null && profileId !== undefined,
 		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Fetch multiple profiles by IDs (batched).
- * Maps to getProfiles from open-grind.
+ * Now powered by Supabase.
  */
 export function useProfiles(profileIds: number[]) {
-	return useQuery<Profile[], ApiError>({
+	return useQuery<Profile[], Error>({
 		queryKey: profileKeys.list(profileIds),
 		queryFn: async () => {
 			if (profileIds.length === 0) return [];
-			const batches: number[][] = [];
-			for (
-				let start = 0;
-				start < profileIds.length;
-				start += GET_PROFILES_MAX_IDS
-			) {
-				batches.push(
-					profileIds.slice(start, start + GET_PROFILES_MAX_IDS),
-				);
-			}
-			const results = await Promise.all(
-				batches.map(async (ids) => {
-					const res = await fetchRest("/v3/profiles", {
-						method: "POST",
-						body: { targetProfileIds: ids },
-					});
-					return res.jsonParsed(getProfilesResponseSchema).profiles;
-				}),
-			);
-			return results.flat();
+			const profiles = await getProfilesByIdsDb(profileIds);
+			return profiles as unknown as Profile[];
 		},
 		enabled: profileIds.length > 0,
 		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Patch own profile (partial update).
- * Maps to patchOwnProfile from open-grind.
+ * Now powered by Supabase.
  */
 export function usePatchProfile() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		void,
-		ApiError,
+		Error,
 		{ cacheProfileId: number; patch: Partial<Profile> }
 	>({
-		mutationFn: async ({ patch }) => {
-			const res = await fetchRest("/v4/me/profile", {
-				method: "PATCH",
-				body: patch,
-			});
-			res.assertOk();
+		mutationFn: async ({ cacheProfileId, patch }) => {
+			const { error } = await supabase
+				.from("Profile")
+				.update(patch)
+				.eq("id", cacheProfileId);
+			if (error) throw new Error(error.message);
 		},
 		onSuccess: (_data, { cacheProfileId, patch }) => {
 			queryClient.setQueryData<Profile>(
@@ -128,27 +96,25 @@ export function usePatchProfile() {
 
 /**
  * Full profile update (PUT).
- * Maps to updateOwnProfile from open-grind.
+ * Now powered by Supabase.
  */
 export function useUpdateProfile() {
 	const queryClient = useQueryClient();
 
 	return useMutation<
 		void,
-		ApiError,
+		Error,
 		{
 			cacheProfileId: number;
 			profile: Profile;
 		}
 	>({
-		mutationFn: async ({ profile }) => {
-			const res = await fetchRest("/v3.1/me/profile", {
-				method: "PUT",
-				body: profile,
-			});
-			if (res.status !== 200) {
-				res.assertOk();
-			}
+		mutationFn: async ({ cacheProfileId, profile }) => {
+			const { error } = await supabase
+				.from("Profile")
+				.update(profile)
+				.eq("id", cacheProfileId);
+			if (error) throw new Error(error.message);
 		},
 		onSuccess: (_data, { cacheProfileId, profile }) => {
 			queryClient.setQueryData<Profile>(

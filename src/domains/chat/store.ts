@@ -44,12 +44,14 @@ interface ConversationsState {
 	filters: ConversationFilterKey[];
 	ourProfileId: number | null;
 
+	load: () => Promise<void>;
 	setEntries: (entries: Conversation[]) => void;
 	setNextPage: (page: number | null) => void;
 	setLoading: (loading: boolean) => void;
 	setRefreshing: (refreshing: boolean) => void;
 	setError: (error: Error | null) => void;
 	setActive: (conversationId: string | null) => void;
+	clearActive: (conversationId: string) => void;
 	setFilters: (filters: ConversationFilterKey[]) => void;
 	setOurProfileId: (id: number) => void;
 	remove: (conversationId: string) => void;
@@ -80,23 +82,102 @@ export const useConversationsStore = create<ConversationsState>((set, get) => ({
 	setRefreshing: (refreshing) => set({ refreshing }),
 	setError: (error) => set({ error }),
 	setActive: (conversationId) => set({ activeConversationId: conversationId }),
+	clearActive: (conversationId) => {
+		const { activeConversationId } = get();
+		if (activeConversationId === conversationId) {
+			set({ activeConversationId: null });
+		}
+	},
 	setFilters: (filters) => set({ filters }),
 	setOurProfileId: (id) => set({ ourProfileId: id }),
 
-	remove(conversationId) {
+	async load() {
+		set({ loading: true, error: null });
+		try {
+			const { getConversations } = await import("#/core/api/supabase/index");
+			const { demoRoute } = await import("#/domains/demo/router");
+
+			const result = await getConversations(1);
+
+			// If Supabase has data, use it
+			if (result.entries.length > 0) {
+				const entries: Conversation[] = result.entries.map(
+					(e: { type: string; data: Record<string, unknown> }) => ({
+						type: e.type,
+						data: {
+							...e.data,
+							lastActivityTimestamp: new Date(
+								e.data.lastActivityTimestamp as string,
+							).getTime(),
+							onlineUntil:
+								typeof e.data.onlineUntil === "string"
+									? new Date(e.data.onlineUntil).getTime()
+									: (e.data.onlineUntil as number | null),
+							participants: (
+								e.data.participants as Array<Record<string, unknown>>
+							).map((p) => ({
+								...p,
+								lastOnline: new Date(p.lastOnline as string).getTime(),
+								onlineUntil:
+									typeof p.onlineUntil === "string"
+										? new Date(p.onlineUntil as string).getTime()
+										: (p.onlineUntil as number | null),
+							})),
+						},
+					}),
+				);
+				set({ entries, loading: false });
+				return;
+			}
+
+			// Fallback to demo data
+			const resp = demoRoute({
+				path: "/v4/inbox?page=1",
+				method: "POST",
+				body: { favoritesOnly: false },
+			});
+			const data = resp.body as {
+				entries: Array<{ type: string; data: Record<string, unknown> }>;
+			};
+			const demoEntries: Conversation[] = data.entries.map((e) => ({
+				type: e.type,
+				data: {
+					...e.data,
+					participants: (
+						e.data.participants as Array<Record<string, unknown>>
+					).map((p) => ({
+						...p,
+						lastOnline: p.lastOnline as number,
+						onlineUntil: p.onlineUntil as number | null,
+					})),
+				},
+			}));
+			set({ entries: demoEntries, loading: false });
+		} catch (err) {
+			set({
+				error:
+					err instanceof Error
+						? err
+						: new Error("Failed to load conversations"),
+				loading: false,
+			});
+		}
+	},
+
+	remove(conversationId: string) {
 		const { entries } = get();
 		const index = entries.findIndex(
 			(e) => e.data.conversationId === conversationId,
 		);
 		if (index === -1) return;
-		const newEntries = entries.toSpliced(index, 1);
+		const newEntries = [...entries.slice(0, index), ...entries.slice(index + 1)];
 		set({ entries: newEntries });
 	},
 
 	sortEntries() {
 		const { entries } = get();
-		const sorted = entries.toSorted(
-			(a, b) =>
+		const sorted = [...entries].sort(
+			(a: Conversation, b: Conversation) =>
 				Number(b.data.pinned) - Number(a.data.pinned) ||
 				b.data.lastActivityTimestamp - a.data.lastActivityTimestamp,
 		);

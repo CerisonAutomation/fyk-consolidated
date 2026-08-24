@@ -1,9 +1,10 @@
 // Client
-export { fetchRest } from "./client/api-client";
-export type { RestResponse } from "./client/api-client";
 export { ApiError, apiErrorKinds } from "./client/api-error";
 export type { ApiErrorKind } from "./client/api-error";
 export { TtlCache, FetchCache, cachedFetch } from "./client/cache";
+
+// Supabase data layer
+export * from "./supabase/index";
 
 // Hooks - Grid/Browse
 export {
@@ -22,7 +23,6 @@ export {
 	usePatchProfile,
 	useUpdateProfile,
 	profileKeys,
-	profileSchema,
 } from "./hooks/use-profiles";
 export type { Profile } from "./hooks/use-profiles";
 
@@ -34,9 +34,8 @@ export {
 	usePinConversation,
 	useMuteConversation,
 	conversationKeys,
-	fullConversationSchema,
 } from "./hooks/use-conversations";
-export type { Conversation, InboxFilterRequest } from "./hooks/use-conversations";
+export type { InboxFilterRequest } from "./hooks/use-conversations";
 
 // Hooks - Messages
 export {
@@ -45,7 +44,6 @@ export {
 	useReactToMessage,
 	useDeleteMessage,
 	messageKeys,
-	apiResponseMessageSchema,
 } from "./hooks/use-messages";
 export type { ApiResponseMessage, OutboundMessage } from "./hooks/use-messages";
 
@@ -56,7 +54,6 @@ export {
 	useFavoriteNote,
 	usePutFavoriteNote,
 	favoriteKeys,
-	favoriteNoteSchema,
 } from "./hooks/use-favorites";
 export type { FavoriteNote } from "./hooks/use-favorites";
 
@@ -81,7 +78,6 @@ export {
 	useReceivedTaps,
 	useSendTap,
 	tapKeys,
-	tapProfileSchema,
 } from "./hooks/use-taps";
 export type { TapProfile, TapType } from "./hooks/use-taps";
 

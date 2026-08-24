@@ -1,8 +1,13 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { useTapsStore } from '#/domains/interest/store';
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { requireAuth } from "#/domains/auth/guard";
+import { useTapsStore } from "#/domains/interest/store";
 
-export const Route = createFileRoute('/interest/taps/')({
+export const Route = createFileRoute("/interest/taps/")({
+	beforeLoad: requireAuth,
 	component: TapsPage,
+	loader: async () => {
+		await useTapsStore.getState().load();
+	},
 });
 
 function TapsPage() {
@@ -47,27 +52,28 @@ function TapsPage() {
 			) : (
 				<div className="flex flex-col">
 					{taps.map((tap) => (
-						<a
+						<Link
 							key={tap.profileId}
-							href={`/profile/${tap.profileId}`}
+							to="/profile/$profileId"
+							params={{ profileId: String(tap.profileId) }}
 							className="flex items-center gap-3 border-b border-border px-4 py-3 transition-colors hover:bg-muted/50"
 						>
 							<div className="relative h-12 w-12 flex-shrink-0">
 								<div className="flex h-full w-full items-center justify-center rounded-full bg-muted text-sm font-medium">
-									{tap.displayName?.charAt(0) ?? '?'}
+									{tap.displayName?.charAt(0) ?? "?"}
 								</div>
 								{tap.isMutual && (
-									<div className="absolute -bottom-0.5 -right-0.5 text-xs">💚</div>
+									<div className="absolute -bottom-0.5 -right-0.5 text-xs">
+										💚
+									</div>
 								)}
 							</div>
 							<div className="min-w-0 flex-1">
 								<div className="flex items-center gap-2">
 									<span className="truncate font-medium">
-										{tap.displayName ?? 'Anonymous'}
+										{tap.displayName ?? "Anonymous"}
 									</span>
-									{tap.isFavorite && (
-										<span className="text-yellow-400">★</span>
-									)}
+									{tap.isFavorite && <span className="text-yellow-400">★</span>}
 								</div>
 								<div className="text-sm text-muted-foreground">
 									Tapped {formatTimeAgo(tap.timestamp)}
@@ -78,7 +84,7 @@ function TapsPage() {
 									Mutual
 								</span>
 							)}
-						</a>
+						</Link>
 					))}
 					{hasMore && (
 						<button
@@ -96,7 +102,7 @@ function TapsPage() {
 
 function formatTimeAgo(timestamp: number): string {
 	const seconds = Math.floor((Date.now() - timestamp) / 1000);
-	if (seconds < 60) return 'just now';
+	if (seconds < 60) return "just now";
 	const minutes = Math.floor(seconds / 60);
 	if (minutes < 60) return `${minutes}m ago`;
 	const hours = Math.floor(minutes / 60);

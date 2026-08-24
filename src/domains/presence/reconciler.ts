@@ -7,7 +7,6 @@ export type ReconcileHandler = () => void | Promise<void>;
 class Reconciler {
 	#handlers = new Set<ReconcileHandler>();
 	#lastReconcileAt = 0;
-	#resyncTimer: ReturnType<typeof setTimeout> | null = null;
 	#wasHidden = false;
 	#firstConnect = true;
 
@@ -41,16 +40,6 @@ class Reconciler {
 		return () => {
 			this.#handlers.delete(handler);
 		};
-	}
-
-	#scheduleResync(): void {
-		if (this.#resyncTimer !== null) return;
-		const elapsed = Date.now() - this.#lastReconcileAt;
-		const wait = Math.max(THROTTLE_MS - elapsed, 0);
-		this.#resyncTimer = setTimeout(() => {
-			this.#resyncTimer = null;
-			void this.#trigger();
-		}, wait);
 	}
 
 	async #trigger(): Promise<void> {

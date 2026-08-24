@@ -71,7 +71,6 @@ interface WsState {
 	ws: WebSocket | null;
 	eventHandlers: Map<string, Set<EventHandler>>;
 	reconnectTimer: ReturnType<typeof setTimeout> | null;
-
 	connect: (url: string, token: string) => void;
 	disconnect: () => void;
 	send: (type: string, payload: unknown) => void;
@@ -79,14 +78,18 @@ interface WsState {
 	off: (eventType: string, handler: EventHandler) => void;
 }
 
+// Mutable handler registry — avoids triggering React re-renders on subscribe/unsubscribe.
+const handlerRegistry = new Map<string, Set<EventHandler>>();
+
 export const useWsStore = create<WsState>((set, get) => ({
 	status: 'disconnected',
 	ws: null,
-	eventHandlers: new Map(),
+	eventHandlers: handlerRegistry,
 	reconnectTimer: null,
 
 	connect(url, token) {
-		const { ws: existingWs } = get();
+		const { ws: existingWs, reconnectTimer } = get();
+		if (reconnectTimer) clearTimeout(reconnectTimer);
 		if (existingWs) {
 			existingWs.close();
 		}
@@ -115,8 +118,7 @@ export const useWsStore = create<WsState>((set, get) => ({
 				const eventType = data.type;
 				if (!eventType) return;
 
-				const { eventHandlers } = get();
-				const handlers = eventHandlers.get(eventType);
+				const handlers = handlerRegistry.get(eventType);
 				if (handlers) {
 					for (const handler of handlers) {
 						try {
@@ -155,12 +157,10 @@ export const useWsStore = create<WsState>((set, get) => ({
 	},
 
 	on(eventType, handler) {
-		const { eventHandlers } = get();
-		if (!eventHandlers.has(eventType)) {
-			eventHandlers.set(eventType, new Set());
+		if (!handlerRegistry.has(eventType)) {
+			handlerRegistry.set(eventType, new Set());
 		}
-		eventHandlers.get(eventType)!.add(handler);
-		set({ eventHandlers: new Map(eventHandlers) });
+		handlerRegistry.get(eventType)!.add(handler);
 
 		return () => {
 			get().off(eventType, handler);
@@ -168,11 +168,9 @@ export const useWsStore = create<WsState>((set, get) => ({
 	},
 
 	off(eventType, handler) {
-		const { eventHandlers } = get();
-		const handlers = eventHandlers.get(eventType);
+		const handlers = handlerRegistry.get(eventType);
 		if (handlers) {
 			handlers.delete(handler);
-			set({ eventHandlers: new Map(eventHandlers) });
 		}
 	},
 }));

@@ -1,14 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import {
+	getViews as getViewsDb,
+	recordView as recordViewDb,
+} from "../supabase/index";
 
-// -- Schemas (inlined from open-grind model) --
+// -- Schemas --
+
+export const viewerProfileSchema = z.record(z.unknown());
+export const viewPreviewSchema = z.record(z.unknown());
 
 const viewsListResponseSchema = z.object({
-	profiles: z.array(z.record(z.string(), z.unknown())),
-	previews: z.array(z.record(z.string(), z.unknown())),
+	profiles: z.array(z.record(z.unknown())),
+	previews: z.array(z.record(z.unknown())),
 });
 
 // -- Query keys --
@@ -22,34 +27,36 @@ export const viewKeys = {
 
 /**
  * Fetch views list (who viewed your profile).
- * Maps to getViews from open-grind.
+ * Now powered by Supabase.
  */
 export function useViews() {
-	return useQuery<z.infer<typeof viewsListResponseSchema>, ApiError>({
+	return useQuery<z.infer<typeof viewsListResponseSchema>, Error>({
 		queryKey: viewKeys.list(),
 		queryFn: async () => {
-			const res = await fetchRest("/v7/views/list");
-			return res.jsonParsed(viewsListResponseSchema);
+			const result = await getViewsDb();
+			return {
+				profiles: result.profiles as unknown as z.infer<typeof viewerProfileSchema>[],
+				previews: result.previews as unknown as z.infer<typeof viewPreviewSchema>[],
+			};
 		},
 		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Record a profile view.
- * Maps to recordProfileView from open-grind.
+ * Now powered by Supabase.
  */
 export function useRecordView() {
 	const queryClient = useQueryClient();
 
-	return useMutation<void, ApiError, { profileId: number }>({
+	return useMutation<
+		void,
+		Error,
+		{ profileId: number }
+	>({
 		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v5/views/${profileId}`, {
-				method: "POST",
-				body: { source: "UNKNOWN", foundVia: null },
-			});
-			res.assertOk();
+			await recordViewDb(profileId);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: viewKeys.all });

@@ -1,10 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
-
-// -- Schemas (inlined from open-grind model) --
+// -- Schemas --
 
 const gendersSchema = z.object({
 	genders: z.array(z.record(z.string(), z.unknown())),
@@ -27,55 +24,71 @@ export const referenceKeys = {
 	tags: () => [...referenceKeys.all, "tags"] as const,
 };
 
+// -- Static reference data (no external API needed) --
+
+const STATIC_GENDERS = [
+	{ id: 1, name: "Male" },
+	{ id: 2, name: "Female" },
+	{ id: 3, name: "Non-binary" },
+	{ id: 4, name: "Other" },
+];
+
+const STATIC_PRONOUNS = [
+	{ id: 1, name: "He/Him" },
+	{ id: 2, name: "She/Her" },
+	{ id: 3, name: "They/Them" },
+];
+
+const STATIC_TAGS = [
+	{ id: 1, name: "Geek" },
+	{ id: 2, name: "Bear" },
+	{ id: 3, name: "Twink" },
+	{ id: 4, name: "Daddy" },
+	{ id: 5, name: "Jock" },
+	{ id: 6, name: "Otter" },
+	{ id: 7, name: "Wolf" },
+];
+
 // -- Hooks --
 
 /**
  * Fetch available genders.
- * Maps to getGenders from open-grind.
- * Uses staleTime: Infinity since this data is static.
+ * Returns static data.
  */
 export function useGenders() {
-	return useQuery<z.infer<typeof gendersSchema>, ApiError>({
+	return useQuery<z.infer<typeof gendersSchema>, Error>({
 		queryKey: referenceKeys.genders(),
 		queryFn: async () => {
-			const res = await fetchRest("/public/v2/genders");
-			return res.jsonParsed(gendersSchema);
+			return { genders: STATIC_GENDERS };
 		},
 		staleTime: Infinity,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Fetch available pronouns.
- * Maps to getPronouns from open-grind.
- * Uses staleTime: Infinity since this data is static.
+ * Returns static data.
  */
 export function usePronouns() {
-	return useQuery<z.infer<typeof pronounsSchema>, ApiError>({
+	return useQuery<z.infer<typeof pronounsSchema>, Error>({
 		queryKey: referenceKeys.pronouns(),
 		queryFn: async () => {
-			const res = await fetchRest("/v1/pronouns");
-			return res.jsonParsed(pronounsSchema);
+			return { pronouns: STATIC_PRONOUNS };
 		},
 		staleTime: Infinity,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }
 
 /**
  * Fetch available profile tags.
- * Maps to getTags from open-grind.
- * Uses staleTime: Infinity since this data is static.
+ * Returns static data.
  */
 export function useTags() {
-	return useQuery<z.infer<typeof profileTagsResponseSchema>, ApiError>({
+	return useQuery<z.infer<typeof profileTagsResponseSchema>, Error>({
 		queryKey: referenceKeys.tags(),
 		queryFn: async () => {
-			const res = await fetchRest("/v1/tags");
-			return res.jsonParsed(profileTagsResponseSchema);
+			return { tags: STATIC_TAGS };
 		},
 		staleTime: Infinity,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
 	});
 }

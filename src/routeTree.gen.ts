@@ -21,11 +21,14 @@ import { Route as DemoStoreRouteImport } from './routes/demo/store'
 import { Route as DemoTableRouteImport } from './routes/demo/table'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as GridIndexRouteImport } from './routes/grid/index'
+import { Route as InterestIndexRouteImport } from './routes/interest/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as RightNowIndexRouteImport } from './routes/right-now/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthForgotPasswordIndexRouteImport } from './routes/auth/forgot-password/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
+import { Route as AuthSignUpIndexRouteImport } from './routes/auth/sign-up/index'
 import { Route as ChatConversationIdIndexRouteImport } from './routes/chat/$conversationId/index'
 import { Route as DemoGuitarsIndexRouteImport } from './routes/demo/guitars/index'
 import { Route as DemoGuitarsGuitarIdRouteImport } from './routes/demo/guitars/$guitarId'
@@ -104,6 +107,11 @@ const GridIndexRoute = GridIndexRouteImport.update({
   path: '/grid/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InterestIndexRoute = InterestIndexRouteImport.update({
+  id: '/interest/',
+  path: '/interest/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   id: '/onboarding/',
   path: '/onboarding/',
@@ -124,9 +132,19 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthForgotPasswordIndexRoute = AuthForgotPasswordIndexRouteImport.update({
+  id: '/auth/forgot-password/',
+  path: '/auth/forgot-password/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
   id: '/auth/sign-in/',
   path: '/auth/sign-in/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignUpIndexRoute = AuthSignUpIndexRouteImport.update({
+  id: '/auth/sign-up/',
+  path: '/auth/sign-up/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ChatConversationIdIndexRoute = ChatConversationIdIndexRouteImport.update({
@@ -228,12 +246,15 @@ export interface FileRoutesByFullPath {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/chat/': typeof ChatIndexRoute
   '/grid/': typeof GridIndexRoute
+  '/interest/': typeof InterestIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/right-now/': typeof RightNowIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/guitars/$guitarId': typeof DemoGuitarsGuitarIdRoute
+  '/auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/auth/sign-up/': typeof AuthSignUpIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
   '/demo/guitars/': typeof DemoGuitarsIndexRoute
   '/interest/taps/': typeof InterestTapsIndexRoute
@@ -264,12 +285,15 @@ export interface FileRoutesByTo {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/chat': typeof ChatIndexRoute
   '/grid': typeof GridIndexRoute
+  '/interest': typeof InterestIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/right-now': typeof RightNowIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/guitars/$guitarId': typeof DemoGuitarsGuitarIdRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordIndexRoute
   '/auth/sign-in': typeof AuthSignInIndexRoute
+  '/auth/sign-up': typeof AuthSignUpIndexRoute
   '/chat/$conversationId': typeof ChatConversationIdIndexRoute
   '/demo/guitars': typeof DemoGuitarsIndexRoute
   '/interest/taps': typeof InterestTapsIndexRoute
@@ -301,12 +325,15 @@ export interface FileRoutesById {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/chat/': typeof ChatIndexRoute
   '/grid/': typeof GridIndexRoute
+  '/interest/': typeof InterestIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/right-now/': typeof RightNowIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/demo/guitars/$guitarId': typeof DemoGuitarsGuitarIdRoute
+  '/auth/forgot-password/': typeof AuthForgotPasswordIndexRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/auth/sign-up/': typeof AuthSignUpIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
   '/demo/guitars/': typeof DemoGuitarsIndexRoute
   '/interest/taps/': typeof InterestTapsIndexRoute
@@ -339,12 +366,15 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/chat/'
     | '/grid/'
+    | '/interest/'
     | '/onboarding/'
     | '/right-now/'
     | '/settings/'
     | '/api/auth/$'
     | '/demo/guitars/$guitarId'
+    | '/auth/forgot-password/'
     | '/auth/sign-in/'
+    | '/auth/sign-up/'
     | '/chat/$conversationId/'
     | '/demo/guitars/'
     | '/interest/taps/'
@@ -375,12 +405,15 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/chat'
     | '/grid'
+    | '/interest'
     | '/onboarding'
     | '/right-now'
     | '/settings'
     | '/api/auth/$'
     | '/demo/guitars/$guitarId'
+    | '/auth/forgot-password'
     | '/auth/sign-in'
+    | '/auth/sign-up'
     | '/chat/$conversationId'
     | '/demo/guitars'
     | '/interest/taps'
@@ -411,12 +444,15 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/chat/'
     | '/grid/'
+    | '/interest/'
     | '/onboarding/'
     | '/right-now/'
     | '/settings/'
     | '/api/auth/$'
     | '/demo/guitars/$guitarId'
+    | '/auth/forgot-password/'
     | '/auth/sign-in/'
+    | '/auth/sign-up/'
     | '/chat/$conversationId/'
     | '/demo/guitars/'
     | '/interest/taps/'
@@ -448,12 +484,15 @@ export interface RootRouteChildren {
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ChatIndexRoute: typeof ChatIndexRoute
   GridIndexRoute: typeof GridIndexRoute
+  InterestIndexRoute: typeof InterestIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   RightNowIndexRoute: typeof RightNowIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   DemoGuitarsGuitarIdRoute: typeof DemoGuitarsGuitarIdRoute
+  AuthForgotPasswordIndexRoute: typeof AuthForgotPasswordIndexRoute
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
+  AuthSignUpIndexRoute: typeof AuthSignUpIndexRoute
   ChatConversationIdIndexRoute: typeof ChatConversationIdIndexRoute
   DemoGuitarsIndexRoute: typeof DemoGuitarsIndexRoute
   InterestTapsIndexRoute: typeof InterestTapsIndexRoute
@@ -558,6 +597,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GridIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/interest/': {
+      id: '/interest/'
+      path: '/interest'
+      fullPath: '/interest/'
+      preLoaderRoute: typeof InterestIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding/': {
       id: '/onboarding/'
       path: '/onboarding'
@@ -586,11 +632,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/forgot-password/': {
+      id: '/auth/forgot-password/'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password/'
+      preLoaderRoute: typeof AuthForgotPasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/sign-in/': {
       id: '/auth/sign-in/'
       path: '/auth/sign-in'
       fullPath: '/auth/sign-in/'
       preLoaderRoute: typeof AuthSignInIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/sign-up/': {
+      id: '/auth/sign-up/'
+      path: '/auth/sign-up'
+      fullPath: '/auth/sign-up/'
+      preLoaderRoute: typeof AuthSignUpIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/chat/$conversationId/': {
@@ -728,12 +788,15 @@ const rootRouteChildren: RootRouteChildren = {
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ChatIndexRoute: ChatIndexRoute,
   GridIndexRoute: GridIndexRoute,
+  InterestIndexRoute: InterestIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   RightNowIndexRoute: RightNowIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   DemoGuitarsGuitarIdRoute: DemoGuitarsGuitarIdRoute,
+  AuthForgotPasswordIndexRoute: AuthForgotPasswordIndexRoute,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
+  AuthSignUpIndexRoute: AuthSignUpIndexRoute,
   ChatConversationIdIndexRoute: ChatConversationIdIndexRoute,
   DemoGuitarsIndexRoute: DemoGuitarsIndexRoute,
   InterestTapsIndexRoute: InterestTapsIndexRoute,
