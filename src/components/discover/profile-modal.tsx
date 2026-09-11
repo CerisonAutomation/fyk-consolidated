@@ -32,7 +32,7 @@ function Section({ title, children, action }: { title: string; children: React.R
   return (
     <div className="rounded-2xl border border-line bg-surface-2 p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {action}
       </div>
       {children}
@@ -139,7 +139,7 @@ export function ProfileModal({
           <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/40 to-transparent" />
           <button
             onClick={onClose}
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-ink/60 text-white backdrop-blur"
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-ink/60 text-foreground backdrop-blur"
           >
             <X className="h-5 w-5" />
           </button>
@@ -148,7 +148,7 @@ export function ProfileModal({
             <div className="flex items-end justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <h2 className="text-2xl font-bold text-white">{candidate.pseudo}</h2>
+                  <h2 className="text-2xl font-bold text-foreground">{candidate.pseudo}</h2>
                   {candidate.verified && <Badge color="gold">✓ Verified</Badge>}
                   <Badge color="purple">{candidate.tier}</Badge>
                 </div>
@@ -175,7 +175,7 @@ export function ProfileModal({
               onClick={() => setTab(t)}
               className={cn(
                 "relative px-3 py-2 text-sm font-medium capitalize transition-colors",
-                tab === t ? "text-gold-soft" : "text-muted hover:text-white"
+                tab === t ? "text-gold-soft" : "text-muted hover:text-foreground"
               )}
             >
               {t === "ai" ? "AI tools" : t}
@@ -188,7 +188,7 @@ export function ProfileModal({
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
           {tab === "about" && (
             <>
-              <p className="text-sm leading-relaxed text-white/90">{candidate.description || "No bio yet."}</p>
+              <p className="text-sm leading-relaxed text-foreground/90">{candidate.description || "No bio yet."}</p>
 
               {candidate.photos.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-1">
@@ -219,7 +219,7 @@ export function ProfileModal({
                 <Section title="Interests">
                   <div className="flex flex-wrap gap-1.5">
                     {candidate.interests.map((i) => (
-                      <span key={i} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-white/80">{i}</span>
+                      <span key={i} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-foreground/80">{i}</span>
                     ))}
                   </div>
                 </Section>
@@ -247,7 +247,7 @@ export function ProfileModal({
                 <Section title="Tags">
                   <div className="flex flex-wrap gap-1.5">
                     {candidate.tagCodes.map((t) => (
-                      <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70">{t}</span>
+                      <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-foreground/70">{t}</span>
                     ))}
                   </div>
                 </Section>
@@ -268,7 +268,7 @@ export function ProfileModal({
               </Section>
               <div className="flex items-start gap-2 rounded-2xl border border-gold/20 bg-gold/[0.06] p-3">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-                <p className="text-xs leading-relaxed text-white/80">
+                <p className="text-xs leading-relaxed text-foreground/80">
                   Based on shared interests, goals, tribes and age proximity. Recalculated whenever either of you updates a profile.
                 </p>
               </div>
@@ -302,7 +302,7 @@ export function ProfileModal({
                         }}
                         className={cn(
                           "flex w-full items-start justify-between gap-2 rounded-xl border p-3 text-left text-sm transition-colors",
-                          copied === msg ? "border-gold/50 bg-gold/10 text-gold-soft" : "border-line bg-surface text-white/80 hover:border-gold/30"
+                          copied === msg ? "border-gold/50 bg-gold/10 text-gold-soft" : "border-line bg-surface text-foreground/80 hover:border-gold/30"
                         )}
                       >
                         <span>{msg}</span>
@@ -328,7 +328,7 @@ export function ProfileModal({
                   <div className="space-y-2">
                     {dateIdeas.map(([title, why], i) => (
                       <div key={i} className="rounded-xl border border-line bg-surface p-3">
-                        <p className="flex items-center gap-1.5 text-sm font-medium text-white">
+                        <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                           <Calendar className="h-3.5 w-3.5 text-gold" /> {title}
                         </p>
                         <p className="mt-0.5 text-xs text-muted">{why}</p>
@@ -359,7 +359,7 @@ export function ProfileModal({
                       <div>
                         <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-400">Strengths</p>
                         {analysis.strengths.map((s) => (
-                          <p key={s} className="flex items-start gap-1.5 text-xs text-white/80"><Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" />{s}</p>
+                          <p key={s} className="flex items-start gap-1.5 text-xs text-foreground/80"><Check className="mt-0.5 h-3 w-3 shrink-0 text-emerald-400" />{s}</p>
                         ))}
                       </div>
                     )}
@@ -412,7 +412,7 @@ export function ProfileModal({
                 onChange={(e) => setNote(e.target.value)}
                 rows={2}
                 placeholder="Only you can see this…"
-                className="w-full resize-none rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+                className="w-full resize-none rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
               />
               <Button size="sm" className="mt-2 w-full" onClick={() => noteMutation.mutate()} disabled={!note.trim() || noteMutation.isPending}>
                 Save note
@@ -446,7 +446,7 @@ function Detail({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-muted">
       <span className="text-gold">{icon}</span>
-      <span className="truncate text-white/80">{label}</span>
+      <span className="truncate text-foreground/80">{label}</span>
     </div>
   );
 }

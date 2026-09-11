@@ -71,7 +71,7 @@ export function PickLocationSheet({ onShare, onClose }: PickLocationSheetProps) 
            style={{ paddingTop: "calc(16px + env(safe-area-inset-top, 0px))" }}>
         <div className="flex items-center gap-2 mb-2">
           <MapPin className="h-4 w-4 text-gold shrink-0" />
-          <h2 className="text-sm font-semibold text-white">Pick a location</h2>
+          <h2 className="text-sm font-semibold text-foreground">Pick a location</h2>
           <button
             type="button"
             onClick={onClose}

@@ -40,7 +40,7 @@ export function ProfileCard({
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center" style={{ background: gradient(candidate.pseudo) }}>
-          <span className="text-5xl font-bold text-white/80">{candidate.pseudo[0]?.toUpperCase()}</span>
+          <span className="text-5xl font-bold text-foreground/80">{candidate.pseudo[0]?.toUpperCase()}</span>
         </div>
       )}
 
@@ -60,7 +60,7 @@ export function ProfileCard({
             </span>
           )}
           {isAiRecommended && (
-            <span className="flex w-fit items-center gap-0.5 rounded-full bg-purple-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
+            <span className="flex w-fit items-center gap-0.5 rounded-full bg-purple-500/90 px-1.5 py-0.5 text-[9px] font-bold text-foreground">
               <Cpu className="h-2.5 w-2.5" /> AI Recommended
             </span>
           )}
@@ -76,7 +76,7 @@ export function ProfileCard({
         onClick={(e) => { e.stopPropagation(); onFavorite(); }}
         className={cn(
           "absolute bottom-3 left-2 flex h-8 w-8 items-center justify-center rounded-full bg-ink/70 backdrop-blur transition-all sm:opacity-0 sm:group-hover:opacity-100",
-          candidate.isFavorite ? "text-rose-400 opacity-100" : "text-white/70 hover:text-rose-400"
+          candidate.isFavorite ? "text-rose-400 opacity-100" : "text-foreground/70 hover:text-rose-400"
         )}
         aria-label="Favorite"
       >
@@ -86,15 +86,15 @@ export function ProfileCard({
       {/* info */}
       <div className="absolute inset-x-0 bottom-0 p-2.5 pr-14">
         <div className="flex items-center gap-1">
-          <h3 className="truncate text-[15px] font-semibold leading-tight text-white">{candidate.pseudo}</h3>
+          <h3 className="truncate text-[15px] font-semibold leading-tight text-foreground">{candidate.pseudo}</h3>
           {candidate.verified && <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-gold" />}
         </div>
-        <p className="truncate text-[11px] text-white/70">
+        <p className="truncate text-[11px] text-foreground/70">
           {candidate.age ?? "—"} · {candidate.distanceKm}km · {candidate.geo?.city ?? "Nearby"}
         </p>
         <div className="mt-1 flex gap-1 overflow-hidden">
           {candidate.tribes.slice(0, 2).map((t) => (
-            <span key={t} className="truncate rounded-full bg-white/12 px-1.5 py-0.5 text-[9px] text-white/85 backdrop-blur">
+            <span key={t} className="truncate rounded-full bg-white/12 px-1.5 py-0.5 text-[9px] text-foreground/85 backdrop-blur">
               {t}
             </span>
           ))}

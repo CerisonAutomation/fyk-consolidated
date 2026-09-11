@@ -12,7 +12,7 @@ import { useRealtimeChat } from "@/hooks/use-realtime-chat";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton, Spinner } from "@/components/ui/primitives";
 import { cn, timeAgo } from "@/lib/utils";
-import { MESSAGE_EMOJIS } from "@/lib/constants";
+import { MESSAGE_EMOJIS, EMOJI_TO_REACTION, REACTION_TO_EMOJI } from "@/lib/constants";
 import type { Message, ConversationWithMeta } from "@/lib/types";
 import { ShareLocationSheet } from "#/components/chat/ShareLocationSheet";
 import { PickLocationSheet } from "#/components/chat/PickLocationSheet";
@@ -124,6 +124,42 @@ export function ChatView({
       api<{ moderation?: { verdict: string } }>(`/api/conversations/${conversationId}/messages`, {
         method: "POST", body: payload,
       }),
+    onMutate: async (payload) => {
+      // Cancel outgoing refetches so they don't overwrite the optimistic update
+      await qc.cancelQueries({ queryKey: ["messages", conversationId] });
+
+      // Snapshot the previous messages
+      const previous = qc.getQueryData<Message[]>(["messages", conversationId]);
+
+      // Optimistically add the new message
+      if (previous && me?.id) {
+        const optimistic: Message = {
+          id: `optimistic-${Date.now()}`,
+          conversation_id: conversationId,
+          sender_id: me.id,
+          type: "text",
+          content: payload.content,
+          is_edited: false,
+          is_pinned: false,
+          is_recalled: false,
+          is_ephemeral: !!payload.ephemeral,
+          ephemeral_expires_at: payload.ephemeral
+            ? new Date(Date.now() + payload.ephemeral * 1000).toISOString()
+            : undefined,
+          created_at: new Date().toISOString(),
+          reactions: [],
+        };
+        qc.setQueryData<Message[]>(["messages", conversationId], [...previous, optimistic]);
+      }
+
+      return { previous };
+    },
+    onError: (_err, _payload, context) => {
+      // Roll back to the snapshot on error
+      if (context?.previous) {
+        qc.setQueryData(["messages", conversationId], context.previous);
+      }
+    },
     onSuccess: (res: { moderation?: { verdict: string } }) => {
       qc.invalidateQueries({ queryKey: ["messages", conversationId] });
       qc.invalidateQueries({ queryKey: ["conversations"] });
@@ -142,8 +178,10 @@ export function ChatView({
   });
 
   const react = useMutation({
-    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) =>
-      api(`/api/messages/${messageId}/react`, { method: "POST", body: { emoji } }),
+    mutationFn: ({ messageId, emoji }: { messageId: string; emoji: string }) => {
+      const reactionName = EMOJI_TO_REACTION[emoji] ?? emoji;
+      return api(`/api/messages/${messageId}/react`, { method: "POST", body: { emoji: reactionName } });
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["messages", conversationId] }),
   });
 
@@ -194,12 +232,12 @@ export function ChatView({
     <div className="flex h-full flex-col">
       {/* header */}
       <div className="flex items-center gap-3 border-b border-line pb-3">
-        <button onClick={onBack} className="text-muted transition-colors hover:text-white">
+        <button onClick={onBack} className="text-muted transition-colors hover:text-foreground">
           <ArrowLeft className="h-5 w-5" />
         </button>
         <Avatar name={isGroup ? conv.name ?? "Group" : other?.pseudo ?? ""} photoUrl={isGroup ? null : other?.photos?.[0]} size={40} online={!isGroup && other?.online} />
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">{isGroup ? conv.name : other?.pseudo}</p>
+          <p className="truncate text-sm font-semibold text-foreground">{isGroup ? conv.name : other?.pseudo}</p>
           <p className="text-xs text-muted">
             {typingUsers.size > 0 ? (
               <span className="flex items-center gap-1 text-emerald-400">
@@ -219,14 +257,14 @@ export function ChatView({
         <div className="ml-auto flex gap-1">
           <button
             onClick={() => setAiPanel((s) => !s)}
-            className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors", aiPanel ? "bg-gold/15 text-gold" : "text-muted hover:bg-white/5 hover:text-white")}
+            className={cn("flex h-8 w-8 items-center justify-center rounded-lg transition-colors", aiPanel ? "bg-gold/15 text-gold" : "text-muted hover:bg-white/5 hover:text-foreground")}
             title="Conversation AI"
           >
             <Activity className="h-4 w-4" />
           </button>
           <button
             onClick={() => setShowSearch((s) => !s)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-white/5 hover:text-foreground"
           >
             <Search className="h-4 w-4" />
           </button>
@@ -241,7 +279,7 @@ export function ChatView({
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
             placeholder="Search this conversation…"
-            className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+            className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
           />
           {search.trim() && (
             <p className="mt-1.5 px-1 text-[11px] text-muted">{filtered.length} matching messages</p>
@@ -302,7 +340,7 @@ export function ChatView({
               {aiHealth.suggestions.length > 0 && (
                 <div className="space-y-1">
                   {aiHealth.suggestions.map((s) => (
-                    <p key={s} className="flex items-start gap-1.5 text-[11px] text-white/80">
+                    <p key={s} className="flex items-start gap-1.5 text-[11px] text-foreground/80">
                       <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-gold" /> {s}
                     </p>
                   ))}
@@ -317,12 +355,12 @@ export function ChatView({
       {pinned.length > 0 && !showSearch && (
         <div className="flex items-start gap-2 border-b border-line bg-gold/[0.06] px-3 py-2">
           <Pin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
-          <p className="line-clamp-1 flex-1 text-[11px] text-white/85">
+          <p className="line-clamp-1 flex-1 text-[11px] text-foreground/85">
             {pinned[pinned.length - 1].content}
           </p>
           <button
             onClick={() => act.mutate({ id: pinned[pinned.length - 1].id, action: "unpin" })}
-            className="text-muted hover:text-white"
+            className="text-muted hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -384,7 +422,7 @@ export function ChatView({
                           }
                           if (e.key === "Escape") setEditing(null);
                         }}
-                        className="w-full rounded-lg bg-surface-2 px-2 py-1 text-sm text-white focus:outline-none"
+                        className="w-full rounded-lg bg-surface-2 px-2 py-1 text-sm text-foreground focus:outline-none"
                       />
                       <div className="mt-1.5 flex gap-1">
                         <button
@@ -402,7 +440,7 @@ export function ChatView({
                     <div
                       className={cn(
                         "relative rounded-2xl px-3.5 py-2 text-sm",
-                        isMe ? "rounded-br-sm bg-gold/90 text-ink" : "rounded-bl-sm bg-surface-2 text-white",
+                        isMe ? "rounded-br-sm bg-gold/90 text-ink" : "rounded-bl-sm bg-surface-2 text-foreground",
                         m.is_ephemeral && "border border-rose-400/40"
                       )}
                     >
@@ -444,7 +482,7 @@ export function ChatView({
                       {m.reactions && m.reactions.length > 0 && (
                         <div className="absolute -bottom-2.5 left-1 flex gap-0.5 rounded-full border border-line bg-surface px-1.5 py-0.5">
                           {m.reactions.map((r, i) => (
-                            <span key={i} className="text-[11px]">{r.emoji}</span>
+                            <span key={i} className="text-[11px]">{REACTION_TO_EMOJI[r.emoji as keyof typeof REACTION_TO_EMOJI] ?? r.emoji}</span>
                           ))}
                         </div>
                       )}
@@ -517,7 +555,7 @@ export function ChatView({
               <button
                 key={i}
                 onClick={() => { setInput(s); setAiSuggestions(null); inputRef.current?.focus(); }}
-                className="rounded-full border border-gold/20 bg-white/5 px-3 py-1.5 text-xs text-white/80 transition-colors hover:bg-white/10"
+                className="rounded-full border border-gold/20 bg-white/5 px-3 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-white/10"
               >
                 {s}
               </button>
@@ -537,15 +575,15 @@ export function ChatView({
           <Sparkles className="h-4 w-4" />
         </button>
         <button
-          onClick={() => { send.mutate({ content: "🎤 Voice message", }); }}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-white"
-          title="Voice message"
+          disabled
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors opacity-40 cursor-not-allowed"
+          title="Voice recording coming soon"
         >
           <Mic className="h-4 w-4" />
         </button>
         <button
           onClick={() => setLocationSheet("share")}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-foreground"
           title="Share location"
         >
           <MapPin className="h-4 w-4" />
@@ -565,7 +603,7 @@ export function ChatView({
             }
           }}
           placeholder="Type a message…"
-          className="flex-1 rounded-full border border-line bg-surface-2 px-4 py-2.5 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+          className="flex-1 rounded-full border border-line bg-surface-2 px-4 py-2.5 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
         />
         <button
           onClick={() => send.mutate({ content: input.trim(), ephemeral: 60 })}

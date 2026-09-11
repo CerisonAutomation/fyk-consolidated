@@ -125,7 +125,7 @@ export function StoriesRail() {
 					className="flex shrink-0 flex-col items-center gap-1.5"
 				>
 					<div className="relative">
-						<div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-white/20 bg-white/5 text-white/40">
+						<div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-white/20 bg-white/5 text-foreground/40">
 							<Plus className="h-6 w-6" />
 						</div>
 						<span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-ink bg-gold text-ink">
@@ -150,7 +150,7 @@ export function StoriesRail() {
 					>
 						<div className="rounded-full bg-gradient-to-tr from-gold to-gold-soft p-[2px]">
 							<div className="rounded-full border-2 border-ink">
-								<div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white/60">
+								<div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-white/10 text-sm font-bold text-foreground/60">
 									{me?.pseudo?.charAt(0)?.toUpperCase() ?? "Y"}
 								</div>
 							</div>
@@ -192,7 +192,7 @@ export function StoriesRail() {
 											className="h-[60px] w-[60px] rounded-full object-cover"
 										/>
 									) : (
-										<div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white/60">
+										<div className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-white/10 text-sm font-bold text-foreground/60">
 											{r.userName.charAt(0).toUpperCase()}
 										</div>
 									)}
@@ -201,7 +201,7 @@ export function StoriesRail() {
 							<span
 								className={cn(
 									"max-w-16 truncate text-[10px]",
-									hasNew ? "text-white" : "text-muted",
+									hasNew ? "text-foreground" : "text-muted",
 								)}
 							>
 								{r.userName}
@@ -216,7 +216,7 @@ export function StoriesRail() {
 				<div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/95 p-4">
 					<button
 						onClick={() => setViewing(null)}
-						className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white"
+						className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-foreground"
 					>
 						<X className="h-5 w-5" />
 					</button>
@@ -265,15 +265,15 @@ export function StoriesRail() {
 										className="h-[34px] w-[34px] rounded-full object-cover"
 									/>
 								) : (
-									<div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white/60">
+									<div className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white/10 text-sm font-bold text-foreground/60">
 										{viewing.authorName?.charAt(0)?.toUpperCase() ?? "?"}
 									</div>
 								)}
 								<div>
-									<p className="text-sm font-semibold text-white">
+									<p className="text-sm font-semibold text-foreground">
 										{viewing.authorName ?? "Unknown"}
 									</p>
-									<p className="text-[11px] text-white/60">
+									<p className="text-[11px] text-foreground/60">
 										{viewing.items[idx]?.created_at
 											? new Date(viewing.items[idx].created_at).toLocaleTimeString([], {
 													hour: "2-digit",
@@ -284,7 +284,7 @@ export function StoriesRail() {
 								</div>
 							</div>
 							{viewing.items[idx]?.caption && (
-								<p className="mt-3 text-base leading-snug text-white">
+								<p className="mt-3 text-base leading-snug text-foreground">
 									{viewing.items[idx].caption}
 								</p>
 							)}
@@ -317,7 +317,7 @@ export function StoriesRail() {
 						className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5"
 						onClick={(e) => e.stopPropagation()}
 					>
-						<h3 className="mb-3 text-sm font-semibold text-white">Post a story</h3>
+						<h3 className="mb-3 text-sm font-semibold text-foreground">Post a story</h3>
 						<p className="mb-3 text-xs text-muted">
 							Stories last 24 hours. Paste an image URL or pick a preset.
 						</p>
@@ -369,13 +369,13 @@ function StoryComposer({
 				value={url}
 				onChange={(e) => setUrl(e.target.value)}
 				placeholder="...or paste an image URL"
-				className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2 text-xs text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+				className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2 text-xs text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
 			/>
 			<input
 				value={caption}
 				onChange={(e) => setCaption(e.target.value)}
 				placeholder="Add a caption"
-				className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2 text-xs text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+				className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2 text-xs text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
 			/>
 			<div className="flex flex-wrap gap-1.5">
 				{Object.keys(BG).map((k) => (

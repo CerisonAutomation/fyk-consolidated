@@ -69,7 +69,7 @@ export function LiveLocationToggle({
           <Radio className={cn("h-4 w-4", isLive ? "text-rose-400" : "text-gold")} />
         </div>
         <div>
-          <h3 className="text-sm font-semibold text-white">Live Location Sharing</h3>
+          <h3 className="text-sm font-semibold text-foreground">Live Location Sharing</h3>
           <p className="text-xs text-muted">
             {isLive ? "Currently sharing" : "Share your real-time position"}
           </p>
@@ -134,7 +134,7 @@ export function LiveLocationToggle({
                   "flex-1 rounded-xl border px-3 py-2 text-xs font-medium transition-all",
                   selectedMs === opt.ms
                     ? "border-gold/50 bg-gold/15 text-gold-soft shadow-sm"
-                    : "border-line bg-surface-2 text-muted hover:text-white hover:border-line/80"
+                    : "border-line bg-surface-2 text-muted hover:text-foreground hover:border-line/80"
                 )}
               >
                 <div className="flex items-center justify-center gap-1.5">

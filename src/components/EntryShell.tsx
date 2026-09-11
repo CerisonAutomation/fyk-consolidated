@@ -29,6 +29,7 @@ import { cn } from "@/utils/cn";
 import { px } from "@/lib/data";
 import { envMissing, isConfigured } from "@/lib/supabase/env";
 import { getSupabase, toFailure } from "@/lib/supabase/client";
+import { useAuthStore } from "#/domains/auth/store";
 import type { Profile } from "@/lib/supabase/types";
 
 // --- Zod schemas for form validation (per react-forms.md docs) ---
@@ -283,6 +284,15 @@ function AuthenticatedBoundary({
   onReload: () => Promise<void>;
   children: ReactNode;
 }) {
+  const setAuth = useAuthStore((s) => s.setAuth);
+
+  // Keep the Zustand auth store in sync so that settings pages
+  // (which consume useAuthStore directly) always have the current user.
+  useEffect(() => {
+    setAuth({ userId: session.user.id, user: session.user });
+    return () => setAuth(null);
+  }, [setAuth, session]);
+
   const updateProfile = useCallback(
     async (changes: Partial<Profile>) => {
       const client = getSupabase();

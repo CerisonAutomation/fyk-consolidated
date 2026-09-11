@@ -59,7 +59,7 @@ export function ShareLocationSheet({ onShare, onClose }: ShareLocationSheetProps
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/15">
             <MapPin className="h-5 w-5 text-gold" />
           </div>
-          <h2 className="text-lg font-bold text-white">Share Current Location</h2>
+          <h2 className="text-lg font-bold text-foreground">Share Current Location</h2>
         </div>
 
         {/* Subtitle */}
@@ -91,7 +91,7 @@ export function ShareLocationSheet({ onShare, onClose }: ShareLocationSheetProps
             disabled={status === "loading"}
             className={cn(
               "w-full gap-2",
-              status === "shared" && "bg-emerald-500 text-white"
+              status === "shared" && "bg-emerald-500 text-foreground"
             )}
           >
             {status === "loading" ? (

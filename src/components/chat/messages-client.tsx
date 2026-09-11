@@ -79,7 +79,7 @@ export function MessagesClient() {
     <div>
       <div className="mb-2 flex items-center gap-2">
         <MessageCircle className="h-5 w-5 text-gold" />
-        <h1 className="text-xl font-bold text-white">Messages</h1>
+        <h1 className="text-xl font-bold text-foreground">Messages</h1>
         {unreadTotal > 0 && (
           <Badge color="gold">{unreadTotal} unread</Badge>
         )}
@@ -109,7 +109,7 @@ export function MessagesClient() {
         ) : digest ? (
           <div className="space-y-2">
             {digest.bullets.map((b, i) => (
-              <p key={i} className="flex items-start gap-1.5 text-xs text-white/85">
+              <p key={i} className="flex items-start gap-1.5 text-xs text-foreground/85">
                 <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-gold" /> {b}
               </p>
             ))}
@@ -138,7 +138,7 @@ export function MessagesClient() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search conversations…"
-            className="w-full rounded-xl border border-line bg-surface-2 py-2 pl-9 pr-3 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+            className="w-full rounded-xl border border-line bg-surface-2 py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
           />
         </div>
         <div className="flex gap-1.5">
@@ -152,7 +152,7 @@ export function MessagesClient() {
               onClick={() => setFilter(k)}
               className={cn(
                 "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                filter === k ? "border-gold/50 bg-gold/15 text-gold-soft" : "border-line bg-surface text-muted hover:text-white"
+                filter === k ? "border-gold/50 bg-gold/15 text-gold-soft" : "border-line bg-surface text-muted hover:text-foreground"
               )}
             >
               {label}
@@ -209,14 +209,14 @@ export function MessagesClient() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="truncate text-sm font-semibold text-white">{label}</span>
+                    <span className="truncate text-sm font-semibold text-foreground">{label}</span>
                     {isGroup && <Users className="h-3 w-3 shrink-0 text-muted" />}
                     {c.muted && <span className="text-[10px] text-muted">🔇</span>}
                     {c.lastMessage && (
                       <span className="ml-auto shrink-0 text-[11px] text-muted">{timeAgo(c.lastMessage.created_at)}</span>
                     )}
                   </div>
-                  <p className={cn("truncate text-sm", c.unread > 0 ? "font-medium text-white" : "text-muted")}>
+                  <p className={cn("truncate text-sm", c.unread > 0 ? "font-medium text-foreground" : "text-muted")}>
                     {c.lastMessage
                       ? `${c.lastMessage.sender_id === c.otherUser?.id || isGroup ? "" : "You: "}${c.lastMessage.content?.slice(0, 50) ?? ""}`
                       : "Say hi 👋"}

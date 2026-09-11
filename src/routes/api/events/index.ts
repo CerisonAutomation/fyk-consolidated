@@ -128,6 +128,17 @@ export const Route = createFileRoute("/api/events/")({
             }
           }
 
+          // Validate start_time: must be a parseable date and not in the past
+          if (body.start_time) {
+            const parsedStart = new Date(body.start_time);
+            if (Number.isNaN(parsedStart.getTime())) {
+              return jsonError("start_time is not a valid date", 400);
+            }
+            if (parsedStart.getTime() < Date.now()) {
+              return jsonError("start_time must not be in the past", 400);
+            }
+          }
+
           const event = await prisma.event.create({
             data: {
               hostId: user.id,

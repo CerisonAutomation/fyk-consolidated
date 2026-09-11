@@ -227,8 +227,8 @@ function SettingsLink({
 	href: string;
 }) {
 	return (
-		<a
-			href={href}
+		<Link
+			to={href}
 			className="flex items-center gap-3 p-3 rounded-xl transition-all duration-200 hover:bg-white/[0.03] group"
 		>
 			<div
@@ -262,6 +262,6 @@ function SettingsLink({
 			>
 				<path d="m9 18 6-6-6-6" />
 			</svg>
-		</a>
+		</Link>
 	);
 }

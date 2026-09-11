@@ -163,9 +163,9 @@ function SignInPage() {
 					setError(authError.message);
 					return;
 				}
-				// If auto-confirmed (email confirm disabled), go to onboarding
+				// If auto-confirmed (email confirm disabled), enter app
 				if (data.session) {
-					navigate({ to: "/onboarding", replace: true });
+					navigate({ to: "/", replace: true });
 					return;
 				}
 				// Email confirmation required
@@ -389,8 +389,8 @@ function SignInPage() {
 							</div>
 						)}
 
-						{/* ── Quick-login test accounts ── */}
-						{mode === "login" && (
+						{/* ── Quick-login test accounts (DEV only — hardcoded credentials removed from production builds) ── */}
+						{import.meta.env.DEV && mode === "login" && (
 							<div className="mb-4 space-y-2">
 								<p className="font-mono text-[10px] uppercase tracking-wider text-white/30 text-center">
 									Quick test accounts

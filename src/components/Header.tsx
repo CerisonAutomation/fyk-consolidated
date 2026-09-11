@@ -59,7 +59,7 @@ export default function Header() {
          <span className="inline-flex size-6 items-center justify-center rounded-md bg-gradient-to-br from-yellow-400 to-amber-600 text-[10px] font-bold text-black">
            FK
          </span>
-         <span className="hidden font-[family-name:var(--font-bebas-neue)] text-lg tracking-wider sm:inline">
+         <span className="hidden [font-family:var(--font-heading)] text-lg tracking-wider sm:inline">
            FYK
          </span>
        </Link>

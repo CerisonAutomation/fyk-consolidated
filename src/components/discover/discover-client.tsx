@@ -132,11 +132,11 @@ export function DiscoverClient() {
     <div>
       <div className="mb-3 flex items-center gap-2">
         <Compass className="h-5 w-5 text-gold" />
-        <h1 className="text-xl font-bold text-white">Discover</h1>
+        <h1 className="text-xl font-bold text-foreground">Discover</h1>
         <span className="ml-auto flex gap-1">
           <button
             onClick={() => setMode(mode === "grid" ? "map" : "grid")}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-[11px] text-muted transition-colors hover:text-white"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 text-[11px] text-muted transition-colors hover:text-foreground"
           >
             {mode === "grid" ? <MapIcon className="h-3.5 w-3.5" /> : <LayoutGrid className="h-3.5 w-3.5" />}
             {mode === "grid" ? "Map" : "Grid"}
@@ -147,7 +147,7 @@ export function DiscoverClient() {
               "relative flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] transition-colors",
               activeFilterCount > 0
                 ? "border-gold/40 bg-gold/10 text-gold-soft"
-                : "border-line bg-surface text-muted hover:text-white"
+                : "border-line bg-surface text-muted hover:text-foreground"
             )}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -164,13 +164,13 @@ export function DiscoverClient() {
       {/* AI smart-defaults strip */}
       <div className="mb-3 flex items-start gap-2 rounded-2xl border border-gold/20 bg-gold/[0.06] p-3">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-        <p className="text-xs leading-relaxed text-white/80">
+        <p className="text-xs leading-relaxed text-foreground/80">
           <span className="font-semibold text-gold-soft">AI smart defaults active.</span>{" "}
           Showing {candidates.length} kings ranked by 5-dimension compatibility.
           {vectorScores.size > 0 && (
             <> <span className="text-purple-300">Vector search boosted {vectorScores.size} profiles.</span></>
           )}
-          {meta && meta.newCount > 0 && <> <span className="text-white">{meta.newCount} are new to you.</span></>}
+          {meta && meta.newCount > 0 && <> <span className="text-foreground">{meta.newCount} are new to you.</span></>}
         </p>
       </div>
 
@@ -268,7 +268,7 @@ function Chip({ active, onClick, children }: { active?: boolean; onClick: () => 
         "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
         active
           ? "border-gold/50 bg-gold/15 text-gold-soft"
-          : "border-line bg-surface text-muted hover:text-white"
+          : "border-line bg-surface text-muted hover:text-foreground"
       )}
     >
       {children}
@@ -318,9 +318,9 @@ function MapView({
       {me?.geo && myLat !== null && myLng !== null && (
         <>
           <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2" style={pos(myLat, myLng)}>
-            <div className="h-4 w-4 rounded-full border-2 border-white bg-gold pulse-gold" />
+            <div className="h-4 w-4 rounded-full border-2 border-white bg-gold pulse-glow" />
           </div>
-          <span className="absolute left-3 top-3 z-10 rounded-full bg-ink/70 px-2.5 py-1 text-[10px] text-white/80 backdrop-blur">
+          <span className="absolute left-3 top-3 z-10 rounded-full bg-ink/70 px-2.5 py-1 text-[10px] text-foreground/80 backdrop-blur">
             You · {me.geo.city}
           </span>
         </>
@@ -346,14 +346,14 @@ function MapView({
             <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-ink/80 px-1 text-[9px] font-semibold text-gold-soft">
               {c.matchScore}
             </span>
-            <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-surface px-2 py-1 text-[11px] text-white shadow-lg group-hover:block">
+            <div className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg border border-line bg-surface px-2 py-1 text-[11px] text-foreground shadow-lg group-hover:block">
               {c.pseudo} · {c.distanceKm}km
             </div>
           </div>
         </button>
       ))}
 
-      <div className="absolute bottom-3 right-3 z-10 rounded-full bg-ink/70 px-2.5 py-1 text-[10px] text-white/70 backdrop-blur">
+      <div className="absolute bottom-3 right-3 z-10 rounded-full bg-ink/70 px-2.5 py-1 text-[10px] text-foreground/70 backdrop-blur">
         {withGeo.length} kings plotted
       </div>
     </div>
@@ -381,8 +381,8 @@ function FilterSheet({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-white">Filters</h2>
-          <button onClick={onClose} className="text-muted hover:text-white">
+          <h2 className="text-base font-semibold text-foreground">Filters</h2>
+          <button onClick={onClose} className="text-muted hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -469,7 +469,7 @@ function Select({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white focus:border-gold/50 focus:outline-none"
+        className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-foreground focus:border-gold/50 focus:outline-none"
       >
         {options.map((o) => (
           <option key={o} value={o}>{o === "All" ? `All ${label.toLowerCase()}s` : o}</option>

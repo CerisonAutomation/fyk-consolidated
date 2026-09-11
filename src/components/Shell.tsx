@@ -281,7 +281,7 @@ export function MobileNav() {
   return (
     <nav
       aria-label="Primary"
-      className="safe-b fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-rail/95 backdrop-blur-xl lg:hidden"
+      className="safe-area-bottom fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-line bg-rail/95 backdrop-blur-xl lg:hidden"
     >
       {MOBILE_NAV.map(({ id, label, icon: Icon }) => {
         const active = view === id;
@@ -370,7 +370,7 @@ export function TopBar({
           <div
             className={cn(
               "relative flex h-[42px] min-w-0 max-w-[380px] flex-1 items-center rounded-full border bg-surface transition-colors",
-              focused ? "border-gold/60 shadow-[var(--glow-gold)]" : "border-line",
+              focused ? "border-gold/60 shadow-[var(--shadow-glow-gold)]" : "border-line",
             )}
           >
             <Search className="pointer-events-none absolute left-3.5 h-[17px] w-[17px] text-faint" />

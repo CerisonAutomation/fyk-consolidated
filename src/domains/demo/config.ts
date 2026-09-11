@@ -1,8 +1,8 @@
 /**
  * The standalone MVP uses the in-browser Open Grind compatibility adapter.
- * Set VITE_ENABLE_DEMO=false when a production API proxy is available.
+ * Set VITE_ENABLE_DEMO=true to enable the in-browser demo compatibility adapter.
  */
-export const demoEnabled = import.meta.env.VITE_ENABLE_DEMO !== "false";
+export const demoEnabled = import.meta.env.VITE_ENABLE_DEMO === "true";
 
 export const demoMeProfileId = 123456000;
 

@@ -12,7 +12,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
 // ---------------------------------------------------------------------------
-// Upstash Redis client (lazy init — only connects when env vars are present)
+// Upstash Redis client (lazy init -- only connects when env vars are present)
 // ---------------------------------------------------------------------------
 
 let redis: Redis | null = null;
@@ -46,11 +46,34 @@ function getUpstashLimiter(): Ratelimit | null {
 
 const hits = new Map<string, { count: number; resetAt: number }>();
 
+// Cleanup runs at most once per interval to avoid repeated scans
+const CLEANUP_INTERVAL_MS = 60_000; // every 60 seconds
+let lastCleanupAt = 0;
+
+/**
+ * Remove entries whose reset window has already expired.
+ * Runs at most once per CLEANUP_INTERVAL_MS to avoid overhead on every request.
+ */
+function purgeExpiredEntries() {
+  const now = Date.now();
+  if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
+  lastCleanupAt = now;
+
+  for (const [key, entry] of hits) {
+    if (now > entry.resetAt) {
+      hits.delete(key);
+    }
+  }
+}
+
 function memoryRateLimit(
   key: string,
   limit: number,
   windowMs: number,
 ): { success: boolean; remaining: number; resetAt: number } {
+  // Periodically sweep expired entries to prevent unbounded growth
+  purgeExpiredEntries();
+
   const now = Date.now();
   const entry = hits.get(key);
   if (!entry || now > entry.resetAt) {

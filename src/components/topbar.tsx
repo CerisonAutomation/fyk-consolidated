@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Search, Crown, Bell } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { api, clearSessionToken } from "@/lib/client";
@@ -16,6 +16,9 @@ export function Topbar({ user }: { user: ProfileUser }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [results, setResults] = useState<ProfileUser[]>([]);
+
+  // Cache candidates so we only fetch once per search session
+  const candidatesRef = useRef<ProfileUser[]>([]);
 
   useEffect(() => {
     setUser(user);
@@ -32,26 +35,30 @@ export function Topbar({ user }: { user: ProfileUser }) {
     return () => { alive = false; clearInterval(t); };
   }, []);
 
+  // Fetch candidates once when the search opens
+  const fetchCandidates = useCallback(async () => {
+    if (candidatesRef.current.length > 0) return;
+    try {
+      const r = await api<{ candidates: ProfileUser[] }>("/api/discover");
+      candidatesRef.current = r.candidates;
+    } catch { /* noop */ }
+  }, []);
+
+  // Filter cached candidates locally on every keystroke (no fetch)
   useEffect(() => {
-    if (q.trim().length < 1) { setResults([]); return; }
-    const t = setTimeout(async () => {
-      try {
-        const r = await api<{ candidates: ProfileUser[] }>("/api/discover");
-        const needle = q.toLowerCase();
-        setResults(
-          r.candidates
-            .filter(
-              (c) =>
-                c.pseudo.toLowerCase().includes(needle) ||
-                c.tribes.some((x) => x.toLowerCase().includes(needle)) ||
-                c.interests.some((x) => x.toLowerCase().includes(needle)) ||
-                (c.geo?.city ?? "").toLowerCase().includes(needle)
-            )
-            .slice(0, 6)
-        );
-      } catch { /* noop */ }
-    }, 220);
-    return () => clearTimeout(t);
+    const needle = q.trim().toLowerCase();
+    if (needle.length < 1) { setResults([]); return; }
+
+    const filtered = candidatesRef.current
+      .filter(
+        (c) =>
+          c.pseudo.toLowerCase().includes(needle) ||
+          c.tribes.some((x) => x.toLowerCase().includes(needle)) ||
+          c.interests.some((x) => x.toLowerCase().includes(needle)) ||
+          (c.geo?.city ?? "").toLowerCase().includes(needle)
+      )
+      .slice(0, 6);
+    setResults(filtered);
   }, [q]);
 
   async function logout() {
@@ -74,7 +81,7 @@ export function Topbar({ user }: { user: ProfileUser }) {
         <input
           value={q}
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => { setOpen(true); fetchCandidates(); }}
           placeholder="Search kings, tribes, interests…"
           className="w-full rounded-full border border-line bg-surface-2 py-2 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-gold/50 focus:outline-none"
         />
@@ -83,7 +90,7 @@ export function Topbar({ user }: { user: ProfileUser }) {
             <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
             <div className="absolute left-0 right-0 top-11 z-20 overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl">
               {results.length === 0 ? (
-                <p className="px-4 py-3 text-xs text-muted">No kings match “{q}”</p>
+                <p className="px-4 py-3 text-xs text-muted">No kings match "{q}"</p>
               ) : (
                 results.map((r) => (
                   <button

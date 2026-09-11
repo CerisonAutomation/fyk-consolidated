@@ -107,13 +107,67 @@ export async function loadConversations(userId: string): Promise<Result<ChatConv
   );
 }
 
-export async function loadMessages(conversationId: string): Promise<Result<ChatMessage[]>> {
+const MESSAGE_PAGE_SIZE = 50;
+
+export type PaginatedMessages = {
+  messages: ChatMessage[];
+  /** The created_at of the last (oldest) message in this batch, used as the cursor for the next page. */
+  nextCursor: string | null;
+  /** Whether more messages exist before this batch. */
+  hasMore: boolean;
+};
+
+/**
+ * Load messages for a conversation with cursor-based pagination.
+ *
+ * @param conversationId - The conversation to load messages for.
+ * @param cursor - An ISO timestamp. When provided, loads messages OLDER than this
+ *                 cursor (i.e. going back in history). When omitted, loads the
+ *                 most recent page of messages.
+ */
+export async function loadMessages(
+  conversationId: string,
+  cursor?: string,
+): Promise<Result<PaginatedMessages>> {
   const client = getSupabase();
   if (!client) return toFailure(new Error("Supabase is not configured."));
-  const messages = await client.from("messages").select(MESSAGE_COLUMNS).eq("conversation_id", conversationId).order("created_at").limit(200);
+
+  // Build query: if a cursor is provided, fetch messages older than it;
+  // otherwise fetch the most recent page (descending, then reverse for display).
+  let query = client
+    .from("messages")
+    .select(MESSAGE_COLUMNS)
+    .eq("conversation_id", conversationId);
+
+  if (cursor) {
+    // Cursor-based: load older messages (created_at < cursor)
+    query = query.lt("created_at", cursor).order("created_at", { ascending: false }).limit(MESSAGE_PAGE_SIZE);
+  } else {
+    // Initial load: most recent messages
+    query = query.order("created_at", { ascending: false }).limit(MESSAGE_PAGE_SIZE);
+  }
+
+  const messages = await query;
   if (messages.error) return toFailure(messages.error);
-  const rows = messages.data ?? [];
-  if (!rows.length) return ok([]);
+
+  let rows = messages.data ?? [];
+  // When loading the most recent page, reverse so oldest-first for display
+  if (!cursor) rows = rows.reverse();
+
+  if (!rows.length) return ok({ messages: [], nextCursor: null, hasMore: false });
+
+  // Determine if there are more messages before this batch
+  const oldestCreated = rows[0].created_at;
+  const countResult = await client
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .eq("conversation_id", conversationId)
+    .lt("created_at", oldestCreated);
+  const hasMore = (countResult.count ?? 0) > 0;
+
+  // The cursor for the next page is the oldest message's created_at
+  const nextCursor = rows[0].created_at;
+
   const messageIds = rows.map((row) => row.id);
   const shareIds = rows.map((row) => row.album_share_id).filter((id): id is string => !!id);
 
@@ -133,7 +187,7 @@ export async function loadMessages(conversationId: string): Promise<Result<ChatM
   const albumMap = new Map((albums.data ?? []).map((album) => [album.id, album]));
   const rowMap = new Map(rows.map((row) => [row.id, row]));
 
-  return ok(rows.map((message) => {
+  const chatMessages = rows.map((message) => {
     const share = message.album_share_id ? shareRows.find((item) => item.id === message.album_share_id) : undefined;
     const reply = message.reply_to_id ? rowMap.get(message.reply_to_id) : undefined;
     return {
@@ -143,7 +197,9 @@ export async function loadMessages(conversationId: string): Promise<Result<ChatM
       albumShare: share ? { ...share, album: albumMap.get(share.album_id) ?? null } : null,
       reply: reply ? { id: reply.id, body: reply.body, type: reply.type, sender_id: reply.sender_id } : null,
     };
-  }));
+  });
+
+  return ok({ messages: chatMessages, nextCursor, hasMore });
 }
 
 export async function sendTextMessage(input: {

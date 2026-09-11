@@ -7,6 +7,20 @@
   --color-gold: oklch(0.78 0.15 85);
   --color-surface: oklch(0.16 0.01 260);
   --color-ink: oklch(0.95 0.01 260);
+
+  /* -- Semantic color tokens (dark mode defaults) -- */
+  --color-gold-soft: oklch(0.75 0.12 85);
+  --color-ink-2: oklch(0.72 0.012 260);
+  --color-surface-2: oklch(0.20 0.012 260);
+  --color-line: oklch(0.25 0.01 260);
+  --color-line-soft: oklch(0.20 0.01 260);
+  --color-rail: oklch(0.10 0.01 260);
+  --color-canvas: oklch(0.13 0.01 260);
+  --color-gold-ghost: oklch(0.80 0.17 85 / 0.08);
+  --color-faint: oklch(0.50 0.01 260);
+  --color-live: oklch(0.77 0.21 150);
+  --color-online: oklch(0.77 0.19 160);
+  --color-surface-hover: oklch(0.22 0.012 260);
 }
 
 [data-theme="dark"] {

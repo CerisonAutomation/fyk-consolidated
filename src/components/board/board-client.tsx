@@ -90,8 +90,8 @@ export function BoardClient() {
 			// 2. Fetch authors, my joins in parallel
 			const [authorsResult, joinsResult] = await Promise.all([
 				sb
-					.from("users")
-					.select("id, pseudo, nick, age, photos, city, area")
+					.from("profiles")
+					.select("id, display_name, handle, age, photos, city, area")
 					.in("id", authorIds),
 				sb
 					.from("post_joins" as any)
@@ -123,7 +123,7 @@ export function BoardClient() {
 				return {
 					id: post.id,
 					userId: post.author_id,
-					userName: author?.nick ?? author?.pseudo ?? "Someone",
+					userName: author?.handle ?? author?.display_name ?? "Someone",
 					userAge: author?.age ?? null,
 					userPhoto: photo,
 					status: "available" as const,

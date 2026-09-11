@@ -101,7 +101,7 @@ export function LiveLocationPreview({
       <div className="flex items-center justify-between gap-3 px-3 py-2 bg-surface">
         <div className="min-w-0 flex-1">
           {distanceText && (
-            <p className="text-xs font-medium text-white truncate">{distanceText} away</p>
+            <p className="text-xs font-medium text-foreground truncate">{distanceText} away</p>
           )}
           {!distanceText && isLive && (
             <p className="text-xs text-muted">

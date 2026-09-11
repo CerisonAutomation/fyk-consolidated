@@ -13,7 +13,7 @@ import { useAuth } from "@/components/EntryShell";
 import { useAppStore } from "@/lib/store";
 import {
   listFootprints, listBlocks, unblockUser,
-  listNotes, createNote, deleteNote,
+  listNotes, createNote, deleteNote, createCheckIn,
   type SafetyProfile,
 } from "#/integrations/supabase/safety";
 import { EmptyState, Skeleton, Button } from "@/components/ui/primitives";
@@ -62,10 +62,12 @@ export function SafetyClient() {
   const qc = useQueryClient();
   const router = useRouter();
   const pushToast = useAppStore((s) => s.pushToast);
+  const setCheckIn = useAppStore((s) => s.setCheckIn);
   const { user, profile } = useAuth();
   const [tab, setTab] = useState<"viewed" | "blocked" | "notes">("viewed");
   const [noteTarget, setNoteTarget] = useState<SafetyProfile | null>(null);
   const [noteContent, setNoteContent] = useState("");
+  const [checkingIn, setCheckingIn] = useState(false);
 
   const userId = user?.id ?? "";
   const isIncognito = profile?.incognito ?? false;
@@ -116,6 +118,47 @@ export function SafetyClient() {
       setNoteContent("");
       qc.invalidateQueries({ queryKey: ["notes"] });
     },
+  });
+
+  const doCheckIn = useMutation({
+    mutationFn: async () => {
+      setCheckingIn(true);
+      // Request browser geolocation
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
+      });
+      const { latitude, longitude } = pos.coords;
+      // Default dueAt: 4 hours from now
+      const dueAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+      const result = await createCheckIn(userId, userId, `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`, dueAt);
+      if (!result.ok) throw new Error(result.message ?? "Failed to create check-in");
+      return result.data;
+    },
+    onSuccess: (data) => {
+      setCheckIn({
+        status: data.status,
+        dueAt: new Date(data.due_at).getTime(),
+        personId: data.contact_id,
+        contactId: data.contact_id,
+        contact: data.contact_name,
+        place: data.place,
+        checkInId: data.id,
+      });
+      pushToast("Safety check-in armed. You have 4 hours to confirm safe.", "success");
+    },
+    onError: (err) => {
+      const msg = err instanceof Error ? err.message : "Check-in failed";
+      if (msg.includes("timeout") || msg.includes("denied")) {
+        pushToast("Location access is required for safety check-in. Please allow location in your browser settings.", "error");
+      } else {
+        pushToast(msg, "error");
+      }
+    },
+    onSettled: () => setCheckingIn(false),
   });
 
   // ── Render ─────────────────────────────────────────────────────────────
@@ -169,11 +212,12 @@ export function SafetyClient() {
           Share your approximate location with a trusted contact before meeting someone new.
         </p>
         <button
-          onClick={() => pushToast("Location shared with your emergency contact", "success")}
-          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
+          onClick={() => doCheckIn.mutate()}
+          disabled={checkingIn || doCheckIn.isPending}
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20 disabled:opacity-50"
         >
           <MapPin className="h-4 w-4" />
-          Share approximate location
+          {checkingIn || doCheckIn.isPending ? "Requesting location..." : "Share approximate location"}
         </button>
 
         <h4 className="mb-2 text-xs font-semibold text-white/80">Suggested safe meeting spots</h4>

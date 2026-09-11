@@ -29,6 +29,8 @@ export async function api<T = any>(url: string, options: ApiOptions = {}): Promi
     ...rest,
     headers,
     credentials: "include",
+    // Add a 30-second timeout unless the caller already provided a signal
+    signal: rest.signal ?? AbortSignal.timeout(30_000),
     body: body != null ? JSON.stringify(body) : undefined,
   };
 

@@ -42,8 +42,8 @@ export function EventsClient() {
             e.id === eventId
               ? {
                   ...e,
-                  attending: action === "join" ? "going" : null,
-                  attendee_count: (e.attendee_count ?? 0) + (action === "join" ? 1 : -1),
+                  attending: action === "join" ? true : null,
+                  attendee_count: Math.max(0, (e.attendee_count ?? 0) + (action === "join" ? 1 : -1)),
                 }
               : e
           ),
@@ -69,7 +69,7 @@ export function EventsClient() {
     <div>
       <div className="mb-2 flex items-center gap-2">
         <CalendarDays className="h-5 w-5 text-gold" />
-        <h1 className="text-xl font-bold text-white">Events</h1>
+        <h1 className="text-xl font-bold text-foreground">Events</h1>
         <button
           onClick={() => setCreating(true)}
           className="ml-auto flex h-8 items-center gap-1.5 rounded-lg bg-gold px-3 text-xs font-semibold text-ink"
@@ -92,7 +92,7 @@ export function EventsClient() {
             onClick={() => setTab(k)}
             className={cn(
               "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-              tab === k ? "border-gold/50 bg-gold/15 text-gold-soft" : "border-line bg-surface text-muted hover:text-white"
+              tab === k ? "border-gold/50 bg-gold/15 text-gold-soft" : "border-line bg-surface text-muted hover:text-foreground"
             )}
           >
             {label}
@@ -127,7 +127,7 @@ export function EventsClient() {
 
                   <button onClick={() => setDetail(e)} className="flex-1 p-4 text-left">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-semibold text-white">{e.name}</h3>
+                      <h3 className="font-semibold text-foreground">{e.name}</h3>
                       {e.category && <Badge color="purple">{CAT_EMOJI[e.category] ?? "✨"} {e.category}</Badge>}
                       {e.isMine && <Badge color="gold">hosting</Badge>}
                     </div>
@@ -184,13 +184,13 @@ function EventDetail({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative h-32" style={{ background: gradient(event.name) }}>
-          <button onClick={onClose} className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-ink/60 text-white backdrop-blur">
+          <button onClick={onClose} className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-ink/60 text-foreground backdrop-blur">
             <X className="h-5 w-5" />
           </button>
           <span className="absolute bottom-3 left-4 text-4xl">{CAT_EMOJI[event.category ?? "Other"] ?? "✨"}</span>
         </div>
         <div className="p-5">
-          <h2 className="text-xl font-bold text-white">{event.name}</h2>
+          <h2 className="text-xl font-bold text-foreground">{event.name}</h2>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{event.start_time ? format(new Date(event.start_time), "EEE, MMM d · h:mm a") : "TBD"}</span>
             <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{event.location}</span>
@@ -204,12 +204,12 @@ function EventDetail({
             </div>
           )}
 
-          <p className="mt-4 text-sm leading-relaxed text-white/90">{event.description}</p>
+          <p className="mt-4 text-sm leading-relaxed text-foreground/90">{event.description}</p>
 
           {event.tags?.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {event.tags.map((t) => (
-                <span key={t} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-white/70">{t}</span>
+                <span key={t} className="rounded-full bg-white/5 px-2.5 py-1 text-xs text-foreground/70">{t}</span>
               ))}
             </div>
           )}
@@ -285,8 +285,8 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-white">Create event</h3>
-          <button onClick={onClose} className="text-muted hover:text-white"><X className="h-5 w-5" /></button>
+          <h3 className="text-base font-semibold text-foreground">Create event</h3>
+          <button onClick={onClose} className="text-muted hover:text-foreground"><X className="h-5 w-5" /></button>
         </div>
 
         {/* progress */}
@@ -312,7 +312,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
                 )}
               >
                 <span className="text-xl">{CAT_EMOJI[c] ?? "✨"}</span>
-                <span className="text-[10px] text-white/80">{c}</span>
+                <span className="text-[10px] text-foreground/80">{c}</span>
               </button>
             ))}
           </div>
@@ -324,14 +324,14 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Event title"
-              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
             />
             <textarea
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={4}
               placeholder="What's happening? Who should come?"
-              className="w-full resize-none rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+              className="w-full resize-none rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
             />
             <button onClick={suggestTitles} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-gold/30 bg-gold/10 py-2 text-xs font-medium text-gold-soft">
               <Sparkles className="h-3.5 w-3.5" /> Suggest a title with AI
@@ -342,7 +342,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
                   <button
                     key={t}
                     onClick={() => setForm((f) => ({ ...f, name: t }))}
-                    className="w-full rounded-xl border border-line bg-surface-2 p-2.5 text-left text-xs text-white/80 hover:border-gold/40"
+                    className="w-full rounded-xl border border-line bg-surface-2 p-2.5 text-left text-xs text-foreground/80 hover:border-gold/40"
                   >
                     {t}
                   </button>
@@ -358,16 +358,16 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
               type="date"
               value={form.date}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white focus:border-gold/50 focus:outline-none"
+              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-foreground focus:border-gold/50 focus:outline-none"
             />
             <input
               type="time"
               value={form.time}
               onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
-              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white focus:border-gold/50 focus:outline-none"
+              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-foreground focus:border-gold/50 focus:outline-none"
             />
             <div className="rounded-xl border border-gold/20 bg-gold/[0.06] p-3">
-              <p className="flex items-start gap-1.5 text-[11px] text-white/80">
+              <p className="flex items-start gap-1.5 text-[11px] text-foreground/80">
                 <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-gold" />
                 Thursday and Sunday evenings see the highest RSVP rates in your area.
               </p>
@@ -385,14 +385,14 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
               placeholder="Or type a venue or neighbourhood"
-              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+              className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
             />
             <div className="space-y-1.5">
               {["Blue Bottle Coffee, Chelsea", "Bryant Park", "Hex & Co, UES", "The Crown, Midtown"].map((v) => (
                 <button
                   key={v}
                   onClick={() => setForm((f) => ({ ...f, location: v }))}
-                  className="flex w-full items-center gap-2 rounded-xl border border-line bg-surface-2 p-2.5 text-left text-xs text-white/80 hover:border-gold/40"
+                  className="flex w-full items-center gap-2 rounded-xl border border-line bg-surface-2 p-2.5 text-left text-xs text-foreground/80 hover:border-gold/40"
                 >
                   <MapPin className="h-3.5 w-3.5 text-gold" /> {v}
                 </button>
@@ -432,7 +432,7 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
           <div className="space-y-3">
             <div className="rounded-2xl border border-line bg-surface-2 p-4">
               <p className="text-2xl">{CAT_EMOJI[form.category]}</p>
-              <p className="mt-1 font-semibold text-white">{form.name || "Untitled event"}</p>
+              <p className="mt-1 font-semibold text-foreground">{form.name || "Untitled event"}</p>
               <p className="mt-1 text-xs text-muted">{form.description || "No description"}</p>
               <div className="mt-3 space-y-1 text-[11px] text-muted">
                 <p><Clock className="mr-1 inline h-3 w-3" />{form.date || "Date TBD"} at {form.time}</p>

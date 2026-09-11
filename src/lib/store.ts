@@ -13,8 +13,10 @@ type CheckInState = {
   status: "ARMED" | "OVERDUE" | "SAFE";
   dueAt: number;
   personId: string;
+  contactId: string;
   contact: string;
   place: string;
+  checkInId: string;
 };
 
 type FootprintMap = Record<string, string>;
@@ -255,7 +257,7 @@ export const useAppStore = create<AppState>((set, _get) => ({
   // Check-in / Footprints
   checkIn: null,
   setCheckIn: (data) => set({ checkIn: data }),
-  resolveCheckIn: () => set({ checkIn: null }),
+  resolveCheckIn: (safe: boolean) => { const ci = _get().checkIn; if (ci) { api("/api/safety/check-in/resolve", { method: "POST", body: { checkInId: ci.checkInId, contactId: ci.contactId, safe } }).catch(() => {}); } set({ checkIn: null }); },
   footprints: {},
   leaveFootprint: (data) => {
     set((s) => ({
