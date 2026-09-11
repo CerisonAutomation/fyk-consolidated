@@ -1,42 +1,43 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-# FYK Consolidated — Multi-stage Docker Build
-# ═══════════════════════════════════════════════════════════════════════════════
+# FYK — TanStack Start (Vite) production image.
+#
+# This replaces an earlier Dockerfile that ran `prisma generate` and started
+# `node dist/server.js`: Prisma is not in this project, and `dist/server.js` is
+# not the build output. The app is built by Vite and served by the Node server
+# that TanStack Start emits into `.output`.
 
-# Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS deps
 WORKDIR /app
-
-# Enable corepack and pin pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-# Install dependencies first (cacheable layer)
+RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Copy source and build
-COPY . .
-RUN npx prisma generate
-RUN pnpm build
-
-# Stage 2: Production runtime
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS build
 WORKDIR /app
+RUN corepack enable
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm typecheck && pnpm test && pnpm build
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3000
 
-# Copy only what's needed to run
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/package.json ./
+# Only the built server bundle and what it needs at runtime.
+COPY --from=build /app/.output ./.output
+COPY --from=build /app/package.json ./package.json
 
-# Non-root user
 RUN addgroup -g 1001 -S fyk && adduser -S fyk -u 1001 -G fyk
 USER fyk
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+# /api/health is a real endpoint: it reports Supabase reachability, whether the
+# durable rate limiter is in play, and any schema gaps. It answers 503 while the
+# app is not wired to a project, so a failing check here means the deployment is
+# misconfigured rather than that the container is dead.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1
 
-CMD ["node", "dist/server.js"]
+CMD ["node", ".output/server/index.mjs"]
