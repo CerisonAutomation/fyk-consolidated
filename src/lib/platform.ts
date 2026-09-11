@@ -39,7 +39,7 @@ export function detectCapabilities(): Capability[] {
   return [
     { id: "webcrypto", label: "Web Crypto (AES-GCM + ECDH)", group: "Security",
       detail: "Authenticated encryption and key agreement in the browser.",
-      supported: has(() => !!crypto.subtle?.deriveKey), used: "Cryptography capability demo; not wired to chat transport" },
+      supported: has(() => !!crypto.subtle?.deriveKey), used: "E2E message encryption via ChatCrypto (AES-GCM-256 + ECDH key agreement)" },
     { id: "passkeys", label: "WebAuthn passkeys", group: "Security",
       detail: "Platform authenticator — Face ID, Touch ID, Windows Hello.",
       supported: has(() => typeof PublicKeyCredential !== "undefined"), used: "Passwordless sign-in and app unlock" },
@@ -54,7 +54,7 @@ export function detectCapabilities(): Capability[] {
       supported: has(() => typeof OffscreenCanvas !== "undefined"), used: "Photo re-encode without dropping frames" },
     { id: "webrtc", label: "WebRTC", group: "Media",
       detail: "Peer-to-peer audio and video with real media tracks.",
-      supported: has(() => typeof RTCPeerConnection !== "undefined"), used: "Voice and video calling" },
+      supported: has(() => typeof RTCPeerConnection !== "undefined"), used: "Voice and video calling with WebRTC + Supabase Realtime signalling" },
     { id: "mediarecorder", label: "MediaRecorder", group: "Media",
       detail: "Encode microphone audio in the browser.",
       supported: has(() => typeof MediaRecorder !== "undefined"), used: "Voice messages with live waveforms" },

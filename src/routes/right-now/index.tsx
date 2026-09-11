@@ -15,18 +15,24 @@ import {
 	Zap,
 } from "lucide-react";
 import {
-	type ChangeEvent,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
+	type ChangeEvent,
 } from "react";
-import { conversationIdFor, demoMediaUrl } from "#/domains/demo";
-import { getPreferencesSnapshot } from "#/domains/settings/preferences";
+import { useQuery } from "@tanstack/react-query";
+import { getSupabase } from "#/integrations/supabase/client";
+import { useSupabaseSession } from "#/integrations/supabase/session-provider";
+import { useAppStore } from "#/lib/store";
+import { watchLocation, type GeoState } from "#/lib/geo";
 
 export const Route = createFileRoute("/right-now/")({
 	component: RightNowPage,
 });
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
 	{ label: "Looking to chat", icon: MessageCircle, color: "#3b82f6" },
@@ -47,34 +53,19 @@ interface ActiveStatus {
 	photoDataUrl?: string;
 }
 
+interface NearbyUser {
+	id: string;
+	name: string;
+	avatar: string;
+	status: string;
+	online: boolean;
+	lastActiveAt: string;
+	city: string | null;
+}
+
 const RIGHT_NOW_STORAGE_KEY = "fyk:right-now:active-status";
 
-const NEARBY_STATUSES = [
-	{
-		profileId: 100006,
-		name: "Theo",
-		status: "Looking to chat",
-		time: "12m ago",
-		distance: "0.3 km",
-		mediaHash: "right-now-alex",
-	},
-	{
-		profileId: 100009,
-		name: "Henry",
-		status: "At the gym",
-		time: "28m ago",
-		distance: "1.2 km",
-		mediaHash: "right-now-marcus",
-	},
-	{
-		profileId: 100001,
-		name: "James",
-		status: "Free tonight",
-		time: "1h ago",
-		distance: "0.8 km",
-		mediaHash: "right-now-jordan",
-	},
-] as const;
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function loadActiveStatus(): ActiveStatus | null {
 	if (typeof window === "undefined") return null;
@@ -86,20 +77,151 @@ function loadActiveStatus(): ActiveStatus | null {
 	}
 }
 
+function formatElapsed(startedAt: number) {
+	const mins = Math.floor((Date.now() - startedAt) / 60000);
+	if (mins < 1) return "just now";
+	if (mins < 60) return `${mins}m ago`;
+	const hours = Math.floor(mins / 60);
+	return `${hours}h ${mins % 60}m ago`;
+}
+
+function timeAgo(dateStr: string) {
+	const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60_000);
+	if (mins < 1) return "just now";
+	if (mins < 60) return `${mins}m ago`;
+	const hours = Math.floor(mins / 60);
+	if (hours < 24) return `${hours}h ago`;
+	return `${Math.floor(hours / 24)}d ago`;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 function RightNowPage() {
+	const { user: authUser } = useSupabaseSession();
+	const pushToast = useAppStore((s) => s.pushToast);
+
 	const [activeStatus, setActiveStatus] = useState<ActiveStatus | null>(null);
 	const [customMessage, setCustomMessage] = useState("");
 	const [showComposer, setShowComposer] = useState(false);
 	const [photoDataUrl, setPhotoDataUrl] = useState<string>();
 	const photoInputRef = useRef<HTMLInputElement>(null);
-	const [shareLocation, setShareLocation] = useState(
-		getPreferencesSnapshot().autoUpdateLocation,
-	);
+	const [shareLocation, setShareLocation] = useState(false);
+	const [geoState, setGeoState] = useState<GeoState | null>(null);
 
+	// ── Load status from localStorage on mount ────────────────────────────
 	useEffect(() => {
 		setActiveStatus(loadActiveStatus());
 	}, []);
 
+	// ── Track location periodically ───────────────────────────────────────
+	useEffect(() => {
+		if (!shareLocation || !authUser) return;
+		const stop = watchLocation((state) => {
+			setGeoState(state);
+			// Update presence with location data
+			const sb = getSupabase();
+			if (sb && state.coords) {
+				sb.channel("right-now-presence").subscribe(async (status) => {
+					if (status === "SUBSCRIBED") {
+						await sb.channel("right-now-presence").track({
+							user_id: authUser.id,
+							lat: state.coords!.lat,
+							lng: state.coords!.lng,
+							city: state.city,
+							online_at: new Date().toISOString(),
+						});
+					}
+				});
+			}
+		});
+		return () => {
+			stop();
+			getSupabase()?.channel("right-now-presence").unsubscribe();
+		};
+	}, [shareLocation, authUser]);
+
+	// ── Load nearby active users from Supabase ────────────────────────────
+	const { data: nearbyUsers } = useQuery({
+		queryKey: ["right-now", "nearby"],
+		queryFn: async (): Promise<NearbyUser[]> => {
+			const sb = getSupabase();
+			if (!sb || !authUser) return [];
+
+			const city = geoState?.city ?? "valletta";
+			// Fetch users in the same city who are online or recently active
+			const fiveMinAgo = new Date(Date.now() - 5 * 60_000).toISOString();
+			const oneHourAgo = new Date(Date.now() - 60 * 60_000).toISOString();
+
+			// First try: online users in the city
+			let { data: rows } = await sb
+				.from("users")
+				.select("id, pseudo, nick, photos, city, area, online, last_active_at, visible, hidden")
+				.eq("city", city)
+				.eq("visible", true)
+				.eq("hidden", false)
+				.neq("id", authUser.id)
+				.or(`online.eq.true,last_active_at.gt.${oneHourAgo}`)
+				.order("last_active_at", { ascending: false })
+				.limit(20);
+
+			if (!rows || rows.length === 0) {
+				// Fallback: show recently active users anywhere
+				const result = await sb
+					.from("users")
+					.select("id, pseudo, nick, photos, city, area, online, last_active_at, visible, hidden")
+					.eq("visible", true)
+					.eq("hidden", false)
+					.neq("id", authUser.id)
+					.or(`online.eq.true,last_active_at.gt.${fiveMinAgo}`)
+					.order("last_active_at", { ascending: false })
+					.limit(15);
+				rows = result.data ?? [];
+			}
+
+			return rows.map((row: any) => {
+				const photos = (row.photos as string[]) ?? [];
+				return {
+					id: row.id,
+					name: row.nick ?? row.pseudo ?? "Someone",
+					avatar: photos[0] ?? "",
+					status: row.online ? "Online now" : "Active recently",
+					online: row.online ?? false,
+					lastActiveAt: row.last_active_at,
+					city: row.city,
+				};
+			});
+		},
+		refetchInterval: 30_000,
+	});
+
+	// ── Track user presence ───────────────────────────────────────────────
+	useEffect(() => {
+		if (!authUser) return;
+		const sb = getSupabase();
+		if (!sb) return;
+
+		const channel = sb.channel("right-now-presence");
+
+		channel
+			.on("presence", { event: "sync" }, () => {
+				// Presence state synced — could read channel.presenceState() here
+			})
+			.subscribe(async (status) => {
+				if (status === "SUBSCRIBED") {
+					await channel.track({
+						user_id: authUser.id,
+						status: activeStatus?.type ?? "idle",
+						online_at: new Date().toISOString(),
+					});
+				}
+			});
+
+		return () => {
+			channel.unsubscribe();
+		};
+	}, [authUser, activeStatus?.type]);
+
+	// ── Handlers ──────────────────────────────────────────────────────────
 	const handlePostStatus = useCallback(
 		(label: string) => {
 			const nextStatus: ActiveStatus = {
@@ -110,15 +232,13 @@ function RightNowPage() {
 				photoDataUrl,
 			};
 			setActiveStatus(nextStatus);
-			window.localStorage.setItem(
-				RIGHT_NOW_STORAGE_KEY,
-				JSON.stringify(nextStatus),
-			);
+			window.localStorage.setItem(RIGHT_NOW_STORAGE_KEY, JSON.stringify(nextStatus));
 			setShowComposer(false);
 			setCustomMessage("");
 			setPhotoDataUrl(undefined);
+			pushToast(`Status set: ${label}`);
 		},
-		[customMessage, photoDataUrl, shareLocation],
+		[customMessage, photoDataUrl, shareLocation, pushToast],
 	);
 
 	const handleClearStatus = useCallback(() => {
@@ -136,14 +256,12 @@ function RightNowPage() {
 		reader.readAsDataURL(file);
 	}, []);
 
-	const formatElapsed = (startedAt: number) => {
-		const mins = Math.floor((Date.now() - startedAt) / 60000);
-		if (mins < 1) return "just now";
-		if (mins < 60) return `${mins}m ago`;
-		const hours = Math.floor(mins / 60);
-		return `${hours}h ${mins % 60}m ago`;
-	};
+	const statusMeta = useMemo(
+		() => STATUS_OPTIONS.find((s) => s.label === activeStatus?.type),
+		[activeStatus?.type],
+	);
 
+	// ── Render ────────────────────────────────────────────────────────────
 	return (
 		<main className="screen-nav-host">
 			<div className="h-full w-full overflow-y-auto overscroll-none">
@@ -155,7 +273,7 @@ function RightNowPage() {
 								Right Now
 							</h1>
 							<p className="mt-0.5 text-xs text-white/40">
-								Share what you're up to
+								Share what you're up to \u00b7 See who's nearby
 							</p>
 						</div>
 						<button
@@ -197,7 +315,11 @@ function RightNowPage() {
 											"linear-gradient(135deg, rgba(234,179,8,0.2), rgba(234,179,8,0.05))",
 									}}
 								>
-									<Zap className="h-6 w-6 text-amber-400" />
+									{statusMeta ? (
+										<statusMeta.icon className="h-6 w-6" style={{ color: statusMeta.color }} />
+									) : (
+										<Zap className="h-6 w-6 text-amber-400" />
+									)}
 								</div>
 								<div className="flex-1">
 									<p className="text-sm font-medium text-amber-400">
@@ -241,7 +363,6 @@ function RightNowPage() {
 							style={{
 								background: "rgba(255,255,255,0.03)",
 								border: "1px solid rgba(255,255,255,0.06)",
-								animation: "slide-up 0.2s ease-out",
 							}}
 						>
 							<div className="p-4">
@@ -336,77 +457,88 @@ function RightNowPage() {
 						</div>
 					)}
 
-					{/* Nearby active members */}
+					{/* Nearby active members — from Supabase */}
 					{!showComposer && (
 						<div className="space-y-3">
 							<p className="font-mono text-[10px] uppercase tracking-[0.25em] text-amber-400/70">
-								NEARBY
+								NEARBY \u00b7 {geoState?.city ?? "Loading..."}
 							</p>
 
-							{NEARBY_STATUSES.map((item, idx) => (
-								<div
-									key={item.name}
-									className="glass-card flex items-center gap-3 p-2 pr-3"
-								>
-									<Link
-										to="/profile/$profileId"
-										params={{ profileId: String(item.profileId) }}
-										aria-label={`View ${item.name}'s profile`}
-										className="flex size-11 items-center justify-center overflow-hidden rounded-full border border-white/10 text-sm font-bold"
-										style={{
-											background: `linear-gradient(135deg, ${STATUS_OPTIONS[idx % STATUS_OPTIONS.length]?.color}22, ${STATUS_OPTIONS[idx % STATUS_OPTIONS.length]?.color}08)`,
-											color: STATUS_OPTIONS[idx % STATUS_OPTIONS.length]?.color,
-										}}
-									>
-										<img
-											src={demoMediaUrl(item.mediaHash)}
-											alt=""
-											className="size-full object-cover"
-											loading="lazy"
-										/>
-									</Link>
-									<Link
-										to="/profile/$profileId"
-										params={{ profileId: String(item.profileId) }}
-										className="min-w-0 flex-1 rounded-lg px-1 py-2"
-									>
-										<div className="flex items-center gap-2">
-											<p className="text-sm font-medium text-white/90">
-												{item.name}
-											</p>
-											<span className="relative flex h-2 w-2">
-												<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-												<span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-											</span>
-										</div>
-										<p className="text-xs text-white/50">{item.status}</p>
-									</Link>
-									<div className="text-right">
-										<p className="text-[10px] text-white/30">{item.distance}</p>
-										<p className="text-[10px] text-white/20">{item.time}</p>
-										<Link
-											to="/chat/$conversationId"
-											params={{
-												conversationId: conversationIdFor(item.profileId),
-											}}
-											className="mt-1 inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-1 text-[10px] font-semibold text-gold"
-										>
-											<MessageCircle className="size-3" /> Chat
-										</Link>
-									</div>
+							{!nearbyUsers || nearbyUsers.length === 0 ? (
+								<div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 text-center">
+									<p className="text-sm text-white/30">
+										No one nearby right now. Check back in a bit.
+									</p>
+									<p className="mt-1 text-xs text-white/20">
+										{geoState?.coords
+											? `Location: ${geoState.city || "unknown city"}`
+											: "Enable location to see who's around you"}
+									</p>
 								</div>
-							))}
+							) : (
+								nearbyUsers.map((item) => (
+									<div
+										key={item.id}
+										className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-2 pr-3 transition-colors hover:bg-white/[0.04]"
+									>
+										<Link
+											to="/profile/$profileId"
+											params={{ profileId: item.id }}
+											aria-label={`View ${item.name}'s profile`}
+											className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full border border-white/10"
+										>
+											{item.avatar ? (
+												<img
+													src={item.avatar}
+													alt=""
+													className="size-full object-cover"
+													loading="lazy"
+												/>
+											) : (
+												<div className="flex size-full items-center justify-center bg-white/10 text-xs font-bold text-white/40">
+													{item.name.charAt(0).toUpperCase()}
+												</div>
+											)}
+											{item.online && (
+												<span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-black bg-green-500" />
+											)}
+										</Link>
+										<Link
+											to="/profile/$profileId"
+											params={{ profileId: item.id }}
+											className="min-w-0 flex-1 rounded-lg px-1 py-2"
+										>
+											<div className="flex items-center gap-2">
+												<p className="text-sm font-medium text-white/90">
+													{item.name}
+												</p>
+												{item.online && (
+													<span className="relative flex h-2 w-2">
+														<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+														<span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+													</span>
+												)}
+											</div>
+											<p className="text-xs text-white/50">
+												{item.status} \u00b7 {timeAgo(item.lastActiveAt)}
+											</p>
+										</Link>
+										<div className="text-right">
+											<Link
+												to="/chat/$conversationId"
+												params={{ conversationId: item.id }}
+												className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-semibold text-amber-400"
+											>
+												<MessageCircle className="size-3" /> Chat
+											</Link>
+										</div>
+									</div>
+								))
+							)}
 						</div>
 					)}
 				</div>
 			</div>
-
-			<style>{`
-				@keyframes slide-up {
-					from { opacity: 0; transform: translateY(10px); }
-					to { opacity: 1; transform: translateY(0); }
-				}
-			`}</style>
 		</main>
 	);
 }

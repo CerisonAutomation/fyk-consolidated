@@ -2,40 +2,43 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Crown, Check, Gift, Sparkles } from "lucide-react";
-import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
+import {
+  loadWalletData,
+  performWalletAction,
+} from "@/integrations/supabase/wallet";
 import { Button, Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-type ShopItem = { type: string; label: string; cost: number; emoji: string; desc: string };
-type WalletData = {
-  balance: number;
-  consumables: { type: string; quantity: number }[];
-  transactions: { id: string; type: string; amount: number; description: string | null; created_at: string }[];
-  subscription: { tier: string; status: string; current_period_end: string | null } | null;
-};
-
 export function PremiumClient() {
   const qc = useQueryClient();
   const pushToast = useAppStore((s) => s.pushToast);
+  const { user } = useSupabaseSession();
+  const userId = user?.id;
   const [tab, setTab] = useState<"tiers" | "wallet">("tiers");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["wallet"],
-    queryFn: () =>
-      api<{
-        wallet: WalletData; shop: ShopItem[];
-        tiers: Record<string, { name: string; price: number; perks: string[] }>;
-        currentTier: string;
-      }>("/api/wallet"),
+    queryKey: ["wallet", userId],
+    queryFn: async () => {
+      if (!userId) throw new Error("Not authenticated");
+      const result = await loadWalletData(userId);
+      if (!result.ok) throw new Error(result.message);
+      return result.data;
+    },
+    enabled: !!userId,
   });
 
   const act = useMutation({
-    mutationFn: (body: Record<string, unknown>) =>
-      api<{ balance?: number }>("/api/wallet", { method: "POST", body }),
+    mutationFn: async (vars: { action: string; tier?: string; type?: string; amount?: number }) => {
+      if (!userId) throw new Error("Not authenticated");
+      const result = await performWalletAction(userId, vars.action, vars);
+      if (!result.ok) throw new Error(result.message);
+      return result.data;
+    },
     onSuccess: (_res, vars) => {
-      const a = vars.action as string;
+      const a = vars.action;
       pushToast(
         a === "subscribe" ? "Subscription active 👑 Welcome to premium." :
         a === "daily" ? "Daily reward claimed! +15 🦴" :
@@ -43,8 +46,8 @@ export function PremiumClient() {
         a === "buy" ? "Purchased! Check your inventory." :
         "Subscription cancelled", "success"
       );
-      qc.invalidateQueries({ queryKey: ["wallet"] });
-      qc.invalidateQueries({ queryKey: ["pet"] });
+      qc.invalidateQueries({ queryKey: ["wallet", userId] });
+      qc.invalidateQueries({ queryKey: ["pet", userId] });
       if (a === "subscribe" || a === "cancel") qc.invalidateQueries({ queryKey: ["me"] });
     },
     onError: (e) => pushToast(e instanceof Error ? e.message : "Failed", "error"),
@@ -238,7 +241,7 @@ export function PremiumClient() {
                       "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
                       t.type === "credit" ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400"
                     )}>
-                      {t.type === "credit" ? "+" : "−"}
+                      {t.type === "credit" ? "+" : "-"}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs text-white">{t.description}</p>

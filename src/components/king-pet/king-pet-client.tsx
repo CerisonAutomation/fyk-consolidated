@@ -6,9 +6,12 @@ import {
   PawPrint, Sparkles, Play, Armchair, Backpack, Shirt, UtensilsCrossed,
   PartyPopper, Crown, Clock, Flame, Check, X,
 } from "lucide-react";
-import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
-import type { KingPet, PetItem, PetAdventure } from "@/lib/types";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
+import {
+  loadPetData,
+  performPetAction,
+} from "@/integrations/supabase/king-pet";
 import { Skeleton, Badge, Button, EmptyState } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
@@ -27,32 +30,49 @@ const ACTIONS = [
 export function KingPetClient() {
   const qc = useQueryClient();
   const pushToast = useAppStore((s) => s.pushToast);
+  const { user } = useSupabaseSession();
+  const userId = user?.id;
+
   const [tab, setTab] = useState<"home" | "wardrobe" | "adventures" | "log">("home");
   const [celebrate, setCelebrate] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["pet"],
-    queryFn: () => api<{ pet: KingPet; items: PetItem[]; adventures: PetAdventure[]; bones: number }>("/api/pet"),
+    queryKey: ["pet", userId],
+    queryFn: async () => {
+      if (!userId) throw new Error("Not authenticated");
+      const result = await loadPetData(userId);
+      if (!result.ok) throw new Error(result.message);
+      return result.data;
+    },
+    enabled: !!userId,
   });
 
   const act = useMutation({
-    mutationFn: (body: Record<string, unknown>) =>
-      api<{ pet: KingPet; reward?: { type: string; amount: number; theme: string }; leveledUp?: boolean }>("/api/pet", {
-        method: "POST", body,
-      }),
+    mutationFn: async (vars: { action: string; name?: string; itemId?: string; adventureId?: string }) => {
+      if (!userId) throw new Error("Not authenticated");
+      const result = await performPetAction(userId, vars.action, vars);
+      if (!result.ok) throw new Error(result.message);
+      return result.data;
+    },
     onSuccess: (res, vars) => {
-      qc.setQueryData(["pet"], { ...data!, pet: res.pet });
-      qc.invalidateQueries({ queryKey: ["wallet"] });
+      qc.setQueryData(["pet", userId], (old: typeof data) => {
+        if (!old) return old;
+        return { ...old, pet: res.pet, bones: res.pet.bones };
+      });
+      qc.invalidateQueries({ queryKey: ["wallet", userId] });
+
       if (res.leveledUp) {
         setCelebrate(`🎉 ${res.pet.name} reached level ${res.pet.level}!`);
         setTimeout(() => setCelebrate(null), 2500);
       } else if (res.reward) {
         pushToast(`${res.reward.theme} complete! +${res.reward.amount} ${res.reward.type === "bones" ? "🦴" : "XP"}`);
       } else {
-        const a = vars.action as string;
-        pushToast(`${data?.pet.name ?? "Your pet"} ${a === "feed" ? "is fed and happy 🍖" : a === "play" ? "had a blast! 🎾" : a === "rest" ? "is resting 😴" : "is looking sharp ✨"}`);
+        const a = vars.action;
+        pushToast(
+          `${data?.pet.name ?? "Your pet"} ${a === "feed" ? "is fed and happy 🍖" : a === "play" ? "had a blast! 🎾" : a === "rest" ? "is resting 😴" : "is looking sharp ✨"}`
+        );
       }
     },
     onError: (e) => pushToast(e instanceof Error ? e.message : "Failed", "error"),

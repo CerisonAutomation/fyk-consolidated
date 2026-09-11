@@ -103,7 +103,7 @@ const DESKTOP_SIDEBAR_GROUPS: SidebarGroup[] = [
 			{ href: "/grid", label: "Nearby", icon: Crown },
 			{ href: "/right-now", label: "Right Now", icon: Zap },
 			{ href: "/events", label: "Events", icon: CalendarDays },
-			{ href: "/interest", label: "Discover", icon: Compass },
+			{ href: "/interest/taps", label: "Discover", icon: Compass },
 		],
 	},
 	{
@@ -115,7 +115,7 @@ const DESKTOP_SIDEBAR_GROUPS: SidebarGroup[] = [
 				icon: MessageCircle,
 				badge: "chat" as const,
 			},
-			{ href: "/interest", label: "Matches", icon: Heart },
+			{ href: "/interest/taps", label: "Matches", icon: Heart },
 		],
 	},
 	{

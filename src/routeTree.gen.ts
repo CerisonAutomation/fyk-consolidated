@@ -34,6 +34,10 @@ import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ShoutsIndexRouteImport } from './routes/shouts/index'
 import { Route as TribesIndexRouteImport } from './routes/tribes/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
+import { Route as ApiMeetnowIndexRouteImport } from './routes/api/meetnow/index'
+import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
+import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
 import { Route as AuthCallbackIndexRouteImport } from './routes/auth/callback/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
 import { Route as AuthSignUpIndexRouteImport } from './routes/auth/sign-up/index'
@@ -173,6 +177,26 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEventsIndexRoute = ApiEventsIndexRouteImport.update({
+  id: '/api/events/',
+  path: '/api/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMeetnowIndexRoute = ApiMeetnowIndexRouteImport.update({
+  id: '/api/meetnow/',
+  path: '/api/meetnow/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotificationsIndexRoute = ApiNotificationsIndexRouteImport.update({
+  id: '/api/notifications/',
+  path: '/api/notifications/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
+  id: '/api/push/subscribe',
+  path: '/api/push/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthCallbackIndexRoute = AuthCallbackIndexRouteImport.update({
   id: '/auth/callback/',
   path: '/auth/callback/',
@@ -265,6 +289,10 @@ export interface FileRoutesByFullPath {
   '/shouts/': typeof ShoutsIndexRoute
   '/tribes/': typeof TribesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/events/': typeof ApiEventsIndexRoute
+  '/api/meetnow/': typeof ApiMeetnowIndexRoute
+  '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/auth/sign-up/': typeof AuthSignUpIndexRoute
@@ -305,6 +333,10 @@ export interface FileRoutesByTo {
   '/shouts': typeof ShoutsIndexRoute
   '/tribes': typeof TribesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/events': typeof ApiEventsIndexRoute
+  '/api/meetnow': typeof ApiMeetnowIndexRoute
+  '/api/notifications': typeof ApiNotificationsIndexRoute
   '/auth/callback': typeof AuthCallbackIndexRoute
   '/auth/sign-in': typeof AuthSignInIndexRoute
   '/auth/sign-up': typeof AuthSignUpIndexRoute
@@ -346,6 +378,10 @@ export interface FileRoutesById {
   '/shouts/': typeof ShoutsIndexRoute
   '/tribes/': typeof TribesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/events/': typeof ApiEventsIndexRoute
+  '/api/meetnow/': typeof ApiMeetnowIndexRoute
+  '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/auth/sign-up/': typeof AuthSignUpIndexRoute
@@ -388,6 +424,10 @@ export interface FileRouteTypes {
     | '/shouts/'
     | '/tribes/'
     | '/api/auth/$'
+    | '/api/push/subscribe'
+    | '/api/events/'
+    | '/api/meetnow/'
+    | '/api/notifications/'
     | '/auth/callback/'
     | '/auth/sign-in/'
     | '/auth/sign-up/'
@@ -428,6 +468,10 @@ export interface FileRouteTypes {
     | '/shouts'
     | '/tribes'
     | '/api/auth/$'
+    | '/api/push/subscribe'
+    | '/api/events'
+    | '/api/meetnow'
+    | '/api/notifications'
     | '/auth/callback'
     | '/auth/sign-in'
     | '/auth/sign-up'
@@ -468,6 +512,10 @@ export interface FileRouteTypes {
     | '/shouts/'
     | '/tribes/'
     | '/api/auth/$'
+    | '/api/push/subscribe'
+    | '/api/events/'
+    | '/api/meetnow/'
+    | '/api/notifications/'
     | '/auth/callback/'
     | '/auth/sign-in/'
     | '/auth/sign-up/'
@@ -509,6 +557,10 @@ export interface RootRouteChildren {
   ShoutsIndexRoute: typeof ShoutsIndexRoute
   TribesIndexRoute: typeof TribesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
+  ApiEventsIndexRoute: typeof ApiEventsIndexRoute
+  ApiMeetnowIndexRoute: typeof ApiMeetnowIndexRoute
+  ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
   AuthSignUpIndexRoute: typeof AuthSignUpIndexRoute
@@ -701,6 +753,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/events/': {
+      id: '/api/events/'
+      path: '/api/events'
+      fullPath: '/api/events/'
+      preLoaderRoute: typeof ApiEventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/meetnow/': {
+      id: '/api/meetnow/'
+      path: '/api/meetnow'
+      fullPath: '/api/meetnow/'
+      preLoaderRoute: typeof ApiMeetnowIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notifications/': {
+      id: '/api/notifications/'
+      path: '/api/notifications'
+      fullPath: '/api/notifications/'
+      preLoaderRoute: typeof ApiNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/subscribe': {
+      id: '/api/push/subscribe'
+      path: '/api/push/subscribe'
+      fullPath: '/api/push/subscribe'
+      preLoaderRoute: typeof ApiPushSubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/callback/': {
       id: '/auth/callback/'
       path: '/auth/callback'
@@ -821,6 +901,10 @@ const rootRouteChildren: RootRouteChildren = {
   ShoutsIndexRoute: ShoutsIndexRoute,
   TribesIndexRoute: TribesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiPushSubscribeRoute: ApiPushSubscribeRoute,
+  ApiEventsIndexRoute: ApiEventsIndexRoute,
+  ApiMeetnowIndexRoute: ApiMeetnowIndexRoute,
+  ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   AuthCallbackIndexRoute: AuthCallbackIndexRoute,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
   AuthSignUpIndexRoute: AuthSignUpIndexRoute,

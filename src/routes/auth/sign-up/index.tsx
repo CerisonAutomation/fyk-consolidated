@@ -31,7 +31,7 @@ function SignUpPage() {
 	// Redirect if already signed in
 	useEffect(() => {
 		if (user) {
-			navigate({ to: "/grid", replace: true });
+			navigate({ to: "/", replace: true });
 		}
 	}, [user, navigate]);
 
@@ -65,7 +65,7 @@ function SignUpPage() {
 
 				// If auto-confirmed, redirect to onboarding
 				if (data.session) {
-					navigate({ to: "/onboarding", replace: true });
+					navigate({ to: "/", replace: true });
 				}
 			} catch (err) {
 				setError(

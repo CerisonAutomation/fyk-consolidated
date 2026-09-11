@@ -131,7 +131,7 @@ function SignInPage() {
 					return;
 				}
 				if (data.session) {
-					navigate({ to: "/grid", replace: true });
+					navigate({ to: "/", replace: true });
 				}
 			} catch {
 				setError("Network error — try again");

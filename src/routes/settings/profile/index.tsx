@@ -8,8 +8,8 @@ import {
 	useState,
 } from "react";
 import { useAuthStore } from "#/domains/auth/store";
-import { demoEnabled } from "#/domains/demo";
-import { requireSupabase } from "#/integrations/supabase/client";
+import { getSupabase } from "#/integrations/supabase/client";
+import type { User } from "#/integrations/supabase/types";
 
 export const Route = createFileRoute("/settings/profile/")({
 	component: ProfileEditPage,
@@ -62,35 +62,33 @@ const RELATIONSHIP_STATUS_OPTIONS = [
 ];
 
 const INITIAL_FORM: ProfileForm = {
-	first_name: "Alex",
+	first_name: "",
 	last_name: "",
-	about: "Ready to meet thoughtful people nearby.",
-	age: "30",
-	height: "178",
-	weight: "75",
-	position: "Versatile",
-	relationship_status: "Single",
-	looking_for: ["Chat", "Friends", "Relationship"],
-	body_type: "Average",
+	about: "",
+	age: "",
+	height: "",
+	weight: "",
+	position: "",
+	relationship_status: "",
+	looking_for: [],
+	body_type: "",
 	ethnicity: "",
 	hiv_status: "prefer-not-to-say",
 	last_tested: "",
-	pronouns: "he/him",
+	pronouns: "",
 };
 
-const PROFILE_FORM_STORAGE_KEY = "fyk:profile:form";
-const PROFILE_PHOTO_STORAGE_KEY = "fyk:profile:photo";
-
-function loadProfileForm(): ProfileForm {
-	if (typeof window === "undefined") return INITIAL_FORM;
-	try {
-		const stored = window.localStorage.getItem(PROFILE_FORM_STORAGE_KEY);
-		return stored
-			? { ...INITIAL_FORM, ...(JSON.parse(stored) as Partial<ProfileForm>) }
-			: INITIAL_FORM;
-	} catch {
-		return INITIAL_FORM;
+/** Safely cast an `unknown` column (jsonb) to a string array. */
+function toStringArray(value: unknown): string[] {
+	if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
+	if (typeof value === "string") {
+		try {
+			const parsed = JSON.parse(value);
+			if (Array.isArray(parsed)) return parsed.filter((v: unknown): v is string => typeof v === "string");
+		} catch { /* not JSON */ }
+		return [value];
 	}
+	return [];
 }
 
 function ProfileEditPage() {
@@ -101,11 +99,65 @@ function ProfileEditPage() {
 	const [saving, setSaving] = useState(false);
 	const [saved, setSaved] = useState(false);
 	const [activeSection, setActiveSection] = useState<string | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+	// ── Load existing profile from Supabase on mount ────────────────────────
 	useEffect(() => {
-		setForm(loadProfileForm());
-		setPhotoPreview(window.localStorage.getItem(PROFILE_PHOTO_STORAGE_KEY));
-	}, []);
+		let cancelled = false;
+		async function loadProfile() {
+			const supabase = getSupabase();
+			if (!supabase || !auth?.user) {
+				setLoading(false);
+				return;
+			}
+
+			// Load from the users table
+			const { data, error } = await supabase
+				.from("users")
+				.select("*")
+				.eq("id", auth.user.id)
+				.single();
+
+			if (error || !data || cancelled) {
+				setLoading(false);
+				return;
+			}
+
+			const user = data as User;
+
+			// Load hiv_status and last_tested from auth user metadata
+			// (these fields live in auth metadata, not the users table)
+			const authMeta = auth.user.user_metadata ?? {};
+
+			const displayName = user.pseudo ?? "";
+			const lookingFor = toStringArray(user.looking_for);
+			const photos = toStringArray(user.photos);
+			const photoUrl = photos.length > 0 ? photos[0] : null;
+
+			setForm({
+				first_name: displayName,
+				last_name: "",
+				about: user.description ?? "",
+				age: user.age != null ? String(user.age) : "",
+				height: user.height != null ? String(user.height) : "",
+				weight: user.weight != null ? String(user.weight) : "",
+				position: typeof user.position === "string" ? user.position : "",
+				relationship_status: user.relationship_status ?? "",
+				looking_for: lookingFor,
+				body_type: user.body_type ?? "",
+				ethnicity: user.ethnicity ?? "",
+				hiv_status: (authMeta.hiv_status as string) ?? "prefer-not-to-say",
+				last_tested: (authMeta.last_tested as string) ?? "",
+				pronouns: user.pronouns ?? "",
+			});
+
+			if (photoUrl) setPhotoPreview(photoUrl);
+			setLoading(false);
+		}
+		loadProfile();
+		return () => { cancelled = true; };
+	}, [auth?.user]);
 
 	const updateField = useCallback(
 		<K extends keyof ProfileForm>(field: K, value: ProfileForm[K]) => {
@@ -126,61 +178,129 @@ function ProfileEditPage() {
 		setSaved(false);
 	}, []);
 
+	// ── Save profile to Supabase (users table + auth metadata) ───────────────
 	const handleSave = useCallback(async () => {
 		setSaving(true);
 		try {
-			if (demoEnabled) {
-				window.localStorage.setItem(
-					PROFILE_FORM_STORAGE_KEY,
-					JSON.stringify(form),
-				);
-			}
-			if (auth?.user) {
-				await requireSupabase().auth.updateUser({
-					data: {
-						first_name: form.first_name,
-						last_name: form.last_name,
-						about: form.about,
-						age: form.age ? Number(form.age) : null,
-						height: form.height ? Number(form.height) : null,
-						weight: form.weight ? Number(form.weight) : null,
-						position: form.position || null,
-						relationship_status: form.relationship_status || null,
-						looking_for: form.looking_for,
-						body_type: form.body_type || null,
-						ethnicity: form.ethnicity || null,
-						hiv_status: form.hiv_status || null,
-						last_tested: form.last_tested || null,
-						pronouns: form.pronouns || null,
-					},
-				});
-			}
+			const supabase = getSupabase();
+			if (!supabase || !auth?.user) throw new Error("Not authenticated");
+
+			// 1. Write to the users table (the primary profile data store)
+			const { error: tableError } = await supabase
+				.from("users")
+				.update({
+					pseudo: form.first_name || null,
+					description: form.about || null,
+					age: form.age ? Number(form.age) : null,
+					height: form.height ? Number(form.height) : null,
+					weight: form.weight ? Number(form.weight) : null,
+					position: form.position || null,
+					relationship_status: form.relationship_status || null,
+					looking_for: form.looking_for,
+					body_type: form.body_type || null,
+					ethnicity: form.ethnicity || null,
+					pronouns: form.pronouns || null,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("id", auth.user.id);
+
+			if (tableError) throw tableError;
+
+			// 2. Update Supabase auth metadata
+			//    hiv_status and last_tested live in auth metadata, not the users table
+			await supabase.auth.updateUser({
+				data: {
+					display_name: form.first_name,
+					about: form.about,
+					age: form.age ? Number(form.age) : null,
+					height: form.height ? Number(form.height) : null,
+					weight: form.weight ? Number(form.weight) : null,
+					position: form.position || null,
+					relationship_status: form.relationship_status || null,
+					looking_for: form.looking_for,
+					body_type: form.body_type || null,
+					ethnicity: form.ethnicity || null,
+					hiv_status: form.hiv_status || null,
+					last_tested: form.last_tested || null,
+					pronouns: form.pronouns || null,
+				},
+			});
+
 			setSaved(true);
 			setTimeout(() => setSaved(false), 3000);
 		} catch (err) {
 			console.error("Failed to save profile:", err);
+			alert("Failed to save profile. Please try again.");
 		} finally {
 			setSaving(false);
 		}
 	}, [auth, form]);
 
+	// ── Photo upload to Supabase Storage ─────────────────────────────────────
 	const handlePhotoSelected = useCallback(
-		(event: ChangeEvent<HTMLInputElement>) => {
+		async (event: ChangeEvent<HTMLInputElement>) => {
 			const file = event.target.files?.[0];
 			if (!file) return;
-			const reader = new FileReader();
-			reader.addEventListener("load", () => {
-				if (typeof reader.result !== "string") return;
-				setPhotoPreview(reader.result);
-				if (demoEnabled) {
-					window.localStorage.setItem(PROFILE_PHOTO_STORAGE_KEY, reader.result);
-				}
+
+			if (!file.type.startsWith("image/")) {
+				alert("Please select an image file.");
+				return;
+			}
+			if (file.size > 5 * 1024 * 1024) {
+				alert("Image must be under 5 MB.");
+				return;
+			}
+
+			const supabase = getSupabase();
+			if (!supabase || !auth?.user) {
+				alert("Not authenticated.");
+				return;
+			}
+
+			setUploadingPhoto(true);
+			try {
+				const ext = file.name.split(".").pop() ?? "jpg";
+				const path = `avatars/${auth.user.id}/${Date.now()}.${ext}`;
+
+				const { error: uploadError } = await supabase.storage
+					.from("media")
+					.upload(path, file, { contentType: file.type, upsert: false });
+
+				if (uploadError) throw uploadError;
+
+				const { data: urlData } = supabase.storage
+					.from("media")
+					.getPublicUrl(path);
+
+				if (!urlData?.publicUrl) throw new Error("Could not get photo URL");
+
+				setPhotoPreview(urlData.publicUrl);
+
+				// Fetch current photos array and prepend the new avatar
+				const { data: currentUser } = await supabase
+					.from("users")
+					.select("photos")
+					.eq("id", auth.user.id)
+					.single();
+
+				const currentPhotos = toStringArray(currentUser?.photos);
+				const updatedPhotos = [urlData.publicUrl, ...currentPhotos.filter((p) => p !== urlData.publicUrl)];
+
+				await supabase
+					.from("users")
+					.update({ photos: updatedPhotos })
+					.eq("id", auth.user.id);
+
 				setSaved(false);
-			});
-			reader.readAsDataURL(file);
-			event.target.value = "";
+			} catch (err) {
+				console.error("Photo upload failed:", err);
+				alert("Photo upload failed. Please try again.");
+			} finally {
+				setUploadingPhoto(false);
+				event.target.value = "";
+			}
 		},
-		[],
+		[auth],
 	);
 
 	const sections = [
@@ -391,6 +511,32 @@ function ProfileEditPage() {
 		},
 	];
 
+	if (loading) {
+		return (
+			<main className="screen-nav-host">
+				<div className="h-full w-full overflow-y-auto overscroll-none">
+					<div className="mx-auto max-w-lg px-4 py-4 pb-24">
+						<div className="mb-6 flex items-center gap-3">
+							<Link
+								to="/settings"
+								className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-white/50 transition hover:bg-white/10"
+							>
+								<ChevronLeft className="h-5 w-5" />
+							</Link>
+							<h1 className="font-display text-xl font-semibold tracking-wide text-white">
+								Edit Profile
+							</h1>
+						</div>
+						<div className="flex items-center justify-center py-20 text-sm text-white/40">
+							<span className="mr-2 h-4 w-4 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin" />
+							Loading profile…
+						</div>
+					</div>
+				</div>
+			</main>
+		);
+	}
+
 	return (
 		<main className="screen-nav-host">
 			<div className="h-full w-full overflow-y-auto overscroll-none">
@@ -419,7 +565,9 @@ function ProfileEditPage() {
 						/>
 						<div className="relative">
 							<div className="flex size-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-amber-500/20 to-purple-500/20 ring-2 ring-amber-500/30">
-								{photoPreview ? (
+								{uploadingPhoto ? (
+									<span className="h-6 w-6 rounded-full border-2 border-amber-500/30 border-t-amber-500 animate-spin" />
+								) : photoPreview ? (
 									<img
 										src={photoPreview}
 										alt="Your selected profile"
@@ -436,8 +584,9 @@ function ProfileEditPage() {
 							<button
 								type="button"
 								onClick={() => photoInputRef.current?.click()}
+								disabled={uploadingPhoto}
 								aria-label="Change profile photo"
-								className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-black transition hover:bg-amber-400"
+								className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-black transition hover:bg-amber-400 disabled:opacity-50"
 							>
 								<Camera className="h-4 w-4" />
 							</button>
@@ -445,9 +594,10 @@ function ProfileEditPage() {
 						<button
 							type="button"
 							onClick={() => photoInputRef.current?.click()}
-							className="text-xs font-medium text-amber-400/70 transition hover:text-amber-400"
+							disabled={uploadingPhoto}
+							className="text-xs font-medium text-amber-400/70 transition hover:text-amber-400 disabled:opacity-50"
 						>
-							Change photo
+							{uploadingPhoto ? "Uploading…" : "Change photo"}
 						</button>
 					</div>
 
@@ -513,7 +663,7 @@ function ProfileEditPage() {
 									Saving...
 								</span>
 							) : saved ? (
-								<>Saved ✓</>
+								<>Saved</>
 							) : (
 								<>
 									<Save className="h-4 w-4" />

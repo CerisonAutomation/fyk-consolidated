@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect, useCallback } from "react";
 import {
   Settings as SettingsIcon, Bell, Palette, Shield, Crown, Check,
   Sparkles, Globe, Smartphone, Ban,
   Accessibility, Download, Trash2, ChevronRight,
 } from "lucide-react";
-import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
+import { getSupabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { LANGUAGES } from "@/lib/constants";
 import { Button } from "@/components/ui/primitives";
@@ -54,10 +53,11 @@ const COLORBLIND = [
 
 export function SettingsClient() {
   const me = useAppStore((s) => s.user);
-  const setUser = useAppStore((s) => s.setUser);
   const pushToast = useAppStore((s) => s.pushToast);
   const router = useRouter();
   const [open, setOpen] = useState<string | null>("account");
+  const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   const [prefs, setPrefs] = useState({
     pushNotifications: true, matchNotifications: true, messageNotifications: true,
@@ -72,25 +72,194 @@ export function SettingsClient() {
   const [colorblind, setColorblind] = useState("off");
   const [dnd, setDnd] = useState("off");
 
-  const updateProfile = useMutation({
-    mutationFn: (body: Record<string, unknown>) =>
-      api<{ profile: typeof me }>("/api/profile", { method: "PUT", body }),
-    onSuccess: (res) => {
-      if (res.profile) setUser(res.profile);
-    },
-  });
+  // ── Load preferences from Supabase on mount ──────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const supabase = getSupabase();
+      if (!supabase) { setLoadingPrefs(false); return; }
 
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) { setLoadingPrefs(false); return; }
 
-  function flip(key: keyof typeof prefs) {
+      const { data, error } = await supabase
+        .from("users")
+        .select("notif_prefs, ai_prefs, accent, font_size, language, colorblind_mode, dnd_mode, theme, incognito, hide_distance, hide_online, hide_online")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error || !data || cancelled) { setLoadingPrefs(false); return; }
+
+      // Merge stored notif_prefs
+      const storedNotifs = (data.notif_prefs as Record<string, boolean>) ?? {};
+      const storedAi = (data.ai_prefs as Record<string, boolean>) ?? {};
+
+      setPrefs({
+        pushNotifications: storedNotifs.pushNotifications ?? true,
+        matchNotifications: storedNotifs.matchNotifications ?? true,
+        messageNotifications: storedNotifs.messageNotifications ?? true,
+        eventNotifications: storedNotifs.eventNotifications ?? true,
+        smartNotifications: storedNotifs.smartNotifications ?? true,
+        aiSuggestions: storedAi.aiSuggestions ?? true,
+        aiTranslation: storedAi.aiTranslation ?? true,
+        aiModeration: storedAi.aiModeration ?? true,
+        aiMemory: storedAi.aiMemory ?? true,
+        autoReply: storedAi.autoReply ?? false,
+        showOnlineStatus: !data.hide_online,
+        readReceipts: storedNotifs.readReceipts ?? true,
+        incognito: data.incognito ?? false,
+        discreetMode: storedNotifs.discreetMode ?? false,
+        offlineMode: storedNotifs.offlineMode ?? true,
+        voiceCommands: storedNotifs.voiceCommands ?? false,
+        reduceMotion: storedNotifs.reduceMotion ?? false,
+      });
+
+      if (data.accent) setAccent(data.accent);
+      if (data.font_size) setFontSize(String(data.font_size));
+      if (data.language) setLanguage(data.language);
+      if (data.colorblind_mode) setColorblind(data.colorblind_mode === true ? "off" : data.colorblind_mode ?? "off");
+      if (data.dnd_mode) setDnd("always");
+      setLoadingPrefs(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Persist helper: writes a partial update to the users table ────────────
+  const persistUpdate = useCallback(async (patch: Record<string, unknown>) => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+
+    const { error } = await supabase
+      .from("users")
+      .update({ ...patch, updated_at: new Date().toISOString() })
+      .eq("id", authUser.id);
+
+    if (error) {
+      pushToast(`Save failed: ${error.message}`, "error");
+    }
+  }, [pushToast]);
+
+  // ── Toggle a preference, persist to Supabase ──────────────────────────────
+  const flip = useCallback(async (key: keyof typeof prefs) => {
     const next = !prefs[key];
     setPrefs((p) => ({ ...p, [key]: next }));
     pushToast(`${key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase())} ${next ? "on" : "off"}`, "info");
+
     if (key === "incognito" && next && me?.tier === "free") {
       pushToast("Incognito requires Gold — upgrade in Premium.", "info");
       return;
     }
-    if (key === "incognito") updateProfile.mutate({ incognito: next });
-  }
+
+    // Build the patch depending on which category this key belongs to
+    if (key === "incognito") {
+      await persistUpdate({ incognito: next });
+    } else if (key === "showOnlineStatus") {
+      await persistUpdate({ hide_online: !next });
+    } else {
+      // Determine which JSON column to update
+      const notifKeys = ["pushNotifications", "matchNotifications", "messageNotifications",
+        "eventNotifications", "smartNotifications", "readReceipts", "discreetMode",
+        "offlineMode", "voiceCommands", "reduceMotion"];
+      const aiKeys = ["aiSuggestions", "aiTranslation", "aiModeration", "aiMemory", "autoReply"];
+
+      const updatedPrefs = { ...prefs, [key]: next };
+
+      if (notifKeys.includes(key)) {
+        await persistUpdate({
+          notif_prefs: {
+            pushNotifications: updatedPrefs.pushNotifications,
+            matchNotifications: updatedPrefs.matchNotifications,
+            messageNotifications: updatedPrefs.messageNotifications,
+            eventNotifications: updatedPrefs.eventNotifications,
+            smartNotifications: updatedPrefs.smartNotifications,
+            readReceipts: updatedPrefs.readReceipts,
+            discreetMode: updatedPrefs.discreetMode,
+            offlineMode: updatedPrefs.offlineMode,
+            voiceCommands: updatedPrefs.voiceCommands,
+            reduceMotion: updatedPrefs.reduceMotion,
+          },
+        });
+      } else if (aiKeys.includes(key)) {
+        await persistUpdate({
+          ai_prefs: {
+            aiSuggestions: updatedPrefs.aiSuggestions,
+            aiTranslation: updatedPrefs.aiTranslation,
+            aiModeration: updatedPrefs.aiModeration,
+            aiMemory: updatedPrefs.aiMemory,
+            autoReply: updatedPrefs.autoReply,
+          },
+        });
+      }
+    }
+  }, [prefs, me, pushToast, persistUpdate]);
+
+  // ── Appearance handlers ───────────────────────────────────────────────────
+  const handleAccent = useCallback((id: string) => {
+    setAccent(id);
+    persistUpdate({ accent: id });
+    pushToast(`Accent: ${ACCENTS.find((a) => a.id === id)?.label ?? id}`, "info");
+  }, [persistUpdate, pushToast]);
+
+  const handleFontSize = useCallback((id: string) => {
+    setFontSize(id);
+    const sizeMap: Record<string, number> = { small: 12, medium: 14, large: 16, xl: 18 };
+    persistUpdate({ font_size: sizeMap[id] ?? 14 });
+    pushToast(`Font: ${FONT_SIZES.find((f) => f.id === id)?.label ?? id}`, "info");
+  }, [persistUpdate, pushToast]);
+
+  const handleColorblind = useCallback((id: string) => {
+    setColorblind(id);
+    persistUpdate({ colorblind_mode: id === "off" ? false : id });
+    pushToast(`Colour-blind: ${COLORBLIND.find((c) => c.id === id)?.label ?? id}`, "info");
+  }, [persistUpdate, pushToast]);
+
+  const handleDnd = useCallback((mode: string) => {
+    setDnd(mode);
+    persistUpdate({ dnd_mode: mode !== "off" });
+    pushToast(`DND: ${mode}`, "info");
+  }, [persistUpdate, pushToast]);
+
+  const handleLanguage = useCallback((lang: string) => {
+    setLanguage(lang);
+    persistUpdate({ language: lang });
+    pushToast(`Language: ${lang}`, "info");
+  }, [persistUpdate, pushToast]);
+
+  // ── Account deletion ──────────────────────────────────────────────────────
+  const handleDeleteAccount = useCallback(async () => {
+    if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) return;
+
+    setDeleting(true);
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Supabase is not configured");
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("Not authenticated");
+
+      // Delete user data from the users table
+      const { error: deleteError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", authUser.id);
+
+      if (deleteError) throw deleteError;
+
+      // Sign out the user
+      await supabase.auth.signOut();
+
+      pushToast("Account deleted. We're sorry to see you go.");
+      router.push("/");
+    } catch (err) {
+      pushToast(`Deletion failed: ${(err as Error).message}. Contact support for help.`, "error");
+    } finally {
+      setDeleting(false);
+    }
+  }, [pushToast, router]);
 
   const SECTIONS: {
     id: string; title: string; icon: typeof Bell; items: {
@@ -179,13 +348,19 @@ export function SettingsClient() {
         <div className="flex-1">
           <h2 className="font-semibold capitalize text-white">{me?.tier ?? "free"} membership</h2>
           <p className="text-[11px] text-muted">
-            {me?.tier === "free" ? "Upgrade for unlimited taps, incognito and all 48 AI features." : "Thanks for supporting FYK 👑"}
+            {me?.tier === "free" ? "Upgrade for unlimited taps, incognito and all 48 AI features." : "Thanks for supporting FYK"}
           </p>
         </div>
         <Button size="sm" onClick={() => router.push("/premium")}>
           {me?.tier === "free" ? "Upgrade" : "Manage"}
         </Button>
       </div>
+
+      {loadingPrefs && (
+        <div className="mb-4 rounded-2xl border border-line bg-surface p-4 text-center text-xs text-muted">
+          Loading preferences…
+        </div>
+      )}
 
       <div className="space-y-2">
         {SECTIONS.map((s) => {
@@ -222,7 +397,7 @@ export function SettingsClient() {
                             {ACCENTS.map((a) => (
                               <button
                                 key={a.id}
-                                onClick={() => { setAccent(a.id); pushToast(`Accent: ${a.label}`, "info"); }}
+                                onClick={() => handleAccent(a.id)}
                                 className="flex h-9 w-9 items-center justify-center rounded-full transition-transform hover:scale-110"
                                 style={{ background: a.color }}
                                 title={a.label}
@@ -242,7 +417,7 @@ export function SettingsClient() {
                             {FONT_SIZES.map((f) => (
                               <button
                                 key={f.id}
-                                onClick={() => { setFontSize(f.id); pushToast(`Font: ${f.label}`, "info"); }}
+                                onClick={() => handleFontSize(f.id)}
                                 className={cn(
                                   "flex-1 rounded-xl border py-2 transition-colors",
                                   fontSize === f.id ? "border-gold/50 bg-gold/15 text-gold-soft" : "border-line bg-surface-2 text-muted"
@@ -263,7 +438,7 @@ export function SettingsClient() {
                             {COLORBLIND.map((c) => (
                               <button
                                 key={c.id}
-                                onClick={() => { setColorblind(c.id); pushToast(`Colour-blind: ${c.label}`, "info"); }}
+                                onClick={() => handleColorblind(c.id)}
                                 className={cn(
                                   "rounded-full border px-3 py-1.5 text-xs transition-colors",
                                   colorblind === c.id ? "border-gold/50 bg-gold/15 text-gold-soft" : "border-line bg-surface-2 text-muted"
@@ -284,7 +459,7 @@ export function SettingsClient() {
                             {(["off", "scheduled", "always"] as const).map((m) => (
                               <button
                                 key={m}
-                                onClick={() => { setDnd(m); pushToast(`DND: ${m}`, "info"); }}
+                                onClick={() => handleDnd(m)}
                                 className={cn(
                                   "flex-1 rounded-xl border py-2 text-xs capitalize transition-colors",
                                   dnd === m ? "border-gold/50 bg-gold/15 text-gold-soft" : "border-line bg-surface-2 text-muted"
@@ -303,7 +478,7 @@ export function SettingsClient() {
                           <p className="mb-2 text-sm text-white">{item.label}</p>
                           <select
                             value={language}
-                            onChange={(e) => { setLanguage(e.target.value); pushToast(`Language: ${e.target.value}`, "info"); }}
+                            onChange={(e) => handleLanguage(e.target.value)}
                             className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white focus:border-gold/50 focus:outline-none"
                           >
                             {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
@@ -335,7 +510,23 @@ export function SettingsClient() {
           <Button
             variant="secondary"
             className="w-full justify-start"
-            onClick={() => pushToast("GDPR export queued — we'll email you a download link.", "info")}
+            onClick={async () => {
+              const supabase = getSupabase();
+              if (!supabase) { pushToast("Supabase is not configured", "error"); return; }
+              const { data: { user: authUser } } = await supabase.auth.getUser();
+              if (!authUser) { pushToast("Not authenticated", "error"); return; }
+
+              // Fetch all user data for export
+              const { data } = await supabase.from("users").select("*").eq("id", authUser.id).single();
+              const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `fyk-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+              pushToast("Data export downloaded.");
+            }}
           >
             <Download className="h-4 w-4" /> Export my data (GDPR)
           </Button>
@@ -349,9 +540,10 @@ export function SettingsClient() {
           <Button
             variant="ghost"
             className="w-full justify-start text-rose-300 hover:bg-rose-500/10"
-            onClick={() => pushToast("Account deletion requires email confirmation.", "info")}
+            disabled={deleting}
+            onClick={handleDeleteAccount}
           >
-            <Trash2 className="h-4 w-4" /> Delete account
+            <Trash2 className="h-4 w-4" /> {deleting ? "Deleting…" : "Delete account"}
           </Button>
         </div>
       </div>

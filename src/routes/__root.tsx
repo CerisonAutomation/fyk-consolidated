@@ -1,9 +1,12 @@
 import {
 	createRootRouteWithContext,
 	HeadContent,
+	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
+import { TanstackQueryProvider } from "#/integrations/tanstack-query/root-provider";
+import { EntryShell } from "#/components/EntryShell";
 
 export const Route = createRootRouteWithContext()({
 	head: () => ({
@@ -20,6 +23,7 @@ export const Route = createRootRouteWithContext()({
 		],
 	}),
 	shellComponent: RootDocument,
+	component: RootLayout,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -33,5 +37,21 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<Scripts />
 			</body>
 		</html>
+	);
+}
+
+/**
+ * Root layout -- wraps every route with the auth boundary and query provider.
+ * EntryShell checks the Supabase session, renders sign-in when signed out,
+ * renders onboarding when the profile is incomplete, and renders children
+ * (via Outlet) when fully authenticated.
+ */
+function RootLayout() {
+	return (
+		<TanstackQueryProvider>
+			<EntryShell>
+				<Outlet />
+			</EntryShell>
+		</TanstackQueryProvider>
 	);
 }

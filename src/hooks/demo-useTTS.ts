@@ -1,78 +1,71 @@
 import { useCallback, useRef, useState } from "react";
 
 /**
- * Hook for text-to-speech playback via the TTS API.
+ * Hook for text-to-speech playback using the browser's built-in SpeechSynthesis API.
+ *
+ * No server round-trip required -- the OS synthesises speech locally.
  */
 export function useTTS() {
 	const [playingId, setPlayingId] = useState<string | null>(null);
-	const audioRef = useRef<HTMLAudioElement | null>(null);
+	const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-	const speak = useCallback(async (text: string, id: string) => {
-		// Stop any currently playing audio
-		if (audioRef.current) {
-			audioRef.current.pause();
-			audioRef.current = null;
-		}
+	const synth =
+		typeof window !== "undefined" ? window.speechSynthesis : null;
 
-		setPlayingId(id);
-
-		try {
-			const response = await fetch("/demo/api/tts", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					text,
-					voice: "nova",
-					model: "tts-1",
-					format: "mp3",
-				}),
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "TTS failed");
+	const speak = useCallback(
+		async (text: string, id: string) => {
+			if (!synth) {
+				console.warn("SpeechSynthesis is not supported in this browser.");
+				return;
 			}
 
-			const result = await response.json();
+			// Cancel any in-progress utterance
+			synth.cancel();
 
-			// Convert base64 to audio and play
-			const audioData = atob(result.audio);
-			const bytes = new Uint8Array(audioData.length);
-			for (let i = 0; i < audioData.length; i++) {
-				bytes[i] = audioData.charCodeAt(i);
+			const utterance = new SpeechSynthesisUtterance(text);
+			utterance.lang = "en-US";
+			utterance.rate = 1;
+			utterance.pitch = 1;
+
+			// Prefer a natural-sounding voice when available
+			const voices = synth.getVoices();
+			const preferred =
+				voices.find(
+					(v) =>
+						v.lang.startsWith("en") &&
+						(v.name.includes("Samantha") ||
+							v.name.includes("Google") ||
+							v.name.includes("Microsoft") ||
+							v.name.includes("Enhanced")),
+				) ?? voices.find((v) => v.lang.startsWith("en"));
+			if (preferred) {
+				utterance.voice = preferred;
 			}
-			const blob = new Blob([bytes], { type: result.contentType });
-			const url = URL.createObjectURL(blob);
 
-			const audio = new Audio(url);
-			audioRef.current = audio;
-
-			audio.onended = () => {
-				URL.revokeObjectURL(url);
+			utterance.onend = () => {
 				setPlayingId(null);
-				audioRef.current = null;
+				utteranceRef.current = null;
 			};
 
-			audio.onerror = () => {
-				URL.revokeObjectURL(url);
+			utterance.onerror = () => {
 				setPlayingId(null);
-				audioRef.current = null;
+				utteranceRef.current = null;
 			};
 
-			await audio.play();
-		} catch (error) {
-			console.error("TTS error:", error);
-			setPlayingId(null);
-		}
-	}, []);
+			utteranceRef.current = utterance;
+			setPlayingId(id);
+			synth.speak(utterance);
+		},
+		[synth],
+	);
 
 	const stop = useCallback(() => {
-		if (audioRef.current) {
-			audioRef.current.pause();
-			audioRef.current = null;
+		if (synth) {
+			synth.cancel();
 		}
+		utteranceRef.current = null;
 		setPlayingId(null);
-	}, []);
+	}, [synth]);
 
 	return { playingId, speak, stop };
 }

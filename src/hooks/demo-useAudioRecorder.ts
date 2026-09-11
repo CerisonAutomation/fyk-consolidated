@@ -1,83 +1,126 @@
 import { useCallback, useRef, useState } from "react";
 
 /**
- * Hook for recording audio and transcribing it via the transcription API.
+ * Minimal interface for the Web Speech API's SpeechRecognition.
+ *
+ * The DOM lib included in this project does not ship SpeechRecognition types,
+ * so we declare just the subset we need rather than pulling in a full
+ * @types/web-speech-api dependency.
+ */
+interface SpeechRecognitionLike {
+	continuous: boolean;
+	interimResults: boolean;
+	lang: string;
+	onstart: (() => void) | null;
+	onresult: ((event: SpeechRecognitionEvent) => void) | null;
+	onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+	onend: (() => void) | null;
+	start(): void;
+	stop(): void;
+	abort(): void;
+}
+
+interface SpeechRecognitionConstructor {
+	new (): SpeechRecognitionLike;
+}
+
+/**
+ * Hook for recording audio and transcribing it via the browser's Web Speech API.
+ *
+ * Uses SpeechRecognition for real-time speech-to-text. Falls back to a silent
+ * no-op when the browser does not support the API (e.g. Firefox on desktop).
  */
 export function useAudioRecorder() {
 	const [isRecording, setIsRecording] = useState(false);
 	const [isTranscribing, setIsTranscribing] = useState(false);
-	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-	const chunksRef = useRef<Blob[]>([]);
+	const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+	const finalTranscriptRef = useRef<string>("");
+	const resolveRef = useRef<((text: string | null) => void) | null>(null);
+
+	const SpeechRecognitionCtor: SpeechRecognitionConstructor | null =
+		typeof window !== "undefined"
+			? (window as unknown as Record<string, unknown>)
+					.SpeechRecognition as SpeechRecognitionConstructor | undefined ??
+				(window as unknown as Record<string, unknown>)
+					.webkitSpeechRecognition as SpeechRecognitionConstructor | undefined ??
+				null
+			: null;
 
 	const startRecording = useCallback(async () => {
-		try {
-			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-			const mediaRecorder = new MediaRecorder(stream, {
-				mimeType: "audio/webm;codecs=opus",
-			});
-			mediaRecorderRef.current = mediaRecorder;
-			chunksRef.current = [];
-
-			mediaRecorder.ondataavailable = (e) => {
-				if (e.data.size > 0) {
-					chunksRef.current.push(e.data);
-				}
-			};
-
-			mediaRecorder.start();
-			setIsRecording(true);
-		} catch (error) {
-			console.error("Failed to start recording:", error);
-			alert("Could not access microphone. Please check permissions.");
+		if (!SpeechRecognitionCtor) {
+			alert(
+				"Speech recognition is not supported in this browser. Please try Chrome or Edge.",
+			);
+			return;
 		}
-	}, []);
+
+		const recognition = new SpeechRecognitionCtor();
+		recognition.continuous = true;
+		recognition.interimResults = true;
+		recognition.lang = "en-US";
+
+		recognition.onstart = () => {
+			setIsRecording(true);
+		};
+
+		recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+			console.error("Speech recognition error:", event.error);
+			setIsRecording(false);
+			setIsTranscribing(false);
+			if (resolveRef.current) {
+				resolveRef.current(null);
+				resolveRef.current = null;
+			}
+		};
+
+		recognition.onend = () => {
+			// Only clear recording state if we didn't already stop via stopRecording.
+			// The onend fires after stop() is called.
+			setIsRecording(false);
+		};
+
+		recognitionRef.current = recognition;
+		finalTranscriptRef.current = "";
+
+		try {
+			recognition.start();
+		} catch (error) {
+			console.error("Failed to start speech recognition:", error);
+			setIsRecording(false);
+		}
+	}, [SpeechRecognitionCtor]);
 
 	const stopRecording = useCallback(async (): Promise<string | null> => {
-		return new Promise((resolve) => {
-			const mediaRecorder = mediaRecorderRef.current;
-			if (!mediaRecorder) {
-				resolve(null);
-				return;
-			}
+		const recognition = recognitionRef.current;
+		if (!recognition) {
+			return null;
+		}
 
-			mediaRecorder.onstop = async () => {
-				setIsRecording(false);
-				setIsTranscribing(true);
+		return new Promise<string | null>((resolve) => {
+			resolveRef.current = resolve;
+			setIsRecording(false);
+			setIsTranscribing(true);
 
-				const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-
-				// Stop all tracks
-				mediaRecorder.stream.getTracks().forEach((track) => track.stop());
-
-				try {
-					const formData = new FormData();
-					formData.append(
-						"audio",
-						new File([audioBlob], "recording.webm", { type: "audio/webm" }),
-					);
-					formData.append("model", "whisper-1");
-
-					const response = await fetch("/demo/api/transcription", {
-						method: "POST",
-						body: formData,
-					});
-
-					if (!response.ok) {
-						const errorData = await response.json();
-						throw new Error(errorData.error || "Transcription failed");
+			// Collect final transcript once recognition stops
+			recognition.onresult = (event: SpeechRecognitionEvent) => {
+				for (let i = event.resultIndex; i < event.results.length; i++) {
+					const transcript = event.results[i][0].transcript;
+					if (event.results[i].isFinal) {
+						finalTranscriptRef.current += transcript;
 					}
-
-					const result = await response.json();
-					setIsTranscribing(false);
-					resolve(result.text || null);
-				} catch (error) {
-					console.error("Transcription error:", error);
-					setIsTranscribing(false);
-					resolve(null);
 				}
 			};
 
-			mediaRecorder.stop();
+			recognition.onend = () => {
+				setIsRecording(false);
+				setIsTranscribing(false);
+				const text = finalTranscriptRef.current.trim() || null;
+				resolveRef.current?.(text);
+				resolveRef.current = null;
+				recognitionRef.current = null;
+			};
+
+			recognition.stop();
 		});
 	}, []);
 

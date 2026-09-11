@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Bell, Zap, MessageCircle, Eye, CalendarDays, Sparkles, PawPrint, Crown, CheckCheck, Trash2 } from "lucide-react";
 import { api } from "@/lib/client";
@@ -19,12 +20,51 @@ const ICONS: Record<string, { icon: typeof Bell; color: string }> = {
   event: { icon: CalendarDays, color: "text-emerald-400" },
   ai: { icon: Sparkles, color: "text-gold" },
   pet: { icon: PawPrint, color: "text-amber-400" },
+  meetnow: { icon: Zap, color: "text-amber-400" },
   system: { icon: Bell, color: "text-muted" },
 };
+
+/** Register the service worker and subscribe to push notifications. */
+async function registerPushSubscription() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+  const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  if (!vapidKey) return;
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const reg = await navigator.serviceWorker.ready;
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: vapidKey,
+    });
+
+    const sub = subscription.toJSON();
+    if (sub.endpoint && sub.keys) {
+      await api("/api/push/subscribe", {
+        method: "POST",
+        body: {
+          endpoint: sub.endpoint,
+          p256dh: sub.keys.p256dh,
+          auth: sub.keys.auth,
+        },
+      });
+    }
+  } catch {
+    // Push subscription failed silently — non-critical
+  }
+}
 
 export function NotificationsClient() {
   const qc = useQueryClient();
   const pushToast = useAppStore((s) => s.pushToast);
+
+  // Register push notifications on mount
+  useEffect(() => {
+    registerPushSubscription();
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["notifications"],
@@ -39,6 +79,21 @@ export function NotificationsClient() {
       qc.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
+
+  /** Mark a single notification as read when clicked. */
+  const markRead = useCallback(
+    (notificationId: string) => {
+      api("/api/notifications", {
+        method: "POST",
+        body: { action: "markRead", notificationId },
+      }).then(() => {
+        qc.invalidateQueries({ queryKey: ["notifications"] });
+      }).catch(() => {
+        // Non-critical: notification stays unread
+      });
+    },
+    [qc],
+  );
 
   const items = data?.notifications ?? [];
   const unread = data?.unread ?? 0;
@@ -135,10 +190,18 @@ export function NotificationsClient() {
                       </div>
                     </div>
                   );
+
+                  // Wrap in a click handler that marks as read
+                  const handleClick = () => {
+                    if (!n.read) {
+                      markRead(n.id);
+                    }
+                  };
+
                   return n.href ? (
-                    <Link key={n.id} href={n.href} className="block">{body}</Link>
+                    <Link key={n.id} href={n.href} className="block" onClick={handleClick}>{body}</Link>
                   ) : (
-                    <div key={n.id}>{body}</div>
+                    <div key={n.id} onClick={handleClick} className="cursor-pointer">{body}</div>
                   );
                 })}
               </div>

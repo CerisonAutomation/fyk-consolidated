@@ -175,7 +175,8 @@
     ],
     "overrides": {
       "react": "^19.2.8",
-      "react-dom": "^19.2.8"
+      "react-dom": "^19.2.8",
+      "@supabase/realtime-js": "2.116.0"
     }
   }
 }

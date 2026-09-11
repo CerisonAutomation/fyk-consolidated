@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
 	ChevronLeft,
 	ChevronRight,
@@ -8,6 +8,7 @@ import {
 	Camera,
 	Sparkles,
 } from "lucide-react";
+import { getSupabase } from "#/integrations/supabase/client";
 import { setPreferences } from "#/domains/settings/preferences";
 
 export const Route = createFileRoute("/onboarding/")({
@@ -32,9 +33,22 @@ function OnboardingPage() {
 	const [starting, setStarting] = useState(false);
 	const [name, setName] = useState("");
 	const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+	const [error, setError] = useState<string | null>(null);
 
 	const step = STEPS[stepIndex];
 	const progress = ((stepIndex + 1) / STEPS.length) * 100;
+
+	// Pre-fill name from Supabase user metadata if available
+	useEffect(() => {
+		const client = getSupabase();
+		if (!client) return;
+		client.auth.getUser().then(({ data }) => {
+			const metadata = data.user?.user_metadata;
+			if (metadata?.first_name && !name) {
+				setName(metadata.first_name);
+			}
+		});
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const next = useCallback(() => {
 		if (stepIndex < STEPS.length - 1) {
@@ -50,16 +64,68 @@ function OnboardingPage() {
 
 	const handleFinish = useCallback(async () => {
 		setStarting(true);
+		setError(null);
 		try {
-			await setPreferences({ onboardingComplete: true });
+			const client = getSupabase();
+			if (!client) {
+				throw new Error("Supabase is not configured");
+			}
+
+			// Get the current user
+			const { data: { user }, error: userError } = await client.auth.getUser();
+			if (userError || !user) {
+				throw new Error("Not authenticated. Please sign in again.");
+			}
+
+			const now = new Date().toISOString();
+
+			// 1. Save display name to profiles table
+			const { error: profileError } = await client
+				.from("profiles")
+				.upsert({
+					id: user.id,
+					display_name: name.trim() || null,
+					exposure_level: "clean",
+					hide_distance: false,
+					hide_online: false,
+					incognito: false,
+					age_verified_at: now,
+					onboarding_completed_at: now,
+					last_active_at: now,
+					updated_at: now,
+				}, { onConflict: "id" });
+
+			if (profileError) {
+				console.error("Profile save error:", profileError);
+				// Non-fatal: continue with preferences save
+			}
+
+			// 2. Save onboarding preferences to Supabase user metadata
+			await client.auth.updateUser({
+				data: {
+					onboarding_complete: true,
+					display_name: name.trim() || null,
+					looking_for: selectedInterests,
+				},
+			});
+
+			// 3. Save preferences to local storage
+			await setPreferences({
+				onboardingComplete: true,
+			});
+
+			// 4. Redirect to the main app
 			if (typeof window !== "undefined") {
 				window.location.href = "/grid";
 			}
-		} catch (error) {
+		} catch (err) {
 			setStarting(false);
-			console.error("Couldn't finish setup", error);
+			setError(
+				err instanceof Error ? err.message : "Could not finish setup. Please try again.",
+			);
+			console.error("Couldn't finish setup", err);
 		}
-	}, []);
+	}, [name, selectedInterests]);
 
 	const toggleInterest = (opt: string) => {
 		setSelectedInterests((prev) =>
@@ -174,8 +240,23 @@ function OnboardingPage() {
 							type="button"
 							onClick={async () => {
 								if ("geolocation" in navigator) {
-									navigator.geolocation.getCurrentPosition(() => {
-										setPreferences({ autoUpdateLocation: true });
+									navigator.geolocation.getCurrentPosition(async (pos) => {
+										// Save location preference
+										await setPreferences({ autoUpdateLocation: true });
+
+										// Optionally save coarse location to profile
+										const client = getSupabase();
+										if (client) {
+											const { data } = await client.auth.getUser();
+											if (data.user) {
+												await client.from("profiles").upsert({
+													id: data.user.id,
+													lat_coarse: Math.round(pos.coords.latitude * 100) / 100,
+													lng_coarse: Math.round(pos.coords.longitude * 100) / 100,
+													updated_at: new Date().toISOString(),
+												}, { onConflict: "id" });
+											}
+										}
 									});
 								}
 								next();
@@ -260,6 +341,13 @@ function OnboardingPage() {
 					</div>
 				)}
 			</div>
+
+			{/* Error message */}
+			{error && (
+				<div className="relative z-10 mx-8 mb-2 rounded-lg bg-red-500/10 p-3 text-sm text-red-400" role="alert">
+					{error}
+				</div>
+			)}
 
 			{/* Bottom actions */}
 			<div className="relative z-10 shrink-0 px-8 pb-8 pt-4">

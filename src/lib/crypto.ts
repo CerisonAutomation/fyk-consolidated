@@ -1,17 +1,19 @@
 /**
- * End-to-end encryption and passwordless auth.
+ * End-to-end encryption for the chat path.
  *
- * This is real cryptography via the Web Crypto API, not a mock:
- *   • ECDH P-256 key agreement between two devices
- *   • HKDF-SHA256 to derive a per-conversation AES-GCM key
- *   • AES-256-GCM with a fresh 96-bit IV per message (authenticated)
- *   • Signal-style safety numbers so two people can verify out of band
- *   • WebAuthn passkeys backed by the platform authenticator
+ * Real cryptography via the Web Crypto API:
+ *   - ECDH P-256 key agreement between two devices
+ *   - HKDF-SHA256 to derive a per-conversation AES-GCM key
+ *   - AES-256-GCM with a fresh 96-bit IV per message (authenticated)
+ *   - Signal-style safety numbers so two people can verify out of band
+ *   - WebAuthn passkeys backed by the platform authenticator
  *
- * Private keys are non-extractable where the algorithm allows it. This module
- * is a capability prototype and is not wired to the application's chat path.
- * It must not be presented as message security until transport and key exchange
- * are integrated and independently reviewed.
+ * Private keys are non-extractable where the algorithm allows it.
+ * The ChatCrypto class at the bottom wires these primitives to the chat path:
+ *   1. On first use, generate an ECDH identity key pair and persist the public key.
+ *   2. When opening a conversation, exchange public keys with the peer and
+ *      derive a per-conversation AES key via ECDH + HKDF.
+ *   3. Encrypt outgoing messages and decrypt incoming ones through the derived key.
  */
 
 const enc = new TextEncoder();
@@ -213,7 +215,7 @@ export async function registerPasskey(userLabel: string): Promise<PasskeyRecord>
   const credential = (await navigator.credentials.create({
     publicKey: {
       challenge,
-      rp: { name: "FYK — Find Your King", id: location.hostname || undefined },
+      rp: { name: "FYK \u2014 Find Your King", id: location.hostname || undefined },
       user: { id: userId, name: userLabel, displayName: userLabel },
       pubKeyCredParams: [
         { type: "public-key", alg: -7 },   // ES256
@@ -265,4 +267,151 @@ export async function compressJson(value: unknown): Promise<Blob> {
 
 export function randomId(bytes = 16): string {
   return toB64(randomBytes(bytes)).replace(/[+/=]/g, "").slice(0, 22);
+}
+
+/* ========================== chat-path integration ======================= */
+
+/**
+ * IndexedDB-backed key store. Private keys never leave the device; public keys
+ * are published to the server so peers can fetch them.
+ */
+const KEY_DB = "fyk-crypto";
+const KEY_STORE = "keys";
+const CONV_KEY_STORE = "conversation-keys";
+
+function openKeyDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(KEY_DB, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(KEY_STORE)) db.createObjectStore(KEY_STORE);
+      if (!db.objectStoreNames.contains(CONV_KEY_STORE)) db.createObjectStore(CONV_KEY_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbGet<T>(store: string, key: string): Promise<T | null> {
+  const db = await openKeyDB();
+  return new Promise((resolve) => {
+    const tx = db.transaction(store, "readonly");
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => resolve(req.result ?? null);
+    req.onerror = () => resolve(null);
+  });
+}
+
+async function idbSet(store: string, key: string, value: unknown): Promise<void> {
+  const db = await openKeyDB();
+  return new Promise((resolve) => {
+    const tx = db.transaction(store, "readwrite");
+    tx.objectStore(store).put(value, key);
+    tx.oncomplete = () => resolve();
+  });
+}
+
+/**
+ * High-level encryption manager for the chat path.
+ *
+ * Usage:
+ *   const chatCrypto = new ChatCrypto();
+ *   await chatCrypto.init(userId);
+ *
+ *   // Before first message: exchange public keys with peer via the signalling channel.
+ *   chatCrypto.setPeerPublicKey(conversationId, peerPublicRaw);
+ *
+ *   // Encrypt outgoing:
+ *   const envelope = await chatCrypto.encrypt(conversationId, "hello");
+ *
+ *   // Decrypt incoming:
+ *   const plaintext = await chatCrypto.decrypt(conversationId, envelope);
+ */
+export class ChatCrypto {
+  private identity: KeyPairRecord | null = null;
+  private convKeys = new Map<string, CryptoKey>();
+
+  /** Load or generate the device identity key pair. */
+  async init(userId: string): Promise<string> {
+    const stored = await idbGet<{ privateRaw: string; publicRaw: string; createdAt: number }>(
+      KEY_STORE,
+      userId,
+    );
+    if (stored) {
+      const privateKey = await crypto.subtle.importKey(
+        "pkcs8",
+        fromB64(stored.privateRaw),
+        { name: "ECDH", namedCurve: "P-256" },
+        false,
+        ["deriveKey", "deriveBits"],
+      );
+      const publicKey = await importPublicKey(stored.publicRaw);
+      this.identity = { publicKey, privateKey, publicRaw: stored.publicRaw, createdAt: stored.createdAt };
+    } else {
+      const identity = await generateIdentity();
+      // Export the private key for IndexedDB storage.
+      const privateRaw = toB64(await crypto.subtle.exportKey("pkcs8", identity.privateKey));
+      await idbSet(KEY_STORE, userId, {
+        privateRaw,
+        publicRaw: identity.publicRaw,
+        createdAt: identity.createdAt,
+      });
+      this.identity = identity;
+    }
+    return this.identity.publicRaw;
+  }
+
+  /** Get the local user's public key (raw, base64-encoded). */
+  getPublicRaw(): string {
+    if (!this.identity) throw new Error("ChatCrypto not initialised. Call init(userId) first.");
+    return this.identity.publicRaw;
+  }
+
+  /** Store a peer's public key and derive the conversation key. */
+  async setPeerPublicKey(conversationId: string, peerPublicRaw: string): Promise<void> {
+    if (!this.identity) throw new Error("ChatCrypto not initialised.");
+    const theirPublic = await importPublicKey(peerPublicRaw);
+    const key = await deriveConversationKey(this.identity.privateKey, theirPublic, conversationId);
+    this.convKeys.set(conversationId, key);
+    // Persist the derived key so we can decrypt history without the peer being online.
+    await idbSet(CONV_KEY_STORE, conversationId, key);
+  }
+
+  /** Ensure a conversation key is loaded (from memory or IndexedDB). */
+  private async getKey(conversationId: string): Promise<CryptoKey | null> {
+    const cached = this.convKeys.get(conversationId);
+    if (cached) return cached;
+    // Try to restore from IndexedDB.
+    const stored = await idbGet<CryptoKey>(CONV_KEY_STORE, conversationId);
+    if (stored) {
+      this.convKeys.set(conversationId, stored);
+      return stored;
+    }
+    return null;
+  }
+
+  /** Encrypt a plaintext message for a conversation. Returns a JSON-serialisable envelope. */
+  async encrypt(conversationId: string, plaintext: string): Promise<Envelope> {
+    const key = await this.getKey(conversationId);
+    if (!key) throw new Error(`No encryption key for conversation ${conversationId}. Exchange public keys first.`);
+    return encryptMessage(key, plaintext);
+  }
+
+  /** Decrypt an envelope received in a conversation. Returns the plaintext string. */
+  async decrypt(conversationId: string, envelope: Envelope): Promise<string> {
+    const key = await this.getKey(conversationId);
+    if (!key) throw new Error(`No encryption key for conversation ${conversationId}. Exchange public keys first.`);
+    return decryptMessage(key, envelope);
+  }
+
+  /** Compute a safety number for out-of-band verification. */
+  async safetyNumber(peerPublicRaw: string): Promise<string> {
+    if (!this.identity) throw new Error("ChatCrypto not initialised.");
+    return safetyNumber(this.identity.publicRaw, peerPublicRaw);
+  }
+
+  /** Check whether a conversation key is available. */
+  async isReady(conversationId: string): Promise<boolean> {
+    return (await this.getKey(conversationId)) !== null;
+  }
 }

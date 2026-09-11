@@ -97,7 +97,7 @@ export function FYKAuthPage({
 					return;
 				}
 				if (data.session) {
-					onLoginSuccess?.() || navigate({ to: "/grid", replace: true });
+					onLoginSuccess?.() || navigate({ to: "/", replace: true });
 				}
 			} catch (err) {
 				setError(extractError(err));
@@ -133,7 +133,7 @@ export function FYKAuthPage({
 					return;
 				}
 				if (data.session) {
-					navigate({ to: "/onboarding", replace: true });
+					navigate({ to: "/", replace: true });
 				} else if (data.user) {
 					setMode("login");
 					setError(null);

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pencil, Check, X, MapPin, Ruler, Sparkles, Save, Crown, Camera,
-  Images, Trash2, ShieldCheck, TrendingUp,
+  Trash2, ShieldCheck, TrendingUp,
 } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
+import { getSupabase } from "@/integrations/supabase/client";
 import type { ProfileUser, AlbumItem } from "@/lib/types";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge, Button, Spinner, EmptyState } from "@/components/ui/primitives";
@@ -15,15 +16,6 @@ import {
   TRIBES, LOOKING_FOR, POSITIONS, BODY_TYPES, LANGUAGES, TAG_CATEGORIES,
 } from "@/lib/constants";
 import { cn, gradient } from "@/lib/utils";
-
-const PHOTO_POOL = [
-  "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&q=80",
-  "https://images.unsplash.com/photo-1500917293891-ef795e70e1f6?w=800&q=80",
-  "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800&q=80",
-  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&q=80",
-  "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=800&q=80",
-  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&q=80",
-];
 
 function Chip({
   options, selected, onToggle, max,
@@ -66,6 +58,57 @@ function Section({ title, children, hint, action }: { title: string; children: R
   );
 }
 
+/** Map a raw `users` row to the ProfileUser shape used by the rest of the app. */
+function rowToProfileUser(row: Record<string, any>, authEmail: string): ProfileUser {
+  return {
+    id: row.id,
+    email: row.email ?? authEmail ?? "",
+    pseudo: row.pseudo ?? "",
+    nick: row.nick ?? undefined,
+    age: row.age ?? undefined,
+    birthday: row.birthday ?? undefined,
+    description: row.description ?? undefined,
+    occupation: row.occupation ?? undefined,
+    relationshipStatus: row.relationship_status ?? undefined,
+    ethnicity: row.ethnicity ?? undefined,
+    height: row.height ?? undefined,
+    weight: row.weight ?? undefined,
+    bodyType: row.body_type ?? undefined,
+    position: (row.position as string[]) ?? [],
+    languages: (row.languages as string[]) ?? [],
+    lookingFor: (row.looking_for as string[]) ?? [],
+    intents: (row.intents as string[]) ?? [],
+    tagCodes: (row.tag_codes as string[]) ?? [],
+    interests: (row.interests as string[]) ?? [],
+    tribes: (row.tribes as string[]) ?? [],
+    photos: (row.photos as string[]) ?? [],
+    geo: row.lat != null && row.lng != null
+      ? { lat: row.lat, lng: row.lng, city: row.city ?? undefined }
+      : undefined,
+    city: row.city ?? undefined,
+    area: row.area ?? undefined,
+    status: row.status ?? "active",
+    role: row.role ?? "user",
+    tier: row.tier ?? "free",
+    verification: row.verification ?? 0,
+    trustScore: row.trust_score ?? 0,
+    profileComplete: row.profile_complete ?? 0,
+    online: row.online ?? false,
+    visible: row.visible ?? true,
+    hidden: row.hidden ?? false,
+    incognito: row.incognito ?? false,
+    isDemo: row.is_demo ?? false,
+    exposureLevel: row.exposure_level ?? "clean",
+    hideDistance: row.hide_distance ?? false,
+    hideOnline: row.hide_online ?? false,
+    lastSeen: row.last_seen ?? row.updated_at,
+    lastActiveAt: row.last_active_at,
+    onboardingDone: row.onboarding_done ?? false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export function ProfileClient() {
   const user = useAppStore((s) => s.user);
   const setUser = useAppStore((s) => s.setUser);
@@ -74,8 +117,35 @@ export function ProfileClient() {
   const [editing, setEditing] = useState(false);
   const [bioOptions, setBioOptions] = useState<string[] | null>(null);
   const [bioLoading, setBioLoading] = useState(false);
-  const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [ranked, setRanked] = useState<{ url: string; score: number; tags: string[] }[] | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Load real user data from Supabase on mount ───────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const supabase = getSupabase();
+      if (!supabase) { setLoadingProfile(false); return; }
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) { setLoadingProfile(false); return; }
+
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+      if (error || !data || cancelled) { setLoadingProfile(false); return; }
+
+      setUser(rowToProfileUser(data, authUser.email ?? ""));
+      setLoadingProfile(false);
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [setUser]);
 
   const { data: albums } = useQuery({
     queryKey: ["albums"],
@@ -98,7 +168,7 @@ export function ProfileClient() {
     photos: user?.photos ?? [],
   });
 
-  // sync when the user loads
+  // sync form when the user loads from Supabase
   useEffect(() => {
     if (!user) return;
     setForm({
@@ -111,16 +181,109 @@ export function ProfileClient() {
     });
   }, [user?.id]);
 
+  // ── Save profile to Supabase ─────────────────────────────────────────────
   const save = useMutation({
-    mutationFn: () => api<{ profile: ProfileUser }>("/api/profile", { method: "PUT", body: form }),
+    mutationFn: async () => {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Supabase is not configured");
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("users")
+        .update({
+          pseudo: form.pseudo || null,
+          description: form.description || null,
+          occupation: form.occupation || null,
+          age: form.age,
+          height: form.height,
+          weight: form.weight,
+          body_type: form.bodyType || null,
+          position: form.position,
+          languages: form.languages,
+          looking_for: form.lookingFor,
+          interests: form.interests,
+          tribes: form.tribes,
+          photos: form.photos,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", authUser.id);
+
+      if (error) throw error;
+
+      // Re-fetch the full row so the store stays accurate
+      const { data: updated, error: fetchErr } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .single();
+
+      if (fetchErr) throw fetchErr;
+      return { profile: rowToProfileUser(updated, authUser.email ?? "") };
+    },
     onSuccess: (res) => {
       setUser(res.profile);
       setEditing(false);
-      pushToast("Profile saved ✓");
+      pushToast("Profile saved");
       qc.invalidateQueries({ queryKey: ["discover"] });
       qc.invalidateQueries({ queryKey: ["me"] });
     },
+    onError: (err) => {
+      pushToast(`Save failed: ${err.message}`, "error");
+    },
   });
+
+  // ── Photo upload to Supabase Storage ─────────────────────────────────────
+  const handlePhotoUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const supabase = getSupabase();
+    if (!supabase) { pushToast("Supabase is not configured", "error"); return; }
+
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { pushToast("Not authenticated", "error"); return; }
+
+    if (!file.type.startsWith("image/")) {
+      pushToast("Please select an image file", "error");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      pushToast("Image must be under 5 MB", "error");
+      return;
+    }
+
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `avatars/${authUser.id}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("media")
+        .upload(path, file, { contentType: file.type, upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("media")
+        .getPublicUrl(path);
+
+      if (!urlData?.publicUrl) throw new Error("Could not get photo URL");
+
+      setForm((f) => ({
+        ...f,
+        photos: f.photos.length >= 6 ? f.photos : [...f.photos, urlData.publicUrl],
+      }));
+
+      pushToast("Photo added");
+    } catch (err) {
+      pushToast(`Upload failed: ${(err as Error).message}`, "error");
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  }, [pushToast]);
 
   function toggle(key: keyof typeof form, value: string) {
     setForm((f) => {
@@ -150,7 +313,16 @@ export function ProfileClient() {
     } catch { pushToast("Could not rank photos", "error"); }
   }
 
-  if (!user) return null;
+  if (!user || loadingProfile) {
+    return (
+      <div className="mx-auto max-w-2xl flex items-center justify-center py-20">
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <Spinner className="border-gold/40 border-t-gold" />
+          Loading profile…
+        </div>
+      </div>
+    );
+  }
 
   const completion = Math.round(
     ((form.pseudo ? 1 : 0) +
@@ -258,7 +430,7 @@ export function ProfileClient() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={a.cover_url} alt={a.name} className="h-20 w-full object-cover" />
                     ) : (
-                      <div className="flex h-20 items-center justify-center bg-surface-2"><Images className="h-5 w-5 text-muted" /></div>
+                      <div className="flex h-20 items-center justify-center bg-surface-2"><span className="text-muted">📷</span></div>
                     )}
                     <div className="p-2">
                       <p className="truncate text-xs font-medium text-white">{a.name}</p>
@@ -285,7 +457,7 @@ export function ProfileClient() {
               {form.height && <div className="flex items-center gap-2 text-muted"><Ruler className="h-4 w-4 text-gold" /> {form.height} cm</div>}
               {form.bodyType && <div className="flex items-center gap-2 text-muted"><Crown className="h-4 w-4 text-gold" /> {form.bodyType}</div>}
               {form.occupation && <div className="flex items-center gap-2 text-muted"><Sparkles className="h-4 w-4 text-gold" /> {form.occupation}</div>}
-              {form.languages.length > 0 && <div className="flex items-center gap-2 text-muted">🌐 {form.languages.join(", ")}</div>}
+              {form.languages.length > 0 && <div className="flex items-center gap-2 text-muted">{form.languages.join(", ")}</div>}
             </div>
           </Section>
 
@@ -309,21 +481,37 @@ export function ProfileClient() {
           {/* photos editor */}
           <Section
             title={`Photos (${form.photos.length}/6)`}
-            hint="Your first photo is your main one. Drag order matters."
+            hint="Your first photo is your main one. Upload order matters."
             action={
               <div className="flex gap-1.5">
                 <button onClick={rankPhotos} className="text-[11px] text-gold hover:text-gold-soft">AI rank</button>
-                <button onClick={() => setShowPhotoPicker(true)} className="text-[11px] text-gold hover:text-gold-soft">Add</button>
               </div>
             }
           >
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              hidden
+            />
             {form.photos.length === 0 ? (
               <button
-                onClick={() => setShowPhotoPicker(true)}
-                className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-line py-8 text-muted hover:border-gold/40"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="flex w-full flex-col items-center gap-2 rounded-xl border border-dashed border-line py-8 text-muted hover:border-gold/40 disabled:opacity-50"
               >
-                <Camera className="h-6 w-6" />
-                <span className="text-xs">Add your first photo</span>
+                {uploadingPhoto ? (
+                  <>
+                    <Spinner className="border-gold/40 border-t-gold" />
+                    <span className="text-xs">Uploading…</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-6 w-6" />
+                    <span className="text-xs">Add your first photo</span>
+                  </>
+                )}
               </button>
             ) : (
               <div className="grid grid-cols-3 gap-2">
@@ -353,6 +541,16 @@ export function ProfileClient() {
                   </div>
                 ))}
               </div>
+            )}
+            {form.photos.length > 0 && form.photos.length < 6 && (
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-line py-3 text-xs text-muted hover:border-gold/40 disabled:opacity-50"
+              >
+                <Camera className="h-4 w-4" />
+                {uploadingPhoto ? "Uploading…" : "Add another photo"}
+              </button>
             )}
             {ranked && (
               <div className="mt-3 space-y-1.5 rounded-xl border border-gold/20 bg-gold/[0.06] p-3">
@@ -393,7 +591,7 @@ export function ProfileClient() {
                 <div className="mb-1 flex items-center justify-between">
                   <label className="text-xs font-medium text-muted">Bio</label>
                   <button onClick={generateBio} disabled={bioLoading} className="text-[11px] text-gold hover:text-gold-soft disabled:opacity-50">
-                    {bioLoading ? "Writing…" : "✨ Write with AI"}
+                    {bioLoading ? "Writing…" : "Write with AI"}
                   </button>
                 </div>
                 <textarea
@@ -474,44 +672,6 @@ export function ProfileClient() {
             <Button variant="secondary" onClick={() => setEditing(false)}>
               <X className="h-4 w-4" /> Cancel
             </Button>
-          </div>
-        </div>
-      )}
-
-      {showPhotoPicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 p-4" onClick={() => setShowPhotoPicker(false)}>
-          <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">Choose photos</h3>
-              <button onClick={() => setShowPhotoPicker(false)} className="text-muted hover:text-white"><X className="h-5 w-5" /></button>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {PHOTO_POOL.map((p) => {
-                const selected = form.photos.includes(p);
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setForm((f) => ({
-                      ...f,
-                      photos: selected ? f.photos.filter((x: string) => x !== p) : f.photos.length >= 6 ? f.photos : [...f.photos, p],
-                    }))}
-                    className={cn(
-                      "relative overflow-hidden rounded-xl border-2 transition-colors",
-                      selected ? "border-gold" : "border-transparent hover:border-line"
-                    )}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p} alt="" className="aspect-square w-full object-cover" />
-                    {selected && (
-                      <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-ink">
-                        <Check className="h-3 w-3" strokeWidth={3} />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="mt-3 text-[11px] text-muted">Tap to add or remove. Max 6 photos.</p>
           </div>
         </div>
       )}

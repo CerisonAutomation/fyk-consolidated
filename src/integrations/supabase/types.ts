@@ -252,6 +252,33 @@ export type Group = {
   created_at: string;
 };
 
+export type GroupMember = {
+  id: string;
+  group_id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
+};
+
+export type GroupMessage = {
+  id: string;
+  group_id: string;
+  sender_id: string;
+  content: string;
+  type: string;
+  created_at: string;
+};
+
+export type Fansite = {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  cover_url: string | null;
+  subscriber_count: number;
+  created_at: string;
+};
+
 export type Tribe = {
   id: string;
   name: string;
@@ -298,6 +325,30 @@ export type Tap = {
   created_at: string;
 };
 
+export type ShoutLike = {
+  id: string;
+  shout_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type Footprint = {
+  id: string;
+  visitor_id: string;
+  visited_id: string;
+  preset: string | null;
+  created_at: string;
+};
+
+export type UserNote = {
+  id: string;
+  note_owner_id: string;
+  target_user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type Subscription = {
   id: string;
   user_id: string;
@@ -307,6 +358,94 @@ export type Subscription = {
   current_period_end: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type KingPet = {
+  id: string;
+  user_id: string;
+  name: string;
+  stage: string;
+  mood: string;
+  bones: number;
+  experience: number;
+  level: number;
+  streak: number;
+  wardrobe: string[];
+  equipped: string[];
+  adventures: string[];
+  mood_log: Array<{ mood: string; time: string }>;
+  last_fed_at: string | null;
+  last_played_at: string | null;
+  last_adventure_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PetItem = {
+  id: string;
+  name: string;
+  type: string;
+  emoji: string | null;
+  bone_cost: number;
+  stage_required: string;
+};
+
+export type PetAdventure = {
+  id: string;
+  theme: string;
+  description: string | null;
+  emoji: string | null;
+  duration_minutes: number;
+  bone_cost: number;
+  reward_type: string;
+  reward_amount: number;
+};
+
+export type WalletRow = {
+  id: string;
+  user_id: string;
+  balance: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WalletTransaction = {
+  id: string;
+  wallet_id: string;
+  type: string;
+  amount: number;
+  description: string;
+  created_at: string;
+};
+
+export type ConsumablesInventory = {
+  id: string;
+  user_id: string;
+  type: string;
+  quantity: number;
+  expires_at: string | null;
+  created_at: string;
+};
+
+
+export type Story = {
+  id: string;
+  user_id: string;
+  media_url: string;
+  media_type: string;
+  caption: string | null;
+  background: string | null;
+  viewed_by: unknown;
+  expires_at: string;
+  created_at: string;
+};
+
+export type StoryView = {
+  id: string;
+  story_id: string;
+  user_id: string;
+  viewed_at: string;
 };
 
 export type User = {
@@ -415,12 +554,27 @@ export type Database = {
       reports: Table<Report>;
       premium_entitlements: Table<PremiumEntitlement>;
       groups: Table<Group>;
+      group_members: Table<GroupMember>;
+      group_messages: Table<GroupMessage>;
+      fansites: Table<Fansite>;
       tribes: Table<Tribe>;
       shouts: Table<Shout>;
       notifications: Table<Notification>;
       favorites: Table<Favorite>;
       taps: Table<Tap>;
       subscriptions: Table<Subscription>;
+      shout_likes: Table<ShoutLike>;
+      footprints: Table<Footprint>;
+      user_notes: Table<UserNote>;
+      king_pet: Table<KingPet>;
+      pet_items: Table<PetItem>;
+      pet_adventures: Table<PetAdventure>;
+      wallet: Table<WalletRow>;
+      wallet_transactions: Table<WalletTransaction>;
+      consumables_inventory: Table<ConsumablesInventory>;
+      stories: Table<Story>;
+      story_views: Table<StoryView>;
+
     };
     Views: Record<string, never>;
     Functions: {

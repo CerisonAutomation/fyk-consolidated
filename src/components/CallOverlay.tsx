@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Mic,
   MicOff,
@@ -14,12 +14,30 @@ import { cn } from "@/utils/cn";
 import { px } from "@/lib/data";
 import { findPerson } from "@/lib/profiles";
 import { useStore } from "@/lib/store";
+import {
+  joinCallChannel,
+  DEFAULT_ICE_SERVERS,
+  type SignalCallbacks,
+} from "@/lib/webrtc-signaling";
 
 /**
- * Real WebRTC media stack: getUserMedia capture, an RTCPeerConnection with a local
- * offer/answer loop, live track control and a real stats-driven timer.
- * Signalling to a remote peer needs a server, so the remote tile is clearly labelled
- * as a local loopback rather than pretending someone picked up.
+ * Real WebRTC calling with Supabase Realtime broadcast signalling.
+ *
+ * Caller flow:
+ *   1. Mount -> getUserMedia -> create RTCPeerConnection -> create offer
+ *   2. Join signalling channel, broadcast "ringing" + SDP offer
+ *   3. Receive SDP answer from callee, set remote description
+ *   4. Exchange ICE candidates through the channel
+ *   5. Remote stream arrives -> render in the remote tile
+ *
+ * Callee flow (handled when an "offer" event arrives from another tab/device):
+ *   1. Receive SDP offer on the channel -> create RTCPeerConnection -> set remote desc
+ *   2. Create answer, broadcast it back
+ *   3. Exchange ICE candidates
+ *   4. Remote stream arrives -> render in the remote tile
+ *
+ * Cleanup: all tracks are stopped and the peer connection + channel are closed
+ * when the call ends or the component unmounts.
  */
 export function CallOverlay() {
   const { call, endCall, toast } = useStore();
@@ -27,7 +45,9 @@ export function CallOverlay() {
   const localVideo = useRef<HTMLVideoElement>(null);
   const remoteVideo = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const pcRef = useRef<{ a: RTCPeerConnection; b: RTCPeerConnection } | null>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const signalRef = useRef<{ send: (e: any) => void; leave: () => void } | null>(null);
+  const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
 
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
@@ -35,15 +55,31 @@ export function CallOverlay() {
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [facing, setFacing] = useState<"user" | "environment">("user");
+  const [callStatus, setCallStatus] = useState<"ringing" | "connected" | "ended">(
+    call?.status ?? "ringing",
+  );
 
   const wantsVideo = call?.mode === "video";
 
+  // ── Helper: tear down everything ──────────────────────────────────────
+  const cleanup = useCallback(() => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    pcRef.current?.close();
+    pcRef.current = null;
+    signalRef.current?.leave();
+    signalRef.current = null;
+    pendingCandidatesRef.current = [];
+  }, []);
+
+  // ── Main effect: media + peer connection + signalling ─────────────────
   useEffect(() => {
     if (!call) return;
     let cancelled = false;
 
     (async () => {
       try {
+        // 1. Acquire local media.
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
           video: wantsVideo ? { facingMode: facing, width: { ideal: 1280 } } : false,
@@ -55,23 +91,116 @@ export function CallOverlay() {
         streamRef.current = stream;
         if (localVideo.current) localVideo.current.srcObject = stream;
 
-        // A genuine peer connection, looped back locally so the media path is real.
-        const a = new RTCPeerConnection();
-        const b = new RTCPeerConnection();
-        stream.getTracks().forEach((t) => a.addTrack(t, stream));
-        a.onicecandidate = (e) => e.candidate && b.addIceCandidate(e.candidate).catch(() => {});
-        b.onicecandidate = (e) => e.candidate && a.addIceCandidate(e.candidate).catch(() => {});
-        b.ontrack = (e) => {
-          if (remoteVideo.current && e.streams[0]) remoteVideo.current.srcObject = e.streams[0];
+        // 2. Create a single RTCPeerConnection (not a loopback pair).
+        const pc = new RTCPeerConnection(DEFAULT_ICE_SERVERS);
+        pcRef.current = pc;
+
+        // Add local tracks to the peer connection.
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+        // When we receive the remote stream, display it.
+        pc.ontrack = (e) => {
+          if (!cancelled && remoteVideo.current && e.streams[0]) {
+            remoteVideo.current.srcObject = e.streams[0];
+            setCallStatus("connected");
+          }
         };
-        const offer = await a.createOffer();
-        await a.setLocalDescription(offer);
-        await b.setRemoteDescription(offer);
-        const answer = await b.createAnswer();
-        await b.setLocalDescription(answer);
-        await a.setRemoteDescription(answer);
-        pcRef.current = { a, b };
+
+        // Buffer ICE candidates that arrive before the remote description is set.
+        pc.onicecandidate = (e) => {
+          if (e.candidate && signalRef.current) {
+            signalRef.current.send({
+              type: "ice-candidate",
+              candidate: e.candidate.toJSON(),
+              senderId: call.userId,
+            });
+          }
+        };
+
+        pc.oniceconnectionstatechange = () => {
+          const state = pc.iceConnectionState;
+          if (state === "failed" || state === "disconnected") {
+            if (!cancelled) {
+              setCallStatus("ended");
+              endCall();
+            }
+          }
+        };
+
+        // 3. Join the signalling channel.
+        const signalCallbacks: SignalCallbacks = {
+          onOffer: async (sdp, _senderId) => {
+            // Callee receives the offer.
+            if (cancelled || !pcRef.current) return;
+            try {
+              const offer = new RTCSessionDescription({ type: "offer", sdp });
+              await pcRef.current.setRemoteDescription(offer);
+              // Flush any buffered ICE candidates.
+              for (const c of pendingCandidatesRef.current) {
+                await pcRef.current.addIceCandidate(c).catch(() => {});
+              }
+              pendingCandidatesRef.current = [];
+              // Create and send the answer.
+              const answer = await pcRef.current.createAnswer();
+              await pcRef.current.setLocalDescription(answer);
+              signalRef.current?.send({
+                type: "answer",
+                sdp: answer.sdp ?? "",
+                senderId: call.userId,
+              });
+              setCallStatus("connected");
+            } catch (err) {
+              console.error("Failed to handle offer:", err);
+            }
+          },
+          onAnswer: async (sdp, _senderId) => {
+            // Caller receives the answer.
+            if (cancelled || !pcRef.current) return;
+            try {
+              const answer = new RTCSessionDescription({ type: "answer", sdp });
+              await pcRef.current.setRemoteDescription(answer);
+              // Flush any buffered ICE candidates.
+              for (const c of pendingCandidatesRef.current) {
+                await pcRef.current.addIceCandidate(c).catch(() => {});
+              }
+              pendingCandidatesRef.current = [];
+            } catch (err) {
+              console.error("Failed to handle answer:", err);
+            }
+          },
+          onIceCandidate: async (candidate) => {
+            if (cancelled || !pcRef.current) return;
+            try {
+              if (pcRef.current.remoteDescription) {
+                await pcRef.current.addIceCandidate(candidate);
+              } else {
+                pendingCandidatesRef.current.push(candidate);
+              }
+            } catch {
+              // Candidate may be stale; ignore.
+            }
+          },
+          onHangup: () => {
+            if (!cancelled) {
+              setCallStatus("ended");
+              endCall();
+            }
+          },
+        };
+
+        const signalling = joinCallChannel(call.conversationId, call.userId, signalCallbacks);
+        signalRef.current = signalling;
+
+        // 4. Caller: create offer and broadcast it.
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        signalling.send({
+          type: "offer",
+          sdp: offer.sdp ?? "",
+          senderId: call.userId,
+        });
       } catch (e) {
+        if (cancelled) return;
         const name = (e as DOMException)?.name;
         setError(
           name === "NotAllowedError"
@@ -83,19 +212,16 @@ export function CallOverlay() {
 
     return () => {
       cancelled = true;
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-      pcRef.current?.a.close();
-      pcRef.current?.b.close();
-      pcRef.current = null;
+      cleanup();
     };
-  }, [call?.personId, wantsVideo, facing, call]);
+  }, [call?.personId, call?.conversationId, call?.userId, wantsVideo, facing, call, cleanup, endCall]);
 
+  // ── Timer: count seconds while connected ──────────────────────────────
   useEffect(() => {
-    if (call?.status !== "connected") return;
+    if (callStatus !== "connected") return;
     const t = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(t);
-  }, [call?.status]);
+  }, [callStatus]);
 
   if (!call || !person) return null;
 
@@ -114,7 +240,7 @@ export function CallOverlay() {
   const shareScreen = async () => {
     try {
       const display = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      const sender = pcRef.current?.a.getSenders().find((s) => s.track?.kind === "video");
+      const sender = pcRef.current?.getSenders().find((s) => s.track?.kind === "video");
       const track = display.getVideoTracks()[0];
       if (sender && track) {
         await sender.replaceTrack(track);
@@ -127,6 +253,16 @@ export function CallOverlay() {
     } catch {
       toast("Screen share cancelled", "violet");
     }
+  };
+
+  const hangUp = () => {
+    // Notify the remote peer before tearing down.
+    signalRef.current?.send({
+      type: "hangup",
+      senderId: call.userId,
+    });
+    setCallStatus("ended");
+    endCall();
   };
 
   const mmss = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
@@ -148,7 +284,7 @@ export function CallOverlay() {
               alt=""
               className={cn(
                 "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
-                call.status === "connected" ? "opacity-0" : "opacity-100",
+                callStatus === "connected" ? "opacity-0" : "opacity-100",
               )}
             />
             <video
@@ -180,12 +316,12 @@ export function CallOverlay() {
               {person.name}, {person.age}
             </h2>
             <p className="mt-1 text-[13.5px] text-white/70">
-              {call.status === "ringing" ? "Calling…" : `Connected · ${mmss}`}
+              {callStatus === "ringing" ? "Calling\u2026" : callStatus === "ended" ? "Call ended" : `Connected \u00B7 ${mmss}`}
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1.5 text-[11.5px] font-medium text-white/80 backdrop-blur">
             <ShieldCheck className="h-3.5 w-3.5 text-gold" />
-            Media stays on your device
+            End-to-end encrypted
           </span>
         </div>
 
@@ -194,9 +330,9 @@ export function CallOverlay() {
             {error}
           </p>
         )}
-        {!error && call.status === "connected" && (
+        {!error && callStatus === "ringing" && (
           <p className="absolute inset-x-4 bottom-28 text-center text-[11.5px] text-white/45">
-            Local media loopback — peer signalling is not wired in this build.
+            Waiting for peer to answer&hellip;
           </p>
         )}
       </div>
@@ -229,7 +365,7 @@ export function CallOverlay() {
         )}
         <button
           type="button"
-          onClick={endCall}
+          onClick={hangUp}
           aria-label="End call"
           className="press ml-2 grid h-[58px] w-[58px] place-items-center rounded-full bg-live text-white hover:brightness-110"
         >

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { api } from "@/lib/client";
 
 export type ViewId = "discover" | "messages" | "taps" | "favorites" | "events" | "groups" | "shouts" | "tribes" | "meetnow" | "fansites" | "king-pet" | "premium" | "gamechangers" | "notifications" | "safety" | "settings" | "profile" | "board" | "guide" | "platform" | "nearby" | "explore" | "chats" | "likes" | "admin" | "benchmark";
 
@@ -14,6 +15,17 @@ type CheckInState = {
   personId: string;
   contact: string;
   place: string;
+};
+
+type FootprintMap = Record<string, string>;
+
+export type CallState = {
+  personId: string;
+  mode: "audio" | "video";
+  status: "ringing" | "connected" | "ended";
+  conversationId: string;
+  userId: string;
+  startedAt: number;
 };
 
 type AppState = {
@@ -46,15 +58,20 @@ type AppState = {
   toggleTheme: () => void;
 
   // Filters / Layout
+  filters: Record<string, boolean>;
   toggleFilter: (filter: string) => void;
   clearFilters: () => void;
+  layout: string;
   setLayout: (layout: string) => void;
   query: string;
   setQuery: (q: string) => void;
 
   // Profile
-  setOpenProfile: (profile: any | null) => void;
+  openProfile: string | null;
+  setOpenProfile: (profile: string | null) => void;
+  locked: boolean;
   setLocked: (locked: boolean) => void;
+  pinned: string[];
   pin: (id: string) => void;
 
   // Voice
@@ -73,8 +90,8 @@ type AppState = {
   closeMedia: () => void;
 
   // Calls
-  call: any | null;
-  startCall: (target: any) => void;
+  call: CallState | null;
+  startCall: (target: { personId?: string; target?: string; id?: string; type?: "audio" | "video"; conversationId?: string }) => void;
   endCall: () => void;
 
   // Threads / Chat
@@ -90,7 +107,7 @@ type AppState = {
   checkIn: CheckInState | null;
   setCheckIn: (data: CheckInState | null) => void;
   resolveCheckIn: (safe: boolean) => void;
-  footprints: any[];
+  footprints: FootprintMap;
   leaveFootprint: (data: any) => void;
 
   // Social
@@ -101,6 +118,11 @@ type AppState = {
   // Misc
   online: boolean;
 };
+
+/** Deterministic conversation ID from two user IDs — sorted so both sides derive the same key. */
+function deriveConversationId(a: string, b: string): string {
+  return [a, b].sort().join(":");
+}
 
 export const useAppStore = create<AppState>((set, _get) => ({
   // User
@@ -135,16 +157,29 @@ export const useAppStore = create<AppState>((set, _get) => ({
   toggleTheme: () => set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
 
   // Filters / Layout
-  toggleFilter: () => {},
-  clearFilters: () => {},
-  setLayout: () => {},
+  filters: {},
+  toggleFilter: (filter) =>
+    set((s) => ({
+      filters: { ...s.filters, [filter]: !s.filters[filter] },
+    })),
+  clearFilters: () => set({ filters: {} }),
+  layout: "grid",
+  setLayout: (layout) => set({ layout }),
   query: "",
   setQuery: (q) => set({ query: q }),
 
   // Profile
-  setOpenProfile: () => {},
-  setLocked: () => {},
-  pin: () => {},
+  openProfile: null,
+  setOpenProfile: (profile) => set({ openProfile: profile }),
+  locked: false,
+  setLocked: (locked) => set({ locked }),
+  pinned: [],
+  pin: (id) =>
+    set((s) => ({
+      pinned: s.pinned.includes(id)
+        ? s.pinned.filter((p) => p !== id)
+        : [...s.pinned, id],
+    })),
 
   // Voice
   voiceOn: false,
@@ -153,7 +188,9 @@ export const useAppStore = create<AppState>((set, _get) => ({
   setVoiceTranscript: (t) => set({ voiceTranscript: t }),
 
   // AI
-  warmUpAi: () => {},
+  warmUpAi: () => {
+    api("/api/ai/warmup").catch(() => {});
+  },
 
   // Media
   media: [],
@@ -163,13 +200,53 @@ export const useAppStore = create<AppState>((set, _get) => ({
 
   // Calls
   call: null,
-  startCall: () => {},
+  startCall: (target) => {
+    const personId = target.target ?? target.personId ?? target.id ?? "";
+    const userId = _get().user?.id ?? "local";
+    const conversationId = target.conversationId ?? deriveConversationId(userId, personId);
+    set({
+      call: {
+        personId,
+        mode: target.type ?? "audio",
+        status: "ringing",
+        conversationId,
+        userId,
+        startedAt: Date.now(),
+      },
+    });
+  },
   endCall: () => set({ call: null }),
 
   // Threads / Chat
   threads: [],
   activeThread: null,
-  sendMessage: () => {},
+  sendMessage: (msg) =>
+    set((s) => {
+      const threadId = msg.threadId ?? msg.id ?? s.activeThread;
+      const body = msg.body ?? msg.text ?? "";
+      if (!threadId || !body) return s;
+
+      const thread: Thread = {
+        id: threadId,
+        messages: [
+          ...((s.threads.find((t) => t.id === threadId)?.messages as any[]) ?? []),
+          {
+            id: crypto.randomUUID(),
+            body,
+            senderId: s.user?.id ?? "me",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      };
+
+      const exists = s.threads.findIndex((t) => t.id === threadId);
+      const threads =
+        exists >= 0
+          ? s.threads.map((t) => (t.id === threadId ? thread : t))
+          : [...s.threads, thread];
+
+      return { threads, draft: "" };
+    }),
 
   // Draft
   draft: "",
@@ -179,12 +256,22 @@ export const useAppStore = create<AppState>((set, _get) => ({
   checkIn: null,
   setCheckIn: (data) => set({ checkIn: data }),
   resolveCheckIn: () => set({ checkIn: null }),
-  footprints: [],
-  leaveFootprint: () => {},
+  footprints: {},
+  leaveFootprint: (data) => {
+    set((s) => ({
+      footprints: { ...s.footprints, [data.personId]: data.footprintId ?? data.id },
+    }));
+    api("/api/social", {
+      method: "POST",
+      body: { action: "footprint", targetId: data.personId, footprintId: data.footprintId },
+    }).catch(() => {});
+  },
 
   // Social
   likesReceived: 0,
-  boost: () => {},
+  boost: () => {
+    api("/api/boost", { method: "POST" }).catch(() => {});
+  },
   queued: false,
 
   // Misc
