@@ -24,7 +24,6 @@ import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as KingPetIndexRouteImport } from './routes/king-pet/index'
 import { Route as MeetnowIndexRouteImport } from './routes/meetnow/index'
 import { Route as NotificationsIndexRouteImport } from './routes/notifications/index'
-import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as PremiumIndexRouteImport } from './routes/premium/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
@@ -126,11 +125,6 @@ const MeetnowIndexRoute = MeetnowIndexRouteImport.update({
 const NotificationsIndexRoute = NotificationsIndexRouteImport.update({
   id: '/notifications/',
   path: '/notifications/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
-  id: '/onboarding/',
-  path: '/onboarding/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlatformIndexRoute = PlatformIndexRouteImport.update({
@@ -285,7 +279,6 @@ export interface FileRoutesByFullPath {
   '/king-pet/': typeof KingPetIndexRoute
   '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
-  '/onboarding/': typeof OnboardingIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/premium/': typeof PremiumIndexRoute
   '/profile/': typeof ProfileIndexRoute
@@ -330,7 +323,6 @@ export interface FileRoutesByTo {
   '/king-pet': typeof KingPetIndexRoute
   '/meetnow': typeof MeetnowIndexRoute
   '/notifications': typeof NotificationsIndexRoute
-  '/onboarding': typeof OnboardingIndexRoute
   '/platform': typeof PlatformIndexRoute
   '/premium': typeof PremiumIndexRoute
   '/profile': typeof ProfileIndexRoute
@@ -376,7 +368,6 @@ export interface FileRoutesById {
   '/king-pet/': typeof KingPetIndexRoute
   '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
-  '/onboarding/': typeof OnboardingIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/premium/': typeof PremiumIndexRoute
   '/profile/': typeof ProfileIndexRoute
@@ -423,7 +414,6 @@ export interface FileRouteTypes {
     | '/king-pet/'
     | '/meetnow/'
     | '/notifications/'
-    | '/onboarding/'
     | '/platform/'
     | '/premium/'
     | '/profile/'
@@ -468,7 +458,6 @@ export interface FileRouteTypes {
     | '/king-pet'
     | '/meetnow'
     | '/notifications'
-    | '/onboarding'
     | '/platform'
     | '/premium'
     | '/profile'
@@ -513,7 +502,6 @@ export interface FileRouteTypes {
     | '/king-pet/'
     | '/meetnow/'
     | '/notifications/'
-    | '/onboarding/'
     | '/platform/'
     | '/premium/'
     | '/profile/'
@@ -559,7 +547,6 @@ export interface RootRouteChildren {
   KingPetIndexRoute: typeof KingPetIndexRoute
   MeetnowIndexRoute: typeof MeetnowIndexRoute
   NotificationsIndexRoute: typeof NotificationsIndexRoute
-  OnboardingIndexRoute: typeof OnboardingIndexRoute
   PlatformIndexRoute: typeof PlatformIndexRoute
   PremiumIndexRoute: typeof PremiumIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
@@ -694,13 +681,6 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications/'
       preLoaderRoute: typeof NotificationsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding/': {
-      id: '/onboarding/'
-      path: '/onboarding'
-      fullPath: '/onboarding/'
-      preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/platform/': {
@@ -911,7 +891,6 @@ const rootRouteChildren: RootRouteChildren = {
   KingPetIndexRoute: KingPetIndexRoute,
   MeetnowIndexRoute: MeetnowIndexRoute,
   NotificationsIndexRoute: NotificationsIndexRoute,
-  OnboardingIndexRoute: OnboardingIndexRoute,
   PlatformIndexRoute: PlatformIndexRoute,
   PremiumIndexRoute: PremiumIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,

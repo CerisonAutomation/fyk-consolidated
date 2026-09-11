@@ -66,11 +66,21 @@ export type WsStatus = "disconnected" | "connected";
 
 type EventHandler = (payload: unknown) => void;
 
+// ---------------------------------------------------------------------------
+// Reconnect configuration
+// ---------------------------------------------------------------------------
+
+const MAX_RETRIES = 10;
+const BASE_DELAY_MS = 3_000;
+const MAX_DELAY_MS = 60_000;
+
 interface WsState {
 	status: WsStatus;
 	ws: WebSocket | null;
 	eventHandlers: Map<string, Set<EventHandler>>;
 	reconnectTimer: ReturnType<typeof setTimeout> | null;
+	retries: number;
+	intentionalDisconnect: boolean;
 
 	connect: (url: string, token: string) => void;
 	disconnect: () => void;
@@ -84,28 +94,60 @@ export const useWsStore = create<WsState>((set, get) => ({
 	ws: null,
 	eventHandlers: new Map(),
 	reconnectTimer: null,
+	retries: 0,
+	intentionalDisconnect: false,
 
 	connect(url, token) {
-		const { ws: existingWs } = get();
+		const { ws: existingWs, reconnectTimer } = get();
+
+		// Cleanup any pending reconnect timer and existing socket
+		if (reconnectTimer) {
+			clearTimeout(reconnectTimer);
+			set({ reconnectTimer: null });
+		}
 		if (existingWs) {
+			// Prevent the old onclose handler from triggering a reconnect
+			existingWs.onclose = null;
+			existingWs.onerror = null;
 			existingWs.close();
 		}
+
+		set({ intentionalDisconnect: false });
 
 		const socket = new WebSocket(`${url}?token=${encodeURIComponent(token)}`);
 
 		socket.onopen = () => {
-			set({ status: "connected", ws: socket });
+			set({ status: "connected", ws: socket, retries: 0 });
 		};
 
-		socket.onclose = () => {
-			set({ status: "disconnected", ws: null });
-			// Auto-reconnect after 3 seconds
+		socket.onclose = (event) => {
+			set({ status: "disconnected", ws: null, reconnectTimer: null });
+
+			// Never reconnect after intentional disconnect or if retries exhausted
+			const { intentionalDisconnect, retries } = get();
+			if (intentionalDisconnect) return;
+			if (retries >= MAX_RETRIES) {
+				console.warn(
+					`[ws] reconnect abandoned after ${MAX_RETRIES} attempts`,
+				);
+				return;
+			}
+
+			// Exponential backoff: 3s, 6s, 12s, 24s, 48s, then capped at 60s
+			const delay = Math.min(BASE_DELAY_MS * 2 ** retries, MAX_DELAY_MS);
+			const nextRetry = retries + 1;
+			set({ retries: nextRetry });
+
+			console.info(
+				`[ws] reconnecting in ${delay}ms (attempt ${nextRetry}/${MAX_RETRIES})`,
+			);
+
 			const timer = setTimeout(() => {
-				const { status } = get();
-				if (status === "disconnected") {
-					get().connect(url, token);
+				const current = get();
+				if (current.status === "disconnected" && !current.intentionalDisconnect) {
+					current.connect(url, token);
 				}
-			}, 3000);
+			}, delay);
 			set({ reconnectTimer: timer });
 		};
 
@@ -140,6 +182,7 @@ export const useWsStore = create<WsState>((set, get) => ({
 
 	disconnect() {
 		const { ws, reconnectTimer } = get();
+		set({ intentionalDisconnect: true });
 		if (reconnectTimer) clearTimeout(reconnectTimer);
 		if (ws) ws.close();
 		set({ status: "disconnected", ws: null, reconnectTimer: null });

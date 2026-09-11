@@ -88,6 +88,24 @@ type Bucket = { count: number; resetAt: number };
 const hits = new Map<string, Bucket>();
 const MEMORY_MAX_KEYS = 20_000;
 
+/**
+ * The fallback Map grows with every distinct key (per IP, per user, per
+ * bucket). Entries are *checked* lazily, which is correct but never frees
+ * memory, so a long-lived container accumulated one record per visitor per
+ * window. Sweep at most once per interval to keep the hot path O(1).
+ * (Ported from the `main` audit fix — same idea, adapted to this module.)
+ */
+const CLEANUP_INTERVAL_MS = 60_000;
+let lastCleanupAt = 0;
+
+function purgeExpired(now: number): void {
+	if (now - lastCleanupAt < CLEANUP_INTERVAL_MS) return;
+	lastCleanupAt = now;
+	for (const [key, entry] of hits) {
+		if (now > entry.resetAt) hits.delete(key);
+	}
+}
+
 function memoryRateLimit(
 	key: string,
 	limit: number,

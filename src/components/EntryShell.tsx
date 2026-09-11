@@ -27,6 +27,7 @@ import { z } from "zod";
 import { px } from "@/lib/data";
 import { getSupabase, toFailure } from "@/lib/supabase/client";
 import { envMissing, isConfigured } from "@/lib/supabase/env";
+import { useAuthStore } from "#/domains/auth/store";
 import type { Profile } from "@/lib/supabase/types";
 import { cn } from "@/utils/cn";
 import { LogoHorizontal } from "./Brand";
@@ -406,6 +407,16 @@ function AuthenticatedBoundary({
 	onReload: () => Promise<void>;
 	children: ReactNode;
 }) {
+	const setAuth = useAuthStore((state) => state.setAuth);
+
+	// Keep the Zustand auth store in sync with the session EntryShell owns, so
+	// screens that read `useAuthStore` directly (settings, profile) see the same
+	// user — and see it *cleared* on sign-out instead of a stale profile.
+	useEffect(() => {
+		setAuth({ userId: session.user.id, user: session.user });
+		return () => setAuth(null);
+	}, [setAuth, session]);
+
 	const updateProfile = useCallback(
 		async (changes: Partial<Profile>) => {
 			const client = getSupabase();

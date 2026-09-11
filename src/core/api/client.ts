@@ -7,6 +7,7 @@
  *   - Zod response validation
  *   - Result<T> return type (no thrown errors)
  *   - Retryable error classification
+ *   - 30-second request timeout
  */
 
 import { z } from "zod";
@@ -52,7 +53,13 @@ export async function http<T>(
     };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const res = await fetch(url, { ...options, headers, credentials: "include" });
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include",
+      // Add a 30-second timeout unless the caller already provided a signal
+      signal: options.signal ?? AbortSignal.timeout(30_000),
+    });
     const body = await res.json().catch(() => null);
 
     if (!res.ok) {
@@ -93,7 +100,7 @@ export async function http<T>(
   }
 }
 
-// ─── Convenience methods ─────────────────────────────────────────────────────
+// --- Convenience methods ---
 
 export const httpGet = <T>(url: string, schema?: z.ZodSchema<T>) =>
   http<T>(url, { method: "GET" }, schema);
