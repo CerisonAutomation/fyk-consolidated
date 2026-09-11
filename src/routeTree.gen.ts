@@ -33,8 +33,8 @@ import { Route as SafetyIndexRouteImport } from './routes/safety/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ShoutsIndexRouteImport } from './routes/shouts/index'
 import { Route as TribesIndexRouteImport } from './routes/tribes/index'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
+import { Route as ApiHealthIndexRouteImport } from './routes/api/health/index'
 import { Route as ApiMeetnowIndexRouteImport } from './routes/api/meetnow/index'
 import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
 import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
@@ -51,6 +51,7 @@ import { Route as SettingsBlockedIndexRouteImport } from './routes/settings/bloc
 import { Route as SettingsHiddenIndexRouteImport } from './routes/settings/hidden/index'
 import { Route as SettingsPrivacyIndexRouteImport } from './routes/settings/privacy/index'
 import { Route as SettingsProfileIndexRouteImport } from './routes/settings/profile/index'
+import { Route as ApiAuthMeIndexRouteImport } from './routes/api/auth/me/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -172,14 +173,14 @@ const TribesIndexRoute = TribesIndexRouteImport.update({
   path: '/tribes/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: '/api/auth/$',
-  path: '/api/auth/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiEventsIndexRoute = ApiEventsIndexRouteImport.update({
   id: '/api/events/',
   path: '/api/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthIndexRoute = ApiHealthIndexRouteImport.update({
+  id: '/api/health/',
+  path: '/api/health/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMeetnowIndexRoute = ApiMeetnowIndexRouteImport.update({
@@ -262,6 +263,11 @@ const SettingsProfileIndexRoute = SettingsProfileIndexRouteImport.update({
   path: '/settings/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthMeIndexRoute = ApiAuthMeIndexRouteImport.update({
+  id: '/api/auth/me/',
+  path: '/api/auth/me/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -288,9 +294,9 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof SettingsIndexRoute
   '/shouts/': typeof ShoutsIndexRoute
   '/tribes/': typeof TribesIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/events/': typeof ApiEventsIndexRoute
+  '/api/health/': typeof ApiHealthIndexRoute
   '/api/meetnow/': typeof ApiMeetnowIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/settings/hidden/': typeof SettingsHiddenIndexRoute
   '/settings/privacy/': typeof SettingsPrivacyIndexRoute
   '/settings/profile/': typeof SettingsProfileIndexRoute
+  '/api/auth/me/': typeof ApiAuthMeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -332,9 +339,9 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsIndexRoute
   '/shouts': typeof ShoutsIndexRoute
   '/tribes': typeof TribesIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/events': typeof ApiEventsIndexRoute
+  '/api/health': typeof ApiHealthIndexRoute
   '/api/meetnow': typeof ApiMeetnowIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
   '/auth/callback': typeof AuthCallbackIndexRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/settings/hidden': typeof SettingsHiddenIndexRoute
   '/settings/privacy': typeof SettingsPrivacyIndexRoute
   '/settings/profile': typeof SettingsProfileIndexRoute
+  '/api/auth/me': typeof ApiAuthMeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -377,9 +385,9 @@ export interface FileRoutesById {
   '/settings/': typeof SettingsIndexRoute
   '/shouts/': typeof ShoutsIndexRoute
   '/tribes/': typeof TribesIndexRoute
-  '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/events/': typeof ApiEventsIndexRoute
+  '/api/health/': typeof ApiHealthIndexRoute
   '/api/meetnow/': typeof ApiMeetnowIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
@@ -395,6 +403,7 @@ export interface FileRoutesById {
   '/settings/hidden/': typeof SettingsHiddenIndexRoute
   '/settings/privacy/': typeof SettingsPrivacyIndexRoute
   '/settings/profile/': typeof SettingsProfileIndexRoute
+  '/api/auth/me/': typeof ApiAuthMeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -423,9 +432,9 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/shouts/'
     | '/tribes/'
-    | '/api/auth/$'
     | '/api/push/subscribe'
     | '/api/events/'
+    | '/api/health/'
     | '/api/meetnow/'
     | '/api/notifications/'
     | '/auth/callback/'
@@ -441,6 +450,7 @@ export interface FileRouteTypes {
     | '/settings/hidden/'
     | '/settings/privacy/'
     | '/settings/profile/'
+    | '/api/auth/me/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -467,9 +477,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/shouts'
     | '/tribes'
-    | '/api/auth/$'
     | '/api/push/subscribe'
     | '/api/events'
+    | '/api/health'
     | '/api/meetnow'
     | '/api/notifications'
     | '/auth/callback'
@@ -485,6 +495,7 @@ export interface FileRouteTypes {
     | '/settings/hidden'
     | '/settings/privacy'
     | '/settings/profile'
+    | '/api/auth/me'
   id:
     | '__root__'
     | '/'
@@ -511,9 +522,9 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/shouts/'
     | '/tribes/'
-    | '/api/auth/$'
     | '/api/push/subscribe'
     | '/api/events/'
+    | '/api/health/'
     | '/api/meetnow/'
     | '/api/notifications/'
     | '/auth/callback/'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/settings/hidden/'
     | '/settings/privacy/'
     | '/settings/profile/'
+    | '/api/auth/me/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -556,9 +568,9 @@ export interface RootRouteChildren {
   SettingsIndexRoute: typeof SettingsIndexRoute
   ShoutsIndexRoute: typeof ShoutsIndexRoute
   TribesIndexRoute: typeof TribesIndexRoute
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
   ApiEventsIndexRoute: typeof ApiEventsIndexRoute
+  ApiHealthIndexRoute: typeof ApiHealthIndexRoute
   ApiMeetnowIndexRoute: typeof ApiMeetnowIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute
@@ -574,6 +586,7 @@ export interface RootRouteChildren {
   SettingsHiddenIndexRoute: typeof SettingsHiddenIndexRoute
   SettingsPrivacyIndexRoute: typeof SettingsPrivacyIndexRoute
   SettingsProfileIndexRoute: typeof SettingsProfileIndexRoute
+  ApiAuthMeIndexRoute: typeof ApiAuthMeIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -746,18 +759,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TribesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/auth/$': {
-      id: '/api/auth/$'
-      path: '/api/auth/$'
-      fullPath: '/api/auth/$'
-      preLoaderRoute: typeof ApiAuthSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/events/': {
       id: '/api/events/'
       path: '/api/events'
       fullPath: '/api/events/'
       preLoaderRoute: typeof ApiEventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health/': {
+      id: '/api/health/'
+      path: '/api/health'
+      fullPath: '/api/health/'
+      preLoaderRoute: typeof ApiHealthIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/meetnow/': {
@@ -872,6 +885,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/me/': {
+      id: '/api/auth/me/'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me/'
+      preLoaderRoute: typeof ApiAuthMeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -900,9 +920,9 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsIndexRoute: SettingsIndexRoute,
   ShoutsIndexRoute: ShoutsIndexRoute,
   TribesIndexRoute: TribesIndexRoute,
-  ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,
   ApiEventsIndexRoute: ApiEventsIndexRoute,
+  ApiHealthIndexRoute: ApiHealthIndexRoute,
   ApiMeetnowIndexRoute: ApiMeetnowIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   AuthCallbackIndexRoute: AuthCallbackIndexRoute,
@@ -918,6 +938,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsHiddenIndexRoute: SettingsHiddenIndexRoute,
   SettingsPrivacyIndexRoute: SettingsPrivacyIndexRoute,
   SettingsProfileIndexRoute: SettingsProfileIndexRoute,
+  ApiAuthMeIndexRoute: ApiAuthMeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,135 +1,144 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// Monitoring — Sentry + PostHog Integration
+// Monitoring — analytics + error reporting (browser only)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-// Lazy-loaded wrappers that no-op when environment variables are not configured.
-// Import from here instead of importing Sentry or PostHog directly.
+// WHY IT CHANGED
+// --------------
+// This module was imported by nothing and, had anything imported it, it would
+// have crashed at boot: it read `process.env.NEXT_PUBLIC_POSTHOG_KEY` (a) there
+// is no `process` in the browser bundle and (b) `NEXT_PUBLIC_*` is a Next.js
+// convention this Vite project never populates, and it lazy-imported
+// `@sentry/nextjs`, a package that only works inside a Next.js runtime.
+//
+// Now: Vite env vars via `import.meta.env`, no framework-specific SDK, and a
+// pluggable error sink. PostHog stays a real integration; error reporting POSTs
+// to `VITE_ERROR_REPORT_ENDPOINT` when one is configured (point it at a Sentry
+// bucket, GlitchTip, or your own collector) and is a no-op otherwise.
+//
+// Server-side logging is `#/lib/logger` (pino) — never this module.
+// ═══════════════════════════════════════════════════════════════════════════════
 
 import type { PostHog } from "posthog-js";
 
-// ─── Sentry ─────────────────────────────────────────────────────────────────
+const config = {
+	posthogKey: (import.meta.env.VITE_POSTHOG_KEY as string | undefined) ?? "",
+	posthogHost:
+		(import.meta.env.VITE_POSTHOG_HOST as string | undefined) ??
+		"https://us.i.posthog.com",
+	errorEndpoint:
+		(import.meta.env.VITE_ERROR_REPORT_ENDPOINT as string | undefined) ?? "",
+	enabled: import.meta.env.VITE_ANALYTICS_ENABLED !== "false",
+};
 
-let sentryInitPromise: Promise<typeof import("@sentry/nextjs")> | null = null;
+const isBrowser = typeof window !== "undefined";
 
-async function getSentry() {
-  if (!sentryInitPromise) {
-    sentryInitPromise = import("@sentry/nextjs");
-  }
-  return sentryInitPromise;
-}
-
-export function initSentry() {
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) return;
-
-  getSentry().then((Sentry) => {
-    Sentry.init({
-      dsn,
-      environment: process.env.NODE_ENV ?? "development",
-      tracesSampleRate: process.env.NODE_ENV === "production" ? 0.2 : 1.0,
-      replaysSessionSampleRate: 0.1,
-      replaysOnErrorSampleRate: 1.0,
-    });
-  });
-}
-
-export function captureException(error: unknown, context?: Record<string, unknown>) {
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) return;
-
-  getSentry().then((Sentry) => {
-    Sentry.withScope((scope) => {
-      if (context) {
-        scope.setExtras(context);
-      }
-      Sentry.captureException(error);
-    });
-  });
-}
-
-export function captureMessage(message: string, level: "info" | "warning" | "error" = "info") {
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) return;
-
-  getSentry().then((Sentry) => {
-    Sentry.captureMessage(message, level);
-  });
-}
-
-// ─── PostHog ────────────────────────────────────────────────────────────────
+/* -------------------------------- PostHog --------------------------------- */
 
 let posthogInstance: PostHog | null = null;
+let posthogPromise: Promise<PostHog | null> | null = null;
 
 async function getPostHog(): Promise<PostHog | null> {
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  if (!key) return null;
+	if (!isBrowser || !config.enabled || !config.posthogKey) return null;
+	if (posthogInstance) return posthogInstance;
+	if (posthogPromise) return posthogPromise;
 
-  if (posthogInstance) return posthogInstance;
+	posthogPromise = (async () => {
+		const posthog = (await import("posthog-js")).default;
+		posthog.init(config.posthogKey, {
+			api_host: config.posthogHost,
+			capture_pageview: false,
+			capture_pageleave: true,
+			persistence: "localStorage" as const,
+			// A dating platform has more than the usual amount of sensitive
+			// screen content: never mirror the DOM into a session replay.
+			// (Session replay is intentionally not enabled here.)
+		});
+		posthogInstance = posthog;
+		return posthog;
+	})().catch(() => null);
 
-  const posthog = (await import("posthog-js")).default;
-  posthog.init(key, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
-    capture_pageview: false,
-    capture_pageleave: true,
-    persistence: "localStorage" as any,
-  });
-  posthogInstance = posthog;
-  return posthogInstance;
+	return posthogPromise;
 }
 
-export function trackEvent(event: string, properties?: Record<string, unknown>) {
-  getPostHog().then((ph) => {
-    ph?.capture(event, properties);
-  });
+export function trackEvent(
+	event: string,
+	properties?: Record<string, unknown>,
+): void {
+	void getPostHog().then((posthog) => posthog?.capture(event, properties));
 }
 
-export function identifyUser(distinctId: string, traits?: Record<string, unknown>) {
-  getPostHog().then((ph) => {
-    ph?.identify(distinctId, traits);
-  });
+export function identifyUser(
+	userId: string,
+	traits?: Record<string, unknown>,
+): void {
+	void getPostHog().then((posthog) => posthog?.identify(userId, traits));
 }
 
-export function resetUser() {
-  getPostHog().then((ph) => {
-    ph?.reset();
-  });
+export function resetUser(): void {
+	void getPostHog().then((posthog) => posthog?.reset());
 }
 
 export async function isFeatureEnabled(flag: string): Promise<boolean> {
-  const ph = await getPostHog();
-  if (!ph) return false;
-  return ph.isFeatureEnabled(flag) ?? false;
+	const posthog = await getPostHog();
+	return posthog?.isFeatureEnabled(flag) ?? false;
 }
 
 export function getFeatureFlag(flag: string): string | boolean | undefined {
-  if (!posthogInstance) return undefined;
-  return posthogInstance.getFeatureFlag(flag);
+	return posthogInstance?.getFeatureFlag(flag);
 }
 
-// ─── Unified Error Handler ──────────────────────────────────────────────────
+/* ------------------------------ error reporting ----------------------------- */
 
-export function reportError(error: unknown, extra?: Record<string, unknown>) {
-  captureException(error, extra);
-  trackEvent("error_occurred", {
-    message: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : undefined,
-    ...extra,
-  });
+export type ErrorContext = Record<
+	string,
+	string | number | boolean | null | undefined
+>;
+
+/**
+ * Fire-and-forget error report. Never throws, never blocks the UI, and never
+ * includes message text when the sink is unreachable — a crash handler that can
+ * itself reject is how blank screens happen.
+ */
+export function reportError(error: unknown, context?: ErrorContext): void {
+	if (!isBrowser) return;
+
+	const payload = {
+		message: error instanceof Error ? error.message : String(error),
+		name: error instanceof Error ? error.name : "Unknown",
+		stack: error instanceof Error ? error.stack : undefined,
+		url: window.location.pathname,
+		at: new Date().toISOString(),
+		...context,
+	};
+
+	if (import.meta.env.DEV) {
+		console.error("[reportError]", payload);
+	}
+	trackEvent("error_occurred", payload);
+
+	if (!config.errorEndpoint) return;
+	const body = JSON.stringify(payload);
+	// `sendBeacon` survives page unload; `fetch(keepalive)` is the fallback.
+	if (typeof navigator !== "undefined" && "sendBeacon" in navigator) {
+		navigator.sendBeacon(
+			config.errorEndpoint,
+			new Blob([body], { type: "application/json" }),
+		);
+		return;
+	}
+	void fetch(config.errorEndpoint, {
+		method: "POST",
+		body,
+		keepalive: true,
+		headers: { "content-type": "application/json" },
+	}).catch(() => undefined);
 }
 
-// ─── Performance ────────────────────────────────────────────────────────────
-
-export function startTransaction(name: string): { finish: () => void } {
-  // Returns a no-op finisher when Sentry is not configured.
-  const dsn = process.env.SENTRY_DSN;
-  if (!dsn) return { finish: () => {} };
-
-  let startTime = performance.now();
-
-  return {
-    finish: () => {
-      const duration = performance.now() - startTime;
-      trackEvent("transaction_complete", { name, duration_ms: Math.round(duration) });
-    },
-  };
+/** Session start marker; call once from the app shell. */
+export function initMonitoring(): void {
+	if (!isBrowser || !config.enabled) return;
+	void getPostHog();
+	window.addEventListener("unhandledrejection", (event) => {
+		reportError(event.reason, { source: "unhandledrejection" });
+	});
 }

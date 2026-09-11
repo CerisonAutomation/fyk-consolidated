@@ -21,8 +21,8 @@
 // when zoomed), per-slide `loaded`/`broken` sets, and the visible index (which
 // is owned by the parent via the controlled `index` prop).
 
-import { useCallback, useEffect, useRef, useState, type JSX } from "react";
 import { ChevronLeft, ChevronRight, ImageOff, X } from "lucide-react";
+import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
@@ -136,7 +136,6 @@ export function Lightbox({
 
 	// Container size (re-measured on resize)
 	const containerRectRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
-
 
 	const total = images.length;
 	const canPrev = index > 0;

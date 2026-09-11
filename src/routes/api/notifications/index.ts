@@ -1,145 +1,219 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { prisma } from "#/db";
-import { auth } from "#/lib/auth";
-import { withSecurity, json, jsonError, parseJsonBody, validateString } from "#/middleware";
-import { checkRateLimit } from "#/lib/rate-limit";
+import { and, count, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { db } from "#/db";
+import {
+	cleanText,
+	publicProfile,
+	publicProfileSelection,
+	readJson,
+	requireCaller,
+	z,
+} from "#/lib/api-helpers";
+import { json, jsonError, withSecurity } from "#/middleware";
+import { notifications, users } from "#/schema";
 
-// -- Helpers --
+/**
+ * Notification inbox.
+ *
+ * Fixed relative to the previous version:
+ *   - `getCurrentUser()` resolved a better-auth session that could never exist
+ *     (no database configured), so `markRead`/`markAllRead`/`clear` answered 401
+ *     for every signed-in user and the inbox was always `[]`.
+ *   - The mapped rows hardcoded `status: "online"` and `geo: { lat: 0, lng: 0 }`
+ *     for every actor: clients read "everyone online" and pinned offline users
+ *     in the ocean. Presence now comes from the row (`#/lib/api-helpers`).
+ *   - `action` was compared against unvalidated strings, so a typo silently fell
+ *     through to "Unknown action" with a 400 that hid which field was wrong; the
+ *     body is now a discriminated union on `action`.
+ *   - Columns are the ones `0010_remaining_tables.sql` actually creates:
+ *     `actor_id`/`href` (not `fromUserId`/`deepLink`). `read_at` and `hidden` are
+ *     added by `0015_server_canonical.sql`.
+ *   - `hide` soft-hides (`hidden = true`) instead of deleting, so moderation
+ *     history and unread counts stay reconcilable.
+ */
 
-async function getCurrentUser(request: Request) {
-  try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-    return session?.user ?? null;
-  } catch {
-    return null;
-  }
+const NOTIFICATION_LIMIT = 50;
+
+const markReadSchema = z.object({
+	action: z.literal("markRead"),
+	notificationId: z.uuid(),
+});
+const markAllSchema = z.object({ action: z.literal("markAllRead") });
+const clearSchema = z.object({ action: z.literal("clear") });
+const hideSchema = z.object({
+	action: z.literal("hide"),
+	notificationId: z.uuid(),
+});
+
+const bodySchema = z.discriminatedUnion("action", [
+	markReadSchema,
+	markAllSchema,
+	clearSchema,
+	hideSchema,
+]);
+
+/** Rows a user can still see: `hidden` is false, or null on pre-0015 databases. */
+function visibleTo(userId: string) {
+	return and(
+		eq(notifications.userId, userId),
+		or(eq(notifications.hidden, false), isNull(notifications.hidden)),
+	);
 }
 
-// -- Route --
-
 export const Route = createFileRoute("/api/notifications/")({
-  server: {
-    handlers: {
-      GET: async ({ request }) => {
-        // Rate limit: 100 requests per 15 minutes per IP
-        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
-        const rateLimitResult = await checkRateLimit(`notifications:GET:${ip}`, 100, 15 * 60 * 1000);
-        if (!rateLimitResult.allowed) {
-          return jsonError("Rate limit exceeded", 429);
-        }
+	server: {
+		handlers: {
+			GET: withSecurity(
+				async ({ caller, request }) => {
+					// The header bell polls this; an anonymous poll must not 401 in
+					// the console, so it renders an empty inbox instead of erroring.
+					if (!caller)
+						return json({ notifications: [], unread: 0 }, { cache: "public" });
 
-        const user = await getCurrentUser(request);
-        if (!user) {
-          return json({ notifications: [], unread: 0 });
-        }
+					const limit = Math.min(
+						NOTIFICATION_LIMIT,
+						Number(
+							new URL(request.url).searchParams.get("limit") ??
+								NOTIFICATION_LIMIT,
+						) || NOTIFICATION_LIMIT,
+					);
 
-        const [notifications, unread] = await Promise.all([
-          prisma.notification.findMany({
-            where: { userId: user.id },
-            orderBy: { createdAt: "desc" },
-            take: 50,
-            include: {
-              actor: {
-                select: {
-                  id: true,
-                  name: true,
-                  avatar: true,
-                  handle: true,
-                  online: true,
-                  lastActive: true,
-                  city: true,
-                  area: true,
-                },
-              },
-            },
-          }),
-          prisma.notification.count({
-            where: { userId: user.id, read: false },
-          }),
-        ]);
+					const [rows, unreadRows] = await Promise.all([
+						db
+							.select({
+								id: notifications.id,
+								type: notifications.type,
+								title: notifications.title,
+								body: notifications.body,
+								actorId: notifications.actorId,
+								href: notifications.href,
+								read: notifications.read,
+								createdAt: notifications.createdAt,
+							})
+							.from(notifications)
+							.where(visibleTo(caller.id))
+							.orderBy(desc(notifications.createdAt), desc(notifications.id))
+							.limit(limit),
+						db
+							.select({ total: count() })
+							.from(notifications)
+							.where(and(visibleTo(caller.id), eq(notifications.read, false))),
+					]);
 
-        const mapped = notifications.map((n) => ({
-          id: n.id,
-          type: n.type,
-          title: n.title,
-          body: n.body ?? undefined,
-          actor_id: n.fromUserId ?? undefined,
-          href: n.deepLink ?? undefined,
-          read: n.read,
-          created_at: n.createdAt.toISOString(),
-          actor: n.actor
-            ? {
-                id: n.actor.id,
-                pseudo: n.actor.name ?? "",
-                nick: n.actor.handle ?? "",
-                photos: n.actor.avatar ? [n.actor.avatar] : [],
-                online: n.actor.online,
-                tribes: [] as string[],
-                geo: n.actor.city
-                  ? { lat: 0, lng: 0, city: n.actor.city }
-                  : undefined,
-                lastSeen: n.actor.lastActive?.toISOString() ?? "",
-                status: "online",
-              }
-            : undefined,
-        }));
+					const actorIds = [
+						...new Set(
+							rows.map((row) => row.actorId).filter((id): id is string => !!id),
+						),
+					];
+					const actorRows = actorIds.length
+						? await db
+								.select(publicProfileSelection)
+								.from(users)
+								.where(inArray(users.id, actorIds))
+						: [];
+					const actors = new Map(actorRows.map((actor) => [actor.id, actor]));
+					const unread = Number(unreadRows[0]?.total ?? 0);
 
-        return json({ notifications: mapped, unread });
-      },
+					return json(
+						{
+							notifications: rows.map((row) => ({
+								id: row.id,
+								type: row.type,
+								title: cleanText(row.title, 200),
+								body: row.body ? cleanText(row.body, 500) : undefined,
+								actor_id: row.actorId ?? undefined,
+								// In-app only: `href` is a path, and clients must never
+								// receive an absolute URL an attacker could have stored.
+								href: row.href ?? undefined,
+								read: row.read ?? false,
+								created_at: (row.createdAt ?? new Date()).toISOString(),
+								actor: row.actorId
+									? publicProfile(actors.get(row.actorId))
+									: undefined,
+							})),
+							unread,
+							more: rows.length === limit,
+						},
+						{ cache: "private" },
+					);
+				},
+				{
+					auth: "optional",
+					rateLimit: {
+						limit: 120,
+						key: ({ ip, caller }) => `notifications:GET:${caller?.id ?? ip}`,
+					},
+				},
+			),
 
-      POST: withSecurity(async ({ request }) => {
-        const user = await getCurrentUser(request);
-        if (!user) {
-          return jsonError("Unauthorized", 401);
-        }
+			POST: withSecurity(
+				async ({ request, caller }) => {
+					const user = requireCaller(caller);
+					const body = await readJson(request, bodySchema, 8 * 1024);
 
-        // Rate limit: 30 mutations per 15 minutes per user
-        const rateLimitResult = await checkRateLimit(`notifications:POST:${user.id}`, 30, 15 * 60 * 1000);
-        if (!rateLimitResult.allowed) {
-          return jsonError("Rate limit exceeded", 429);
-        }
-
-        const bodyResult = await parseJsonBody<{
-          action?: string;
-          notificationId?: string;
-        }>(request);
-
-        if (!bodyResult.ok) return bodyResult.response;
-        const { action, notificationId } = bodyResult.data;
-
-        // -- Mark single notification as read --
-        if (action === "markRead" && notificationId) {
-          const idResult = validateString(notificationId, "notificationId");
-          if (!idResult.ok) return jsonError(idResult.error, 400);
-
-          await prisma.notification.updateMany({
-            where: { id: idResult.value, userId: user.id },
-            data: { read: true, readAt: new Date() },
-          });
-          return json({ ok: true });
-        }
-
-        // -- Mark all as read --
-        if (action === "markAllRead") {
-          await prisma.notification.updateMany({
-            where: { userId: user.id, read: false },
-            data: { read: true, readAt: new Date() },
-          });
-          return json({ ok: true });
-        }
-
-        // -- Clear all notifications --
-        if (action === "clear") {
-          await prisma.notification.deleteMany({
-            where: { userId: user.id },
-          });
-          return json({ ok: true });
-        }
-
-        return jsonError("Unknown action", 400);
-      }, { maxBodySize: 4 * 1024 }), // 4KB max for notification actions
-    },
-  },
+					switch (body.action) {
+						case "markRead": {
+							// `userId` in the WHERE clause is what stops one user from
+							// flipping another user's rows: id-only would be an IDOR.
+							const updated = await db
+								.update(notifications)
+								.set({ read: true, readAt: new Date() })
+								.where(
+									and(
+										eq(notifications.id, body.notificationId),
+										eq(notifications.userId, user.id),
+									),
+								)
+								.returning({ id: notifications.id });
+							if (updated.length === 0)
+								return jsonError("Notification not found", 404);
+							return json({ ok: true });
+						}
+						case "markAllRead": {
+							const updated = await db
+								.update(notifications)
+								.set({ read: true, readAt: new Date() })
+								.where(and(visibleTo(user.id), eq(notifications.read, false)))
+								.returning({ id: notifications.id });
+							return json({ ok: true, updated: updated.length });
+						}
+						case "hide": {
+							const hidden = await db
+								.update(notifications)
+								.set({ hidden: true })
+								.where(
+									and(
+										eq(notifications.id, body.notificationId),
+										eq(notifications.userId, user.id),
+									),
+								)
+								.returning({ id: notifications.id });
+							if (hidden.length === 0)
+								return jsonError("Notification not found", 404);
+							return json({ ok: true });
+						}
+						default: {
+							// `action: "clear"` means "empty my inbox" — destructive, so it is
+							// scoped to the caller and only ever removes read rows:
+							// clearing an inbox that still holds unread safety alerts
+							// would hide them from the user *and* from moderation.
+							const removed = await db
+								.delete(notifications)
+								.where(and(visibleTo(user.id), eq(notifications.read, true)))
+								.returning({ id: notifications.id });
+							return json({ ok: true, removed: removed.length });
+						}
+					}
+				},
+				{
+					maxBodySize: 8 * 1024,
+					rateLimit: {
+						limit: 60,
+						key: ({ caller: user }) =>
+							`notifications:POST:${user?.id ?? "anon"}`,
+					},
+				},
+			),
+		},
+	},
 });

@@ -14,9 +14,9 @@ FYK (Find Your King) is an LGBTQ+ dating and social platform built with TanStack
 | UI Library | React | 19.x | Component rendering |
 | Language | TypeScript | 6.x | Type safety (strict mode) |
 | Build Tool | Vite | 8.x | Dev server and bundler |
-| Database ORM | Prisma | 7.x | Type-safe database access |
+| Database ORM | Drizzle ORM | 0.45.x | Type-safe SQL for the JSON API (`drizzle/schema.ts`) |
 | Database | PostgreSQL (Supabase) | 15+ | Primary data store |
-| Auth | better-auth | 1.5.x | Authentication with TanStack Start cookies |
+| Auth | Supabase Auth (GoTrue) | — | `@supabase/supabase-js` in the browser; token/cookie verification on the server |
 | Styling | Tailwind CSS | 4.x | Utility-first CSS via `@tailwindcss/vite` |
 | UI Components | shadcn/ui (new-york, zinc) | latest | Radix-based primitives |
 | Linting/Formatting | Biome | 2.x | NOT Prettier, NOT ESLint |
@@ -53,9 +53,10 @@ FYK (Find Your King) is an LGBTQ+ dating and social platform built with TanStack
 | Icons | `lucide-react` | `import { Icon } from 'lucide-react'` |
 | Styling | Tailwind CSS 4 | Utility classes, `var(--token)` |
 | Validation | `zod` | `z.object({...})`, `z.infer<typeof schema>` |
-| Database | Prisma | `import { prisma } from '#/db'` |
-| Auth (client) | better-auth | `import { authClient } from '#/lib/auth-client'` |
-| Auth (server) | better-auth | `import { auth } from '#/lib/auth'` |
+| Database (server) | Drizzle | `import { db } from '#/db'` + `import { users } from '#/schema'` |
+| Database (browser) | `@supabase/supabase-js` | `getSupabase()` — RLS enforces access |
+| Auth (client) | Supabase | `getSupabase().auth` / `useSupabaseSession()` |
+| Auth (server) | Supabase | `getCaller(request)` from `#/lib/supabase-auth.server` |
 | AI (server) | `@tanstack/ai` | `chat`, `toServerSentEventsResponse` |
 | AI (client) | `@tanstack/ai-react` | `createChatClientOptions`, `useChat` |
 | AI Providers | `@tanstack/ai-anthropic`, `@tanstack/ai-openai`, `@tanstack/ai-gemini`, `@tanstack/ai-ollama` | Adapter imports |
@@ -113,12 +114,12 @@ interface UserProfile {
 }
 
 function getProfile(id: string): Promise<UserProfile> {
-  return prisma.profile.findUniqueOrThrow({ where: { id } });
+  return getDb().query.users.findFirst({ where: eq(users.id, id) });
 }
 
 // BAD: Using any
 function getProfile(id: any): any {
-  return prisma.profile.findUnique({ where: { id } });
+  return getDb().select().from(users).where(eq(users.id, id));
 }
 ```
 
@@ -163,8 +164,8 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 // 2. Internal aliases (preferred: #/)
-import { prisma } from "#/db";
-import { authClient } from "#/lib/auth-client";
+import { db } from "#/db";
+import { getSupabase } from "#/integrations/supabase/client";
 import { Button } from "#/components/ui/button";
 import { cn } from "#/lib/utils";
 
@@ -198,13 +199,17 @@ src/
     auth/          # Authentication domain
   core/            # Core infrastructure
     api/           # API client and types
-    db.ts          # Prisma client singleton
-    auth.ts        # better-auth server config
-    auth-client.ts # better-auth client config
+    db.ts          # Drizzle + postgres.js singleton (server only)
+    schema.ts      # re-export of drizzle/schema.ts (server only)
+    middleware.ts  # withSecurity: CSRF, size cap, session, rate limit
+    lib/
+      security.ts  # security response headers (single source of truth)
   hooks/           # Shared custom hooks
   lib/             # Utility functions
     utils.ts       # cn() and other helpers
-    logger.ts      # Pino logger
+    logger.ts      # Pino logger (server only)
+      api-helpers.ts # requireCaller, readJson, publicProfile, asStringArray
+      supabase-auth.server.ts # verifies the Supabase access token / cookie
     redis.ts       # Upstash Redis client
     stripe.ts      # Stripe client
     resend.ts      # Resend email client
@@ -257,9 +262,9 @@ export function useUpdateProfile() {
 import { createServerFn } from "@tanstack/react-start";
 
 export const getProfile = createServerFn({ method: "GET" })
-  .validator((id: string) => id)
+  .validator(z.uuid())
   .handler(async ({ data: id }) => {
-    return prisma.profile.findUniqueOrThrow({ where: { id } });
+    return db.query.users.findFirst({ where: eq(users.id, id) });
   });
 ```
 
@@ -310,17 +315,31 @@ export const Route = createFileRoute("/dashboard")({
 
 ## Database Rules
 
-### Prisma
+### Drizzle (canonical for the JSON API)
 
-- Import the singleton: `import { prisma } from "#/db"` — never create `new PrismaClient()`
-- Run `pnpm db:generate` after schema changes
-- Use `prisma db push` for prototyping, `prisma migrate dev` for migrations
-- Schema is the source of truth in `prisma/schema.prisma`
-- Generated client lives in `src/generated/prisma/`
+- Import the singleton: `import { db } from "#/db"` and tables from `"#/schema"`
+- `drizzle/schema.ts` is written **from the SQL in `supabase/migrations/`**: every
+  column needs the explicit `text("snake_case")` name — do not rely on a name match
+- `pnpm db:generate` writes a SQL diff; review it and land it as a numbered
+  `supabase/migrations/00NN_*.sql`, because that folder is what deploys apply
+- Never `drizzle-kit push` at production: the two user tables (§3.2 of `AUDIT.md`)
+  mean a generated diff would drop columns the browser still reads
+- `postgres.js` must keep `prepare: false` (Supabase transaction pooler) and the
+  pool must stay bounded (`DATABASE_POOL_MAX`)
+- `prisma/schema.prisma` remains only for `prisma/seed*`; if you change a column,
+  change both files or delete the Prisma model
+
+### Errors reaching clients
+
+- `#/middleware` `jsonError(message, status, error?)`: `details` are for logs and
+  are never serialised; unexpected errors become
+  `500 {"error":"Something went wrong. Please try again."}`
+- Map constraint violations explicitly (`isMissingProfileError` → `409`), never by
+  forwarding a driver message
 
 ### Supabase
 
-- Use Supabase for auth and storage, Prisma for data queries
+- Supabase owns auth and storage; the server API reads/writes through Drizzle
 - RLS policies enforce row-level security — do NOT bypass with service role in client code
 - Storage buckets: `avatars-public`, `photos-public`, `albums-private`, `chat-media-private`, `event-media-public`
 - Private data uses signed URLs, never raw file access
@@ -329,10 +348,18 @@ export const Route = createFileRoute("/dashboard")({
 
 ## Auth Rules
 
-- Use `authClient` from `#/lib/auth-client` for client-side operations
-- Use `auth` from `#/lib/auth` for server-side verification
-- Auth is configured via better-auth with TanStack Start cookie integration
-- Never store tokens in localStorage — use httpOnly cookies
+- Client: `getSupabase().auth` (supabase-js persists the session); never build a
+  second token store — `#/lib/client` reads the bearer from the live session on
+  every API call, which is what makes sign-out actually sign out
+- Server: `await getCaller(request)` inside `withSecurity` handlers; `auth:
+  "required"` is the default for POST/PATCH/PUT/DELETE
+- `GET /api/auth/me` is the shell's identity probe; anonymous traffic must get
+  `200 {user:null}`, not `401`, so the client can distinguish signed-out from
+  "needs onboarding"
+- `password_hash` on `public.users` is legacy: Supabase verifies credentials, so
+  the column is never read or written
+- Prefer httpOnly cookie sessions for anything that must be gated during SSR
+  (see `AUDIT.md` §3.3); until then no `loader` may return private data
 - Age verification is enforced at the database level (18+ constraint)
 
 ---

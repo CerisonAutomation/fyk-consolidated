@@ -1,16 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import {
-	loadStoryRings,
 	createStory,
-	viewStory,
+	loadStoryRings,
 	type StoryItem,
 	type StoryRing,
+	viewStory,
 } from "#/integrations/supabase/stories";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import { useAppStore } from "#/lib/store";
 import { Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -27,9 +27,21 @@ const BG: Record<string, string> = {
 };
 
 const PRESETS = [
-	{ url: "https://images.unsplash.com/photo-1495954484750-af469f2f9be5?w=800&q=80", label: "Coffee", bg: "sunset" },
-	{ url: "https://images.unsplash.com/photo-1517824806704-9040b037703b?w=800&q=80", label: "Night out", bg: "violet" },
-	{ url: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80", label: "Work", bg: "ocean" },
+	{
+		url: "https://images.unsplash.com/photo-1495954484750-af469f2f9be5?w=800&q=80",
+		label: "Coffee",
+		bg: "sunset",
+	},
+	{
+		url: "https://images.unsplash.com/photo-1517824806704-9040b037703b?w=800&q=80",
+		label: "Night out",
+		bg: "violet",
+	},
+	{
+		url: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80",
+		label: "Work",
+		bg: "ocean",
+	},
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -51,9 +63,11 @@ export function StoriesRail() {
 	const { data, isLoading } = useQuery({
 		queryKey: ["stories"],
 		queryFn: async () => {
-			if (!authUser) return { mine: [] as StoryItem[], rings: [] as StoryRing[] };
+			if (!authUser)
+				return { mine: [] as StoryItem[], rings: [] as StoryRing[] };
 			const result = await loadStoryRings(authUser.id);
-			if (!result.ok) return { mine: [] as StoryItem[], rings: [] as StoryRing[] };
+			if (!result.ok)
+				return { mine: [] as StoryItem[], rings: [] as StoryRing[] };
 			return result.data;
 		},
 		enabled: !!authUser,
@@ -72,9 +86,18 @@ export function StoriesRail() {
 
 	// ── Create story ──────────────────────────────────────────────────────
 	const create = useMutation({
-		mutationFn: async (input: { media_url: string; caption?: string; background?: string }) => {
+		mutationFn: async (input: {
+			media_url: string;
+			caption?: string;
+			background?: string;
+		}) => {
 			if (!authUser) throw new Error("Not signed in");
-			const result = await createStory(authUser.id, input.media_url, input.caption, input.background);
+			const result = await createStory(
+				authUser.id,
+				input.media_url,
+				input.caption,
+				input.background,
+			);
 			if (!result.ok) throw new Error(result.message);
 		},
 		onSuccess: () => {
@@ -132,7 +155,9 @@ export function StoriesRail() {
 							<Plus className="h-3 w-3" strokeWidth={3} />
 						</span>
 					</div>
-					<span className="text-[10px] text-muted">{mine.length > 0 ? "Yours" : "Add"}</span>
+					<span className="text-[10px] text-muted">
+						{mine.length > 0 ? "Yours" : "Add"}
+					</span>
 				</button>
 
 				{/* My story ring */}
@@ -224,7 +249,10 @@ export function StoriesRail() {
 					{/* Progress bars */}
 					<div className="absolute inset-x-4 top-4 z-10 flex gap-1">
 						{viewing.items.map((_, i) => (
-							<div key={i} className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/20">
+							<div
+								key={i}
+								className="h-0.5 flex-1 overflow-hidden rounded-full bg-white/20"
+							>
 								<div
 									className={cn(
 										"h-full bg-white transition-all duration-300",
@@ -248,7 +276,9 @@ export function StoriesRail() {
 						/>
 						<div
 							className="absolute inset-0 opacity-30"
-							style={{ background: BG[viewing.items[idx]?.background ?? "gold"] }}
+							style={{
+								background: BG[viewing.items[idx]?.background ?? "gold"],
+							}}
 						/>
 
 						{/* Author info */}
@@ -275,7 +305,9 @@ export function StoriesRail() {
 									</p>
 									<p className="text-[11px] text-white/60">
 										{viewing.items[idx]?.created_at
-											? new Date(viewing.items[idx].created_at).toLocaleTimeString([], {
+											? new Date(
+													viewing.items[idx].created_at,
+												).toLocaleTimeString([], {
 													hour: "2-digit",
 													minute: "2-digit",
 												})
@@ -317,7 +349,9 @@ export function StoriesRail() {
 						className="w-full max-w-sm rounded-2xl border border-line bg-surface p-5"
 						onClick={(e) => e.stopPropagation()}
 					>
-						<h3 className="mb-3 text-sm font-semibold text-white">Post a story</h3>
+						<h3 className="mb-3 text-sm font-semibold text-white">
+							Post a story
+						</h3>
 						<p className="mb-3 text-xs text-muted">
 							Stories last 24 hours. Paste an image URL or pick a preset.
 						</p>
@@ -338,7 +372,11 @@ function StoryComposer({
 	onSubmit,
 	busy,
 }: {
-	onSubmit: (v: { media_url: string; caption?: string; background?: string }) => void;
+	onSubmit: (v: {
+		media_url: string;
+		caption?: string;
+		background?: string;
+	}) => void;
 	busy: boolean;
 }) {
 	const [url, setUrl] = useState("");
@@ -360,7 +398,15 @@ function StoryComposer({
 							url === p.url ? "border-gold" : "border-line",
 						)}
 					>
-						<img src={p.url} alt={p.label} width={200} height={64} loading="lazy" decoding="async" className="h-16 w-full object-cover" />
+						<img
+							src={p.url}
+							alt={p.label}
+							width={200}
+							height={64}
+							loading="lazy"
+							decoding="async"
+							className="h-16 w-full object-cover"
+						/>
 						<span className="block py-1 text-[10px] text-muted">{p.label}</span>
 					</button>
 				))}

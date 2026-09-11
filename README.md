@@ -11,7 +11,7 @@ pnpm install
 # Setup database
 cp .env.example .env.local
 # Edit .env.local with your Supabase credentials
-DATABASE_URL="postgresql://..." npx prisma generate
+DATABASE_URL="postgresql://..." npx prisma generate   # only the seed scripts need this
 pnpm db:push
 pnpm db:seed
 
@@ -35,7 +35,8 @@ src/core/
 └── api/         — Unified HTTP client
 
 src/adapters/
-├── prisma/      — Database implementations
+├── prisma/      — Seed scripts (+ legacy schema)
+├── drizzle/     — Canonical Drizzle schema for the JSON API
 └── browser/     — Browser API implementations
 
 src/components/  — UI components
@@ -60,8 +61,10 @@ src/lib/         — Utilities
 | `pnpm build` | Production build |
 | `pnpm test` | Run tests |
 | `pnpm typecheck` | Type check |
-| `pnpm db:generate` | Generate Prisma client |
-| `pnpm db:push` | Push schema to DB |
+| `pnpm db:generate` | Generate a Drizzle SQL diff from `drizzle/schema.ts` |
+| `pnpm db:push` | Apply the Drizzle schema to `DATABASE_URL` |
+| `pnpm db:studio` | Browse the database (Drizzle Studio) |
+| `pnpm test:e2e` | Playwright suite in `e2e/` (boots the dev server) |
 | `pnpm db:seed` | Seed database |
 
 ## Tech Stack

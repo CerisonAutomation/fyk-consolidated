@@ -1,2 +1,12 @@
-export { getSupabase, requireSupabase, toFailure, ok } from "../../integrations/supabase/client";
-export type { Client, Failure, Success, Result } from "../../integrations/supabase/client";
+export type {
+	Client,
+	Failure,
+	Result,
+	Success,
+} from "../../integrations/supabase/client";
+export {
+	getSupabase,
+	ok,
+	requireSupabase,
+	toFailure,
+} from "../../integrations/supabase/client";

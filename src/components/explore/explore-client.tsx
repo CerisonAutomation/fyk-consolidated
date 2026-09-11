@@ -1,19 +1,25 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import {
-	MapPin, Shield, MessageCircle, Home, Zap, ChevronDown, Map,
+	ChevronDown,
+	Home,
+	Map,
+	MapPin,
+	MessageCircle,
+	Shield,
+	Zap,
 } from "lucide-react";
-import { getSupabase } from "#/integrations/supabase/client";
-import { useAppStore } from "@/lib/store";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
-import { EmptyState } from "@/components/ui/primitives";
-import { cn } from "@/lib/utils";
-import { FYKMap } from "#/components/map/FYKMap";
+import { useState } from "react";
 import { candidatesToPins } from "#/components/map/candidate-pins";
+import { FYKMap } from "#/components/map/FYKMap";
 import { MapSearchBar } from "#/components/map/MapSearchBar";
+import { getSupabase } from "#/integrations/supabase/client";
+import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import type { GeocodingFeature } from "#/lib/geocoding";
+import { EmptyState } from "@/components/ui/primitives";
+import { useAppStore } from "@/lib/store";
+import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -45,14 +51,59 @@ type SortKey = "distance" | "recent";
 
 // ─── Known cities ────────────────────────────────────────────────────────────
 
-const KNOWN_CITIES: Record<string, { name: string; country: string; flag: string; photo: string }> = {
-	valletta: { name: "Valletta", country: "Malta", flag: "\ud83c\uddf2\ud83c\uddf9", photo: "https://images.unsplash.com/photo-1584448062887-2a6e6d7f5b07?w=600&q=80" },
-	london: { name: "London", country: "United Kingdom", flag: "\ud83c\uddec\ud83c\udde7", photo: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80" },
-	berlin: { name: "Berlin", country: "Germany", flag: "\ud83c\udde9\ud83c\uddea", photo: "https://images.unsplash.com/photo-1560969184-10fe8719e047?w=600&q=80" },
-	madrid: { name: "Madrid", country: "Spain", flag: "\ud83c\uddea\ud83c\uddf8", photo: "https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=600&q=80" },
-	amsterdam: { name: "Amsterdam", country: "Netherlands", flag: "\ud83c\uddf3\ud83c\uddf1", photo: "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=600&q=80" },
-	nyc: { name: "New York", country: "United States", flag: "\ud83c\uddfa\ud83c\uddf8", photo: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600&q=80" },
-	naxxar: { name: "Naxxar", country: "Malta", flag: "\ud83c\uddf2\ud83c\uddf9", photo: "https://images.unsplash.com/photo-1584448062887-2a6e6d7f5b07?w=600&q=80" },
+const KNOWN_CITIES: Record<
+	string,
+	{ name: string; country: string; flag: string; photo: string }
+> = {
+	valletta: {
+		name: "Valletta",
+		country: "Malta",
+		flag: "\ud83c\uddf2\ud83c\uddf9",
+		photo:
+			"https://images.unsplash.com/photo-1584448062887-2a6e6d7f5b07?w=600&q=80",
+	},
+	london: {
+		name: "London",
+		country: "United Kingdom",
+		flag: "\ud83c\uddec\ud83c\udde7",
+		photo:
+			"https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80",
+	},
+	berlin: {
+		name: "Berlin",
+		country: "Germany",
+		flag: "\ud83c\udde9\ud83c\uddea",
+		photo:
+			"https://images.unsplash.com/photo-1560969184-10fe8719e047?w=600&q=80",
+	},
+	madrid: {
+		name: "Madrid",
+		country: "Spain",
+		flag: "\ud83c\uddea\ud83c\uddf8",
+		photo:
+			"https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=600&q=80",
+	},
+	amsterdam: {
+		name: "Amsterdam",
+		country: "Netherlands",
+		flag: "\ud83c\uddf3\ud83c\uddf1",
+		photo:
+			"https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=600&q=80",
+	},
+	nyc: {
+		name: "New York",
+		country: "United States",
+		flag: "\ud83c\uddfa\ud83c\uddf8",
+		photo:
+			"https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=600&q=80",
+	},
+	naxxar: {
+		name: "Naxxar",
+		country: "Malta",
+		flag: "\ud83c\uddf2\ud83c\uddf9",
+		photo:
+			"https://images.unsplash.com/photo-1584448062887-2a6e6d7f5b07?w=600&q=80",
+	},
 };
 
 const CITY_IDS = Object.keys(KNOWN_CITIES);
@@ -77,7 +128,9 @@ export function ExploreClient() {
 
 	const [selectedCity, setSelectedCity] = useState("valletta");
 	const [travelMode, setTravelMode] = useState(false);
-	const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["online"]));
+	const [activeFilters, setActiveFilters] = useState<Set<string>>(
+		new Set(["online"]),
+	);
 	const [sort, setSort] = useState<SortKey>("recent");
 	const [layout, setLayout] = useState<"grid" | "list" | "map">("grid");
 	const [customCities, setCustomCities] = useState<City[]>([]);
@@ -85,10 +138,14 @@ export function ExploreClient() {
 	// ── Handle MapSearchBar city selection ──────────────────────────────────
 	const handleCitySearch = (feature: GeocodingFeature) => {
 		const placeName = feature.name;
-		const country = feature.context?.find((c) => c.id.startsWith("country"))?.text ?? "";
+		const country =
+			feature.context?.find((c) => c.id.startsWith("country"))?.text ?? "";
 		const cityId = placeName.toLowerCase().replace(/\s+/g, "-");
 
-		if ((citiesList ?? []).some((c) => c.id === cityId) || customCities.some((c) => c.id === cityId)) {
+		if (
+			(citiesList ?? []).some((c) => c.id === cityId) ||
+			customCities.some((c) => c.id === cityId)
+		) {
 			setSelectedCity(cityId);
 			return;
 		}
@@ -155,14 +212,22 @@ export function ExploreClient() {
 
 	// ── Load profiles for selected city ───────────────────────────────────
 	const { data: profilesList, isLoading } = useQuery({
-		queryKey: ["explore", "profiles", selectedCity, [...activeFilters].join(","), sort],
+		queryKey: [
+			"explore",
+			"profiles",
+			selectedCity,
+			[...activeFilters].join(","),
+			sort,
+		],
 		queryFn: async (): Promise<ExploreProfile[]> => {
 			const sb = getSupabase();
 			if (!sb) return [];
 
 			let qb = sb
 				.from("users")
-				.select("id, pseudo, nick, age, photos, city, area, headline, online, visible, hidden, incognito, last_active_at, created_at, looking_for, tribes")
+				.select(
+					"id, pseudo, nick, age, photos, city, area, headline, online, visible, hidden, incognito, last_active_at, created_at, looking_for, tribes",
+				)
 				.eq("visible", true)
 				.eq("hidden", false)
 				.eq("incognito", false)
@@ -256,7 +321,8 @@ export function ExploreClient() {
 			<div className="mb-6">
 				<h1 className="text-2xl font-bold text-white">Explore</h1>
 				<p className="mt-1 text-sm text-white/60">
-					Pick a city and look around before you travel. See who's active and available.
+					Pick a city and look around before you travel. See who's active and
+					available.
 				</p>
 			</div>
 
@@ -307,10 +373,12 @@ export function ExploreClient() {
 					</div>
 					<div className="flex-1">
 						<p className="text-sm font-semibold text-white">
-							Traveling to {selectedCityData?.name ?? selectedCity}? Turn on travel mode.
+							Traveling to {selectedCityData?.name ?? selectedCity}? Turn on
+							travel mode.
 						</p>
 						<p className="text-xs text-white/60">
-							You appear in {selectedCityData?.name ?? selectedCity} from 3 days before arrival.
+							You appear in {selectedCityData?.name ?? selectedCity} from 3 days
+							before arrival.
 						</p>
 					</div>
 					<button
@@ -353,40 +421,41 @@ export function ExploreClient() {
 			{/* Results Bar */}
 			<div className="mb-4 flex items-center justify-between">
 				<p className="text-sm text-white/60">
-					{sortedProfiles.length} {sortedProfiles.length === 1 ? "person" : "people"} nearby
+					{sortedProfiles.length}{" "}
+					{sortedProfiles.length === 1 ? "person" : "people"} nearby
 				</p>
 				<div className="flex items-center gap-3">
 					{/* Layout Toggle */}
-						<div className="flex rounded-lg border border-white/10 bg-white/5 p-1">
-							<button
-								onClick={() => setLayout("list")}
-								className={cn(
-									"rounded-md px-2 py-1 text-xs transition-colors",
-									layout === "list" ? "bg-white/10 text-white" : "text-white/40",
-								)}
-							>
-								\u2630
-							</button>
-							<button
-								onClick={() => setLayout("grid")}
-								className={cn(
-									"rounded-md px-2 py-1 text-xs transition-colors",
-									layout === "grid" ? "bg-white/10 text-white" : "text-white/40",
-								)}
-							>
-								\u229e
-							</button>
-							<button
-								onClick={() => setLayout("map")}
-								className={cn(
-									"rounded-md px-2 py-1 text-xs transition-colors",
-									layout === "map" ? "bg-white/10 text-white" : "text-white/40",
-								)}
-								aria-label="Map view"
-							>
-								<Map className="inline h-3.5 w-3.5" />
-							</button>
-						</div>
+					<div className="flex rounded-lg border border-white/10 bg-white/5 p-1">
+						<button
+							onClick={() => setLayout("list")}
+							className={cn(
+								"rounded-md px-2 py-1 text-xs transition-colors",
+								layout === "list" ? "bg-white/10 text-white" : "text-white/40",
+							)}
+						>
+							\u2630
+						</button>
+						<button
+							onClick={() => setLayout("grid")}
+							className={cn(
+								"rounded-md px-2 py-1 text-xs transition-colors",
+								layout === "grid" ? "bg-white/10 text-white" : "text-white/40",
+							)}
+						>
+							\u229e
+						</button>
+						<button
+							onClick={() => setLayout("map")}
+							className={cn(
+								"rounded-md px-2 py-1 text-xs transition-colors",
+								layout === "map" ? "bg-white/10 text-white" : "text-white/40",
+							)}
+							aria-label="Map view"
+						>
+							<Map className="inline h-3.5 w-3.5" />
+						</button>
+					</div>
 
 					{/* Sort */}
 					<div className="relative">
@@ -410,7 +479,10 @@ export function ExploreClient() {
 			{isLoading ? (
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
 					{Array.from({ length: 8 }).map((_, i) => (
-						<div key={i} className="h-64 animate-pulse rounded-2xl bg-white/5" />
+						<div
+							key={i}
+							className="h-64 animate-pulse rounded-2xl bg-white/5"
+						/>
 					))}
 				</div>
 			) : sortedProfiles.length === 0 ? (

@@ -1,15 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Map as MapIcon, Plus, X } from "lucide-react";
 import { useState } from "react";
-import { X, Plus, Map as MapIcon } from "lucide-react";
+import { FYKMap } from "#/components/map/FYKMap";
 import { getSupabase } from "#/integrations/supabase/client";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
-import { useAppStore } from "@/lib/store";
-import { Skeleton, Button, EmptyState } from "@/components/ui/primitives";
+import { Button, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { ACTIVITIES } from "@/lib/activities";
+import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { FYKMap } from "#/components/map/FYKMap";
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface BoardPost {
@@ -35,7 +36,12 @@ interface BoardState {
 	note: string;
 }
 
-const FILTERS = ["Everything", "Open Invite", "Offering", "Looking For"] as const;
+const FILTERS = [
+	"Everything",
+	"Open Invite",
+	"Offering",
+	"Looking For",
+] as const;
 
 function formatTimeRemaining(liveUntil: string): string {
 	const now = new Date();
@@ -85,7 +91,9 @@ export function BoardClient() {
 			if (pErr || !rawPosts || rawPosts.length === 0) return [];
 
 			const postIds = rawPosts.map((p: any) => p.id as string);
-			const authorIds = [...new Set(rawPosts.map((p: any) => p.author_id as string))];
+			const authorIds = [
+				...new Set(rawPosts.map((p: any) => p.author_id as string)),
+			];
 
 			// 2. Fetch authors, my joins in parallel
 			const [authorsResult, joinsResult] = await Promise.all([
@@ -143,7 +151,13 @@ export function BoardClient() {
 
 	// ── Join / leave post ──────────────────────────────────────────────────
 	const joinPost = useMutation({
-		mutationFn: async ({ postId, joined }: { postId: string; joined: boolean }) => {
+		mutationFn: async ({
+			postId,
+			joined,
+		}: {
+			postId: string;
+			joined: boolean;
+		}) => {
 			const sb = getSupabase();
 			if (!sb || !authUser) throw new Error("Not signed in");
 			if (joined) {
@@ -174,8 +188,12 @@ export function BoardClient() {
 			if (!sb || !authUser) throw new Error("Not signed in");
 
 			const activity = ACTIVITIES.find((a) => a.id === boardState.activityId);
-			const body = boardState.note.trim() || activity?.label || "Let's do something";
-			const expiresInHours = Math.max(1, Math.round(boardState.windowMinutes / 60));
+			const body =
+				boardState.note.trim() || activity?.label || "Let's do something";
+			const expiresInHours = Math.max(
+				1,
+				Math.round(boardState.windowMinutes / 60),
+			);
 
 			const { error } = await sb.from("board_posts" as any).insert({
 				author_id: authUser.id,
@@ -186,7 +204,9 @@ export function BoardClient() {
 				area: null,
 				spots: null,
 				join_count: 0,
-				expires_at: new Date(Date.now() + expiresInHours * 3_600_000).toISOString(),
+				expires_at: new Date(
+					Date.now() + expiresInHours * 3_600_000,
+				).toISOString(),
 			});
 			if (error) throw error;
 		},
@@ -213,8 +233,9 @@ export function BoardClient() {
 			<div className="mb-6">
 				<h1 className="text-2xl font-bold text-white">Board</h1>
 				<p className="mt-1 text-sm text-white/60">
-					Say what you're actually up for and for how long. Coffee, the beach, a controller,
-					a lift to the airport, a date — all of it counts, none of it is permanent.
+					Say what you're actually up for and for how long. Coffee, the beach, a
+					controller, a lift to the airport, a date — all of it counts, none of
+					it is permanent.
 				</p>
 			</div>
 
@@ -263,7 +284,10 @@ export function BoardClient() {
 					}))}
 					onSelect={(id) => {
 						const post = filteredPosts?.find((p) => p.id === id);
-						if (post) pushToast(`${post.activityEmoji} ${post.activity} by ${post.userName}`);
+						if (post)
+							pushToast(
+								`${post.activityEmoji} ${post.activity} by ${post.userName}`,
+							);
 					}}
 				/>
 			) : /* Posts Grid */
@@ -333,11 +357,15 @@ export function BoardClient() {
 							<div className="p-4">
 								<div className="mb-3 flex items-center gap-2">
 									<span className="text-lg">{post.activityEmoji}</span>
-									<span className="font-semibold text-white">{post.activity}</span>
+									<span className="font-semibold text-white">
+										{post.activity}
+									</span>
 								</div>
 
 								{post.note && (
-									<p className="mb-3 line-clamp-2 text-sm text-white/60">{post.note}</p>
+									<p className="mb-3 line-clamp-2 text-sm text-white/60">
+										{post.note}
+									</p>
 								)}
 
 								<div className="flex flex-wrap gap-1.5">
@@ -354,7 +382,8 @@ export function BoardClient() {
 								{/* Join Button */}
 								<div className="mt-4 flex items-center justify-between">
 									<span className="text-xs text-white/40">
-										{post.joinCount} {post.joinCount === 1 ? "person" : "people"} joined
+										{post.joinCount}{" "}
+										{post.joinCount === 1 ? "person" : "people"} joined
 									</span>
 									<Button
 										onClick={() =>
@@ -403,12 +432,16 @@ export function BoardClient() {
 
 						{/* Activity Selection */}
 						<div className="mb-4">
-							<label className="mb-2 block text-sm font-medium text-white/60">Activity</label>
+							<label className="mb-2 block text-sm font-medium text-white/60">
+								Activity
+							</label>
 							<div className="flex max-h-40 flex-wrap gap-2 overflow-y-auto">
 								{ACTIVITIES.filter((a) => !a.nsfw).map((a) => (
 									<button
 										key={a.id}
-										onClick={() => setBoardState((s) => ({ ...s, activityId: a.id }))}
+										onClick={() =>
+											setBoardState((s) => ({ ...s, activityId: a.id }))
+										}
 										className={cn(
 											"rounded-full border px-3 py-1.5 text-sm transition-colors",
 											boardState.activityId === a.id
@@ -424,7 +457,9 @@ export function BoardClient() {
 
 						{/* Window Selection */}
 						<div className="mb-4">
-							<label className="mb-2 block text-sm font-medium text-white/60">How long</label>
+							<label className="mb-2 block text-sm font-medium text-white/60">
+								How long
+							</label>
 							<div className="flex flex-wrap gap-2">
 								{[
 									{ label: "1 hour", minutes: 60 },
@@ -458,7 +493,9 @@ export function BoardClient() {
 							</label>
 							<textarea
 								value={boardState.note}
-								onChange={(e) => setBoardState((s) => ({ ...s, note: e.target.value }))}
+								onChange={(e) =>
+									setBoardState((s) => ({ ...s, note: e.target.value }))
+								}
 								placeholder="What's the plan? Any details?"
 								className="w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-yellow-500/50 focus:outline-none"
 								rows={3}

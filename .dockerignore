@@ -1,0 +1,31 @@
+# Keep build context small and secrets out of the image.
+.git
+.github
+.idea
+.vscode
+node_modules
+dist
+.output
+.turbo
+.tanstack
+coverage
+playwright-report
+test-results
+e2e
+docs
+*.log
+npm-debug.log*
+
+# .env* MUST never be baked in: VITE_* values belong in build args, and every
+# other variable belongs in the runtime environment.
+.env
+.env.*
+!.env.example
+
+# Prisma engines/seeds are not needed to serve the app.
+prisma/migrations
+src/generated/prisma
+pnpm-workspace.yaml
+.fallowrc.json
+deno.lock
+package-lock.json

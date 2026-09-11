@@ -1,41 +1,134 @@
-const TOKEN_KEY = "fyk:session-token";
+import { getSupabase } from "#/integrations/supabase/client";
 
-export function setSessionToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token);
-}
+/**
+ * Browser → `/api/*` JSON client.
+ *
+ * THE BUG THIS REPLACES
+ * ---------------------
+ * It used to read a bearer token from `localStorage["fyk:session-token"]` and
+ * attach it as `Authorization: Bearer …`. Nothing in the app ever *wrote* that
+ * key (the session lives in Supabase's own `fyk.auth` storage), so:
+ *   - every request reached the API anonymous, and
+ *   - `setSessionToken()`/`clearSessionToken()` were a standing invitation to
+ *     store an auth token in a third localStorage key — which AI_RULES.md
+ *     forbids precisely because it is readable by any XSS payload.
+ *
+ * Now the token is read from the one place that owns it (`supabase.auth`), is
+ * never written to a new storage location, and is refreshed automatically
+ * because supabase-js handles renewal.
+ */
 
-export function clearSessionToken() {
-  localStorage.removeItem(TOKEN_KEY);
-}
-
-export function getSessionToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+export class ApiError extends Error {
+	constructor(
+		readonly status: number,
+		message: string,
+		readonly payload: unknown = null,
+	) {
+		super(message);
+		this.name = "ApiError";
+	}
 }
 
 export interface ApiOptions extends Omit<RequestInit, "body"> {
-  body?: unknown;
+	body?: unknown;
+	/** Extra milliseconds after which the request is aborted. Default 15s. */
+	timeoutMs?: number;
 }
 
-export async function api<T = any>(url: string, options: ApiOptions = {}): Promise<T> {
-  const token = getSessionToken();
-  const { body, ...rest } = options;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...((rest.headers as Record<string, string>) ?? {}),
-  };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+/**
+ * The current Supabase access token, or `null` when signed out / unconfigured.
+ * A failing `getSession()` must not turn into a failed API call, so errors
+ * degrade to "anonymous".
+ */
+async function accessToken(): Promise<string | null> {
+	const client = getSupabase();
+	if (!client) return null;
+	try {
+		const { data } = await client.auth.getSession();
+		return data.session?.access_token ?? null;
+	} catch {
+		return null;
+	}
+}
 
-  const init: RequestInit = {
-    ...rest,
-    headers,
-    credentials: "include",
-    body: body != null ? JSON.stringify(body) : undefined,
-  };
+export async function api<T>(
+	url: string,
+	options: ApiOptions = {},
+): Promise<T> {
+	const { body, timeoutMs = 15_000, ...rest } = options;
+	const token = await accessToken();
 
-  const res = await fetch(url, init);
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => ({}));
-    throw new Error(errBody.error ?? `Request failed: ${res.status}`);
-  }
-  return res.json();
+	const headers = new Headers(rest.headers);
+	if (body !== undefined && !headers.has("content-type")) {
+		headers.set("content-type", "application/json");
+	}
+	if (token) headers.set("authorization", `Bearer ${token}`);
+
+	const controller = new AbortController();
+	const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+	let response: Response;
+	try {
+		response = await fetch(url, {
+			...rest,
+			headers,
+			// Same-origin cookies are kept (useful for any future cookie session),
+			// but cross-origin credentials are never sent.
+			credentials: "same-origin",
+			body:
+				body === undefined
+					? null
+					: typeof body === "string"
+						? body
+						: JSON.stringify(body),
+			signal: rest.signal ?? controller.signal,
+		});
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") {
+			throw new ApiError(0, "The request timed out. Check your connection.");
+		}
+		throw new ApiError(0, "Network unreachable. Check your connection.");
+	} finally {
+		clearTimeout(timer);
+	}
+
+	if (response.status === 204) return undefined as T;
+
+	const payload: unknown = await response.json().catch(() => null);
+	if (!response.ok) {
+		const message =
+			extractMessage(payload) ?? `Request failed (${response.status})`;
+		// 401 on a token-authenticated call means the session died: ask supabase
+		// to refresh so the next attempt carries a fresh token.
+		if (response.status === 401) await refreshSession();
+		throw new ApiError(response.status, message, payload);
+	}
+	return payload as T;
+}
+
+function extractMessage(payload: unknown): string | null {
+	if (payload && typeof payload === "object") {
+		const candidate = (payload as { error?: unknown }).error;
+		if (typeof candidate === "string" && candidate.trim()) return candidate;
+	}
+	return null;
+}
+
+async function refreshSession(): Promise<void> {
+	const client = getSupabase();
+	if (!client) return;
+	try {
+		await client.auth.refreshSession();
+	} catch {
+		/* the caller's next attempt will surface a real error */
+	}
+}
+
+/** POST helper mirroring `api()`'s JSON handling. */
+export function post<T>(
+	url: string,
+	body?: unknown,
+	options: ApiOptions = {},
+): Promise<T> {
+	return api<T>(url, { ...options, method: "POST", body });
 }

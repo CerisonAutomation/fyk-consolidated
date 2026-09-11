@@ -1,23 +1,23 @@
-import { useState, useCallback } from "react";
-import { useNavigate } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { requireSupabase } from "#/integrations/supabase/client";
+import { useNavigate } from "@tanstack/react-router";
 import {
+	ArrowLeft,
+	ArrowRight,
+	Crown,
 	Eye,
 	EyeOff,
-	Mail,
-	Lock,
-	User,
-	ArrowRight,
-	ArrowLeft,
 	KeyRound,
-	Sparkles,
-	Crown,
-	Shield,
+	Lock,
 	LockKeyhole,
+	Mail,
+	Shield,
+	Sparkles,
+	User,
 } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { requireSupabase } from "#/integrations/supabase/client";
 
 // --- Zod schemas for form validation (per react-forms.md docs) ---
 
@@ -147,16 +147,17 @@ export function FYKAuthPage({
 			setLoading(true);
 			setError(null);
 			try {
-				const { data: result, error: authError } = await requireSupabase().auth.signUp({
-					email: data.email,
-					password: data.password,
-					options: {
-						data: {
-							first_name: data.name || undefined,
-							handle: data.handle || undefined,
+				const { data: result, error: authError } =
+					await requireSupabase().auth.signUp({
+						email: data.email,
+						password: data.password,
+						options: {
+							data: {
+								first_name: data.name || undefined,
+								handle: data.handle || undefined,
+							},
 						},
-					},
-				});
+					});
 				if (authError) {
 					setError(authError.message);
 					return;
@@ -176,78 +177,67 @@ export function FYKAuthPage({
 		[navigate],
 	);
 
-	const handleForgotPassword = useCallback(
-		async (data: ForgotFormData) => {
-			setLoading(true);
-			setError(null);
-			try {
-				const { error: authError } = await requireSupabase().auth.resetPasswordForEmail(
-					data.email,
-					{
-						redirectTo: `${window.location.origin}/auth/callback`,
-					},
-				);
-				if (authError) {
-					setError(authError.message);
-					return;
-				}
-				setMode("login");
-				setError(null);
-			} catch (err) {
-				setError(extractError(err));
-			} finally {
-				setLoading(false);
-			}
-		},
-		[],
-	);
-
-	const handleResetPassword = useCallback(
-		async (data: ResetFormData) => {
-			setLoading(true);
-			setError(null);
-			try {
-				const { error: authError } = await requireSupabase().auth.updateUser({
-					password: data.newPassword,
+	const handleForgotPassword = useCallback(async (data: ForgotFormData) => {
+		setLoading(true);
+		setError(null);
+		try {
+			const { error: authError } =
+				await requireSupabase().auth.resetPasswordForEmail(data.email, {
+					redirectTo: `${window.location.origin}/auth/callback`,
 				});
-				if (authError) {
-					setError(authError.message);
-					return;
-				}
-				setMode("login");
-			} catch (err) {
-				setError(extractError(err));
-			} finally {
-				setLoading(false);
+			if (authError) {
+				setError(authError.message);
+				return;
 			}
-		},
-		[],
-	);
-
-	const handleMagicLink = useCallback(
-		async (data: MagicLinkFormData) => {
-			setLoading(true);
+			setMode("login");
 			setError(null);
-			try {
-				const { error: authError } = await requireSupabase().auth.signInWithOtp({
-					email: data.email,
-					options: {
-						emailRedirectTo: `${window.location.origin}/auth/callback`,
-					},
-				});
-				if (authError) {
-					setError(authError.message);
-					return;
-				}
-				setMode("login");
-			} catch (err) {
-				setError(extractError(err));
-			} finally {
-				setLoading(false);
+		} catch (err) {
+			setError(extractError(err));
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	const handleResetPassword = useCallback(async (data: ResetFormData) => {
+		setLoading(true);
+		setError(null);
+		try {
+			const { error: authError } = await requireSupabase().auth.updateUser({
+				password: data.newPassword,
+			});
+			if (authError) {
+				setError(authError.message);
+				return;
 			}
-		},
-		[],
-	);
+			setMode("login");
+		} catch (err) {
+			setError(extractError(err));
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	const handleMagicLink = useCallback(async (data: MagicLinkFormData) => {
+		setLoading(true);
+		setError(null);
+		try {
+			const { error: authError } = await requireSupabase().auth.signInWithOtp({
+				email: data.email,
+				options: {
+					emailRedirectTo: `${window.location.origin}/auth/callback`,
+				},
+			});
+			if (authError) {
+				setError(authError.message);
+				return;
+			}
+			setMode("login");
+		} catch (err) {
+			setError(extractError(err));
+		} finally {
+			setLoading(false);
+		}
+	}, []);
 
 	const modeLabels: Record<AuthMode, string> = {
 		login: "WELCOME BACK",
@@ -331,7 +321,11 @@ export function FYKAuthPage({
 							animation: "auth-crownFloat 4s ease-in-out infinite",
 						}}
 					>
-						<Crown className="h-7 w-7 text-amber-400" strokeWidth={1.2} aria-hidden="true" />
+						<Crown
+							className="h-7 w-7 text-amber-400"
+							strokeWidth={1.2}
+							aria-hidden="true"
+						/>
 					</div>
 					<div>
 						<h1 className="font-heading text-3xl font-bold tracking-tight text-white">
@@ -374,13 +368,23 @@ export function FYKAuthPage({
 
 					{/* Login Form — react-hook-form + zod */}
 					{mode === "login" && (
-						<form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4" noValidate>
+						<form
+							onSubmit={loginForm.handleSubmit(handleLogin)}
+							className="space-y-4"
+							noValidate
+						>
 							<div className="space-y-2">
-								<label htmlFor="login-email" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="login-email"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									Email
 								</label>
 								<div className="relative">
-									<Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<Mail
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="login-email"
 										type="email"
@@ -389,21 +393,36 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-4 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: loginForm.formState.errors.email ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: loginForm.formState.errors.email
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={loginForm.formState.errors.email ? "true" : "false"}
-										aria-describedby={loginForm.formState.errors.email ? "login-email-error" : undefined}
+										aria-invalid={
+											loginForm.formState.errors.email ? "true" : "false"
+										}
+										aria-describedby={
+											loginForm.formState.errors.email
+												? "login-email-error"
+												: undefined
+										}
 									/>
 								</div>
 								{loginForm.formState.errors.email && (
-									<p id="login-email-error" className="text-[12px] text-red-400" role="alert">
+									<p
+										id="login-email-error"
+										className="text-[12px] text-red-400"
+										role="alert"
+									>
 										{loginForm.formState.errors.email.message}
 									</p>
 								)}
 							</div>
 							<div className="space-y-2">
 								<div className="flex items-center justify-between">
-									<label htmlFor="login-password" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+									<label
+										htmlFor="login-password"
+										className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+									>
 										Password
 									</label>
 									<button
@@ -415,7 +434,10 @@ export function FYKAuthPage({
 									</button>
 								</div>
 								<div className="relative">
-									<Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<Lock
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="login-password"
 										type={showPassword ? "text" : "password"}
@@ -424,15 +446,25 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-11 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: loginForm.formState.errors.password ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: loginForm.formState.errors.password
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={loginForm.formState.errors.password ? "true" : "false"}
-										aria-describedby={loginForm.formState.errors.password ? "login-password-error" : undefined}
+										aria-invalid={
+											loginForm.formState.errors.password ? "true" : "false"
+										}
+										aria-describedby={
+											loginForm.formState.errors.password
+												? "login-password-error"
+												: undefined
+										}
 									/>
 									<button
 										type="button"
 										onClick={() => setShowPassword(!showPassword)}
-										aria-label={showPassword ? "Hide password" : "Show password"}
+										aria-label={
+											showPassword ? "Hide password" : "Show password"
+										}
 										className="absolute right-3.5 top-1/2 -translate-y-1/2"
 									>
 										{showPassword ? (
@@ -443,7 +475,11 @@ export function FYKAuthPage({
 									</button>
 								</div>
 								{loginForm.formState.errors.password && (
-									<p id="login-password-error" className="text-[12px] text-red-400" role="alert">
+									<p
+										id="login-password-error"
+										className="text-[12px] text-red-400"
+										role="alert"
+									>
 										{loginForm.formState.errors.password.message}
 									</p>
 								)}
@@ -477,20 +513,31 @@ export function FYKAuthPage({
 								onClick={() => setMode("magic-link")}
 								className="flex w-full items-center justify-center gap-1.5 py-1 text-xs font-medium text-amber-400/60 transition hover:text-amber-400"
 							>
-								<Sparkles className="h-3 w-3" aria-hidden="true" /> Sign in with magic link
+								<Sparkles className="h-3 w-3" aria-hidden="true" /> Sign in with
+								magic link
 							</button>
 						</form>
 					)}
 
 					{/* Signup Form — react-hook-form + zod */}
 					{mode === "signup" && (
-						<form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4" noValidate>
+						<form
+							onSubmit={signupForm.handleSubmit(handleSignup)}
+							className="space-y-4"
+							noValidate
+						>
 							<div className="space-y-2">
-								<label htmlFor="signup-name" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="signup-name"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									Name
 								</label>
 								<div className="relative">
-									<User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<User
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="signup-name"
 										placeholder="Your name"
@@ -498,9 +545,13 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-4 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: signupForm.formState.errors.name ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: signupForm.formState.errors.name
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={signupForm.formState.errors.name ? "true" : "false"}
+										aria-invalid={
+											signupForm.formState.errors.name ? "true" : "false"
+										}
 									/>
 								</div>
 								{signupForm.formState.errors.name && (
@@ -510,11 +561,17 @@ export function FYKAuthPage({
 								)}
 							</div>
 							<div className="space-y-2">
-								<label htmlFor="signup-email" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="signup-email"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									Email
 								</label>
 								<div className="relative">
-									<Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<Mail
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="signup-email"
 										type="email"
@@ -523,9 +580,13 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-4 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: signupForm.formState.errors.email ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: signupForm.formState.errors.email
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={signupForm.formState.errors.email ? "true" : "false"}
+										aria-invalid={
+											signupForm.formState.errors.email ? "true" : "false"
+										}
 									/>
 								</div>
 								{signupForm.formState.errors.email && (
@@ -535,7 +596,10 @@ export function FYKAuthPage({
 								)}
 							</div>
 							<div className="space-y-2">
-								<label htmlFor="signup-handle" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="signup-handle"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									Handle (optional)
 								</label>
 								<div className="relative">
@@ -553,11 +617,17 @@ export function FYKAuthPage({
 								</div>
 							</div>
 							<div className="space-y-2">
-								<label htmlFor="signup-password" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="signup-password"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									Password
 								</label>
 								<div className="relative">
-									<Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<Lock
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="signup-password"
 										type={showPassword ? "text" : "password"}
@@ -566,14 +636,20 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-11 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: signupForm.formState.errors.password ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: signupForm.formState.errors.password
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={signupForm.formState.errors.password ? "true" : "false"}
+										aria-invalid={
+											signupForm.formState.errors.password ? "true" : "false"
+										}
 									/>
 									<button
 										type="button"
 										onClick={() => setShowPassword(!showPassword)}
-										aria-label={showPassword ? "Hide password" : "Show password"}
+										aria-label={
+											showPassword ? "Hide password" : "Show password"
+										}
 										className="absolute right-3.5 top-1/2 -translate-y-1/2"
 									>
 										{showPassword ? (
@@ -618,13 +694,23 @@ export function FYKAuthPage({
 
 					{/* Forgot Password — react-hook-form + zod */}
 					{mode === "forgot" && (
-						<form onSubmit={forgotForm.handleSubmit(handleForgotPassword)} className="space-y-4" noValidate>
+						<form
+							onSubmit={forgotForm.handleSubmit(handleForgotPassword)}
+							className="space-y-4"
+							noValidate
+						>
 							<div className="space-y-2">
-								<label htmlFor="forgot-email" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="forgot-email"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									Email address
 								</label>
 								<div className="relative">
-									<Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<Mail
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="forgot-email"
 										type="email"
@@ -633,9 +719,13 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-4 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: forgotForm.formState.errors.email ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: forgotForm.formState.errors.email
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={forgotForm.formState.errors.email ? "true" : "false"}
+										aria-invalid={
+											forgotForm.formState.errors.email ? "true" : "false"
+										}
 									/>
 								</div>
 								{forgotForm.formState.errors.email && (
@@ -673,20 +763,31 @@ export function FYKAuthPage({
 								onClick={() => setMode("login")}
 								className="flex w-full items-center justify-center gap-1 text-xs text-white/40 transition hover:text-white/70"
 							>
-								<ArrowLeft className="h-3 w-3" aria-hidden="true" /> Back to sign in
+								<ArrowLeft className="h-3 w-3" aria-hidden="true" /> Back to
+								sign in
 							</button>
 						</form>
 					)}
 
 					{/* Reset Password — react-hook-form + zod */}
 					{mode === "reset" && (
-						<form onSubmit={resetForm.handleSubmit(handleResetPassword)} className="space-y-4" noValidate>
+						<form
+							onSubmit={resetForm.handleSubmit(handleResetPassword)}
+							className="space-y-4"
+							noValidate
+						>
 							<div className="space-y-2">
-								<label htmlFor="reset-password" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="reset-password"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									New Password
 								</label>
 								<div className="relative">
-									<KeyRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<KeyRound
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="reset-password"
 										type={showPassword ? "text" : "password"}
@@ -695,9 +796,13 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-4 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: resetForm.formState.errors.newPassword ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: resetForm.formState.errors.newPassword
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={resetForm.formState.errors.newPassword ? "true" : "false"}
+										aria-invalid={
+											resetForm.formState.errors.newPassword ? "true" : "false"
+										}
 									/>
 								</div>
 								{resetForm.formState.errors.newPassword && (
@@ -735,13 +840,23 @@ export function FYKAuthPage({
 
 					{/* Magic Link — react-hook-form + zod */}
 					{mode === "magic-link" && (
-						<form onSubmit={magicLinkForm.handleSubmit(handleMagicLink)} className="space-y-4" noValidate>
+						<form
+							onSubmit={magicLinkForm.handleSubmit(handleMagicLink)}
+							className="space-y-4"
+							noValidate
+						>
 							<div className="space-y-2">
-								<label htmlFor="magic-email" className="font-mono text-xs font-medium uppercase tracking-wider text-white/60">
+								<label
+									htmlFor="magic-email"
+									className="font-mono text-xs font-medium uppercase tracking-wider text-white/60"
+								>
 									Email address
 								</label>
 								<div className="relative">
-									<Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" aria-hidden="true" />
+									<Mail
+										className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30"
+										aria-hidden="true"
+									/>
 									<input
 										id="magic-email"
 										type="email"
@@ -750,9 +865,13 @@ export function FYKAuthPage({
 										className="h-12 w-full rounded-xl py-2 pr-4 pl-11 text-sm text-white placeholder:text-white/25 transition-colors duration-300"
 										style={{
 											...inputStyle,
-											borderColor: magicLinkForm.formState.errors.email ? "rgba(239,68,68,0.5)" : undefined,
+											borderColor: magicLinkForm.formState.errors.email
+												? "rgba(239,68,68,0.5)"
+												: undefined,
 										}}
-										aria-invalid={magicLinkForm.formState.errors.email ? "true" : "false"}
+										aria-invalid={
+											magicLinkForm.formState.errors.email ? "true" : "false"
+										}
 									/>
 								</div>
 								{magicLinkForm.formState.errors.email && (
@@ -793,7 +912,8 @@ export function FYKAuthPage({
 								onClick={() => setMode("login")}
 								className="flex w-full items-center justify-center gap-1 text-xs text-white/40 transition hover:text-white/70"
 							>
-								<ArrowLeft className="h-3 w-3" aria-hidden="true" /> Back to sign in
+								<ArrowLeft className="h-3 w-3" aria-hidden="true" /> Back to
+								sign in
 							</button>
 						</form>
 					)}
@@ -899,7 +1019,10 @@ export function FYKAuthPage({
 						{ icon: Shield, text: "GDPR" },
 					].map((t) => (
 						<div key={t.text} className="flex items-center gap-1.5">
-							<t.icon className="h-3 w-3 text-amber-400/25" aria-hidden="true" />
+							<t.icon
+								className="h-3 w-3 text-amber-400/25"
+								aria-hidden="true"
+							/>
 							<span className="font-mono text-[0.55rem] uppercase tracking-wider text-white/25">
 								{t.text}
 							</span>

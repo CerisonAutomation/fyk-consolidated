@@ -110,11 +110,12 @@ model User {
   passwordHash String  @map("password_hash")
 
   // Display
-  name        String? // maps to SQL `pseudo`
-  handle      String? // maps to SQL `nick`
-  bio         String? // maps to SQL `description`
+  name        String? @map("pseudo") // SQL: users.pseudo
+  handle      String? @map("nick") // SQL: users.nick
+  bio         String? @map("description") // SQL: users.description
   gender      String? // adapter field (not in SQL users)
   pronouns    String?
+  intents     Json?   @default("[]")
   dateOfBirth DateTime? @map("birthday")
   age         Int?
   occupation  String?
@@ -122,10 +123,10 @@ model User {
   height      Int?
   weight      Int?
   bodyType    String?   @map("body_type")
-  position    String? // JSON string, adapter splits by comma
+  position    Json?   @default("[]") // SQL: jsonb string array
 
   // Arrays (JSON columns)
-  lookingForTags String[] @map("looking_for")
+  lookingForTags Json     @default("[]") @map("looking_for") // SQL: jsonb
   interests      Json     @default("[]")
   tribes         Json     @default("[]")
   tagCodes       Json     @map("tag_codes")
@@ -155,9 +156,9 @@ model User {
   incognitoMode Boolean @default(false) @map("incognito")
   isDemo        Boolean @default(false) @map("is_demo")
   isSuspended   Boolean @default(false) @map("is_suspended")
-  showDistance  Boolean
-  showOnline    Boolean
-  contentRating String  @default("safe") // maps to SQL `exposure_level`
+  hideDistance  Boolean @default(false) @map("hide_distance")
+  hideOnline    Boolean @default(false) @map("hide_online")
+  contentRating String  @default("clean") @map("exposure_level") // SQL: users.exposure_level
 
   // Verification / trust
   verification    Int?    @default(0)
@@ -1088,6 +1089,10 @@ model PushSubscription {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Required by POST /api/push/subscribe: two devices registering the same
+  // endpoint concurrently used to race into duplicate rows (find-then-create).
+  @@unique([userId, endpoint], map: "push_subscriptions_user_id_endpoint_key")
+  @@index([userId], map: "push_subscriptions_user_id_idx")
   @@map("push_subscriptions")
 }
 

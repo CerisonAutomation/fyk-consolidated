@@ -2,19 +2,20 @@
  * UserDropdown — glass-blur dropdown menu shown in the Header
  * when the user is authenticated. Shows user info, quick links, and sign out.
  */
-import { useState, useRef, useEffect, useCallback } from "react";
+
 import { Link } from "@tanstack/react-router";
 import {
-	User,
-	Settings,
+	ChevronDown,
+	ChevronRight,
 	Crown,
 	LogOut,
-	ChevronDown,
 	Mail,
-	ChevronRight,
+	Settings,
+	User,
 } from "lucide-react";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { signOut } from "#/domains/auth/services/sign-out";
+import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 
 export function UserDropdown() {
 	const { user } = useSupabaseSession();
@@ -51,42 +52,39 @@ export function UserDropdown() {
 	}, [open]);
 
 	// Keyboard navigation within the menu
-	const handleMenuKeyDown = useCallback(
-		(e: React.KeyboardEvent) => {
-			const menu = dropdownRef.current?.querySelector("[role=menu]");
-			if (!menu) return;
-			const items = Array.from(
-				menu.querySelectorAll<HTMLElement>("[role=menuitem]")
-			);
-			const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+	const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
+		const menu = dropdownRef.current?.querySelector("[role=menu]");
+		if (!menu) return;
+		const items = Array.from(
+			menu.querySelectorAll<HTMLElement>("[role=menuitem]"),
+		);
+		const currentIndex = items.indexOf(document.activeElement as HTMLElement);
 
-			switch (e.key) {
-				case "ArrowDown": {
-					e.preventDefault();
-					const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
-					items[next]?.focus();
-					break;
-				}
-				case "ArrowUp": {
-					e.preventDefault();
-					const prev = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
-					items[prev]?.focus();
-					break;
-				}
-				case "Home": {
-					e.preventDefault();
-					items[0]?.focus();
-					break;
-				}
-				case "End": {
-					e.preventDefault();
-					items[items.length - 1]?.focus();
-					break;
-				}
+		switch (e.key) {
+			case "ArrowDown": {
+				e.preventDefault();
+				const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+				items[next]?.focus();
+				break;
 			}
-		},
-		[]
-	);
+			case "ArrowUp": {
+				e.preventDefault();
+				const prev = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+				items[prev]?.focus();
+				break;
+			}
+			case "Home": {
+				e.preventDefault();
+				items[0]?.focus();
+				break;
+			}
+			case "End": {
+				e.preventDefault();
+				items[items.length - 1]?.focus();
+				break;
+			}
+		}
+	}, []);
 
 	const toggle = useCallback(() => setOpen((prev) => !prev), []);
 
@@ -120,7 +118,10 @@ export function UserDropdown() {
 				aria-haspopup="menu"
 				aria-label={`User menu for ${displayName}`}
 			>
-				<div className="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-[9px] font-bold text-primary-foreground shrink-0" aria-hidden="true">
+				<div
+					className="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-[9px] font-bold text-primary-foreground shrink-0"
+					aria-hidden="true"
+				>
 					{displayName.charAt(0).toUpperCase()}
 				</div>
 				<span className="hidden xl:inline text-[11px] text-muted-foreground max-w-[80px] truncate font-medium">
@@ -149,7 +150,10 @@ export function UserDropdown() {
 					{/* User info header */}
 					<div className="px-4 py-3 border-b border-border">
 						<div className="flex items-center gap-3">
-							<div className="w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-sm font-bold text-primary-foreground shrink-0" aria-hidden="true">
+							<div
+								className="w-9 h-9 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center text-sm font-bold text-primary-foreground shrink-0"
+								aria-hidden="true"
+							>
 								{displayName.charAt(0).toUpperCase()}
 							</div>
 							<div className="flex-1 min-w-0">
@@ -157,8 +161,13 @@ export function UserDropdown() {
 									{displayName}
 								</p>
 								<div className="flex items-center gap-1">
-									<Mail className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
-									<p className="text-[11px] text-muted-foreground truncate">{email}</p>
+									<Mail
+										className="w-3 h-3 text-muted-foreground"
+										aria-hidden="true"
+									/>
+									<p className="text-[11px] text-muted-foreground truncate">
+										{email}
+									</p>
 								</div>
 							</div>
 						</div>
@@ -173,9 +182,15 @@ export function UserDropdown() {
 							role="menuitem"
 							tabIndex={-1}
 						>
-							<User className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+							<User
+								className="w-4 h-4 text-muted-foreground"
+								aria-hidden="true"
+							/>
 							<span className="flex-1">My Profile</span>
-							<ChevronRight className="w-3 h-3 text-muted-foreground/60" aria-hidden="true" />
+							<ChevronRight
+								className="w-3 h-3 text-muted-foreground/60"
+								aria-hidden="true"
+							/>
 						</Link>
 						<Link
 							to="/settings"
@@ -184,9 +199,15 @@ export function UserDropdown() {
 							role="menuitem"
 							tabIndex={-1}
 						>
-							<Settings className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+							<Settings
+								className="w-4 h-4 text-muted-foreground"
+								aria-hidden="true"
+							/>
 							<span className="flex-1">Settings</span>
-							<ChevronRight className="w-3 h-3 text-muted-foreground/60" aria-hidden="true" />
+							<ChevronRight
+								className="w-3 h-3 text-muted-foreground/60"
+								aria-hidden="true"
+							/>
 						</Link>
 						<Link
 							to="/settings/profile"
@@ -197,7 +218,10 @@ export function UserDropdown() {
 						>
 							<Crown className="w-4 h-4 text-amber-400/50" aria-hidden="true" />
 							<span className="flex-1">Edit Profile</span>
-							<ChevronRight className="w-3 h-3 text-muted-foreground/60" aria-hidden="true" />
+							<ChevronRight
+								className="w-3 h-3 text-muted-foreground/60"
+								aria-hidden="true"
+							/>
 						</Link>
 					</div>
 

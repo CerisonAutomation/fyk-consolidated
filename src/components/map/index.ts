@@ -1,6 +1,6 @@
-export { FYKMap } from "./FYKMap";
-export type { MapPinItem } from "./FYKMap";
-export { MapPinMarker } from "./MapPinMarker";
-export { MapPicker } from "./MapPicker";
-export { MapSearchBar } from "./MapSearchBar";
 export { candidatesToPins } from "./candidate-pins";
+export type { MapPinItem } from "./FYKMap";
+export { FYKMap } from "./FYKMap";
+export { MapPicker } from "./MapPicker";
+export { MapPinMarker } from "./MapPinMarker";
+export { MapSearchBar } from "./MapSearchBar";

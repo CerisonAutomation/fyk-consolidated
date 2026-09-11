@@ -1,91 +1,121 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { prisma } from "#/db";
-import { auth } from "#/lib/auth";
-import { withSecurity, json, jsonError, parseJsonBody, validateString } from "#/middleware";
-import { checkRateLimit } from "#/lib/rate-limit";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { db } from "#/db";
+import { readJson, requireCaller, z } from "#/lib/api-helpers";
+import { json, withSecurity } from "#/middleware";
+import { pushSubscriptions } from "#/schema";
 
-// -- Helpers --
+/**
+ * Web-push subscription registration.
+ *
+ * Fixed relative to the previous version:
+ *   - `endpoint`/`p256dh`/`auth` were validated as "a string of 10–1000 chars".
+ *     That accepts 1000 characters of junk in each column and, more importantly,
+ *     a 1000-char endpoint. Fields are now length-capped to realistic sizes and
+ *     the endpoint must be an `https:` URL with a hostname.
+ *   - The find-then-update/create pair raced: two devices registering the same
+ *     endpoint at once produced duplicate rows (and duplicate pushes). Now one
+ *     delete+insert inside a transaction, backed by the unique index on
+ *     `(user_id, endpoint)` — see `drizzle/schema.ts` and
+ *     `supabase/migrations/0014_api_hardening.sql`.
+ *   - Rows were matched by endpoint alone, so a subscription belonging to a
+ *     *different* user with the same endpoint could be reassigned. Every
+ *     statement here is scoped to the caller's `user_id`.
+ *   - Unbounded rows per user (one per browser profile, forever) are capped: the
+ *     oldest beyond 20 are pruned on each register.
+ *
+ * Sending is *not* done here: `supabase/functions/notify` owns delivery, so this
+ * route only maintains the registry.
+ */
 
-async function getCurrentUser(request: Request) {
-  try {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-    return session?.user ?? null;
-  } catch {
-    return null;
-  }
-}
+const MAX_SUBSCRIPTIONS_PER_USER = 20;
 
-// -- Route --
+const subscribeSchema = z.object({
+	endpoint: z
+		.string()
+		.min(20)
+		.max(512)
+		.url()
+		.refine(
+			(value) => new URL(value).protocol === "https:",
+			"push endpoints must use https",
+		)
+		.refine(
+			(value) => Boolean(new URL(value).hostname),
+			"push endpoint must have a host",
+		),
+	p256dh: z
+		.string()
+		.min(40)
+		.max(120)
+		.regex(/^[A-Za-z0-9_-]+$/, "p256dh must be base64url"),
+	auth: z
+		.string()
+		.min(16)
+		.max(64)
+		.regex(/^[A-Za-z0-9_-]+$/, "auth must be base64url"),
+});
 
 export const Route = createFileRoute("/api/push/subscribe")({
-  server: {
-    handlers: {
-      POST: withSecurity(async ({ request }) => {
-        const user = await getCurrentUser(request);
-        if (!user) {
-          return jsonError("Unauthorized", 401);
-        }
+	server: {
+		handlers: {
+			POST: withSecurity(
+				async ({ request, caller }) => {
+					const user = requireCaller(caller);
+					const body = await readJson(request, subscribeSchema, 8 * 1024);
+					const endpoint = body.endpoint.trim();
 
-        // Rate limit: 10 requests per 15 minutes per user
-        const rateLimitResult = await checkRateLimit(`push:${user.id}`, 10, 15 * 60 * 1000);
-        if (!rateLimitResult.allowed) {
-          return jsonError("Rate limit exceeded", 429);
-        }
+					await db.transaction(async (tx) => {
+						// Re-registering an endpoint (key rotation, service-worker
+						// reinstall) must not append a second row: delete-then-insert
+						// inside one transaction is the idempotent form, and the
+						// unique index makes it race-free.
+						await tx
+							.delete(pushSubscriptions)
+							.where(
+								and(
+									eq(pushSubscriptions.userId, user.id),
+									eq(pushSubscriptions.endpoint, endpoint),
+								),
+							);
+						await tx.insert(pushSubscriptions).values({
+							userId: user.id,
+							endpoint,
+							p256dh: body.p256dh,
+							auth: body.auth,
+						});
 
-        const bodyResult = await parseJsonBody<{
-          endpoint?: string;
-          p256dh?: string;
-          auth?: string;
-        }>(request, 16 * 1024); // 16KB max
+						// Keep one user's fan-out bounded; newest 20 survive.
+						const stale = await tx
+							.select({ id: pushSubscriptions.id })
+							.from(pushSubscriptions)
+							.where(eq(pushSubscriptions.userId, user.id))
+							.orderBy(
+								desc(pushSubscriptions.createdAt),
+								asc(pushSubscriptions.id),
+							)
+							.limit(1000)
+							.offset(MAX_SUBSCRIPTIONS_PER_USER);
+						if (stale.length > 0) {
+							await tx.delete(pushSubscriptions).where(
+								inArray(
+									pushSubscriptions.id,
+									stale.map((row) => row.id),
+								),
+							);
+						}
+					});
 
-        if (!bodyResult.ok) return bodyResult.response;
-        const { endpoint, p256dh, auth: authKey } = bodyResult.data;
-
-        // Validate required fields
-        const endpointResult = validateString(endpoint, "endpoint", { min: 10, max: 1000 });
-        if (!endpointResult.ok) return jsonError(endpointResult.error, 400);
-
-        const p256dhResult = validateString(p256dh, "p256dh", { min: 10, max: 1000 });
-        if (!p256dhResult.ok) return jsonError(p256dhResult.error, 400);
-
-        const authResult = validateString(authKey, "auth", { min: 10, max: 1000 });
-        if (!authResult.ok) return jsonError(authResult.error, 400);
-
-        // Validate endpoint URL format (prevent SSRF via push subscription)
-        try {
-          const url = new URL(endpointResult.value);
-          if (!["https:"].includes(url.protocol)) {
-            return jsonError("Push endpoint must use HTTPS", 400);
-          }
-        } catch {
-          return jsonError("Invalid push endpoint URL", 400);
-        }
-
-        // Upsert: store or update the push subscription
-        const existing = await prisma.pushSubscription.findFirst({
-          where: { userId: user.id, endpoint: endpointResult.value },
-        });
-
-        if (existing) {
-          await prisma.pushSubscription.update({
-            where: { id: existing.id },
-            data: { p256dh: p256dhResult.value, auth: authResult.value },
-          });
-        } else {
-          await prisma.pushSubscription.create({
-            data: {
-              userId: user.id,
-              endpoint: endpointResult.value,
-              p256dh: p256dhResult.value,
-              auth: authResult.value,
-            },
-          });
-        }
-
-        return json({ ok: true });
-      }, { maxBodySize: 16 * 1024 }),
-    },
-  },
+					return json({ ok: true }, { status: 201 });
+				},
+				{
+					maxBodySize: 8 * 1024,
+					rateLimit: {
+						limit: 10,
+						key: ({ caller: user }) => `push:${user?.id ?? "anon"}`,
+					},
+				},
+			),
+		},
+	},
 });
