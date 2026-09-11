@@ -1,348 +1,663 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-	ChevronLeft,
-	MoreVertical,
-	Paperclip,
-	Pin,
-	Send,
-	Smile,
-	VolumeX,
-} from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-	useMuteConversation,
-	usePinConversation,
-} from "#/core/api/hooks/use-conversations";
-import {
-	useConversationMessages,
-	useSendMessage,
-} from "#/core/api/hooks/use-messages";
-import { Drafts } from "#/domains/chat/drafts-store";
-import { useConversationsStore } from "#/domains/chat/store";
+	AlertCircle,
+	Archive,
+	Ban,
+	Check,
+	Copy,
+	ImagePlus,
+	Loader2,
+	Pencil,
+	Pin,
+	PinOff,
+	RefreshCw,
+	Reply,
+	SendHorizontal,
+	ShieldAlert,
+	Trash2,
+	X,
+} from "lucide-react";
+import { api, ApiClientError } from "#/lib/client";
+import type { MessagePage, MessageRow, PublicProfile } from "#/lib/api-types";
+import { cn, timeAgo } from "#/lib/utils";
+import { Avatar } from "#/components/ui/Avatar";
+import { MediaImage } from "#/components/ui/MediaImage";
+import { StateBlock, describeFailure } from "#/components/ui/StateBlock";
+import { ReportDialog } from "#/components/ReportDialog";
+import { useShell } from "#/components/AppShell";
+import { useToasts } from "#/lib/toast";
+import { useLongPress } from "#/lib/hooks/use-long-press";
 
 export const Route = createFileRoute("/chat/$conversationId/")({
 	component: ConversationPage,
+	head: () => ({ meta: [{ title: "Chat — FYK" }, { name: "robots", content: "noindex" }] }),
 });
 
-interface Message {
-	id: string;
-	text: string;
-	sentByMe: boolean;
-	timestamp: number;
-	read: boolean;
-	type: "text" | "image" | "tap";
-}
+const EMOJI = [
+	{ id: "heart", glyph: "❤️", label: "Heart" },
+	{ id: "fire", glyph: "🔥", label: "Fire" },
+	{ id: "laugh", glyph: "😂", label: "Laugh" },
+	{ id: "wow", glyph: "😮", label: "Surprise" },
+	{ id: "like", glyph: "👍", label: "Like" },
+] as const;
 
-const drafts = new Drafts();
+type Pending = { key: string; body: string; mediaPath?: string; mediaKind?: "image" | "video" | "audio"; previewUrl?: string | null; failed?: boolean; replyToId?: string | null };
+
+const draftKey = (id: string) => `fyk:draft:${id}`;
 
 function ConversationPage() {
 	const { conversationId } = Route.useParams();
-	const { entries, setActive } = useConversationsStore();
-	const [draft, setDraft] = useState(() => drafts.open(conversationId));
-	const draftRef = useRef(draft);
-	const [messages, setMessages] = useState<Message[]>([]);
-	const messagesQuery = useConversationMessages(conversationId);
-	const sendMessage = useSendMessage();
-	const pinConversation = usePinConversation();
-	const muteConversation = useMuteConversation();
-	const messagesEndRef = useRef<HTMLDivElement>(null);
-	const inputRef = useRef<HTMLTextAreaElement>(null);
+	const { session, capable } = useShell();
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const push = useToasts((state) => state.push);
 
-	const conversation = entries.find(
-		(e) => e.data.conversationId === conversationId,
-	);
+	const [text, setText] = useState(() => readDraft(conversationId));
+	const [attachment, setAttachment] = useState<{ path: string; kind: "image" | "video" | "audio"; previewUrl: string | null; uploading: boolean } | null>(null);
+	const [pending, setPending] = useState<Pending[]>([]);
+	const [replyTo, setReplyTo] = useState<MessageRow | null>(null);
+	const [editing, setEditing] = useState<MessageRow | null>(null);
+	const [menuFor, setMenuFor] = useState<string | null>(null);
+	const [reportTarget, setReportTarget] = useState<MessageRow | null>(null);
+	const [loadingOlder, setLoadingOlder] = useState(false);
+	const endRef = useRef<HTMLDivElement | null>(null);
+	const scrollerRef = useRef<HTMLDivElement | null>(null);
+	const fileRef = useRef<HTMLInputElement | null>(null);
 
-	useEffect(() => {
-		setActive(conversationId);
-		return () => {
-			drafts.save({ conversationId, text: draftRef.current });
-			setActive(null);
-		};
-	}, [conversationId, setActive]);
+	const messages = useQuery({
+		queryKey: ["messages", conversationId],
+		queryFn: () => api.get<MessagePage>(`conversations/${conversationId}/messages`),
+		enabled: capable("chat"),
+		// Polling is the honest word for this: there is no push channel in this
+		// build, so a new message lands on the next tick while the tab is open.
+		refetchInterval: 8_000,
+		refetchIntervalInBackground: false,
+	});
 
-	useEffect(() => {
-		if (!messagesQuery.data) return;
-		const otherProfileId = messagesQuery.data.profile.profileId;
-		setMessages(
-			messagesQuery.data.messages
-				.flatMap((message) => {
-					const parsed = toMessage(message, otherProfileId);
-					return parsed ? [parsed] : [];
-				})
-				.sort((a, b) => a.timestamp - b.timestamp),
-		);
-	}, [messagesQuery.data]);
+	const list = messages.data?.messages ?? [];
+	const me = session.userId;
 
-	useEffect(() => {
-		if (messages.length === 0) return;
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [messages.length]);
-
-	const handleSend = useCallback(() => {
-		if (!draft.trim() || sendMessage.isPending) return;
-		const text = draft.trim();
-		setDraft("");
-		draftRef.current = "";
-		drafts.discard(conversationId);
-		const participantId =
-			conversation?.data.participants[0]?.profileId ??
-			Number(conversationId.split(":").at(-1));
-		sendMessage.mutate(
-			{
-				toUserId: participantId,
-				message: { type: 1, body: text },
-			},
-			{
-				onSuccess: (message) => {
-					const parsed = toMessage(message, participantId);
-					if (parsed) setMessages((current) => [...current, parsed]);
-				},
-				onError: () => {
-					draftRef.current = text;
-					setDraft(text);
-				},
-			},
-		);
-	}, [conversation, conversationId, draft, sendMessage]);
-
-	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault();
-			handleSend();
+	const loadOlder = async () => {
+		const oldest = list[0];
+		if (!oldest) return;
+		setLoadingOlder(true);
+		try {
+			const page = await api.get<MessagePage>(`conversations/${conversationId}/messages?before=${encodeURIComponent(oldest.createdAt)}`);
+			// Merging into the cache keeps scroll position instead of jumping to the
+			// bottom the way a naive refetch would.
+			queryClient.setQueryData<MessagePage>(["messages", conversationId], (current) =>
+				current ? { messages: [...page.messages, ...current.messages], pinned: current.pinned, hasMore: page.hasMore } : page,
+			);
+		} catch (error) {
+			push(error instanceof Error ? error.message : "Older messages could not load.", "error");
+		} finally {
+			setLoadingOlder(false);
 		}
 	};
 
-	const formatTime = (ts: number) => {
-		const d = new Date(ts);
-		return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	useEffect(() => {
+		if (messages.isPending) return;
+		const node = scrollerRef.current;
+		if (!node) return;
+		// Only stick to the bottom when the user is already near it, so reading
+		// history is not yanked away by their own typing.
+		const nearBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 220;
+		if (nearBottom) endRef.current?.scrollIntoView({ block: "end" });
+	}, [list.length, pending.length, messages.isPending]);
+
+	useEffect(() => {
+		writeDraft(conversationId, text);
+	}, [conversationId, text]);
+
+	const send = useMutation({
+		mutationFn: (payload: Pending) =>
+			api.post<{ message: MessageRow }>(`conversations/${conversationId}/messages`, {
+				body: payload.body || undefined,
+				mediaPath: payload.mediaPath,
+				mediaKind: payload.mediaKind,
+				replyToId: payload.replyToId ?? undefined,
+				idempotencyKey: payload.key,
+			}),
+		onSuccess: (_result, payload) => {
+			setPending((current) => current.filter((entry) => entry.key !== payload.key));
+			void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+			void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		},
+		onError: (error, payload) => {
+			setPending((current) => current.map((entry) => (entry.key === payload.key ? { ...entry, failed: true } : entry)));
+			void push(error instanceof ApiClientError ? error.message : "That message did not send.", "error");
+		},
+	});
+
+	const submit = useCallback(() => {
+		if (editing) {
+			const value = text.trim();
+			if (!value) return;
+			edit.mutate({ id: editing.id, value });
+			setEditing(null);
+			return;
+		}
+		const body = text.trim();
+		if (!body && !attachment) return;
+		if (attachment?.uploading) {
+			push("That photo is still uploading — one moment.", "info");
+			return;
+		}
+		const entry: Pending = {
+			key: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`,
+			body,
+			mediaPath: attachment?.path,
+			mediaKind: attachment?.kind,
+			previewUrl: attachment?.previewUrl,
+			replyToId: replyTo?.id ?? null,
+		};
+		setPending((current) => [...current, entry]);
+		setText("");
+		setAttachment(null);
+		setReplyTo(null);
+		send.mutate(entry);
+	}, [attachment, editing, push, replyTo, send, text]);
+
+	const edit = useMutation({
+		mutationFn: ({ id, value }: { id: string; value: string }) => api.patch<{ ok: boolean }>(`messages/${id}`, { action: "edit", value: value.slice(0, 4000) }),
+		onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] }),
+		onError: (error) => push(error instanceof Error ? error.message : "That edit did not save.", "error"),
+	});
+
+	const act = useMutation({
+		mutationFn: ({ id, action }: { id: string; action: "recall" | "pin" | "unpin" }) => api.patch<{ ok: boolean; expiresAt?: string | null }>(`messages/${id}`, { action }),
+		onSuccess: (_result, variables) => {
+			void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+			if (variables.action === "recall") push("Message recalled.", "success");
+		},
+		onError: (error) => push(error instanceof Error ? error.message : "That did not work.", "error"),
+	});
+
+	const react = useMutation({
+		mutationFn: ({ id, emoji }: { id: string; emoji: string }) => api.post<{ active: boolean }>(`messages/${id}/react`, { emoji }),
+		onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] }),
+		onError: (error) => push(error instanceof Error ? error.message : "That reaction did not save.", "error"),
+	});
+
+	const block = useMutation({
+		mutationFn: () => api.post<{ blocked: boolean }>("blocks", { targetId: otherId }),
+		onSuccess: () => {
+			push("Blocked. They can no longer see you or message you.", "success");
+			void queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+			void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+		},
+		onError: (error) => push(error instanceof Error ? error.message : "That did not work.", "error"),
+	});
+
+	const archive = useMutation({
+		mutationFn: () => api.patch<{ archived: boolean }>(`conversations/${conversationId}`, { archived: true }),
+		onSuccess: () => {
+			push("Archived. It is out of your inbox; the other person is not told.", "success");
+			void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+			void navigate({ to: "/chat" });
+		},
+		onError: (error) => push(error instanceof Error ? error.message : "That did not work.", "error"),
+	});
+
+	const pickFile = async (file: File) => {
+		const form = new FormData();
+		form.append("file", file);
+		form.append("conversationId", conversationId);
+		setAttachment({ path: "", kind: "image", previewUrl: URL.createObjectURL(file), uploading: true });
+		try {
+			const result = await api.postForm<{ storagePath: string; kind: "image" | "video" | "audio"; previewUrl: string | null }>("media/chat", form);
+			setAttachment({ path: result.storagePath, kind: result.kind, previewUrl: result.previewUrl ?? URL.createObjectURL(file), uploading: false });
+		} catch (error) {
+			setAttachment(null);
+			push(error instanceof Error ? error.message : "That upload failed.", "error");
+		} finally {
+			if (fileRef.current) fileRef.current.value = "";
+		}
 	};
 
-	const isOnline =
-		(conversation?.data.onlineUntil ??
-			messagesQuery.data?.profile.onlineUntil) !== null;
-	const displayName =
-		conversation?.data.name ?? messagesQuery.data?.profile.name ?? "Unknown";
+	// The peer comes from the inbox query, which this page shares through the
+	// cache — one request either way, and the header cannot disagree with the list.
+	const inbox = useQuery({
+		queryKey: ["conversations"],
+		queryFn: () => api.get<{ conversations: { id: string; other: PublicProfile | null }[] }>("conversations"),
+		enabled: capable("chat"),
+		staleTime: 60_000,
+	});
+	const otherProfile = (inbox.data?.conversations ?? []).find((row) => row.id === conversationId)?.other ?? null;
+	const otherId = otherProfile?.id ?? "";
+
+	const failure = messages.error ? describeFailure(messages.error) : null;
+	const pinned = messages.data?.pinned ?? [];
+	const activePin = pinned[pinned.length - 1];
 
 	return (
-		<div className="flex h-full flex-col bg-[#0a0014]">
-			{/* Header */}
-			<div
-				className="flex items-center gap-3 border-b px-4 py-3"
-				style={{ borderColor: "rgba(255,255,255,0.06)" }}
-			>
-				<Link
-					to="/chat"
-					className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-white/50 transition hover:bg-white/10"
-				>
-					<ChevronLeft className="h-5 w-5" />
-				</Link>
-				<div className="flex items-center gap-3">
-					<div className="relative h-10 w-10">
-						<div
-							className="flex h-full w-full items-center justify-center rounded-full text-sm font-bold"
-							style={{
-								background:
-									"linear-gradient(135deg, rgba(234,179,8,0.2), rgba(168,85,247,0.2))",
-								color: "#EAAB08",
-							}}
-						>
-							{displayName.charAt(0) || "?"}
-						</div>
-						{isOnline && (
-							<div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-2 ring-[#0a0014]" />
-						)}
-					</div>
-					<div>
-						<p className="text-sm font-medium text-white">{displayName}</p>
-						<p className="text-[11px] text-white/40">
-							{isOnline ? "Online" : "Last seen recently"}
-						</p>
-					</div>
+		<div className="flex h-[calc(100svh-8.5rem)] flex-col md:h-[calc(100svh-3rem)]">
+			<header className="flex items-center gap-3 border-b border-line pb-3">
+				<button type="button" onClick={() => void navigate({ to: "/chat" })} className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted hover:text-ink md:hidden" aria-label="Back to chats">
+					<X className="h-5 w-5" />
+				</button>
+				<Avatar name={otherProfile?.displayName ?? "Conversation"} photoUrl={otherProfile?.avatarUrl ?? null} size={38} online={otherProfile?.presence === "online"} />
+				<div className="min-w-0 flex-1">
+					<p className="truncate text-[14.5px] font-semibold">{otherProfile?.displayName ?? "This conversation"}</p>
+					<p className="text-[11.5px] text-muted">
+						{otherProfile ? `${otherProfile.presence === "online" ? "Online now" : "Last seen " + timeAgo(list[list.length - 1]?.createdAt ?? new Date().toISOString())} · refreshed while open` : "Membership only"}
+					</p>
 				</div>
-				<div className="ml-auto flex items-center gap-1">
-					<button
-						type="button"
-						onClick={() =>
-							pinConversation.mutate({
-								conversationId,
-								pinned: !(conversation?.data.pinned ?? false),
-							})
-						}
-						aria-pressed={conversation?.data.pinned ?? false}
-						className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white/60"
-					>
-						<Pin className="h-4 w-4" />
+				{activePin && (
+					<div className="hidden max-w-[240px] items-center gap-1.5 rounded-full border border-gold/30 bg-gold-ghost px-2.5 py-1 text-[11.5px] text-gold sm:flex">
+						<Pin className="h-3 w-3" />
+						<span className="truncate">{activePin.body ?? "Pinned message"}</span>
+					</div>
+				)}
+				<div className="flex shrink-0 items-center gap-1">
+					<button type="button" onClick={() => void messages.refetch()} className="press grid h-9 w-9 place-items-center rounded-full text-muted hover:text-ink" aria-label="Refresh messages">
+						<RefreshCw className={cn("h-4 w-4", messages.isFetching && "animate-spin")} />
 					</button>
-					<button
-						type="button"
-						onClick={() =>
-							muteConversation.mutate({
-								conversationId,
-								muted: !(conversation?.data.muted ?? false),
-							})
-						}
-						aria-pressed={conversation?.data.muted ?? false}
-						className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white/60"
-					>
-						<VolumeX className="h-4 w-4" />
-					</button>
-					<button
-						type="button"
-						className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition hover:bg-white/5 hover:text-white/60"
-					>
-						<MoreVertical className="h-4 w-4" />
+					<button type="button" onClick={() => archive.mutate()} className="press grid h-9 w-9 place-items-center rounded-full text-muted hover:text-ink" aria-label="Archive this conversation">
+						<Archive className="h-4 w-4" />
 					</button>
 				</div>
-			</div>
+			</header>
 
-			{/* Messages */}
-			<div
-				className="flex-1 overflow-y-auto px-4 py-4"
-				style={{ scrollbarWidth: "thin" }}
-			>
-				{messagesQuery.isLoading ? (
-					<div className="flex h-full items-center justify-center">
-						<p className="text-sm text-white/40">Loading conversation...</p>
-					</div>
-				) : messages.length === 0 ? (
-					<div className="flex h-full flex-col items-center justify-center gap-2">
-						<div className="text-4xl">👋</div>
-						<p className="text-sm text-white/40">Say hello!</p>
-					</div>
+			<div ref={scrollerRef} className="fyk-scroll -mx-1 flex-1 overflow-y-auto px-1 py-4">
+				{messages.isPending ? (
+					<StateBlock kind="loading" title="Loading messages" />
+				) : failure ? (
+					<StateBlock kind="error" title="This thread could not load" description={failure.message} action={<button type="button" onClick={() => void messages.refetch()} className="press h-11 rounded-full bg-gold px-4 text-[13.5px] font-bold text-black">Try again</button>} />
 				) : (
-					<div className="flex flex-col gap-1.5">
-						{messages.map((msg, idx) => {
-							const showTime =
-								idx === 0 ||
-								msg.timestamp - messages[idx - 1]?.timestamp > 300000;
-							return (
-								<div key={msg.id}>
-									{showTime && (
-										<div className="my-2 text-center text-[10px] text-white/20">
-											{formatTime(msg.timestamp)}
-										</div>
-									)}
-									<div
-										className={`flex ${msg.sentByMe ? "justify-end" : "justify-start"}`}
-									>
-										<div
-											className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
-												msg.sentByMe ? "rounded-br-md" : "rounded-bl-md"
-											}`}
-											style={{
-												background: msg.sentByMe
-													? "linear-gradient(135deg, rgba(234,179,8,0.25), rgba(234,179,8,0.15))"
-													: "rgba(255,255,255,0.06)",
-												color: msg.sentByMe
-													? "#f5d76e"
-													: "rgba(255,255,255,0.85)",
-											}}
-										>
-											<p>{msg.text}</p>
-											{msg.sentByMe && (
-												<div className="mt-0.5 flex justify-end">
-													<span
-														className={`text-[9px] ${
-															msg.read ? "text-amber-400/60" : "text-white/20"
-														}`}
-													>
-														{msg.read ? "✓✓" : "✓"}
-													</span>
-												</div>
+					<>
+						{messages.data?.hasMore ? (
+							<button type="button" onClick={() => void loadOlder()} disabled={loadingOlder} className="press mx-auto mb-4 flex h-9 items-center gap-2 rounded-full border border-line px-3.5 text-[12.5px] font-semibold text-muted hover:text-ink">
+								{loadingOlder ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ChevronUp />}
+								Load earlier messages
+							</button>
+						) : (
+							<p className="mb-4 text-center text-[11.5px] text-faint">This is the start of your conversation.</p>
+						)}
+
+						<ul className="space-y-1.5">
+							{list.map((message, index) => (
+								<MessageBubble
+									key={message.id}
+									message={message}
+									previous={list[index - 1]}
+									meId={me ?? ""}
+									open={menuFor === message.id}
+									onOpenMenu={() => setMenuFor(message.id)}
+									onCloseMenu={() => setMenuFor(null)}
+									onReact={(emoji) => react.mutate({ id: message.id, emoji })}
+									onReply={() => {
+										setReplyTo(message);
+										setMenuFor(null);
+									}}
+									onEdit={() => {
+										setEditing(message);
+										setText(message.body ?? "");
+										setMenuFor(null);
+									}}
+									onRecall={() => {
+										act.mutate({ id: message.id, action: "recall" });
+										setMenuFor(null);
+									}}
+									onPin={() => {
+										act.mutate({ id: message.id, action: message.pinnedAt ? "unpin" : "pin" });
+										setMenuFor(null);
+									}}
+									onReport={() => {
+										setReportTarget(message);
+										setMenuFor(null);
+									}}
+									onBlock={() => {
+										if (window.confirm("Block this person? They will not be told.")) block.mutate();
+										setMenuFor(null);
+									}}
+									canBlock={Boolean(otherId)}
+								/>
+							))}
+
+							{pending.map((entry) => (
+								<li key={entry.key} className={cn("flex", entry.body ? "justify-end" : "justify-end")}>
+									<div className={cn("max-w-[78%] rounded-2xl border px-3.5 py-2", entry.failed ? "border-live/40 bg-live/10" : "border-line bg-surface opacity-80")}>
+										{entry.previewUrl && <MediaImage src={entry.previewUrl} alt="" ratio="4 / 3" className="mb-1.5 w-full rounded-xl" />}
+										{entry.body && <p className="whitespace-pre-line text-[14.5px] leading-relaxed text-ink">{entry.body}</p>}
+										<p className="mt-1 flex items-center gap-1.5 text-[11px]">
+											{entry.failed ? (
+												<>
+													<AlertCircle className="h-3 w-3 text-live" />
+													<span className="text-live">Not delivered</span>
+													<button type="button" onClick={() => { setPending((current) => current.filter((item) => item.key !== entry.key)); send.mutate(entry); }} className="font-semibold text-gold hover:underline">
+														Retry
+													</button>
+													<button type="button" onClick={() => setPending((current) => current.filter((item) => item.key !== entry.key))} className="text-faint hover:text-ink">
+														Discard
+													</button>
+												</>
+											) : (
+												<span className="inline-flex items-center gap-1 text-faint">
+													<Loader2 className="h-3 w-3 animate-spin" /> Sending
+												</span>
 											)}
-										</div>
+										</p>
 									</div>
-								</div>
-							);
-						})}
-						<div ref={messagesEndRef} />
-					</div>
+								</li>
+							))}
+						</ul>
+						<div ref={endRef} />
+					</>
 				)}
 			</div>
 
-			{/* Composer */}
-			<div
-				className="border-t px-3 py-3"
-				style={{ borderColor: "rgba(255,255,255,0.06)" }}
-			>
-				<div className="flex items-end gap-2">
-					<button
-						type="button"
-						className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white/30 transition hover:bg-white/5 hover:text-white/50"
-					>
-						<Paperclip className="h-5 w-5" />
-					</button>
-					<div className="relative flex-1">
-						<textarea
-							ref={inputRef}
-							value={draft}
-							onChange={(e) => {
-								draftRef.current = e.target.value;
-								setDraft(e.target.value);
-								drafts.autosave({ conversationId, text: e.target.value });
-							}}
-							onKeyDown={handleKeyDown}
-							placeholder="Type a message..."
-							rows={1}
-							className="min-h-[44px] max-h-32 w-full resize-none rounded-xl bg-white/5 px-4 py-2.5 pr-10 text-sm text-white placeholder:text-white/25 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
-							style={{ border: "1px solid rgba(255,255,255,0.08)" }}
-						/>
-						<button
-							type="button"
-							className="absolute right-2 bottom-2.5 text-white/25 transition hover:text-white/40"
-						>
-							<Smile className="h-5 w-5" />
-						</button>
-					</div>
-					<button
-						type="button"
-						onClick={handleSend}
-						disabled={!draft.trim() || sendMessage.isPending}
-						className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
-						style={{
-							background:
-								draft.trim() && !sendMessage.isPending
-									? "linear-gradient(135deg, #EAAB08, #D4AF37)"
-									: "rgba(255,255,255,0.05)",
-							color:
-								draft.trim() && !sendMessage.isPending
-									? "#000"
-									: "rgba(255,255,255,0.3)",
-						}}
-					>
-						{sendMessage.isPending ? (
-							<span className="h-4 w-4 rounded-full border-2 border-current/30 border-t-current animate-spin" />
-						) : (
-							<Send className="h-5 w-5" />
-						)}
+			{activePin && (
+				<div className="mb-2 flex items-center gap-2 rounded-xl border border-gold/25 bg-gold-ghost px-3 py-2 text-[12.5px] text-gold sm:hidden">
+					<Pin className="h-3.5 w-3.5 shrink-0" />
+					<span className="truncate">{activePin.body ?? "Pinned message"}</span>
+					<button type="button" onClick={() => act.mutate({ id: String(activePin.id), action: "unpin" })} className="ml-auto shrink-0" aria-label="Unpin message">
+						<PinOff className="h-3.5 w-3.5" />
 					</button>
 				</div>
-			</div>
+			)}
+
+			{replyTo && (
+				<div className="mb-2 flex items-start gap-2 rounded-xl border border-line bg-surface px-3 py-2">
+					<Reply className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold" />
+					<p className="line-clamp-2 flex-1 text-[12.5px] text-muted">{replyTo.body ?? "Attachment"}</p>
+					<button type="button" onClick={() => setReplyTo(null)} className="shrink-0 text-faint hover:text-ink" aria-label="Cancel reply">
+						<X className="h-4 w-4" />
+					</button>
+				</div>
+			)}
+
+			{editing && (
+				<div className="mb-2 flex items-center gap-2 rounded-xl border border-gold/40 bg-gold-ghost px-3 py-2 text-[12.5px] text-gold">
+					<Pencil className="h-3.5 w-3.5" /> Editing a message
+					<button type="button" onClick={() => { setEditing(null); setText(""); }} className="ml-auto underline">
+						Cancel
+					</button>
+				</div>
+			)}
+
+			{attachment && (
+				<div className="mb-2 flex items-center gap-3 rounded-xl border border-line bg-surface p-2">
+					{attachment.previewUrl ? <MediaImage src={attachment.previewUrl} alt="" ratio="1 / 1" className="h-14 w-14 rounded-lg" label="Preview unavailable" /> : <span className="grid h-14 w-14 place-items-center rounded-lg border border-line text-[10px] text-faint">{attachment.kind}</span>}
+					<span className="flex-1 text-[12.5px] text-muted">
+						{attachment.uploading ? (
+							<span className="inline-flex items-center gap-1.5">
+								<Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…
+							</span>
+						) : (
+							<span className="inline-flex items-center gap-1.5 text-emerald-300">
+								<Check className="h-3.5 w-3.5" /> Ready to send
+							</span>
+						)}
+					</span>
+					<button type="button" onClick={() => setAttachment(null)} className="press grid h-8 w-8 place-items-center rounded-full text-faint hover:text-live" aria-label="Remove attachment">
+						<Trash2 className="h-4 w-4" />
+					</button>
+				</div>
+			)}
+
+			<form
+				onSubmit={(event) => {
+					event.preventDefault();
+					submit();
+				}}
+				className="flex items-end gap-2"
+			>
+				<input
+					ref={fileRef}
+					type="file"
+					accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+					className="sr-only"
+					onChange={(event) => {
+						const file = event.target.files?.[0];
+						if (file) void pickFile(file);
+					}}
+				/>
+				<button type="button" onClick={() => fileRef.current?.click()} className="press grid h-12 w-12 shrink-0 place-items-center rounded-full border border-line bg-surface text-muted hover:text-ink" aria-label="Attach a photo or video">
+					<ImagePlus className="h-5 w-5" />
+				</button>
+				<label className="relative flex-1">
+					<span className="sr-only">Message</span>
+					<textarea
+						value={text}
+						onChange={(event) => setText(event.target.value)}
+						onKeyDown={(event) => {
+							if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+								event.preventDefault();
+								submit();
+							}
+						}}
+						rows={1}
+						maxLength={4000}
+						placeholder={otherProfile ? `Message ${otherProfile.displayName.split(" ")[0]}` : "Write a message"}
+						className="entry-input max-h-32 min-h-12 resize-none py-3 text-[14.5px]"
+					/>
+					<span className="pointer-events-none absolute bottom-1.5 right-2.5 text-[10.5px] text-faint">{text.length > 3500 ? `${4000 - text.length} left` : ""}</span>
+				</label>
+				<button type="submit" disabled={!text.trim() && !attachment} className="press grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold text-black disabled:opacity-40" aria-label={editing ? "Save edit" : "Send message"}>
+					{editing ? <Pencil className="h-5 w-5" /> : send.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <SendHorizontal className="h-5 w-5" />}
+				</button>
+			</form>
+
+			{reportTarget && <ReportDialog targetType="message" targetId={reportTarget.id} targetLabel={(reportTarget.body ?? "a message").slice(0, 40)} onClose={() => setReportTarget(null)} />}
 		</div>
 	);
 }
 
-function toMessage(
-	value: Record<string, unknown>,
-	otherProfileId: number,
-): Message | null {
-	if (
-		typeof value.messageId !== "string" ||
-		typeof value.timestamp !== "number"
-	) {
-		return null;
+function MessageBubble({
+	message,
+	previous,
+	meId,
+	open,
+	onOpenMenu,
+	onCloseMenu,
+	onReact,
+	onReply,
+	onEdit,
+	onRecall,
+	onPin,
+	onReport,
+	onBlock,
+	canBlock,
+}: {
+	message: MessageRow;
+	previous?: MessageRow;
+	meId: string;
+	open: boolean;
+	onOpenMenu: () => void;
+	onCloseMenu: () => void;
+	onReact: (emoji: string) => void;
+	onReply: () => void;
+	onEdit: () => void;
+	onRecall: () => void;
+	onPin: () => void;
+	onReport: () => void;
+	onBlock: () => void;
+	canBlock: boolean;
+}) {
+	const longPress = useLongPress(onOpenMenu, 380);
+	const grouped = previous?.senderId === message.senderId && Date.parse(message.createdAt) - Date.parse(previous.createdAt) < 5 * 60_000;
+
+	if (message.recalled) {
+		return (
+			<li className="py-1 text-center">
+				<span className="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-2.5 py-1 text-[11.5px] text-faint">
+					<Trash2 className="h-3 w-3" /> {message.mine ? "You recalled a message" : "A message was recalled"}
+				</span>
+			</li>
+		);
 	}
-	const body =
-		value.body && typeof value.body === "object"
-			? (value.body as Record<string, unknown>)
-			: null;
-	if (!body || typeof body.text !== "string") return null;
-	return {
-		id: value.messageId,
-		text: body.text,
-		sentByMe: value.senderId !== otherProfileId,
-		timestamp: value.timestamp,
-		read: true,
-		type: "text",
-	};
+
+	return (
+		<li className={cn("group relative flex", message.mine ? "justify-end" : "justify-start")} {...longPress}>
+			<div className={cn("relative max-w-[80%]")}>
+				<button
+					type="button"
+					onClick={open ? onCloseMenu : onOpenMenu}
+					onContextMenu={(event) => {
+						event.preventDefault();
+						onOpenMenu();
+					}}
+					className={cn(
+						"block w-full rounded-2xl px-3.5 py-2 text-left",
+						message.mine ? "bg-gold text-black" : "border border-line bg-surface text-ink",
+						!message.mine && grouped && "border-t-transparent",
+					)}
+				>
+					{message.mediaUrl ? (
+						message.type === "video" ? (
+							<video src={message.mediaUrl} controls playsInline className="mb-1.5 max-h-72 w-full rounded-xl bg-black object-contain" />
+						) : (
+							<MediaImage key={message.mediaUrl} src={message.mediaUrl} alt="" ratio="4 / 3" className="mb-1.5 w-full max-h-80 rounded-xl" label="This photo could not be loaded" />
+						)
+					) : null}
+					{message.body && <p className="whitespace-pre-line break-words text-[14.5px] leading-relaxed">{message.body}</p>}
+					{message.replyToId && <span className="mt-1 block text-[11px] opacity-70">Replying to a message</span>}
+					<span className={cn("mt-1 flex items-center gap-1.5 text-[10.5px]", message.mine ? "text-black/60" : "text-faint")}>
+						{timeAgo(message.createdAt)}
+						{message.edited ? " · edited" : ""}
+						{message.pinnedAt ? " · pinned" : ""}
+						{message.mediaUrl && message.mediaExpiresIn ? ` · file link expires in ${Math.round(message.mediaExpiresIn / 60)} min` : ""}
+					</span>
+				</button>
+
+				{message.reactions.length > 0 && (
+					<div className={cn("mt-1 flex flex-wrap gap-1", message.mine && "justify-end")}>
+						{message.reactions.map((reaction) => (
+							<button
+								key={reaction.emoji}
+								type="button"
+								onClick={() => onReact(reaction.emoji)}
+								className={cn("press flex h-6 items-center gap-1 rounded-full border px-1.5 text-[11px]", reaction.mine ? "border-gold/60 bg-gold/10 text-gold" : "border-line bg-surface-2 text-muted")}
+								aria-label={`${reaction.count} ${reaction.emoji} reaction${reaction.count === 1 ? "" : "s"}`}
+							>
+								<span>{EMOJI.find((entry) => entry.id === reaction.emoji)?.glyph ?? "•"}</span>
+								{reaction.count}
+							</button>
+						))}
+					</div>
+				)}
+
+				{open && (
+					<MessageMenu
+						message={message}
+						meId={meId}
+						canBlock={canBlock}
+						onClose={onCloseMenu}
+						onReact={onReact}
+						onReply={onReply}
+						onEdit={onEdit}
+						onRecall={onRecall}
+						onPin={onPin}
+						onReport={onReport}
+						onBlock={onBlock}
+					/>
+				)}
+			</div>
+		</li>
+	);
 }
+
+function MessageMenu({
+	message,
+	meId,
+	canBlock,
+	onClose,
+	onReact,
+	onReply,
+	onEdit,
+	onRecall,
+	onPin,
+	onReport,
+	onBlock,
+}: {
+	message: MessageRow;
+	meId: string;
+	canBlock: boolean;
+	onClose: () => void;
+	onReact: (emoji: string) => void;
+	onReply: () => void;
+	onEdit: () => void;
+	onRecall: () => void;
+	onPin: () => void;
+	onReport: () => void;
+	onBlock: () => void;
+}) {
+	const mine = message.senderId === meId;
+	return (
+		<div role="menu" className="absolute top-full z-30 mt-1 w-52 rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-pop)]" onClick={(event) => event.stopPropagation()}>
+			<div className="flex justify-between gap-1 border-b border-line-soft px-1.5 pb-1.5 pt-0.5">
+				{EMOJI.map((emoji) => (
+					<button key={emoji.id} type="button" title={emoji.label} onClick={() => { onReact(emoji.id); onClose(); }} className="press grid h-8 w-8 place-items-center rounded-lg text-[16px] hover:bg-surface-2">
+						{emoji.glyph}
+					</button>
+				))}
+			</div>
+			<button type="button" className="menu-item" onClick={onReply}>
+				<Reply className="h-4 w-4" /> Reply
+			</button>
+			{message.body ? (
+				<button
+					type="button"
+					className="menu-item"
+					onClick={() => {
+						// Copying is only offered when there is text; an attachment alone
+						// has nothing to put on the clipboard.
+						void navigator.clipboard?.writeText(message.body ?? "");
+						onClose();
+					}}
+				>
+					<Copy className="h-4 w-4" /> Copy text
+				</button>
+			) : null}
+			<button type="button" className="menu-item" onClick={() => { onPin(); }}>
+				{message.pinnedAt ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />} {message.pinnedAt ? "Unpin" : "Pin to top"}
+			</button>
+			{mine ? (
+				<>
+					<button type="button" className="menu-item" disabled={!message.canEdit} onClick={() => { onEdit(); }} title={message.canEdit ? undefined : "The 15 minute edit window has passed"}>
+						<Pencil className="h-4 w-4" /> Edit
+					</button>
+					<button type="button" className="menu-item text-live" disabled={!message.canRecall} onClick={() => { onRecall(); }} title={message.canRecall ? undefined : "Messages can be recalled within an hour"}>
+						<Trash2 className="h-4 w-4" /> Recall
+					</button>
+				</>
+			) : (
+				<button type="button" className="menu-item" onClick={() => { onReport(); }}>
+					<ShieldAlert className="h-4 w-4" /> Report message
+				</button>
+			)}
+			{!mine && canBlock && (
+				<button type="button" className="menu-item" onClick={() => { onBlock(); }}>
+					<Ban className="h-4 w-4" /> Block
+				</button>
+			)}
+		</div>
+	);
+}
+
+function ChevronUp() {
+	// The icon set is limited to what the app actually ships with; a plain arrow
+	// reads better here than pulling another glyph in.
+	return <span className="text-[13px] leading-none">↑</span>;
+}
+
+function readDraft(id: string): string {
+	try {
+		return localStorage.getItem(draftKey(id)) ?? "";
+	} catch {
+		return "";
+	}
+}
+
+function writeDraft(id: string, value: string) {
+	try {
+		if (value) localStorage.setItem(draftKey(id), value);
+		else localStorage.removeItem(draftKey(id));
+	} catch {
+		// Storage disabled: drafts simply do not persist.
+	}
+}
+

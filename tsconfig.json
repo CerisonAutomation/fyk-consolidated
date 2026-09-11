@@ -1,13 +1,6 @@
 {
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": [
-    "prisma/seed.ts",
-    "src/generated/**",
-    "**/*.test.ts",
-    "vitest.config.ts",
-    "supabase/functions/**",
-    "next.config.ts"
-  ],
+  "exclude": ["**/*.test.ts", "vitest.config.ts", "supabase/functions/**"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -15,8 +8,6 @@
     "paths": {
       "#/*": ["./src/*"],
       "@/*": ["./src/*"],
-      "next/navigation": ["./src/next-compat/navigation.ts"],
-      "next/link": ["./src/next-compat/link.tsx"],
       "@supabase/supabase-js": ["./node_modules/@supabase/supabase-js"],
       "date-fns": ["./node_modules/date-fns"]
     },

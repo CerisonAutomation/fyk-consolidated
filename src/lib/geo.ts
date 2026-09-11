@@ -34,14 +34,26 @@ export function jitterKm(viewerId: string, targetId: string, maxKm = 0.3): numbe
   return (pairHash(viewerId, targetId) - 0.5) * 2 * maxKm;
 }
 
-/** Snap a coordinate to a ~250 m grid so exact GPS never leaves the service layer. */
+/**
+ * Snap a coordinate to a ~250 m grid so an exact GPS fix never leaves the
+ * service layer.
+ *
+ * Two details that matter, both covered by tests:
+ *   - the longitude step is derived from the **snapped** latitude, not the input
+ *     one, otherwise re-snapping an already-coarsened value shifts it again and
+ *     `snap` is not idempotent (it was: the second pass moved the point ~130 m);
+ *   - results are rounded to 6 decimals, so a stored value and a freshly snapped
+ *     one compare exactly instead of differing by float noise.
+ */
 export function snap(point: LatLng, gridMeters = 250): LatLng {
   const dLat = gridMeters / 111_320;
-  const dLng = gridMeters / (111_320 * Math.max(0.2, Math.cos((point.lat * Math.PI) / 180)));
-  return {
-    lat: Math.round(point.lat / dLat) * dLat,
-    lng: Math.round(point.lng / dLng) * dLng,
-  };
+  const lat = round6(Math.round(point.lat / dLat) * dLat);
+  const dLng = gridMeters / (111_320 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+  return { lat, lng: round6(Math.round(point.lng / dLng) * dLng) };
+}
+
+function round6(value: number): number {
+  return Math.round(value * 1e6) / 1e6;
 }
 
 export type DistanceOptions = {

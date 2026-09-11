@@ -47,6 +47,46 @@ export type Profile = {
   last_active_at: string;
   created_at: string;
   updated_at: string;
+  /** Moderation rights. Server-owned: a trigger blocks self-promotion. */
+  role: ModerationRole;
+  looking_for: string[];
+  interests: string[];
+  /** Set when the member says they are free right now; Board/availability. */
+  open_to_meet: boolean | null;
+  available_until: string | null;
+  /** Coarse ~4-9 char geohash of the coarsened location. Never a precise fix. */
+  geohash6: string | null;
+};
+
+export type ModerationRole = "user" | "moderator" | "admin";
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  kind: "match" | "message" | "event" | "board" | "system" | "safety";
+  title: string;
+  body: string | null;
+  deep_link: string | null;
+  read: boolean;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type Footprint = {
+  id: string;
+  visitor_id: string;
+  visited_id: string;
+  viewed_at: string;
+};
+
+export type ModerationAction = {
+  id: string;
+  report_id: string | null;
+  actor_id: string;
+  target_id: string;
+  action: "dismiss" | "warn" | "suspend" | "ban" | "reinstate";
+  note: string | null;
+  created_at: string;
 };
 
 export type ProfilePrivate = {
@@ -60,8 +100,13 @@ export type ProfilePhoto = {
   id: string;
   owner_id: string;
   storage_path: string;
+  /** Bucket the object lives in; needed to sign/serve without guessing. */
+  bucket: string | null;
   position: number;
   is_primary: boolean;
+  blurhash: string | null;
+  nsfw_flag: boolean | null;
+  alt_text: string | null;
   width: number | null;
   height: number | null;
   created_at: string;
@@ -137,6 +182,8 @@ export type Message = {
   expires_at: string | null;
   unsent_at: string | null;
   edited_at: string | null;
+  pinned_at: string | null;
+  pinned_by: string | null;
   created_at: string;
 };
 
@@ -224,20 +271,31 @@ export type PostJoin = { post_id: string; profile_id: string; created_at: string
 export type Report = {
   id: string;
   reporter_id: string;
-  target_type: string;
+  target_type: "profile" | "message" | "board_post" | "event" | "album";
   target_id: string;
-  reason: string;
+  reason:
+    | "harassment"
+    | "spam"
+    | "fake_profile"
+    | "inappropriate_content"
+    | "underage"
+    | "threat"
+    | "doxxing"
+    | "other";
   details: string | null;
   status: ReportStatus;
+  /** Urgent is set by a trigger for underage/threat/doxxing and cannot be lowered. */
+  severity: "normal" | "urgent";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  resolution:
+    | "no_action"
+    | "content_removed"
+    | "warning_issued"
+    | "temporarily_suspended"
+    | "permanently_banned"
+    | null;
   created_at: string;
-};
-
-export type PremiumEntitlement = {
-  profile_id: string;
-  tier: PlanTier;
-  source: string;
-  expires_at: string | null;
-  updated_at: string;
 };
 
 export type Group = {
@@ -297,18 +355,6 @@ export type Shout = {
   created_at: string;
 };
 
-export type Notification = {
-  id: string;
-  user_id: string;
-  type: string;
-  title: string;
-  body: string | null;
-  actor_id: string | null;
-  href: string | null;
-  read: boolean;
-  created_at: string;
-};
-
 export type Favorite = {
   id: string;
   user_id: string;
@@ -329,14 +375,6 @@ export type ShoutLike = {
   id: string;
   shout_id: string;
   user_id: string;
-  created_at: string;
-};
-
-export type Footprint = {
-  id: string;
-  visitor_id: string;
-  visited_id: string;
-  preset: string | null;
   created_at: string;
 };
 
@@ -427,7 +465,6 @@ export type ConsumablesInventory = {
   expires_at: string | null;
   created_at: string;
 };
-
 
 export type Story = {
   id: string;
@@ -528,7 +565,6 @@ type Table<T> = {
 export type Database = {
   public: {
     Tables: {
-      users: Table<User>;
       profiles: Table<Profile>;
       profile_private: Table<ProfilePrivate>;
       profile_photos: Table<ProfilePhoto>;
@@ -552,36 +588,24 @@ export type Database = {
       board_comments: Table<BoardComment>;
       post_joins: Table<PostJoin>;
       reports: Table<Report>;
-      premium_entitlements: Table<PremiumEntitlement>;
-      groups: Table<Group>;
-      group_members: Table<GroupMember>;
-      group_messages: Table<GroupMessage>;
-      fansites: Table<Fansite>;
-      tribes: Table<Tribe>;
-      shouts: Table<Shout>;
       notifications: Table<Notification>;
-      favorites: Table<Favorite>;
-      taps: Table<Tap>;
-      subscriptions: Table<Subscription>;
-      shout_likes: Table<ShoutLike>;
       footprints: Table<Footprint>;
-      user_notes: Table<UserNote>;
-      king_pet: Table<KingPet>;
-      pet_items: Table<PetItem>;
-      pet_adventures: Table<PetAdventure>;
-      wallet: Table<WalletRow>;
-      wallet_transactions: Table<WalletTransaction>;
-      consumables_inventory: Table<ConsumablesInventory>;
-      stories: Table<Story>;
-      story_views: Table<StoryView>;
-
+      moderation_actions: Table<ModerationAction>;
     };
     Views: Record<string, never>;
     Functions: {
+      can_access_album: { Args: { target_album: string }; Returns: boolean };
+      can_access_chat_media: { Args: { path: string }; Returns: boolean };
       register_media_open: { Args: { target: string }; Returns: MessageAttachment };
       register_album_open: { Args: { target: string }; Returns: AlbumShare };
-      find_similar_profiles: { Args: { query_embedding: string; match_count: number; match_threshold: number }; Returns: Record<string, unknown>[] };
-      find_similar_messages: { Args: { query_embedding: string; conv_id: string; match_count: number }; Returns: Record<string, unknown>[] };
+      record_view: { Args: { target: string }; Returns: undefined };
+      unblock: { Args: { target: string }; Returns: undefined };
+      resolve_report: {
+        Args: { p_report_id: string; p_action: string; p_note?: string | null };
+        Returns: { report_id: string; report_status: ReportStatus; suspended: boolean }[];
+      };
+      rate_limit_hit: { Args: { p_bucket_key: string; p_window_seconds: number; p_max_hits: number }; Returns: { hits: number; blocked: boolean }[] };
+      expire_stale_rows: { Args: Record<string, never>; Returns: number };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

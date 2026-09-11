@@ -13,13 +13,6 @@ export type AppEnv = {
   supabaseUrl: string;
   supabaseAnonKey: string;
   appEnv: "development" | "staging" | "production";
-  flags: {
-    uploads: boolean;
-    preciseLocation: boolean;
-    eventCreation: boolean;
-    /** Billing is scaffolding only — no provider is configured. */
-    billing: boolean;
-  };
 };
 
 export class EnvError extends Error {
@@ -31,9 +24,6 @@ export class EnvError extends Error {
     this.name = "EnvError";
   }
 }
-
-const bool = (v: string | undefined, fallback = false) =>
-  v === undefined ? fallback : v === "true" || v === "1";
 
 function read(): { env: AppEnv | null; missing: string[] } {
   const raw = import.meta.env;
@@ -81,12 +71,6 @@ function read(): { env: AppEnv | null; missing: string[] } {
       supabaseUrl: url,
       supabaseAnonKey: key,
       appEnv: ["development", "staging", "production"].includes(appEnv) ? appEnv : "development",
-      flags: {
-        uploads: bool(raw.VITE_ENABLE_UPLOADS, true),
-        preciseLocation: bool(raw.VITE_ENABLE_PRECISE_LOCATION, false),
-        eventCreation: bool(raw.VITE_ENABLE_EVENT_CREATION, true),
-        billing: bool(raw.VITE_ENABLE_BILLING, false),
-      },
     },
     missing: [],
   };

@@ -1,4 +1,4 @@
-import { cn } from "@/utils/cn";
+import { cn } from "#/utils/cn";
 
 /**
  * FY KING. brand marks — rebuilt from the supplied artwork.

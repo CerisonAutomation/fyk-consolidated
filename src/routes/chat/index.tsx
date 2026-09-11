@@ -1,272 +1,109 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessageCircle, Pin, Star, VolumeX, PenSquare } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useConversations } from "#/core/api/hooks/use-conversations";
-import { ChatListSkeleton, EmptyState } from "#/core/ui/fyk-primitives";
-import { type Conversation, useConversationsStore } from "#/domains/chat/store";
-import { cn } from "#/utils/cn";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { MessageCircle, RefreshCw, Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import { api } from "#/lib/client";
+import type { ConversationRow } from "#/lib/api-types";
+import { timeAgo } from "#/lib/utils";
+import { Avatar } from "#/components/ui/Avatar";
+import { StateBlock, describeFailure } from "#/components/ui/StateBlock";
+import { PullToRefresh } from "#/components/ui/PullToRefresh";
+import { useShell } from "#/components/AppShell";
 
 export const Route = createFileRoute("/chat/")({
 	component: ChatListPage,
+	head: () => ({ meta: [{ title: "Chats — FYK" }] }),
 });
 
-/* ================================================================== */
-/*  FYK Premium Chat List                                              */
-/* ================================================================== */
-
-type TabId = "all" | "unread" | "matches" | "groups";
-
-const TABS: { id: TabId; label: string; count?: number }[] = [
- { id: "all", label: "All" },
- { id: "unread", label: "Unread" },
- { id: "matches", label: "Matches" },
- { id: "groups", label: "Groups" },
-];
-
 function ChatListPage() {
-	const { entries, loading, error, setEntries, setLoading, setError } =
-		useConversationsStore();
-	const conversations = useConversations();
-	const [activeTab, setActiveTab] = useState<TabId>("all");
+	const { capable } = useShell();
+	const navigate = useNavigate();
+	const [term, setTerm] = useState("");
 
-	useEffect(() => {
-		setLoading(conversations.isLoading);
-		setError(conversations.error ?? null);
-		if (conversations.data) {
-			setEntries(
-				conversations.data.entries.flatMap((entry) => {
-					const conversation = toConversation(entry);
-					return conversation ? [conversation] : [];
-				}),
-			);
-		}
-	}, [
-		conversations.data,
-		conversations.error,
-		conversations.isLoading,
-		setEntries,
-		setError,
-		setLoading,
-	]);
+	const { data, isPending, error, refetch, isFetching } = useQuery({
+		queryKey: ["conversations"],
+		queryFn: () => api.get<{ conversations: ConversationRow[] }>("conversations"),
+		enabled: capable("chat"),
+		// Polling, not a socket: claiming realtime here would be a false claim. The
+		// interval is only active while the tab is visible.
+		refetchInterval: 12_000,
+		refetchIntervalInBackground: false,
+	});
 
-	const sortedEntries = useMemo(() => {
-		return [...entries].sort((a, b) => {
-			// Pinned first
-			if (a.data.pinned && !b.data.pinned) return -1;
-			if (!a.data.pinned && b.data.pinned) return 1;
-			// Unread first
-			if (a.data.unreadCount > 0 && b.data.unreadCount === 0) return -1;
-			if (a.data.unreadCount === 0 && b.data.unreadCount > 0) return 1;
-			return 0;
-		});
-	}, [entries]);
+	const conversations = useMemo(() => {
+		const all = data?.conversations ?? [];
+		const needle = term.trim().toLowerCase();
+		if (!needle) return all;
+		return all.filter((row) => (row.other?.displayName ?? "").toLowerCase().includes(needle) || row.preview.toLowerCase().includes(needle));
+	}, [data, term]);
 
-	const filteredEntries = useMemo(() => {
-		if (activeTab === "unread") return sortedEntries.filter((e) => e.data.unreadCount > 0);
-		if (activeTab === "matches") return sortedEntries.filter((e) => e.type === "match");
-		if (activeTab === "groups") return sortedEntries.filter((e) => e.type === "group");
-		return sortedEntries;
-	}, [sortedEntries, activeTab]);
+	if (!capable("chat")) {
+		return <StateBlock kind="disabled" title="Chats are unavailable" description="conversations and messages are not readable for your account. Apply the migrations in supabase/migrations and reload." />;
+	}
 
-	const unreadCount = useMemo(() => entries.filter((e) => e.data.unreadCount > 0).length, [entries]);
-	const matchesCount = useMemo(() => entries.filter((e) => e.type === "match").length, [entries]);
-	const groupsCount = useMemo(() => entries.filter((e) => e.type === "group").length, [entries]);
+	const failure = error ? describeFailure(error) : null;
 
 	return (
-		<main className="screen-nav-host">
-			{/* ── Header ── */}
-			<div className="flex items-center justify-between px-4 py-3">
-				<div className="flex items-center gap-3">
-					<h1 className="text-xl font-display text-foreground tracking-wide">
-						Chats
-					</h1>
-					<button className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-white/5 hover:text-white">
-						<PenSquare className="h-4 w-4" />
-					</button>
-				</div>
+		<PullToRefresh onRefresh={async () => { await refetch(); }}>
+			<div className="mb-3 flex items-center gap-2">
+				<label className="relative flex-1">
+					<span className="sr-only">Search conversations</span>
+					<Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+					<input value={term} onChange={(event) => setTerm(event.target.value)} placeholder="Search chats" className="entry-input h-11 pl-10 text-[13.5px]" />
+				</label>
+				<button type="button" onClick={() => void refetch()} className="press flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface text-ink-2" aria-label="Refresh chats">
+					<RefreshCw className={isFetching ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+				</button>
 			</div>
 
-			{/* ── Tabs ── */}
-			<div className="flex gap-1 border-b border-line px-4">
-				{TABS.map((tab) => {
-					const count = tab.id === "all" ? entries.length
-						: tab.id === "unread" ? unreadCount
-						: tab.id === "matches" ? matchesCount
-						: groupsCount;
-					return (
-						<button
-							key={tab.id}
-							onClick={() => setActiveTab(tab.id)}
-							className={cn(
-								"flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
-								activeTab === tab.id
-									? "border-gold text-gold"
-									: "border-transparent text-muted-foreground hover:text-foreground"
-							)}
-						>
-							{tab.label}
-							{count > 0 && (
-								<span className={cn(
-									"rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-									activeTab === tab.id
-										? "bg-gold/20 text-gold"
-										: "bg-white/10 text-muted-foreground"
-								)}>
-									{count}
-								</span>
-							)}
+			{isPending ? (
+				<ul className="space-y-2" aria-hidden="true">
+					{[0, 1, 2, 3, 4].map((index) => (
+						<li key={index} className="skeleton h-[68px] rounded-2xl" />
+					))}
+				</ul>
+			) : failure ? (
+				<StateBlock kind="error" title="Your chats could not load" description={failure.message} action={<button type="button" onClick={() => void refetch()} className="press h-11 rounded-full bg-gold px-4 text-[13.5px] font-bold text-black">Try again</button>} />
+			) : conversations.length === 0 ? (
+				<StateBlock
+					kind="empty"
+					title={term ? "No chat matches that search" : "No conversations yet"}
+					description={term ? "Try a different name." : "A chat opens when you and someone else tap each other. Nothing here is simulated: no bot will message you first."}
+					action={
+						<button type="button" onClick={() => void navigate({ to: "/grid" })} className="press flex h-11 items-center gap-2 rounded-full bg-gold px-4 text-[13.5px] font-bold text-black">
+							<MessageCircle className="h-4 w-4" /> Find someone nearby
 						</button>
-					);
-				})}
-			</div>
-
-			{/* ── Content ── */}
-			{loading ? (
-				<ChatListSkeleton />
-			) : error ? (
-				<div className="flex flex-col items-center gap-4 py-12">
-					<div className="glass-card p-6 text-center">
-						<p className="text-red-400 font-display text-lg">
-							Failed to load messages
-						</p>
-						<p className="text-muted-foreground text-xs mt-2 font-mono">
-							{error.message}
-						</p>
-					</div>
-				</div>
-			) : filteredEntries.length === 0 ? (
-				<EmptyState
-					icon={MessageCircle}
-					title={
-						activeTab === "unread"
-							? "No unread messages"
-							: activeTab === "matches"
-								? "No match conversations"
-								: activeTab === "groups"
-									? "No group chats"
-									: "No conversations yet"
-					}
-					description={
-						activeTab === "unread"
-							? "You're all caught up!"
-							: activeTab === "matches"
-								? "Match with someone to start chatting."
-								: activeTab === "groups"
-									? "Join a group to start chatting."
-									: "Start a conversation by tapping Message on someone's profile."
 					}
 				/>
 			) : (
-				<div className="px-2">
-					{filteredEntries.map((entry, idx) => (
-						<ChatRow
-							key={entry.data.conversationId}
-							entry={entry}
-							index={idx}
-						/>
+				<ul className="space-y-1.5">
+					{conversations.map((row) => (
+						<li key={row.id}>
+							<button
+								type="button"
+								onClick={() => void navigate({ to: "/chat/$conversationId", params: { conversationId: row.id } })}
+								className="press flex w-full items-center gap-3 rounded-2xl border border-transparent bg-surface px-3 py-3 text-left transition-colors hover:border-line"
+							>
+								<span className="relative shrink-0">
+									<Avatar name={row.other?.displayName ?? "Former member"} photoUrl={row.other?.avatarUrl ?? null} size={46} online={row.other?.presence === "online"} />
+								</span>
+								<span className="min-w-0 flex-1">
+									<span className="flex items-baseline gap-2">
+										<span className={row.unread > 0 ? "truncate text-[14.5px] font-bold text-ink" : "truncate text-[14.5px] font-semibold text-ink-2"}>
+											{row.other?.displayName ?? "Former member"}
+										</span>
+										<span className="ml-auto shrink-0 text-[11px] text-faint">{row.lastMessageAt ? timeAgo(row.lastMessageAt) : ""}</span>
+									</span>
+									<span className="mt-0.5 flex items-center gap-2">
+										<span className={row.unread > 0 ? "truncate text-[13px] text-ink-2" : "truncate text-[13px] text-muted"}>{row.preview}</span>
+										{row.unread > 0 ? <span className="ml-auto shrink-0 rounded-full bg-gold px-1.5 text-[10.5px] font-bold leading-4 text-black">{row.unread}</span> : null}
+									</span>
+								</span>
+							</button>
+						</li>
 					))}
-				</div>
+				</ul>
 			)}
-		</main>
-	);
-}
-
-function toConversation(value: Record<string, unknown>): Conversation | null {
-	if (value.type !== "full_conversation_v1") return null;
-	if (!value.data || typeof value.data !== "object") return null;
-	const data = value.data as Record<string, unknown>;
-	if (
-		typeof data.conversationId !== "string" ||
-		typeof data.name !== "string" ||
-		!Array.isArray(data.participants) ||
-		typeof data.lastActivityTimestamp !== "number" ||
-		typeof data.unreadCount !== "number"
-	) {
-		return null;
-	}
-	return value as unknown as Conversation;
-}
-
-/* ================================================================== */
-/*  Chat Row                                                           */
-/* ================================================================== */
-
-function ChatRow({ entry, index }: { entry: Conversation; index: number }) {
-	const d = entry.data;
-	const hasUnread = d.unreadCount > 0;
-
-	return (
-		<Link
-			to="/chat/$conversationId"
-			params={{ conversationId: d.conversationId }}
-			className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-white/[0.03] group"
-			style={{ animationDelay: `${index * 30}ms` }}
-		>
-			{/* ── Avatar ── */}
-			<div className="relative shrink-0">
-				<div
-					className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 group-hover:scale-105"
-					style={{
-						background: hasUnread
-							? "linear-gradient(135deg, rgba(234,179,8,0.2), rgba(234,179,8,0.08))"
-							: "color-mix(in srgb, var(--accent-primary) 8%, transparent)",
-						border: hasUnread
-							? "2px solid rgba(234,179,8,0.35)"
-							: "1px solid rgba(255,255,255,0.06)",
-						color: hasUnread ? "var(--accent-primary)" : "var(--text-muted)",
-					}}
-				>
-					{d.name?.charAt(0)?.toUpperCase() ?? "?"}
-				</div>
-				{/* Online indicator */}
-				{d.onlineUntil !== null && (
-					<div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 ring-2 ring-[var(--color-background)]" />
-				)}
-				{/* Unread badge */}
-				{hasUnread && (
-					<div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red flex items-center justify-center text-white text-[9px] font-bold badge-pulse">
-						{d.unreadCount > 99 ? "99+" : d.unreadCount}
-					</div>
-				)}
-			</div>
-
-			{/* ── Content ── */}
-			<div className="flex-1 min-w-0">
-				<div className="flex items-center gap-1.5">
-					{d.pinned && (
-						<Pin className="w-3 h-3 text-gold/50 shrink-0 -rotate-45" />
-					)}
-					<span
-						className={`truncate text-sm ${hasUnread ? "font-semibold text-foreground" : "font-medium text-foreground/80"}`}
-					>
-						{d.name}
-					</span>
-					{d.favorite && (
-						<Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
-					)}
-				</div>
-				<div className="flex items-center gap-1.5 mt-0.5">
-					{d.preview && (
-						<span
-							className={`truncate text-xs ${hasUnread ? "text-foreground/60" : "text-muted-foreground/50"}`}
-						>
-							{d.preview}
-						</span>
-					)}
-				</div>
-			</div>
-
-			{/* ── Right side ── */}
-			<div className="flex flex-col items-end gap-1.5 shrink-0">
-				{d.muted && (
-					<VolumeX className="w-3.5 h-3.5 text-muted-foreground/30" />
-				)}
-				{hasUnread && (
-					<div className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gold px-1.5 text-[10px] font-bold text-black">
-						{d.unreadCount > 99 ? "99+" : d.unreadCount}
-					</div>
-				)}
-			</div>
-		</Link>
+		</PullToRefresh>
 	);
 }
