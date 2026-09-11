@@ -69,8 +69,8 @@ export default function Header() {
         <div className="relative w-full max-w-md">
           <MapSearchBar
             placeholder="Search by name, interest, or place..."
-            onSelect={() => {
-              // Could navigate to explore with the selected location
+            onSelect={(f) => {
+              window.location.href = `/explore?city=${encodeURIComponent(f.name)}`;
             }}
             className="w-full"
           />

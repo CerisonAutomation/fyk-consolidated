@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft, Send, Sparkles, ShieldAlert, Pin, Pencil, Trash2,
-  Mic, Timer, X, Smile, Search, Activity, TrendingUp, TrendingDown,
+  Mic, Timer, X, Smile, Search, Activity, TrendingUp, TrendingDown, MapPin,
 } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
@@ -14,10 +14,8 @@ import { Skeleton, Spinner } from "@/components/ui/primitives";
 import { cn, timeAgo } from "@/lib/utils";
 import { MESSAGE_EMOJIS } from "@/lib/constants";
 import type { Message, ConversationWithMeta } from "@/lib/types";
-import { MapPin } from "lucide-react";
 import { ShareLocationSheet } from "#/components/chat/ShareLocationSheet";
 import { PickLocationSheet } from "#/components/chat/PickLocationSheet";
-
 import { LiveLocationPreview } from "#/components/chat/LiveLocationPreview";
 
 export function ChatView({
@@ -420,11 +418,10 @@ export function ChatView({
                         </div>
                       ) : m.type === "location" ? (
                         <LiveLocationPreview
-                          lat={(m as any).lat ?? 0}
-                          lng={(m as any).lng ?? 0}
-                          isLive={false}
-                          userLat={undefined}
-                          userLng={undefined}
+                          lat={m.lat ?? 0}
+                          lng={m.lon ?? 0}
+                          isLive={!!m.live}
+                          expiresAt={m.live?.expiresAt}
                         />
                       ) : (
                         m.content
@@ -591,7 +588,7 @@ export function ChatView({
       {locationSheet === "share" && (
         <ShareLocationSheet
           onShare={(lat, lng) => {
-            send.mutate({ content: `📍 Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+            send.mutate({ content: JSON.stringify({ type: "Location", lat, lon: lng }) });
             setLocationSheet(null);
           }}
           onClose={() => setLocationSheet(null)}
@@ -600,7 +597,7 @@ export function ChatView({
       {locationSheet === "pick" && (
         <PickLocationSheet
           onShare={(lat, lng, label) => {
-            send.mutate({ content: `📍 ${label ?? "Shared location"}: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+            send.mutate({ content: JSON.stringify({ type: "Location", lat, lon: lng, label }) });
             setLocationSheet(null);
           }}
           onClose={() => setLocationSheet(null)}

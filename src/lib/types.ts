@@ -72,6 +72,11 @@ export type Message = {
   toxicity_score?: number;
   created_at: string;
   reactions?: Array<{ emoji: string; user_id: string }>;
+  // Location message fields
+  lat?: number;
+  lon?: number;
+  label?: string;
+  live?: { durationMs: number; expiresAt: number } | null;
   readBy?: Array<{ user_id: string }>;
 };
 

@@ -99,7 +99,7 @@ export function ExploreClient() {
 			country,
 			flag: "\ud83c\udf0d",
 			onlineCount: 0,
-			photo: `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${feature.center[0]},${feature.center[1]},12,0/400x200@2x?access_token=`,
+			photo: `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${feature.center[0]},${feature.center[1]},12,0/400x200@2x?access_token=${import.meta.env.VITE_MAPBOX_ACCESS_TOKEN ?? ""}`,
 		};
 
 		setCustomCities((prev) => [...prev, newCity]);

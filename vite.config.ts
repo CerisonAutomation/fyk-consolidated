@@ -9,11 +9,6 @@ const config = defineConfig({
 		tsconfigPaths: true,
 		dedupe: ["react", "react-dom", "react/jsx-runtime"],
 	},
-	ssr: {
-		resolve: {
-			dedupe: ["react", "react-dom", "react/jsx-runtime"],
-		},
-	},
 	plugins: [
 		devtools(),
 		tailwindcss(),
