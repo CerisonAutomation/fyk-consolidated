@@ -4,7 +4,8 @@
     "prisma/seed.ts",
     "src/generated/**",
     "**/*.test.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "supabase/functions/**"
   ],
   "compilerOptions": {
     "target": "ES2022",

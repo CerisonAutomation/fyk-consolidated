@@ -1,4 +1,4 @@
-export { Avatar } from "./Avatar";
+export { Avatar } from "./avatar";
 export { ProgressRing, ProgressRing as Ring } from "./ProgressRing";
 export { Modal } from "./Modal";
 export { Reveal } from "./Reveal";

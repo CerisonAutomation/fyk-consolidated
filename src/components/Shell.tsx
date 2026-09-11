@@ -62,7 +62,7 @@ function Logo({ onClick }: { onClick: () => void }) {
 function NavList({ vertical = true }: { vertical?: boolean }) {
   const { view, go, threads, likesReceived } = useStore();
   const unread = threads.reduce((n, t) => n + (t.unread > 0 ? 1 : 0), 0);
-  const badge = (id: ViewId) => (id === "chats" ? unread : id === "likes" ? likesReceived.length : 0);
+  const badge = (id: ViewId) => (id === "chats" ? unread : id === "likes" ? likesReceived : 0);
 
   return (
     <nav aria-label="Primary" className={cn(vertical ? "flex flex-col gap-1 px-2" : "flex")}>
@@ -364,7 +364,7 @@ export function TopBar({
             className="hidden items-center gap-1.5 rounded-full border border-live/40 bg-live/12 px-3 py-1.5 text-[12px] font-semibold text-live sm:inline-flex"
           >
             <CloudOff className="h-3.5 w-3.5" />
-            Offline{queued > 0 ? ` · ${queued} queued` : ""}
+            Offline{queued ? " · queued" : ""}
           </span>
         )}
 

@@ -1,8 +1,9 @@
 import { TtlCache } from "#/core/lib/ttl-cache";
+import { getSupabase } from "#/integrations/supabase/client";
 
 export type RenderedGridProfile = {
 	type: "rendered";
-	id: number;
+	id: string;
 	displayName: string | null;
 	age: number | null;
 	position: string | null;
@@ -20,7 +21,7 @@ export type RenderedGridProfile = {
 
 export type LazyGridProfile = {
 	type: "lazy";
-	id: number;
+	id: string;
 	unread: number | null;
 	isVisiting: boolean;
 };
@@ -36,51 +37,6 @@ export interface GridResponse {
 function primaryImageHashes(url: string | null | undefined): string[] | null {
 	const hash = url?.split("/").pop();
 	return hash ? [hash] : null;
-}
-
-function gridProfile(profile: {
-	profileId: number;
-	displayName?: string | null;
-	age?: number | null;
-	position?: string | null;
-	headline?: string | null;
-	compatibilityScore?: number;
-	isNew?: boolean;
-	distanceMeters?: number | null;
-	primaryImageUrl?: string | null;
-	unreadCount?: number;
-	onlineUntil?: number | null;
-	favorite?: boolean;
-	isVisiting?: boolean;
-	chatted?: boolean;
-}): GridProfile {
-	const { favorite, chatted } = profile;
-	if (favorite === undefined || chatted === undefined) {
-		return {
-			type: "lazy",
-			id: profile.profileId,
-			unread: profile.unreadCount ?? 0,
-			isVisiting: profile.isVisiting ?? false,
-		};
-	}
-	return {
-		type: "rendered",
-		id: profile.profileId,
-		displayName: profile.displayName ?? null,
-		age: profile.age ?? null,
-		position: profile.position ?? null,
-		headline: profile.headline ?? null,
-		compatibilityScore:
-			profile.compatibilityScore ?? 58 + (profile.profileId % 39),
-		isNew: profile.isNew ?? profile.profileId % 11 === 0,
-		distance: profile.distanceMeters ?? null,
-		profilePhotosHashes: primaryImageHashes(profile.primaryImageUrl),
-		unread: profile.unreadCount ?? null,
-		onlineUntil: profile.onlineUntil ?? null,
-		isFavorite: favorite,
-		isVisiting: profile.isVisiting ?? false,
-		hasChattedInLast24Hrs: chatted,
-	};
 }
 
 export async function getGrid(query: {
@@ -111,42 +67,81 @@ export async function getGrid(query: {
 	tags?: string[];
 	fresh?: boolean;
 }): Promise<GridResponse> {
-	// Demo data (Supabase data layer not yet wired)
-	const [{ demoCascadeV4 }, { profileSeed }] = await Promise.all([
-		import("#/domains/demo/mock/grid"),
-		import("#/domains/demo/mock/profiles"),
-	]);
-	const params = new URLSearchParams();
-	if (query.nearbyGeoHash) params.set("nearbyGeoHash", query.nearbyGeoHash);
-	if (query.pageNumber !== undefined)
-		params.set("pageNumber", String(query.pageNumber));
-	if (query.favorites) params.set("favorites", "true");
-	if (query.onlineOnly) params.set("onlineOnly", "true");
-	if (query.ageMin !== undefined) params.set("ageMin", String(query.ageMin));
-	if (query.ageMax !== undefined) params.set("ageMax", String(query.ageMax));
-	const demoResult = demoCascadeV4(params);
+	const client = getSupabase();
+	if (!client) {
+		return { items: [], nextPage: null, shuffled: false };
+	}
+
+	const page = query.pageNumber ?? 0;
+	const pageSize = 30;
+	const from = page * pageSize;
+	const to = from + pageSize - 1;
+
+	let qb = client
+		.from("users")
+		.select("id, pseudo, nick, age, body_type, position, headline, photos, city, area, lat_coarse, lng_coarse, online, visible, hidden, incognito, last_active_at, created_at", { count: "exact" })
+		.eq("visible", true)
+		.eq("hidden", false)
+		.eq("incognito", false)
+		.neq("status", "suspended")
+		.order("last_active_at", { ascending: false })
+		.range(from, to);
+
+	if (query.onlineOnly) {
+		qb = qb.eq("online", true);
+	}
+	if (query.ageMin !== undefined) {
+		qb = qb.gte("age", query.ageMin);
+	}
+	if (query.ageMax !== undefined) {
+		qb = qb.lte("age", query.ageMax);
+	}
+	if (query.tribes && query.tribes.length > 0) {
+		qb = qb.overlaps("tribes", query.tribes);
+	}
+	if (query.bodyTypes && query.bodyTypes.length > 0) {
+		qb = qb.in("body_type", query.bodyTypes);
+	}
+	if (query.lookingFor && query.lookingFor.length > 0) {
+		qb = qb.overlaps("looking_for", query.lookingFor);
+	}
+
+	const { data: profiles, count } = await qb;
+
+	if (!profiles) {
+		return { items: [], nextPage: null, shuffled: false };
+	}
+
+	const items: GridProfile[] = profiles.map((p) => {
+		const photos = (p.photos as string[] | null) ?? [];
+		const primaryPhoto = photos[0] ?? null;
+		const createdAt = new Date(p.created_at);
+		const isNew = Date.now() - createdAt.getTime() < 7 * 24 * 60 * 60 * 1000;
+
+		return {
+			type: "rendered" as const,
+			id: p.id,
+			displayName: p.nick ?? p.pseudo,
+			age: p.age ?? null,
+			position: Array.isArray(p.position) ? p.position[0] : p.position,
+			headline: p.headline ?? null,
+			compatibilityScore: 50,
+			isNew,
+			distance: null,
+			profilePhotosHashes: primaryImageHashes(primaryPhoto),
+			unread: null,
+			onlineUntil: p.online ? Date.now() + 30 * 60 * 1000 : null,
+			isFavorite: false,
+			isVisiting: false,
+			hasChattedInLast24Hrs: false,
+		};
+	});
+
+	const hasMore = count !== null ? from + pageSize < count : profiles.length === pageSize;
+
 	return {
-		items: demoResult.items.map((item) => {
-			const d = item.data;
-			const seed = profileSeed(d.profileId);
-			return gridProfile({
-				profileId: d.profileId,
-				displayName: d.displayName,
-				age: seed.showAge ? seed.age : null,
-				position: seed.position,
-				headline: seed.bio || seed.lookingFor.join(" · "),
-				compatibilityScore: 58 + (d.profileId % 39),
-				isNew: d.profileId % 11 === 0,
-				distanceMeters: d.distanceMeters,
-				primaryImageUrl: d.primaryImageUrl,
-				unreadCount: d.unreadCount,
-				onlineUntil: d.onlineUntil,
-				favorite: d.favorite,
-				isVisiting: d.isVisiting,
-				chatted: d.chatted,
-			});
-		}),
-		nextPage: demoResult.nextPage,
+		items,
+		nextPage: hasMore ? page + 1 : null,
 		shuffled: false,
 	};
 }

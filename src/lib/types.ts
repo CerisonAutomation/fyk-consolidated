@@ -209,6 +209,7 @@ export type NoteItem = {
   content: string;
   created_at: string;
   updated_at: string;
+  target?: ProfileUser;
 };
 
 export type Shout = {
@@ -219,6 +220,7 @@ export type Shout = {
   likes_count: number;
   created_at: string;
   user?: ProfileUser;
+  author?: ProfileUser;
   liked?: boolean;
 };
 

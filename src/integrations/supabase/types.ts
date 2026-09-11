@@ -240,6 +240,75 @@ export type PremiumEntitlement = {
   updated_at: string;
 };
 
+export type Group = {
+  id: string;
+  name: string;
+  description: string | null;
+  cover_url: string | null;
+  icon: string | null;
+  privacy: string;
+  created_by: string | null;
+  member_count: number;
+  created_at: string;
+};
+
+export type Tribe = {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string | null;
+  member_count: number;
+  created_at: string;
+};
+
+export type Shout = {
+  id: string;
+  user_id: string;
+  content: string;
+  media_url: string | null;
+  likes_count: number;
+  created_at: string;
+};
+
+export type Notification = {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  actor_id: string | null;
+  href: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+export type Favorite = {
+  id: string;
+  user_id: string;
+  target_id: string;
+  created_at: string;
+};
+
+export type Tap = {
+  id: string;
+  tapper_id: string;
+  tapped_id: string;
+  type: string;
+  is_super: boolean;
+  created_at: string;
+};
+
+export type Subscription = {
+  id: string;
+  user_id: string;
+  tier: string;
+  stripe_subscription_id: string | null;
+  status: string;
+  current_period_end: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type Table<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -274,6 +343,13 @@ export type Database = {
       post_joins: Table<PostJoin>;
       reports: Table<Report>;
       premium_entitlements: Table<PremiumEntitlement>;
+      groups: Table<Group>;
+      tribes: Table<Tribe>;
+      shouts: Table<Shout>;
+      notifications: Table<Notification>;
+      favorites: Table<Favorite>;
+      taps: Table<Tap>;
+      subscriptions: Table<Subscription>;
     };
     Views: Record<string, never>;
     Functions: {

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pencil, Check, X, MapPin, Ruler, Sparkles, Save, Crown, Camera,
-  Images, Trash2, Eye, ShieldCheck, TrendingUp,
+  Images, Trash2, ShieldCheck, TrendingUp,
 } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";

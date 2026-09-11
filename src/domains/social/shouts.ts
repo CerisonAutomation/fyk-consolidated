@@ -65,8 +65,8 @@ export async function createShout(
 			commentCount: shout.commentCount,
 			isPinned: shout.isPinned,
 			createdAt: shout.createdAt,
-			userName: shout.user.name,
-			userAvatar: shout.user.avatar,
+			userName: shout.user.name ?? "Anonymous",
+			userAvatar: shout.user.avatar ?? "",
 			hasLiked: false,
 		},
 	};

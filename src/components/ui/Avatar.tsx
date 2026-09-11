@@ -1,58 +1,45 @@
-import { cn, initials, gradient } from "@/lib/utils";
+import { cn } from "@/utils/cn";
 
-export function Avatar({
-  name,
-  photoUrl,
-  size = 40,
-  online,
-  verified,
-  className,
-}: {
+interface AvatarProps {
   name: string;
   photoUrl?: string | null;
   size?: number;
   online?: boolean;
   verified?: boolean;
   className?: string;
-}) {
+}
+
+export function Avatar({ name, photoUrl, size = 40, online, verified, className }: AvatarProps) {
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <div
-      className={cn("relative shrink-0", className)}
-      style={{ width: size, height: size }}
-    >
+    <div className={cn("relative shrink-0", className)} style={{ width: size, height: size }}>
       {photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={photoUrl}
           alt={name}
           className="h-full w-full rounded-full object-cover"
-          style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" }}
         />
       ) : (
         <div
-          className="flex h-full w-full items-center justify-center rounded-full text-white"
-          style={{
-            background: gradient(name),
-            fontSize: size * 0.36,
-            fontWeight: 700,
-          }}
+          className="flex h-full w-full items-center justify-center rounded-full bg-gold/20 text-gold font-semibold"
+          style={{ fontSize: size * 0.35 }}
         >
-          {initials(name)}
+          {initials}
         </div>
       )}
-      {online && (
+      {online !== undefined && (
         <span
-          className="absolute bottom-0 right-0 block rounded-full border-2 border-ink bg-emerald-500"
-          style={{ width: size * 0.28, height: size * 0.28 }}
+          className={cn(
+            "absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-surface",
+            online ? "bg-emerald-400" : "bg-neutral-500"
+          )}
         />
-      )}
-      {verified && !online && (
-        <span
-          className="absolute bottom-0 right-0 flex items-center justify-center rounded-full border-2 border-ink bg-gold text-ink"
-          style={{ width: size * 0.28, height: size * 0.28, fontSize: size * 0.16 }}
-        >
-          ✓
-        </span>
       )}
     </div>
   );

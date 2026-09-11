@@ -113,7 +113,7 @@ export function EventsClient() {
       ) : (
         <div className="space-y-3">
           {list.map((e) => {
-            const full = e.max_attendees ? e.attendee_count >= e.max_attendees : false;
+            const full = e.max_attendees ? (e.attendee_count ?? 0) >= e.max_attendees : false;
             return (
               <div key={e.id} className="overflow-hidden rounded-2xl border border-line bg-surface">
                 <div className="flex flex-col sm:flex-row sm:items-stretch">
@@ -134,8 +134,8 @@ export function EventsClient() {
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{e.start_time ? format(new Date(e.start_time), "EEE h:mm a") : "TBD"}</span>
                       <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{e.location}</span>
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{e.attendee_count}{e.max_attendees ? `/${e.max_attendees}` : ""} going</span>
-                      {e.cost > 0 && <span className="flex items-center gap-1 text-gold/70"><DollarSign className="h-3 w-3" />{e.cost}</span>}
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{e.attendee_count ?? 0}{e.max_attendees ? `/${e.max_attendees}` : ""} going</span>
+                      {e.cost && <span className="flex items-center gap-1 text-gold/70"><DollarSign className="h-3 w-3" />{e.cost}</span>}
                     </div>
                   </button>
 
@@ -171,7 +171,7 @@ export function EventsClient() {
 function EventDetail({
   event, onClose, onRsvp,
 }: { event: EventItem; onClose: () => void; onRsvp: (action: "join" | "leave") => void }) {
-  const full = event.max_attendees ? event.attendee_count >= event.max_attendees : false;
+  const full = event.max_attendees ? (event.attendee_count ?? 0) >= event.max_attendees : false;
   const countdown = event.start_time
     ? Math.max(0, Math.round((new Date(event.start_time).getTime() - Date.now()) / 86400000))
     : 0;
@@ -218,7 +218,7 @@ function EventDetail({
             onClick={() => { onRsvp(event.attending ? "leave" : "join"); onClose(); }}
             disabled={full && !event.attending}
           >
-            {event.attending ? "Cancel RSVP" : full ? "Event full" : event.cost > 0 ? `RSVP · $${event.cost}` : "RSVP"}
+            {event.attending ? "Cancel RSVP" : full ? "Event full" : event.cost ? `RSVP · $${Number(event.cost)}` : "RSVP"}
           </Button>
         </div>
       </div>
