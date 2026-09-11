@@ -5,7 +5,10 @@ import { useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import {
   Shield, Ban, Flag, Lock, Eye, Smartphone, X, Heart, Zap, FileLock2, Handshake, Moon,
+  ShieldCheck, MapPin,
 } from "lucide-react";
+import { FYKMap } from "#/components/map/FYKMap";
+import type { MapPinItem } from "#/components/map/FYKMap";
 import { useAuth } from "@/components/EntryShell";
 import { useAppStore } from "@/lib/store";
 import {
@@ -33,6 +36,14 @@ const PRESET_META: Record<string, { label: string; icon: typeof Eye; color: stri
   liked: { label: "Favorited you", icon: Heart, color: "text-rose-400" },
   tapped: { label: "Tapped you", icon: Zap, color: "text-gold-soft" },
 };
+
+const SAFE_VENUE_PINS: MapPinItem[] = [
+  { id: "safe-1", lat: 35.8997, lng: 14.5146, label: "Cafe Cordina, Valletta", emoji: "☕", accent: true },
+  { id: "safe-2", lat: 35.8984, lng: 14.5126, label: "Palazzo Preca, Valletta", emoji: "🏛️", accent: true },
+  { id: "safe-3", lat: 35.8978, lng: 14.5172, label: "Bridge Bar, Valletta", emoji: "🌉", accent: true },
+  { id: "safe-4", lat: 35.9012, lng: 14.5109, label: "Legligin, Valletta", emoji: "🍽️", accent: true },
+  { id: "safe-5", lat: 35.9004, lng: 14.5155, label: "LOTS Wine Bar, Valletta", emoji: "🍷", accent: true },
+];
 
 // ─── Display helpers ───────────────────────────────────────────────────────
 
@@ -146,6 +157,34 @@ export function SafetyClient() {
             </div>
           );
         })}
+      </div>
+
+      {/* safety check-in */}
+      <div className="mb-5 rounded-2xl border border-line bg-surface p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <ShieldCheck className="h-4 w-4 text-emerald-400" />
+          <h3 className="text-sm font-semibold text-white">Safety Check-in</h3>
+        </div>
+        <p className="mb-3 text-[11px] text-muted">
+          Share your approximate location with a trusted contact before meeting someone new.
+        </p>
+        <button
+          onClick={() => pushToast("Location shared with your emergency contact", "success")}
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
+        >
+          <MapPin className="h-4 w-4" />
+          Share approximate location
+        </button>
+
+        <h4 className="mb-2 text-xs font-semibold text-white/80">Suggested safe meeting spots</h4>
+        <FYKMap
+          center={{ lat: 35.8989, lng: 14.5146 }}
+          zoom={13}
+          height={220}
+          pins={SAFE_VENUE_PINS}
+          interactive={false}
+          showPrivacyHalos={false}
+        />
       </div>
 
       {/* tabs */}

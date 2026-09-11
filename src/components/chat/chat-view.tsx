@@ -13,6 +13,11 @@ import { Skeleton, Spinner } from "@/components/ui/primitives";
 import { cn, timeAgo } from "@/lib/utils";
 import { MESSAGE_EMOJIS } from "@/lib/constants";
 import type { Message, ConversationWithMeta } from "@/lib/types";
+import { MapPin } from "lucide-react";
+import { ShareLocationSheet } from "#/components/chat/ShareLocationSheet";
+import { PickLocationSheet } from "#/components/chat/PickLocationSheet";
+import { LiveLocationToggle } from "#/components/chat/LiveLocationToggle";
+import { LiveLocationPreview } from "#/components/chat/LiveLocationPreview";
 
 export function ChatView({
   conversationId, onBack,
@@ -29,6 +34,8 @@ export function ChatView({
   const [aiLoading, setAiLoading] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState("");
+  const [locationSheet, setLocationSheet] = useState<"share" | "pick" | null>(null);
+  const [liveLocation, setLiveLocation] = useState<{ active: boolean; expiresAt?: number }>({ active: false });
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -348,6 +355,14 @@ export function ChatView({
                           </div>
                           <span className="text-[10px] opacity-70">{m.media_duration ?? 12}s</span>
                         </div>
+                      ) : m.type === "location" ? (
+                        <LiveLocationPreview
+                          lat={(m as any).lat ?? 0}
+                          lng={(m as any).lng ?? 0}
+                          isLive={false}
+                          userLat={undefined}
+                          userLng={undefined}
+                        />
                       ) : (
                         m.content
                       )}
@@ -468,6 +483,13 @@ export function ChatView({
         >
           <Mic className="h-4 w-4" />
         </button>
+        <button
+          onClick={() => setLocationSheet("share")}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-white"
+          title="Share location"
+        >
+          <MapPin className="h-4 w-4" />
+        </button>
         <input
           ref={inputRef}
           value={input}
@@ -492,6 +514,25 @@ export function ChatView({
           <Send className="h-4 w-4" />
         </button>
       </div>
-    </div>
+
+      {/* Location sheets */}
+    {locationSheet === "share" && (
+      <ShareLocationSheet
+        onShare={(lat, lng) => {
+          send.mutate({ content: `📍 Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+          setLocationSheet(null);
+        }}
+        onClose={() => setLocationSheet(null)}
+      />
+    )}
+    {locationSheet === "pick" && (
+      <PickLocationSheet
+        onShare={(lat, lng, label) => {
+          send.mutate({ content: `📍 ${label ?? "Shared location"}: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+          setLocationSheet(null);
+        }}
+        onClose={() => setLocationSheet(null)}
+      />
+    )}
   );
 }

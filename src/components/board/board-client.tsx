@@ -2,13 +2,15 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Map } from "lucide-react";
 import { getSupabase } from "#/integrations/supabase/client";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import { useAppStore } from "@/lib/store";
 import { Skeleton, Button, EmptyState } from "@/components/ui/primitives";
 import { ACTIVITIES } from "@/lib/activities";
 import { cn } from "@/lib/utils";
+import { FYKMap } from "#/components/map/FYKMap";
+import type { MapPinItem } from "#/components/map/FYKMap";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -56,6 +58,7 @@ export function BoardClient() {
 
 	const [composing, setComposing] = useState(false);
 	const [filter, setFilter] = useState<string>("Everything");
+	const [viewMode, setViewMode] = useState<"list" | "map">("list");
 	const [boardState, setBoardState] = useState<BoardState>({
 		activityId: "coffee",
 		windowMinutes: 120,
@@ -218,7 +221,7 @@ export function BoardClient() {
 			</div>
 
 			{/* Filters */}
-			<div className="mb-4 flex flex-wrap gap-2">
+			<div className="mb-4 flex flex-wrap items-center gap-2">
 				{FILTERS.map((f) => (
 					<button
 						key={f}
@@ -233,10 +236,40 @@ export function BoardClient() {
 						{f}
 					</button>
 				))}
+				<button
+					onClick={() => setViewMode(viewMode === "list" ? "map" : "list")}
+					className={cn(
+						"ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+						viewMode === "map"
+							? "border-yellow-500/50 bg-yellow-500/15 text-yellow-400"
+							: "border-white/20 bg-white/5 text-white/60 hover:text-white",
+					)}
+				>
+					<Map className="h-4 w-4" />
+					{viewMode === "map" ? "List" : "Map"}
+				</button>
 			</div>
 
-			{/* Posts Grid */}
-			{isLoading ? (
+			{/* Map View */}
+			{viewMode === "map" ? (
+				<FYKMap
+					center={{ lat: 35.8989, lng: 14.5146 }}
+					zoom={13}
+					height={500}
+					pins={(filteredPosts ?? []).map((post, i) => ({
+						id: post.id,
+						lat: 35.8989 + (i % 5) * 0.003 - 0.006,
+						lng: 14.5146 + (i % 7) * 0.003 - 0.009,
+						label: `${post.activityEmoji} ${post.activity} — ${post.userName}`,
+						emoji: post.activityEmoji,
+					}))}
+					onSelect={(id) => {
+						const post = filteredPosts?.find((p) => p.id === id);
+						if (post) pushToast(`${post.activityEmoji} ${post.activity} by ${post.userName}`);
+					}}
+				/>
+			) : /* Posts Grid */
+			isLoading ? (
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					{Array.from({ length: 6 }).map((_, i) => (
 						<Skeleton key={i} className="h-64 rounded-2xl" />

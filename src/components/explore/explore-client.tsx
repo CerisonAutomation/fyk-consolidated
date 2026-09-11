@@ -3,13 +3,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-	MapPin, Shield, MessageCircle, Home, Zap, ChevronDown,
+	MapPin, Shield, MessageCircle, Home, Zap, ChevronDown, Map,
 } from "lucide-react";
 import { getSupabase } from "#/integrations/supabase/client";
 import { useAppStore } from "@/lib/store";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import { EmptyState } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
+import { FYKMap } from "#/components/map/FYKMap";
+import { candidatesToPins } from "#/components/map/candidate-pins";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -75,7 +77,7 @@ export function ExploreClient() {
 	const [travelMode, setTravelMode] = useState(false);
 	const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["online"]));
 	const [sort, setSort] = useState<SortKey>("recent");
-	const [layout, setLayout] = useState<"grid" | "list">("grid");
+	const [layout, setLayout] = useState<"grid" | "list" | "map">("grid");
 
 	// ── Load city counts from Supabase ────────────────────────────────────
 	const { data: citiesList } = useQuery({
@@ -318,26 +320,36 @@ export function ExploreClient() {
 				</p>
 				<div className="flex items-center gap-3">
 					{/* Layout Toggle */}
-					<div className="flex rounded-lg border border-white/10 bg-white/5 p-1">
-						<button
-							onClick={() => setLayout("list")}
-							className={cn(
-								"rounded-md px-2 py-1 text-xs transition-colors",
-								layout === "list" ? "bg-white/10 text-white" : "text-white/40",
-							)}
-						>
-							\u2630
-						</button>
-						<button
-							onClick={() => setLayout("grid")}
-							className={cn(
-								"rounded-md px-2 py-1 text-xs transition-colors",
-								layout === "grid" ? "bg-white/10 text-white" : "text-white/40",
-							)}
-						>
-							\u229e
-						</button>
-					</div>
+						<div className="flex rounded-lg border border-white/10 bg-white/5 p-1">
+							<button
+								onClick={() => setLayout("list")}
+								className={cn(
+									"rounded-md px-2 py-1 text-xs transition-colors",
+									layout === "list" ? "bg-white/10 text-white" : "text-white/40",
+								)}
+							>
+								\u2630
+							</button>
+							<button
+								onClick={() => setLayout("grid")}
+								className={cn(
+									"rounded-md px-2 py-1 text-xs transition-colors",
+									layout === "grid" ? "bg-white/10 text-white" : "text-white/40",
+								)}
+							>
+								\u229e
+							</button>
+							<button
+								onClick={() => setLayout("map")}
+								className={cn(
+									"rounded-md px-2 py-1 text-xs transition-colors",
+									layout === "map" ? "bg-white/10 text-white" : "text-white/40",
+								)}
+								aria-label="Map view"
+							>
+								<Map className="inline h-3.5 w-3.5" />
+							</button>
+						</div>
 
 					{/* Sort */}
 					<div className="relative">
@@ -369,6 +381,24 @@ export function ExploreClient() {
 					icon="🔍"
 					title={`No one in ${selectedCityData?.name ?? selectedCity} matches your search`}
 					description="Try clearing your filters."
+				/>
+			) : layout === "map" ? (
+				<FYKMap
+					pins={candidatesToPins(
+						sortedProfiles.map((p) => ({
+							id: p.id,
+							name: p.name,
+							photoUrl: p.photo || undefined,
+							distance: p.distance,
+							online: p.status === "online",
+							matchScore: p.verified ? 90 : undefined,
+						})),
+						authUser?.id ?? "explore-viewer",
+					)}
+					height={480}
+					onSelect={(id) => {
+						/* Could navigate to profile */
+					}}
 				/>
 			) : layout === "grid" ? (
 				<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

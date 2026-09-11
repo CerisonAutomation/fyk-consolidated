@@ -6,6 +6,7 @@ import {
 	Coffee,
 	Dumbbell,
 	Gamepad2,
+	Map,
 	MapPin,
 	MessageCircle,
 	PartyPopper,
@@ -27,6 +28,8 @@ import { getSupabase } from "#/integrations/supabase/client";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import { useAppStore } from "#/lib/store";
 import { watchLocation, type GeoState } from "#/lib/geo";
+import { FYKMap, type MapPinItem } from "#/components/map/FYKMap";
+import { cn } from "#/utils/cn";
 
 export const Route = createFileRoute("/right-now/")({
 	component: RightNowPage,
@@ -107,6 +110,7 @@ function RightNowPage() {
 	const photoInputRef = useRef<HTMLInputElement>(null);
 	const [shareLocation, setShareLocation] = useState(false);
 	const [geoState, setGeoState] = useState<GeoState | null>(null);
+	const [showMap, setShowMap] = useState(false);
 
 	// ── Load status from localStorage on mount ────────────────────────────
 	useEffect(() => {

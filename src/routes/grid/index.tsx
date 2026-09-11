@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Compass,
 	Grid3X3,
+	List,
+	Map,
 	MapPin,
 	RefreshCw,
 	ShieldCheck,
@@ -34,6 +36,9 @@ import {
 	hydratePreferences,
 	setPreferences,
 } from "#/domains/settings/preferences";
+import { FYKMap } from "#/components/map/FYKMap";
+import { candidatesToPins } from "#/components/map/candidate-pins";
+import { cn } from "#/utils/cn";
 
 export const Route = createFileRoute("/grid/")({
 	component: GridPage,
@@ -82,6 +87,7 @@ function GridPage() {
 	const setFilters = useGridSearchFiltersStore((s) => s.setFilters);
 
 	const [filtersOpen, setFiltersOpen] = useState(false);
+	const [viewMode, setViewMode] = useState<"grid" | "map" | "list">("grid");
 
 	const handleScroll = useCallback(() => {
 		const container = gridContainer.current;
@@ -181,39 +187,78 @@ function GridPage() {
 							Photo-first discovery. Exact locations stay private.
 						</p>
 					</div>
-					<div className="flex shrink-0 gap-2">
-						<button
-							type="button"
-							onClick={() => void refresh()}
-							className="flex size-10 items-center justify-center rounded-xl border border-white/[0.09] bg-black/25 text-white/55 transition hover:border-gold/40 hover:text-gold"
-							aria-label="Refresh nearby profiles"
-						>
-							<RefreshCw
-								className={`size-4 ${refreshing ? "animate-spin" : ""}`}
-							/>
-						</button>
-						<Link
-							to="/right-now"
-							className="flex size-10 items-center justify-center rounded-xl border border-white/[0.09] bg-black/25 text-white/55 transition hover:border-gold/40 hover:text-gold"
-							aria-label="Open Right Now radar"
-						>
-							<MapPin className="size-4" />
-						</Link>
-						<button
-							type="button"
-							onClick={() => setFiltersOpen(true)}
-							className="relative inline-flex h-10 items-center gap-1.5 rounded-xl border border-gold/35 bg-gold/10 px-3 text-xs font-medium text-gold transition hover:bg-gold/15"
-							aria-label="Open filters"
-						>
-							<SlidersHorizontal className="size-4" />
-							<span className="hidden sm:inline">Filters</span>
-							{activeFilterCount > 0 && (
-								<span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
-									{activeFilterCount}
-								</span>
-							)}
-						</button>
-					</div>
+						<div className="flex shrink-0 gap-2">
+							<button
+								type="button"
+								onClick={() => void refresh()}
+								className="flex size-10 items-center justify-center rounded-xl border border-white/[0.09] bg-black/25 text-white/55 transition hover:border-gold/40 hover:text-gold"
+								aria-label="Refresh nearby profiles"
+							>
+								<RefreshCw
+									className={`size-4 ${refreshing ? "animate-spin" : ""}`}
+								/>
+							</button>
+							<Link
+								to="/right-now"
+								className="flex size-10 items-center justify-center rounded-xl border border-white/[0.09] bg-black/25 text-white/55 transition hover:border-gold/40 hover:text-gold"
+								aria-label="Open Right Now radar"
+							>
+								<MapPin className="size-4" />
+							</Link>
+							{/* View mode toggle */}
+							<div className="flex items-center rounded-xl border border-white/[0.09] bg-black/25 p-0.5">
+								<button
+									type="button"
+									onClick={() => setViewMode("grid")}
+									className={cn(
+										"flex size-9 items-center justify-center rounded-lg text-white/55 transition",
+										viewMode === "grid" ? "bg-white/10 text-gold" : "hover:text-white/75",
+									)}
+									aria-label="Grid view"
+									aria-pressed={viewMode === "grid"}
+								>
+									<Grid3X3 className="size-4" />
+								</button>
+								<button
+									type="button"
+									onClick={() => setViewMode("map")}
+									className={cn(
+										"flex size-9 items-center justify-center rounded-lg text-white/55 transition",
+										viewMode === "map" ? "bg-white/10 text-gold" : "hover:text-white/75",
+									)}
+									aria-label="Map view"
+									aria-pressed={viewMode === "map"}
+								>
+									<Map className="size-4" />
+								</button>
+								<button
+									type="button"
+									onClick={() => setViewMode("list")}
+									className={cn(
+										"flex size-9 items-center justify-center rounded-lg text-white/55 transition",
+										viewMode === "list" ? "bg-white/10 text-gold" : "hover:text-white/75",
+									)}
+									aria-label="List view"
+									aria-pressed={viewMode === "list"}
+								>
+									<List className="size-4" />
+								</button>
+							</div>
+							<button
+								type="button"
+								onClick={() => setFiltersOpen(true)}
+								className="relative inline-flex h-10 items-center gap-1.5 rounded-xl border border-gold/35 bg-gold/10 px-3 text-xs font-medium text-gold transition hover:bg-gold/15"
+								aria-label="Open filters"
+							>
+								<SlidersHorizontal className="size-4" />
+								<span className="hidden sm:inline">Filters</span>
+								{activeFilterCount > 0 && (
+									<span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
+										{activeFilterCount}
+									</span>
+								)}
+							</button>
+						</div>
 				</div>
 			</header>
 
@@ -264,7 +309,32 @@ function GridPage() {
 				</div>
 			)}
 
-			{/* ── Grid Content ── */}
+			{/* ── Content ── */}
+			{viewMode === "map" ? (
+				<div className="px-4 pt-2 pb-24">
+					<FYKMap
+						pins={candidatesToPins(
+							renderedProfiles.map((item) => ({
+								id: String(item.id),
+								displayName: item.displayName ?? undefined,
+								photoUrl: item.profilePhotosHashes?.[0]
+									? demoMediaUrl(item.profilePhotosHashes[0])
+									: undefined,
+								distance: item.distance ?? undefined,
+								online:
+									item.onlineUntil !== null && item.onlineUntil > Date.now(),
+								matchScore: item.compatibilityScore,
+								geo: (item as any).geo,
+							})),
+							"grid-viewer",
+						)}
+						height={480}
+						onSelect={(id) => {
+							/* Could navigate to profile */
+						}}
+					/>
+				</div>
+			) : (
 			<div
 				ref={gridContainer}
 				className="pull-scroller h-full overflow-y-auto"
@@ -341,6 +411,7 @@ function GridPage() {
 					)}
 				</div>
 			</div>
+			)}
 
 			<GridFiltersDrawer
 				open={filtersOpen}

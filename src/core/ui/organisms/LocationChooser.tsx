@@ -1,12 +1,8 @@
 import { useState, useCallback, useEffect, type ReactNode } from "react";
-import { X } from "lucide-react";
+import { X, Navigation, MapPin } from "lucide-react";
 import { cn } from "../cn";
-
-interface PinPosition {
-	lat: number;
-	lon: number;
-	zoom: number;
-}
+import { MapPicker } from "#/components/map/MapPicker";
+import { encodeGeohash } from "#/core/model/geohash";
 
 interface LocationChooserProps {
 	open: boolean;
@@ -15,52 +11,11 @@ interface LocationChooserProps {
 		geohash: string;
 		autoUpdateLocation: boolean;
 	}) => void;
-	initialPinPos?: PinPosition;
-	/** Whether GPS is available on this platform */
+	initialPinPos?: { lat: number; lon: number; zoom: number };
 	gpsAvailable?: boolean;
-	/** Whether auto-update location is enabled */
 	autoUpdateLocation?: boolean;
-	/** Called when auto-update toggle changes */
 	onAutoUpdateChange?: (enabled: boolean) => void;
 	className?: string;
-}
-
-function encodeGeohash(lat: number, lon: number, precision = 9): string {
-	const BASE32 = "0123456789bcdefghjkmnpqrstuvwxyz";
-	let minLat = -90;
-	let maxLat = 90;
-	let minLon = -180;
-	let maxLon = 180;
-	let geohash = "";
-	let bit = 0;
-	let ch = 0;
-
-	while (geohash.length < precision) {
-		if (bit % 2 === 0) {
-			const mid = (minLon + maxLon) / 2;
-			if (lon >= mid) {
-				ch |= 1 << (4 - (bit % 5));
-				minLon = mid;
-			} else {
-				maxLon = mid;
-			}
-		} else {
-			const mid = (minLat + maxLat) / 2;
-			if (lat >= mid) {
-				ch |= 1 << (4 - (bit % 5));
-				minLat = mid;
-			} else {
-				maxLat = mid;
-			}
-		}
-		bit++;
-		if (bit % 5 === 0) {
-			geohash += BASE32[ch];
-			ch = 0;
-		}
-	}
-
-	return geohash;
 }
 
 export function LocationChooser({
@@ -73,16 +28,23 @@ export function LocationChooser({
 	onAutoUpdateChange,
 	className,
 }: LocationChooserProps): ReactNode {
-	const [pinPos] = useState<PinPosition | null>(initialPinPos ?? null);
+	const [pickedPos, setPickedPos] = useState<{ lat: number; lng: number } | null>(
+		initialPinPos ? { lat: initialPinPos.lat, lng: initialPinPos.lon } : null,
+	);
+	const [label, setLabel] = useState<string | undefined>();
+
+	const handlePick = useCallback((latlng: { lat: number; lng: number }, pickedLabel?: string) => {
+		setPickedPos(latlng);
+		setLabel(pickedLabel);
+	}, []);
 
 	const handleSubmit = useCallback(() => {
-		if (!pinPos) return;
-		const geohash = encodeGeohash(pinPos.lat, pinPos.lon);
+		if (!pickedPos) return;
+		const geohash = encodeGeohash({ lat: pickedPos.lat, lon: pickedPos.lng });
 		onSubmit({ geohash, autoUpdateLocation });
 		onClose();
-	}, [pinPos, autoUpdateLocation, onSubmit, onClose]);
+	}, [pickedPos, autoUpdateLocation, onSubmit, onClose]);
 
-	// Close on Escape
 	useEffect(() => {
 		if (!open) return;
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -108,41 +70,52 @@ export function LocationChooser({
 			/>
 
 			{/* Dialog */}
-			<div className="relative z-10 flex w-full max-w-2xl flex-col rounded-t-2xl border border-border bg-background shadow-xl sm:rounded-2xl">
+			<div className="relative z-10 flex w-full max-w-2xl flex-col rounded-t-2xl border border-line bg-surface shadow-xl sm:rounded-2xl">
 				{/* Header */}
-				<div className="flex items-center justify-between border-b border-border px-4 py-3">
+				<div className="flex items-center justify-between border-b border-line px-4 py-3">
 					<div>
-						<h2 className="text-lg font-semibold">Choose location</h2>
-						<p className="text-sm text-muted-foreground">
-							Drag the map to place the pin where you want to browse from.
+						<h2 className="text-lg font-semibold text-white">Choose location</h2>
+						<p className="text-sm text-white/60">
+							Tap the map to place a pin, or search for an address.
 						</p>
 					</div>
 					<button
 						type="button"
 						onClick={onClose}
-						className="inline-flex size-8 items-center justify-center rounded-full hover:bg-muted"
+						className="inline-flex size-8 items-center justify-center rounded-full text-white/40 hover:bg-white/10 hover:text-white"
 						aria-label="Close"
 					>
 						<X className="size-4" />
 					</button>
 				</div>
 
-				{/* Map placeholder */}
-				<div className="flex h-80 items-center justify-center bg-muted text-muted-foreground">
-					<p className="text-sm">
-						Map component goes here (requires Mapbox/Leaflet integration)
-					</p>
+				{/* Map Picker */}
+				<div className="h-80">
+					<MapPicker
+						initialPosition={pickedPos ?? undefined}
+						onPick={handlePick}
+						onCancel={onClose}
+						height={320}
+					/>
 				</div>
 
+				{/* Selected address display */}
+				{label && (
+					<div className="flex items-center gap-2 border-t border-line px-4 py-2">
+						<MapPin className="size-4 shrink-0 text-gold" />
+						<span className="truncate text-sm text-white/80">{label}</span>
+					</div>
+				)}
+
 				{/* Footer */}
-				<div className="flex items-center justify-between border-t border-border px-4 py-3">
+				<div className="flex items-center justify-between border-t border-line px-4 py-3">
 					{gpsAvailable && (
-						<label className="flex items-center gap-2 text-sm">
+						<label className="flex items-center gap-2 text-sm text-white/60">
 							<input
 								type="checkbox"
 								checked={autoUpdateLocation}
 								onChange={(e) => onAutoUpdateChange?.(e.target.checked)}
-								className="size-4 rounded accent-primary"
+								className="size-4 rounded accent-gold"
 							/>
 							<span className="truncate py-1">
 								Update automatically using GPS
@@ -152,8 +125,8 @@ export function LocationChooser({
 					<button
 						type="button"
 						onClick={handleSubmit}
-						disabled={!pinPos}
-						className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+						disabled={!pickedPos}
+						className="rounded-xl bg-gold px-4 py-2 text-sm font-semibold text-black hover:bg-gold/90 disabled:opacity-50"
 					>
 						Save
 					</button>

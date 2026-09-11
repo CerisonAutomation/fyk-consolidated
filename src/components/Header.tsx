@@ -3,6 +3,7 @@ import { Crown, Bell, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { UserDropdown } from "#/components/UserDropdown";
+import { MapSearchBar } from "#/components/map/MapSearchBar";
 import { api } from "#/lib/client";
 import { cn } from "#/utils/cn";
 
@@ -64,19 +65,19 @@ export default function Header() {
          </span>
        </Link>
 
-       {/* Search Bar */}
-       <div className="hidden flex-1 justify-center lg:flex">
-         <div className="relative w-full max-w-md">
-           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-           <input
-             type="text"
-             value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
-             placeholder="Search by name or interest..."
-             className="w-full rounded-xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 text-sm text-white placeholder:text-white/40 focus:border-yellow-500/50 focus:outline-none"
-           />
-         </div>
-       </div>
+      {/* Search Bar — name/interest + location autocomplete */}
+      <div className="hidden flex-1 justify-center lg:flex">
+        <div className="relative w-full max-w-md">
+          <MapSearchBar
+            placeholder="Search by name, interest, or place..."
+            onSelect={(f) => {
+              setSearchQuery(f.name);
+              // Could navigate to explore with the selected location
+            }}
+            className="w-full"
+          />
+        </div>
+      </div>
 
        {/* Right-side actions */}
        <div className="flex items-center gap-2">

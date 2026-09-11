@@ -193,7 +193,18 @@ export type ExpiringImageMessage = z.infer<typeof expiringImageMessageSchema>;
 
 export const locationMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("Location"),
-	body: z.object({ lat: z.number(), lon: z.number() }),
+	body: z.object({
+		lat: z.number(),
+		lon: z.number(),
+		label: z.string().optional(),
+		live: z
+			.object({
+				durationMs: z.number(),
+				expiresAt: z.number(),
+			})
+			.null()
+			.optional(),
+	}),
 });
 
 export type LocationMessage = z.infer<typeof locationMessageSchema>;

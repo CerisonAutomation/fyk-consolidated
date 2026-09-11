@@ -9,6 +9,7 @@ import type { EventItem } from "@/lib/types";
 import { EmptyState, Skeleton, Badge, Button } from "@/components/ui/primitives";
 import { cn, gradient } from "@/lib/utils";
 import { MEETNOW } from "@/lib/constants";
+import { MapSearchBar } from "#/components/map/MapSearchBar";
 import { format } from "date-fns";
 
 const CAT_EMOJI: Record<string, string> = {
@@ -376,10 +377,14 @@ function CreateWizard({ onClose }: { onClose: () => void }) {
 
         {step === 3 && (
           <div className="space-y-3">
+            <MapSearchBar
+              placeholder="Search for a venue..."
+              onSelect={(feature) => setForm((f) => ({ ...f, location: feature.place_name }))}
+            />
             <input
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-              placeholder="Venue or neighbourhood"
+              placeholder="Or type a venue or neighbourhood"
               className="w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
             />
             <div className="space-y-1.5">
