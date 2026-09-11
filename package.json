@@ -50,18 +50,5 @@
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
     "vitest": "^3.2.7"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lightningcss",
-      "@prisma/engines",
-      "prisma"
-    ],
-    "overrides": {
-      "react": "^19.2.8",
-      "react-dom": "^19.2.8",
-      "@supabase/realtime-js": "2.116.0"
-    }
   }
 }
