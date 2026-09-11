@@ -378,6 +378,11 @@ allowBuilds:
   protobufjs: true
   '@sentry/cli': true
 
+overrides:
+  '@supabase/realtime-js': '2.116.0'
+  react: '^19.2.8'
+  react-dom: '^19.2.8'
+
 packages:
   - .
 minimumReleaseAge: 1440

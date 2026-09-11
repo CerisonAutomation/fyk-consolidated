@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft, Send, Sparkles, ShieldAlert, Pin, Pencil, Trash2,
   Mic, Timer, X, Smile, Search, Activity, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
+import { useRealtimeChat } from "@/hooks/use-realtime-chat";
 import { Avatar } from "@/components/ui/avatar";
 import { Skeleton, Spinner } from "@/components/ui/primitives";
 import { cn, timeAgo } from "@/lib/utils";
@@ -16,7 +17,7 @@ import type { Message, ConversationWithMeta } from "@/lib/types";
 import { MapPin } from "lucide-react";
 import { ShareLocationSheet } from "#/components/chat/ShareLocationSheet";
 import { PickLocationSheet } from "#/components/chat/PickLocationSheet";
-import { LiveLocationToggle } from "#/components/chat/LiveLocationToggle";
+
 import { LiveLocationPreview } from "#/components/chat/LiveLocationPreview";
 
 export function ChatView({
@@ -35,9 +36,60 @@ export function ChatView({
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState("");
   const [locationSheet, setLocationSheet] = useState<"share" | "pick" | null>(null);
-  const [liveLocation, setLiveLocation] = useState<{ active: boolean; expiresAt?: number }>({ active: false });
+  const [typingUsers, setTypingUsers] = useState<Map<string, number>>(new Map());
+  const typingTimeoutRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // --- Realtime: subscribe to new messages + typing indicators ---
+  const handleRealtimeMessage = useCallback(() => {
+    // Any INSERT event in this conversation -- re-fetch messages
+    qc.invalidateQueries({ queryKey: ["messages", conversationId] });
+    qc.invalidateQueries({ queryKey: ["conversations"] });
+  }, [conversationId, qc]);
+
+  const handleTyping = useCallback((userId: string, isTyping: boolean) => {
+    if (userId === me?.id) return; // ignore own typing
+    setTypingUsers((prev) => {
+      const next = new Map(prev);
+      if (isTyping) {
+        next.set(userId, Date.now());
+      } else {
+        next.delete(userId);
+      }
+      return next;
+    });
+    // Auto-clear after 5 seconds in case the STOP event is missed
+    if (isTyping) {
+      const existing = typingTimeoutRef.current.get(userId);
+      if (existing) clearTimeout(existing);
+      const timeout = setTimeout(() => {
+        setTypingUsers((p) => { const n = new Map(p); n.delete(userId); return n; });
+        typingTimeoutRef.current.delete(userId);
+      }, 5000);
+      typingTimeoutRef.current.set(userId, timeout);
+    }
+  }, [me?.id]);
+
+  const { sendTyping } = useRealtimeChat(conversationId, handleRealtimeMessage, handleTyping);
+
+  // Broadcast typing indicator when user is typing
+  const lastTypingBroadcast = useRef(0);
+  function broadcastTypingState(isTyping: boolean) {
+    if (!me?.id) return;
+    const now = Date.now();
+    // Throttle: broadcast at most once per 2 seconds
+    if (isTyping && now - lastTypingBroadcast.current < 2000) return;
+    lastTypingBroadcast.current = now;
+    sendTyping(me.id, isTyping);
+  }
+
+  // Cleanup typing timeouts on unmount
+  useEffect(() => {
+    return () => {
+      typingTimeoutRef.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
 
   const { data: convs } = useQuery({
     queryKey: ["conversations"],
@@ -151,7 +203,18 @@ export function ChatView({
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-white">{isGroup ? conv.name : other?.pseudo}</p>
           <p className="text-xs text-muted">
-            {isGroup ? `${conv.memberCount} members` : other?.online ? <span className="text-emerald-400">● Online</span> : "Offline"}
+            {typingUsers.size > 0 ? (
+              <span className="flex items-center gap-1 text-emerald-400">
+                <span className="flex gap-0.5">
+                  <span className="h-1 w-1 animate-bounce rounded-full bg-emerald-400 [animation-delay:0ms]" />
+                  <span className="h-1 w-1 animate-bounce rounded-full bg-emerald-400 [animation-delay:150ms]" />
+                  <span className="h-1 w-1 animate-bounce rounded-full bg-emerald-400 [animation-delay:300ms]" />
+                </span>
+                typing
+              </span>
+            ) : isGroup ? `${conv.memberCount} members` : other?.online ? (
+              <span className="text-emerald-400">● Online</span>
+            ) : "Offline"}
             {!isGroup && other?.verified && " · ✓ Verified"}
           </p>
         </div>
@@ -493,8 +556,17 @@ export function ChatView({
         <input
           ref={inputRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
+          onChange={(e) => {
+            setInput(e.target.value);
+            broadcastTypingState(e.target.value.length > 0);
+          }}
+          onBlur={() => broadcastTypingState(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              broadcastTypingState(false);
+              submit();
+            }
+          }}
           placeholder="Type a message…"
           className="flex-1 rounded-full border border-line bg-surface-2 px-4 py-2.5 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
         />
@@ -516,23 +588,24 @@ export function ChatView({
       </div>
 
       {/* Location sheets */}
-    {locationSheet === "share" && (
-      <ShareLocationSheet
-        onShare={(lat, lng) => {
-          send.mutate({ content: `📍 Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
-          setLocationSheet(null);
-        }}
-        onClose={() => setLocationSheet(null)}
-      />
-    )}
-    {locationSheet === "pick" && (
-      <PickLocationSheet
-        onShare={(lat, lng, label) => {
-          send.mutate({ content: `📍 ${label ?? "Shared location"}: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
-          setLocationSheet(null);
-        }}
-        onClose={() => setLocationSheet(null)}
-      />
-    )}
+      {locationSheet === "share" && (
+        <ShareLocationSheet
+          onShare={(lat, lng) => {
+            send.mutate({ content: `📍 Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+            setLocationSheet(null);
+          }}
+          onClose={() => setLocationSheet(null)}
+        />
+      )}
+      {locationSheet === "pick" && (
+        <PickLocationSheet
+          onShare={(lat, lng, label) => {
+            send.mutate({ content: `📍 ${label ?? "Shared location"}: ${lat.toFixed(4)}, ${lng.toFixed(4)}` });
+            setLocationSheet(null);
+          }}
+          onClose={() => setLocationSheet(null)}
+        />
+      )}
+    </div>
   );
 }

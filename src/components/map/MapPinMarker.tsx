@@ -37,7 +37,7 @@ export function MapPinMarker({
         e.stopPropagation();
         onClick?.();
       }}
-      className={cn(
+className={cn(
         "group/fyk-pin relative flex flex-col items-center cursor-pointer",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-black",
       )}
@@ -59,6 +59,10 @@ export function MapPinMarker({
           <img
             src={photo}
             alt=""
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover rounded-full"
             draggable={false}
           />

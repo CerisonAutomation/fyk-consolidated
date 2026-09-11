@@ -161,7 +161,7 @@ export function FansitesClient() {
                   <img
                     src={f.cover_url}
                     alt={f.name}
-                    className="h-32 w-full object-cover"
+                    width={400} height={300} loading="lazy" decoding="async" className="h-32 w-full object-cover"
                   />
                 )}
                 <div className="p-4">

@@ -100,22 +100,22 @@ export function MediaViewer() {
   const posterSrc = item.poster ? px(Number(item.poster), 900, 1200) : src;
 
   return (
-    <div className="fixed inset-0 z-[135] flex flex-col bg-black">
+    <div role="dialog" aria-modal="true" aria-label="Media viewer" className="fixed inset-0 z-[135] flex flex-col bg-black">
       {/* header */}
       <header className="relative z-20 flex items-center gap-3 bg-gradient-to-b from-black/85 to-transparent px-4 pb-8 pt-4">
         <button
           type="button"
           onClick={closeMedia}
-          aria-label="Close"
+          aria-label="Close media viewer"
           className="press grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-white/20"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-semibold text-white">{item.ownerName}</p>
           <p className="flex items-center gap-2 text-[12px] text-white/60">
             {mediaIndex + 1} of {media.length}
-            <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> Authorized in-app view</span>
+            <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" aria-hidden="true" /> Authorized in-app view</span>
           </p>
         </div>
       </header>
@@ -134,6 +134,8 @@ export function MediaViewer() {
             ref={videoRef}
             src={item.url}
             poster={posterSrc}
+            width={1400}
+            height={1900}
             playsInline
             loop
             muted={muted}
@@ -143,12 +145,15 @@ export function MediaViewer() {
           <img
             src={src}
             alt={item.caption ?? ""}
+            width={1400}
+            height={1900}
+            decoding="async"
             className={cn("max-h-full max-w-full object-contain transition-[filter]", hidden && "blur-2xl")}
           />
         )}
 
         {/* watermark — deterrence, never prevention */}
-        <span className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <span className="rotate-[-24deg] select-none text-[clamp(18px,5vw,34px)] font-bold tracking-wide text-white/[0.07]">
             {viewerName} · {new Date().toLocaleString([], { dateStyle: "short", timeStyle: "short" })}
           </span>
@@ -198,7 +203,7 @@ export function MediaViewer() {
                 type="button"
                 onClick={() => setMediaIndex(i)}
                 aria-label={`Item ${i + 1}`}
-                className={cn("h-1.5 rounded-full transition-all", i === mediaIndex ? "w-7 bg-gold" : "w-1.5 bg-white/35")}
+                className={cn("h-1.5 rounded-full transition-all duration-300", i === mediaIndex ? "w-7 bg-gold" : "w-1.5 bg-white/35")}
               />
             ))}
           </div>
@@ -231,30 +236,33 @@ export function MediaViewer() {
               haptic("like");
               toast(`Liked ${item.ownerName}'s photo`, "gold");
             }}
+            aria-label="Like"
             className="press grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-gold hover:text-black"
           >
-            <Heart className="h-5 w-5" />
+            <Heart className="h-5 w-5" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={() =>
               toast(`Saving is disabled here: ${item.ownerName} shared this inside FYK. Ask them directly if you'd like a copy.`, "violet")
             }
+            aria-label="Download (disabled)"
             className="press grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white/45 backdrop-blur"
           >
-            <Download className="h-5 w-5" />
+            <Download className="h-5 w-5" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={() => toast("Report captured locally: No remote moderation queue receives this yet.", "live")}
+            aria-label="Report content"
             className="press grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white backdrop-blur hover:bg-live hover:text-white"
           >
-            <ShieldAlert className="h-5 w-5" />
+            <ShieldAlert className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
         <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] text-white/40">
-          <Sparkles className="h-3 w-3" />
+          <Sparkles className="h-3 w-3" aria-hidden="true" />
           Watermarked with your name. Screenshots are deterred, not prevented — please respect the sender.
         </p>
       </footer>

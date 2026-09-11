@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { prisma } from "#/db";
 import { auth } from "#/lib/auth";
+import { withSecurity, json, jsonError, parseJsonBody, validateString } from "#/middleware";
+import { checkRateLimit } from "#/lib/rate-limit";
 
 // -- Helpers --
 
@@ -15,19 +17,19 @@ async function getCurrentUser(request: Request) {
   }
 }
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
 // -- Route --
 
 export const Route = createFileRoute("/api/events/")({
   server: {
     handlers: {
       GET: async ({ request }: { request: Request }) => {
+        // Rate limit: 100 requests per 15 minutes per IP
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+        const rateLimitResult = await checkRateLimit(`events:GET:${ip}`, 100, 15 * 60 * 1000);
+        if (!rateLimitResult.allowed) {
+          return jsonError("Rate limit exceeded", 429);
+        }
+
         const user = await getCurrentUser(request);
 
         const events = await prisma.event.findMany({
@@ -82,43 +84,62 @@ export const Route = createFileRoute("/api/events/")({
         return json({ events: mapped });
       },
 
-      POST: async ({ request }: { request: Request }) => {
+      POST: withSecurity(async ({ request }: { request: Request }) => {
+        // Rate limit: 20 mutations per 15 minutes per user
         const user = await getCurrentUser(request);
         if (!user) {
-          return json({ error: "Unauthorized" }, 401);
+          return jsonError("Unauthorized", 401);
         }
 
-        const body = await request.json();
+        const rateLimitResult = await checkRateLimit(`events:POST:${user.id}`, 20, 15 * 60 * 1000);
+        if (!rateLimitResult.allowed) {
+          return jsonError("Rate limit exceeded", 429);
+        }
+
+        const bodyResult = await parseJsonBody<{
+          action?: string;
+          name?: string;
+          description?: string;
+          category?: string;
+          location?: string;
+          start_time?: string;
+          max_attendees?: number;
+          cost?: string;
+          eventId?: string;
+        }>(request);
+
+        if (!bodyResult.ok) return bodyResult.response;
+        const body = bodyResult.data;
         const { action } = body;
 
         // -- Create event --
         if (action === "create") {
-          const {
-            name,
-            description,
-            category,
-            location,
-            start_time,
-            max_attendees,
-            cost,
-          } = body;
+          const nameResult = validateString(body.name, "Title", { min: 3, max: 200 });
+          if (!nameResult.ok) return jsonError(nameResult.error, 400);
 
-          if (!name || name.trim().length < 3) {
-            return json({ error: "Title must be at least 3 characters" }, 400);
+          // Validate optional fields
+          if (body.description && body.description.length > 5000) {
+            return jsonError("Description must be at most 5000 characters", 400);
+          }
+          if (body.max_attendees !== undefined) {
+            const capacity = Number(body.max_attendees);
+            if (!Number.isFinite(capacity) || capacity < 1 || capacity > 10000) {
+              return jsonError("Capacity must be between 1 and 10,000", 400);
+            }
           }
 
           const event = await prisma.event.create({
             data: {
               hostId: user.id,
-              title: name.trim(),
-              description: description ?? null,
-              activityId: category ?? null,
-              venue: location ?? null,
-              startsAt: start_time
-                ? new Date(start_time)
+              title: nameResult.value,
+              description: body.description?.trim() || null,
+              activityId: body.category?.trim() || null,
+              venue: body.location?.trim() || null,
+              startsAt: body.start_time
+                ? new Date(body.start_time)
                 : new Date(Date.now() + 7 * 86400000),
-              capacity: max_attendees ?? null,
-              cost: cost ? String(cost) : null,
+              capacity: body.max_attendees ? Number(body.max_attendees) : null,
+              cost: body.cost ? String(body.cost).trim().slice(0, 50) : null,
               status: "published",
             },
           });
@@ -137,41 +158,39 @@ export const Route = createFileRoute("/api/events/")({
 
         // -- RSVP (join / leave) --
         if (action === "join" || action === "leave") {
-          const { eventId } = body;
-          if (!eventId) {
-            return json({ error: "eventId required" }, 400);
-          }
+          const eventIdResult = validateString(body.eventId, "eventId");
+          if (!eventIdResult.ok) return jsonError(eventIdResult.error, 400);
 
           if (action === "join") {
             // Check capacity
             const event = await prisma.event.findUnique({
-              where: { id: eventId },
+              where: { id: eventIdResult.value },
               include: { rsvps: { where: { status: "going" } } },
             });
-            if (!event) return json({ error: "Event not found" }, 404);
+            if (!event) return jsonError("Event not found", 404);
             if (event.capacity && event.rsvps.length >= event.capacity) {
-              return json({ error: "Event is full" }, 400);
+              return jsonError("Event is full", 400);
             }
 
             await prisma.eventRsvp.upsert({
               where: {
-                eventId_profileId: { eventId, profileId: user.id },
+                eventId_profileId: { eventId: eventIdResult.value, profileId: user.id },
               },
-              create: { eventId, profileId: user.id, status: "going" },
+              create: { eventId: eventIdResult.value, profileId: user.id, status: "going" },
               update: { status: "going" },
             });
           } else {
             // Leave
             await prisma.eventRsvp.deleteMany({
-              where: { eventId, profileId: user.id },
+              where: { eventId: eventIdResult.value, profileId: user.id },
             });
           }
 
           return json({ ok: true });
         }
 
-        return json({ error: "Unknown action" }, 400);
-      },
+        return jsonError("Unknown action", 400);
+      }, { maxBodySize: 64 * 1024 }), // 64KB max for event creation
     },
   },
 });

@@ -628,7 +628,7 @@ function SignInPage() {
 											onFocus={onFocus}
 											onBlur={onBlur}
 											required
-											minLength={8}
+											minLength={12}
 										/>
 										<button
 											type="button"
@@ -759,7 +759,7 @@ function SignInPage() {
 											onFocus={onFocus}
 											onBlur={onBlur}
 											required
-											minLength={8}
+											minLength={12}
 										/>
 									</div>
 								</div>

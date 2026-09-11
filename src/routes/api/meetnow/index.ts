@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { prisma } from "#/db";
 import { auth } from "#/lib/auth";
+import { withSecurity, json, jsonError, parseJsonBody, validateString } from "#/middleware";
+import { checkRateLimit } from "#/lib/rate-limit";
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// -- Helpers --
 
 async function getCurrentUser(request: Request) {
   try {
@@ -15,21 +17,21 @@ async function getCurrentUser(request: Request) {
   }
 }
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
 const MEETNOW_EXPIRY_HOURS = 4;
 
-// ── Route ──────────────────────────────────────────────────────────────────
+// -- Route --
 
 export const Route = createFileRoute("/api/meetnow/")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        // Rate limit: 100 requests per 15 minutes per IP
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+        const rateLimitResult = await checkRateLimit(`meetnow:GET:${ip}`, 100, 15 * 60 * 1000);
+        if (!rateLimitResult.allowed) {
+          return jsonError("Rate limit exceeded", 429);
+        }
+
         const user = await getCurrentUser(request);
         if (!user) {
           return json({ posts: [] });
@@ -59,7 +61,6 @@ export const Route = createFileRoute("/api/meetnow/")({
           orderBy: { createdAt: "desc" },
           take: 50,
         });
-
 
         const mapped = posts.map((post) => ({
           id: post.id,
@@ -91,19 +92,39 @@ export const Route = createFileRoute("/api/meetnow/")({
         return json({ posts: mapped });
       },
 
-      POST: async ({ request }) => {
+      POST: withSecurity(async ({ request }) => {
         const user = await getCurrentUser(request);
         if (!user) {
-          return json({ error: "Unauthorized" }, 401);
+          return jsonError("Unauthorized", 401);
         }
 
-        const body = await request.json();
-        const { action, postId, category, note, location } = body;
+        // Rate limit: 10 mutations per 15 minutes per user
+        const rateLimitResult = await checkRateLimit(`meetnow:POST:${user.id}`, 10, 15 * 60 * 1000);
+        if (!rateLimitResult.allowed) {
+          return jsonError("Rate limit exceeded", 429);
+        }
 
-        // ── Create a new MeetNow post ─────────────────────────────────
+        const bodyResult = await parseJsonBody<{
+          action?: string;
+          postId?: string;
+          category?: string;
+          note?: string;
+          location?: string;
+        }>(request, 32 * 1024); // 32KB max
+
+        if (!bodyResult.ok) return bodyResult.response;
+        const { action, postId, category, note, location } = bodyResult.data;
+
+        // -- Create a new MeetNow post --
         if (!action || action === "create") {
-          if (!category) {
-            return json({ error: "category required" }, 400);
+          const catResult = validateString(category, "category", { min: 1, max: 50 });
+          if (!catResult.ok) return jsonError(catResult.error, 400);
+
+          if (note && note.length > 500) {
+            return jsonError("Note must be at most 500 characters", 400);
+          }
+          if (location && location.length > 200) {
+            return jsonError("Location must be at most 200 characters", 400);
           }
 
           const expiresAt = new Date();
@@ -112,9 +133,9 @@ export const Route = createFileRoute("/api/meetnow/")({
           const post = await prisma.meetNowPost.create({
             data: {
               userId: user.id,
-              category,
-              place: note ?? "",
-              location: location ?? null,
+              category: catResult.value,
+              place: note?.trim() || "",
+              location: location?.trim() || null,
               status: "active",
               expiresAt,
             },
@@ -165,23 +186,22 @@ export const Route = createFileRoute("/api/meetnow/")({
           });
         }
 
-        // ── Join a MeetNow post ───────────────────────────────────────
+        // -- Join a MeetNow post --
         if (action === "join") {
-          if (!postId) {
-            return json({ error: "postId required" }, 400);
-          }
+          const idResult = validateString(postId, "postId");
+          if (!idResult.ok) return jsonError(idResult.error, 400);
 
           const post = await prisma.meetNowPost.findUnique({
-            where: { id: postId },
+            where: { id: idResult.value },
           });
 
-          if (!post) return json({ error: "Post not found" }, 404);
+          if (!post) return jsonError("Post not found", 404);
           if (post.status !== "active")
-            return json({ error: "Post is no longer active" }, 400);
+            return jsonError("Post is no longer active", 400);
           if (post.expiresAt < new Date())
-            return json({ error: "Post has expired" }, 400);
+            return jsonError("Post has expired", 400);
           if (post.userId === user.id)
-            return json({ error: "Cannot join your own post" }, 400);
+            return jsonError("Cannot join your own post", 400);
 
           // Send a tap to the post author (if not already sent)
           const existingTap = await prisma.tap.findUnique({
@@ -213,8 +233,8 @@ export const Route = createFileRoute("/api/meetnow/")({
           return json({ ok: true });
         }
 
-        return json({ error: "Unknown action" }, 400);
-      },
+        return jsonError("Unknown action", 400);
+      }, { maxBodySize: 32 * 1024 }),
     },
   },
 });

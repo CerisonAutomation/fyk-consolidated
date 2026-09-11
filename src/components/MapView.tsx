@@ -110,7 +110,7 @@ export function MapView({
     for (const p of pins) {
       const html = `
         <div class="fyk-pin ${p.accent ? "is-accent" : ""}">
-          ${p.photo ? `<img src="${p.photo}" alt="" />` : `<span class="fyk-pin-dot"></span>`}
+          ${p.photo ? `<img src="${p.photo}" alt="" width="44" height="44" loading="lazy" decoding="async" />` : `<span class="fyk-pin-dot"></span>`}
           ${p.online ? '<i class="fyk-pin-online"></i>' : ""}
         </div>`;
       const icon = L.divIcon({ html, className: "fyk-pin-wrap", iconSize: [44, 44], iconAnchor: [22, 22] });

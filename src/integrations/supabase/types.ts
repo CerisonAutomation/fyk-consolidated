@@ -17,7 +17,7 @@ export type SharedMediaStatus = "pending" | "active" | "declined" | "expired" | 
 export type ReportStatus = "open" | "in_review" | "action_taken" | "dismissed";
 export type PostKind = "invite" | "offer" | "ask" | "photo" | "text";
 export type WhereMode = "out" | "mine" | "yours" | "either";
-export type PlanTier = "free" | "plus";
+export type PlanTier = "free" | "plus" | "gold" | "platinum";
 
 export type Profile = {
   id: string;

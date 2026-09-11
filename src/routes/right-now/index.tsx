@@ -280,25 +280,41 @@ function RightNowPage() {
 								Share what you're up to \u00b7 See who's nearby
 							</p>
 						</div>
-						<button
-							type="button"
-							onClick={() => setShowComposer(!showComposer)}
-							className="flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-medium transition-all"
-							style={{
-								background: showComposer
-									? "rgba(234,179,8,0.15)"
-									: "rgba(255,255,255,0.05)",
-								color: showComposer ? "#EAAB08" : "rgba(255,255,255,0.5)",
-								border: `1px solid ${showComposer ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)"}`,
-							}}
-						>
-							{showComposer ? (
-								<X className="h-4 w-4" />
-							) : (
-								<Plus className="h-4 w-4" />
-							)}
-							{showComposer ? "Cancel" : "Post"}
-						</button>
+						<div className="flex items-center gap-2">
+							<button
+								type="button"
+								onClick={() => setShowMap(!showMap)}
+								className={cn(
+									"flex h-10 w-10 items-center justify-center rounded-xl border transition-all",
+									showMap
+										? "border-amber-500/30 bg-amber-500/15 text-amber-400"
+										: "border-white/[0.08] bg-white/[0.03] text-white/50 hover:text-white/70",
+								)}
+								aria-label={showMap ? "Show list view" : "Show map view"}
+								aria-pressed={showMap}
+							>
+								<Map className="h-4 w-4" />
+							</button>
+							<button
+								type="button"
+								onClick={() => setShowComposer(!showComposer)}
+								className="flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-medium transition-all"
+								style={{
+									background: showComposer
+										? "rgba(234,179,8,0.15)"
+										: "rgba(255,255,255,0.05)",
+									color: showComposer ? "#EAAB08" : "rgba(255,255,255,0.5)",
+									border: `1px solid ${showComposer ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)"}`,
+								}}
+							>
+								{showComposer ? (
+									<X className="h-4 w-4" />
+								) : (
+									<Plus className="h-4 w-4" />
+								)}
+								{showComposer ? "Cancel" : "Post"}
+							</button>
+						</div>
 					</div>
 
 					{/* Active Status Banner */}
@@ -464,9 +480,27 @@ function RightNowPage() {
 					{/* Nearby active members — from Supabase */}
 					{!showComposer && (
 						<div className="space-y-3">
-							<p className="font-mono text-[10px] uppercase tracking-[0.25em] text-amber-400/70">
-								NEARBY \u00b7 {geoState?.city ?? "Loading..."}
-							</p>
+							<div className="flex items-center justify-between">
+								<p className="font-mono text-[10px] uppercase tracking-[0.25em] text-amber-400/70">
+									NEARBY \u00b7 {geoState?.city ?? "Loading..."}
+								</p>
+								{nearbyUsers && nearbyUsers.length > 0 && (
+									<button
+										type="button"
+										onClick={() => setShowMap(!showMap)}
+										className={cn(
+											"flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider transition-all",
+											showMap
+												? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+												: "border-white/[0.06] bg-white/[0.02] text-white/40 hover:text-white/60",
+										)}
+										aria-pressed={showMap}
+									>
+										<Map className="size-3" />
+										{showMap ? "List" : "Map"}
+									</button>
+								)}
+							</div>
 
 							{!nearbyUsers || nearbyUsers.length === 0 ? (
 								<div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 text-center">
@@ -479,6 +513,26 @@ function RightNowPage() {
 											: "Enable location to see who's around you"}
 									</p>
 								</div>
+							) : showMap ? (
+								<FYKMap
+									pins={nearbyUsers.map((u): MapPinItem => ({
+										id: u.id,
+										lat: (geoState?.coords?.lat ?? 35.8989) + (Math.random() - 0.5) * 0.015,
+										lng: (geoState?.coords?.lng ?? 14.5146) + (Math.random() - 0.5) * 0.015,
+										label: u.name,
+										photo: u.avatar || undefined,
+										online: u.online,
+									}))}
+									userPosition={
+										geoState?.coords
+											? { lat: geoState.coords.lat, lng: geoState.coords.lng }
+											: undefined
+									}
+									height={400}
+								onSelect={() => {
+									/* Could navigate to profile */
+								}}
+								/>
 							) : (
 								nearbyUsers.map((item) => (
 									<div

@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../generated/prisma";
+import { PrismaClient } from "../../generated/prisma/client";
 import type { Story, Profile } from "../../core/domain/types";
 import type { StoryRepository } from "../../core/ports/repositories";
 

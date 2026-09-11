@@ -381,7 +381,7 @@ export function ProfileClient() {
               <span className="font-semibold text-gold-soft">{completion}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-gradient-to-r from-gold to-gold-soft transition-all duration-500" style={{ width: `${completion}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-gold to-gold-soft transition-[width] duration-500" style={{ width: `${completion}%` }} />
             </div>
             {completion < 100 && (
               <p className="mt-1.5 flex items-center gap-1 text-[11px] text-gold/70">

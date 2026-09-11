@@ -12,6 +12,8 @@ import { EmptyState } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { FYKMap } from "#/components/map/FYKMap";
 import { candidatesToPins } from "#/components/map/candidate-pins";
+import { MapSearchBar } from "#/components/map/MapSearchBar";
+import type { GeocodingFeature } from "#/lib/geocoding";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -78,6 +80,32 @@ export function ExploreClient() {
 	const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set(["online"]));
 	const [sort, setSort] = useState<SortKey>("recent");
 	const [layout, setLayout] = useState<"grid" | "list" | "map">("grid");
+	const [customCities, setCustomCities] = useState<City[]>([]);
+
+	// ── Handle MapSearchBar city selection ──────────────────────────────────
+	const handleCitySearch = (feature: GeocodingFeature) => {
+		const placeName = feature.name;
+		const country = feature.context?.find((c) => c.id.startsWith("country"))?.text ?? "";
+		const cityId = placeName.toLowerCase().replace(/\s+/g, "-");
+
+		if ((citiesList ?? []).some((c) => c.id === cityId) || customCities.some((c) => c.id === cityId)) {
+			setSelectedCity(cityId);
+			return;
+		}
+
+		const newCity: City = {
+			id: cityId,
+			name: placeName,
+			country,
+			flag: "\ud83c\udf0d",
+			onlineCount: 0,
+			photo: `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${feature.center[0]},${feature.center[1]},12,0/400x200@2x?access_token=`,
+		};
+
+		setCustomCities((prev) => [...prev, newCity]);
+		setSelectedCity(cityId);
+		pushToast(`Now exploring ${placeName}`, "success");
+	};
 
 	// ── Load city counts from Supabase ────────────────────────────────────
 	const { data: citiesList } = useQuery({
@@ -188,7 +216,8 @@ export function ExploreClient() {
 		enabled: !!selectedCity,
 	});
 
-	const selectedCityData = (citiesList ?? []).find((c) => c.id === selectedCity);
+	const allCities = [...(citiesList ?? []), ...customCities];
+	const selectedCityData = allCities.find((c) => c.id === selectedCity);
 
 	// ── Sort ──────────────────────────────────────────────────────────────
 	const sortedProfiles = [...(profilesList ?? [])].sort((a, b) => {
@@ -231,9 +260,17 @@ export function ExploreClient() {
 				</p>
 			</div>
 
+			{/* City Search */}
+			<div className="mb-4">
+				<MapSearchBar
+					placeholder="Search for any city worldwide..."
+					onSelect={handleCitySearch}
+				/>
+			</div>
+
 			{/* City Cards */}
 			<div className="mb-6 flex gap-3 overflow-x-auto pb-2">
-				{(citiesList ?? []).map((city) => (
+				{allCities.map((city) => (
 					<button
 						key={city.id}
 						onClick={() => setSelectedCity(city.id)}
@@ -396,7 +433,7 @@ export function ExploreClient() {
 						authUser?.id ?? "explore-viewer",
 					)}
 					height={480}
-					onSelect={(id) => {
+					onSelect={() => {
 						/* Could navigate to profile */
 					}}
 				/>

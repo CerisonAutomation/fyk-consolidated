@@ -17,7 +17,7 @@ export function EmptyState({
         </span>
       )}
       <div>
-        <p className="text-[16px] font-semibold text-ink">{title}</p>
+        <h3 className="text-[16px] font-semibold text-ink">{title}</h3>
         {children && <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-muted">{children}</p>}
       </div>
     </div>

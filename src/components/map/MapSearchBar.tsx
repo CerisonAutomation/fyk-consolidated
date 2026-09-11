@@ -141,6 +141,11 @@ export function MapSearchBar({
           }}
           placeholder={placeholder}
           autoFocus={autoFocus}
+          aria-label={placeholder || "Search address"}
+          aria-autocomplete="list"
+          aria-controls={open ? "map-search-results" : undefined}
+          aria-expanded={open}
+          role="combobox"
           className={cn(
             "w-full bg-surface/95 backdrop-blur-xl border border-line rounded-xl",
             "pl-9 pr-9 py-2.5 text-sm text-primary placeholder:text-muted",
@@ -151,14 +156,18 @@ export function MapSearchBar({
         {/* Loading spinner or clear button */}
         <div className="absolute right-3 flex items-center">
           {loading ? (
-            <span className="h-4 w-4 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+            <>
+              <span className="sr-only">Searching...</span>
+              <span aria-hidden="true" className="h-4 w-4 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+            </>
           ) : query ? (
             <button
               type="button"
               onClick={handleClear}
+              aria-label="Clear search"
               className="text-muted hover:text-primary transition-colors"
             >
-              <X size={14} />
+              <X size={14} aria-hidden="true" />
             </button>
           ) : null}
         </div>
@@ -166,11 +175,17 @@ export function MapSearchBar({
 
       {/* Dropdown */}
       {open && results.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-surface/95 backdrop-blur-xl border border-line rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto">
+        <div
+          id="map-search-results"
+          role="listbox"
+          aria-label="Search results"
+          className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-surface/95 backdrop-blur-xl border border-line rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto"
+        >
           {results.map((feature) => (
             <button
               key={feature.id}
               type="button"
+              role="option"
               onClick={() => handleSelect(feature)}
               className="flex items-start gap-3 w-full px-3 py-2.5 text-left hover:bg-muted/20 transition-colors border-b border-line last:border-b-0"
             >

@@ -10,7 +10,6 @@ import {
 	Star,
 	Stethoscope,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useBlockUser } from "#/core/api/hooks/use-blocks";
 import {
 	useAddFavorite,
@@ -20,7 +19,8 @@ import { useHideUser } from "#/core/api/hooks/use-hides";
 import { useProfile } from "#/core/api/hooks/use-profiles";
 import { useSendTap } from "#/core/api/hooks/use-taps";
 import { useRecordView } from "#/core/api/hooks/use-views";
-import { PhotoLightbox } from "#/core/ui/organisms/PhotoLightbox";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+const PhotoLightbox = lazy(() => import("#/core/ui/organisms/PhotoLightbox").then(m => ({ default: m.PhotoLightbox })));
 import { conversationIdFor, demoMediaUrl } from "#/domains/demo";
 import { cn } from "#/lib/utils";
 
@@ -399,11 +399,13 @@ function PhotoCarousel({
 				</div>
 			)}
 			{lightboxIndex !== null && (
-				<PhotoLightbox
-					images={images}
-					initialIndex={lightboxIndex}
-					onClose={() => setLightboxIndex(null)}
-				/>
+				<Suspense fallback={null}>
+					<PhotoLightbox
+						images={images}
+						initialIndex={lightboxIndex}
+						onClose={() => setLightboxIndex(null)}
+					/>
+				</Suspense>
 			)}
 		</div>
 	);

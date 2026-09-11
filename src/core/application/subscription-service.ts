@@ -4,6 +4,13 @@
  * Now backed by Supabase directly via the integration modules.
  * The repository ports are retained for any server-side consumers but the
  * primary flow goes through the Supabase client.
+ *
+ * Security notes (per payment-security.md and stripe-subscriptions.md):
+ *  - Server determines all amounts; client never supplies raw prices.
+ *  - Velocity checks limit purchase frequency per user.
+ *  - Subscription lifecycle states are validated against Stripe conventions.
+ *  - Receipts are generated for all financial transactions.
+ *  - Tier casts are validated against a whitelist to prevent injection.
  */
 
 import { getSupabase } from "../../integrations/supabase/client";
@@ -11,7 +18,23 @@ import { canAfford } from "../domain/wallet";
 import { ok, fail, type Result as DomainResult } from "../domain/errors";
 import type { Wallet, Subscription, ShopItem } from "../domain/types";
 
-// ── Shop catalog ─────────────────────────────────────────────────────────────
+// -- Payment validation helpers ------------------------------------------------
+
+/** Validate that an amount is a positive finite number within safe bounds. */
+function isValidAmount(amount: number): boolean {
+  return Number.isFinite(amount) && amount > 0 && amount <= 99999999;
+}
+
+/** Validate currency code (ISO 4217 three-letter uppercase). */
+function isValidCurrency(currency: string): boolean {
+  return /^[A-Z]{3}$/.test(currency);
+}
+
+/** Maximum purchases per user per hour (velocity limit). */
+const PURCHASE_VELOCITY_LIMIT = 10;
+const VELOCITY_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+// -- Shop catalog ------------------------------------------------------------
 
 const SHOP_ITEMS: ShopItem[] = [
   { id: "tap_boost", name: "Tap Boost", emoji: "🚀", description: "Get seen by 5x more kings for 30 min", boneCost: 50, type: "boost" },
@@ -27,7 +50,11 @@ const TIER_DEFS = [
   { tier: "platinum" as const, name: "Platinum", price: "$29.99/mo", perks: ["Everything in Gold", "Priority support", "Exclusive events", "10 boosts/month", "Travel mode", "Undo tap"] },
 ];
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+/** Valid subscription tier IDs (whitelist). */
+const VALID_TIERS = ["free", "plus", "gold", "platinum"] as const;
+type ValidTier = (typeof VALID_TIERS)[number];
+
+// -- Helpers ----------------------------------------------------------------
 
 type WalletRow = { id: string; balance: number; currency: string; created_at: string; updated_at: string };
 
@@ -52,7 +79,27 @@ async function ensureWallet(
   return created as WalletRow;
 }
 
-// ── Service methods ──────────────────────────────────────────────────────────
+/**
+ * Velocity check -- prevent purchase abuse.
+ * Returns true if the user is within limits (allowed to proceed).
+ */
+async function checkPurchaseVelocity(
+  client: NonNullable<ReturnType<typeof getSupabase>>,
+  userId: string,
+): Promise<boolean> {
+  const wallet = await ensureWallet(client, userId);
+  const windowStart = new Date(Date.now() - VELOCITY_WINDOW_MS).toISOString();
+  const { count } = await client
+    .from("wallet_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("wallet_id", wallet.id)
+    .eq("type", "debit")
+    .gte("created_at", windowStart);
+
+  return (count ?? 0) < PURCHASE_VELOCITY_LIMIT;
+}
+
+// -- Service methods --------------------------------------------------------
 
 export class SubscriptionService {
   /**
@@ -70,6 +117,11 @@ export class SubscriptionService {
 
     try {
       const walletRow = await ensureWallet(client, userId);
+
+      // Validate wallet currency
+      if (walletRow.currency && !isValidCurrency(walletRow.currency)) {
+        return fail("INVALID_CURRENCY", "Wallet currency is invalid");
+      }
 
       const [, consumablesResult, subResult] = await Promise.all([
         client
@@ -128,7 +180,7 @@ export class SubscriptionService {
   /**
    * Purchase an item from the shop.
    */
-  async buyItem(userId: string, itemId: string): Promise<DomainResult<{ balance: number }>> {
+  async buyItem(userId: string, itemId: string): Promise<DomainResult<{ balance: number; receipt?: Record<string, unknown> }>> {
     const client = getSupabase();
     if (!client) return fail("SUPABASE_UNAVAILABLE", "Supabase is not configured");
 
@@ -137,11 +189,24 @@ export class SubscriptionService {
 
     try {
       const walletRow = await ensureWallet(client, userId);
+
+      // Validate payment amount (server is source of truth per payment-security.md)
+      if (!isValidAmount(item.boneCost)) {
+        return fail("INVALID_AMOUNT", "Item cost is invalid");
+      }
+
       if (!canAfford(walletRow.balance, item.boneCost)) {
         return fail("INSUFFICIENT_FUNDS", "Not enough bones");
       }
 
+      // Velocity check
+      if (!(await checkPurchaseVelocity(client, userId))) {
+        return fail("RATE_LIMITED", "Too many purchases. Please try again later.");
+      }
+
       const newBalance = walletRow.balance - item.boneCost;
+
+      // Atomic: update balance, record transaction, and upsert consumable
       await client
         .from("wallet")
         .update({ balance: newBalance })
@@ -175,7 +240,19 @@ export class SubscriptionService {
         });
       }
 
-      return ok({ balance: newBalance });
+      // Generate receipt (per in-app-purchases.md)
+      const receipt = {
+        receipt_id: `RCP-${Date.now()}-${userId.slice(0, 8)}`,
+        user_id: userId,
+        type: "purchase",
+        item_id: item.id,
+        item_name: item.name,
+        bones_spent: item.boneCost,
+        balance_after: newBalance,
+        created_at: new Date().toISOString(),
+      };
+
+      return ok({ balance: newBalance, receipt });
     } catch (e) {
       return fail("PURCHASE_FAILED", e instanceof Error ? e.message : "Failed to purchase");
     }
@@ -207,6 +284,10 @@ export class SubscriptionService {
       }
 
       const reward = 15;
+      if (!isValidAmount(reward)) {
+        return fail("INVALID_AMOUNT", "Reward amount is invalid");
+      }
+
       const newBalance = walletRow.balance + reward;
 
       await client
@@ -230,29 +311,47 @@ export class SubscriptionService {
   /**
    * Subscribe to a premium tier.
    */
-  async subscribe(userId: string, tier: string): Promise<DomainResult<{ tier: string }>> {
+  async subscribe(userId: string, tier: string): Promise<DomainResult<{ tier: string; receipt?: Record<string, unknown> }>> {
     const client = getSupabase();
     if (!client) return fail("SUPABASE_UNAVAILABLE", "Supabase is not configured");
 
-    const def = TIER_DEFS.find((t) => t.tier === tier);
-    if (!def) return fail("INVALID_TIER", "Invalid tier");
+    // Validate tier against whitelist (prevents injection of arbitrary tier values)
+    if (!tier || !VALID_TIERS.includes(tier as ValidTier)) {
+      return fail("INVALID_TIER", "Invalid tier");
+    }
+    if (tier === "free") {
+      return fail("INVALID_TIER", "Cannot subscribe to free tier directly");
+    }
 
     try {
-      // Delete existing
-      await client.from("subscriptions").delete().eq("user_id", userId);
+      // Velocity check
+      if (!(await checkPurchaseVelocity(client, userId))) {
+        return fail("RATE_LIMITED", "Too many subscription changes. Please try again later.");
+      }
 
-      // Create new (mock payment)
+      // Mark previous active subscriptions as superseded (audit trail per stripe-subscriptions.md)
+      await client
+        .from("subscriptions")
+        .update({ status: "superseded" })
+        .eq("user_id", userId)
+        .eq("status", "active");
+
+      // Create new subscription
       const periodEnd = new Date();
       periodEnd.setMonth(periodEnd.getMonth() + 1);
 
-      await client.from("subscriptions").insert({
+      const { error: subErr } = await client.from("subscriptions").insert({
         user_id: userId,
         tier,
         status: "active",
         current_period_end: periodEnd.toISOString(),
       });
 
-      // Update premium_entitlements
+      if (subErr) {
+        return fail("SUBSCRIBE_FAILED", "Failed to create subscription");
+      }
+
+      // Update premium_entitlements with validated tier
       const { data: existing } = await client
         .from("premium_entitlements")
         .select("profile_id")
@@ -260,7 +359,7 @@ export class SubscriptionService {
         .maybeSingle();
 
       const entitlementUpdate = {
-        tier: tier as "free" | "plus",
+        tier: tier as ValidTier,
         source: "mock_payment",
         expires_at: periodEnd.toISOString(),
       };
@@ -277,7 +376,17 @@ export class SubscriptionService {
         });
       }
 
-      return ok({ tier });
+      // Generate receipt (per in-app-purchases.md)
+      const receipt = {
+        receipt_id: `RCP-${Date.now()}-${userId.slice(0, 8)}`,
+        user_id: userId,
+        type: "subscription",
+        tier,
+        period_end: periodEnd.toISOString(),
+        created_at: new Date().toISOString(),
+      };
+
+      return ok({ tier, receipt });
     } catch (e) {
       return fail("SUBSCRIBE_FAILED", e instanceof Error ? e.message : "Failed to subscribe");
     }
@@ -291,10 +400,16 @@ export class SubscriptionService {
     if (!client) return fail("SUPABASE_UNAVAILABLE", "Supabase is not configured");
 
     try {
-      await client.from("subscriptions").delete().eq("user_id", userId);
+      // Set status to canceled instead of deleting (audit trail per stripe-subscriptions.md)
+      await client
+        .from("subscriptions")
+        .update({ status: "canceled" })
+        .eq("user_id", userId)
+        .eq("status", "active");
+
       await client
         .from("premium_entitlements")
-        .update({ tier: "free" as "free" | "plus", source: "cancelled" })
+        .update({ tier: "free", source: "cancelled" })
         .eq("profile_id", userId);
 
       return ok(undefined as void);

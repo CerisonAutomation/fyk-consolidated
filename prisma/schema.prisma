@@ -78,6 +78,8 @@ enum WhereMode {
 enum PlanTier {
   free
   plus
+  gold
+  platinum
 }
 
 enum MediaAccessPolicy {

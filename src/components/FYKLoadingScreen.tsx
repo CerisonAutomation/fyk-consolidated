@@ -1,6 +1,9 @@
 /**
  * Premium loading screen with the FYKING logo.
  * Designed to feel like a native app splash screen.
+ *
+ * Uses CSS animations for smooth GPU-accelerated transitions.
+ * Per the performance docs: "Prefer will-change: transform for GPU-accelerated animations"
  */
 export function FYKLoadingScreen() {
 	return (
@@ -44,7 +47,7 @@ export function FYKLoadingScreen() {
 
 				{/* Square logo */}
 				<div
-					className="relative"
+					className="relative will-change-transform"
 					style={{
 						animation: "loader-float 3s ease-in-out infinite",
 					}}
@@ -85,7 +88,7 @@ export function FYKLoadingScreen() {
 							}}
 						/>
 						<div
-							className="absolute inset-0 rounded-full"
+							className="absolute inset-0 rounded-full will-change-transform"
 							style={{
 								border: "1.5px solid transparent",
 								borderTopColor: "#EAAB08",
@@ -125,7 +128,7 @@ export function FYKLoadingScreen() {
 				</span>
 			</div>
 
-			{/* Keyframes */}
+			{/* Keyframes — GPU-accelerated with transform and opacity only */}
 			<style>{`
 				@keyframes loader-float {
 					0%, 100% { transform: translateY(0); }

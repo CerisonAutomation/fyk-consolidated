@@ -329,7 +329,7 @@ function GridPage() {
 							"grid-viewer",
 						)}
 						height={480}
-						onSelect={(id) => {
+						onSelect={() => {
 							/* Could navigate to profile */
 						}}
 					/>

@@ -12,6 +12,9 @@ import { Button, Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
+const BONE_EMOJI = "\u{1F9B4}";
+const CROWN_EMOJI = "\u{1F451}";
+
 export function PremiumClient() {
   const qc = useQueryClient();
   const pushToast = useAppStore((s) => s.pushToast);
@@ -31,7 +34,7 @@ export function PremiumClient() {
   });
 
   const act = useMutation({
-    mutationFn: async (vars: { action: string; tier?: string; type?: string; amount?: number }) => {
+    mutationFn: async (vars: { action: string; tier?: string; type?: string; packId?: string }) => {
       if (!userId) throw new Error("Not authenticated");
       const result = await performWalletAction(userId, vars.action, vars);
       if (!result.ok) throw new Error(result.message);
@@ -40,8 +43,8 @@ export function PremiumClient() {
     onSuccess: (_res, vars) => {
       const a = vars.action;
       pushToast(
-        a === "subscribe" ? "Subscription active 👑 Welcome to premium." :
-        a === "daily" ? "Daily reward claimed! +15 🦴" :
+        a === "subscribe" ? `Subscription active ${CROWN_EMOJI} Welcome to premium.` :
+        a === "daily" ? `Daily reward claimed! +15 ${BONE_EMOJI}` :
         a === "topup" ? "Bones added" :
         a === "buy" ? "Purchased! Check your inventory." :
         "Subscription cancelled", "success"
@@ -87,7 +90,7 @@ export function PremiumClient() {
           onClick={() => setTab("wallet")}
           className={cn("rounded-lg py-2 text-sm font-medium", tab === "wallet" ? "bg-gold text-ink" : "text-muted")}
         >
-          Wallet · {wallet.balance} 🦴
+          {"Wallet \u00B7 "}{wallet.balance}{" "}{BONE_EMOJI}
         </button>
       </div>
 
@@ -137,7 +140,7 @@ export function PremiumClient() {
                   )}
                   <p className="text-sm font-bold text-white">{t.name}</p>
                   <p className="mt-0.5 text-2xl font-bold text-gradient-gold">
-                    ${t.price}
+                    {"$"}{t.price}
                     <span className="text-xs font-normal text-muted">/mo</span>
                   </p>
                   <ul className="mt-3 flex-1 space-y-1.5">
@@ -179,10 +182,11 @@ export function PremiumClient() {
               <Button size="sm" onClick={() => act.mutate({ action: "daily" })}>
                 <Gift className="h-3.5 w-3.5" /> Daily reward
               </Button>
-              <Button size="sm" variant="secondary" onClick={() => act.mutate({ action: "topup", amount: 100 })}>
+              {/* SECURITY: Send packId instead of raw amount -- server is source of truth */}
+              <Button size="sm" variant="secondary" onClick={() => act.mutate({ action: "topup", packId: "pack_100" })}>
                 +100 bones
               </Button>
-              <Button size="sm" variant="secondary" onClick={() => act.mutate({ action: "topup", amount: 500 })}>
+              <Button size="sm" variant="secondary" onClick={() => act.mutate({ action: "topup", packId: "pack_500" })}>
                 +500 bones
               </Button>
             </div>
@@ -195,7 +199,7 @@ export function PremiumClient() {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {wallet.consumables.map((c) => (
                   <div key={c.type} className="rounded-xl border border-line bg-surface p-3 text-center">
-                    <p className="text-lg">{shop.find((s) => s.type === c.type)?.emoji ?? "🎁"}</p>
+                    <p className="text-lg">{shop.find((s) => s.type === c.type)?.emoji ?? "\u{1F381}"}</p>
                     <p className="text-sm font-bold text-white">{c.quantity}</p>
                     <p className="truncate text-[10px] text-muted">
                       {shop.find((s) => s.type === c.type)?.label ?? c.type}
@@ -224,7 +228,7 @@ export function PremiumClient() {
                   disabled={wallet.balance < s.cost}
                   onClick={() => act.mutate({ action: "buy", type: s.type })}
                 >
-                  {s.cost} 🦴
+                  {s.cost} {" "}{BONE_EMOJI}
                 </Button>
               </div>
             ))}
@@ -247,7 +251,7 @@ export function PremiumClient() {
                       <p className="truncate text-xs text-white">{t.description}</p>
                       <p className="text-[10px] text-muted">{new Date(t.created_at).toLocaleDateString()}</p>
                     </div>
-                    <span className="text-xs font-semibold text-white">{t.amount} 🦴</span>
+                    <span className="text-xs font-semibold text-white">{t.amount} {" "}{BONE_EMOJI}</span>
                   </div>
                 ))}
               </div>

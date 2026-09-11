@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../generated/prisma";
+import { PrismaClient } from "../../generated/prisma/client";
 import type { Notification } from "../../core/domain/types";
 import type { NotificationRepository } from "../../core/ports/repositories";
 

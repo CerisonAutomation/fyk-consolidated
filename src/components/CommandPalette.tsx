@@ -182,18 +182,24 @@ export function CommandPalette() {
             }}
             placeholder="Search people, screens and commands…"
             aria-label="Search commands"
+            aria-autocomplete="list"
+            aria-controls="command-palette-list"
+            aria-activedescendant={results[cursor] ? `cmd-${results[cursor].id}` : undefined}
             className="h-[56px] w-full bg-transparent text-[15px] outline-none"
           />
           <kbd className="hidden shrink-0 rounded border border-line bg-surface-2 px-1.5 py-0.5 text-[11px] font-semibold text-muted sm:block">
             ESC
           </kbd>
         </div>
-        <ul className="max-h-[52vh] overflow-y-auto scroll-thin p-2">
+        <ul id="command-palette-list" role="listbox" aria-label="Commands" className="max-h-[52vh] overflow-y-auto scroll-thin p-2">
           {results.length === 0 && <li className="px-3 py-6 text-center text-[13.5px] text-muted">No matches.</li>}
           {results.map((a, i) => (
             <li key={a.id}>
               <button
                 type="button"
+                id={`cmd-${a.id}`}
+                role="option"
+                aria-selected={i === cursor}
                 onMouseEnter={() => setCursor(i)}
                 onClick={() => {
                   a.run();

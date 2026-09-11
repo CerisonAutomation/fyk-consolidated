@@ -23,6 +23,10 @@ export function Avatar({ name, photoUrl, size = 40, online, className }: AvatarP
         <img
           src={photoUrl}
           alt={name}
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
           className="h-full w-full rounded-full object-cover"
         />
       ) : (

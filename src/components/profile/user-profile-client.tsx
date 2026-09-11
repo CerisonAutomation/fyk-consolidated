@@ -124,7 +124,7 @@ export function UserProfileClient({ userId }: { userId: string }) {
         <div className="relative h-64 sm:h-80">
           {u.photos?.[0] ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={u.photos[0]} alt={u.pseudo} className="h-full w-full object-cover" />
+            <img src={u.photos[0]} alt={u.pseudo} width={400} height={533} loading="lazy" decoding="async" className="h-full w-full object-cover" />
           ) : (
             <div className="h-full w-full bg-surface-2" />
           )}
@@ -273,7 +273,7 @@ export function UserProfileClient({ userId }: { userId: string }) {
           <div className="grid grid-cols-3 gap-2">
             {(albums ?? []).filter((a) => a.type === "public").flatMap((a) => a.photos ?? []).map((p) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={p.id} src={p.photo_url} alt="" className="aspect-square w-full rounded-xl object-cover" />
+              <img key={p.id} src={p.photo_url} alt="" width={400} height={400} loading="lazy" decoding="async" className="aspect-square w-full rounded-xl object-cover" />
             ))}
           </div>
         </div>

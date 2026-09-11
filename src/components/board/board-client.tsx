@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { X, Plus, Map } from "lucide-react";
+import { X, Plus, Map as MapIcon } from "lucide-react";
 import { getSupabase } from "#/integrations/supabase/client";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import { useAppStore } from "@/lib/store";
@@ -10,8 +10,6 @@ import { Skeleton, Button, EmptyState } from "@/components/ui/primitives";
 import { ACTIVITIES } from "@/lib/activities";
 import { cn } from "@/lib/utils";
 import { FYKMap } from "#/components/map/FYKMap";
-import type { MapPinItem } from "#/components/map/FYKMap";
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface BoardPost {
@@ -245,7 +243,7 @@ export function BoardClient() {
 							: "border-white/20 bg-white/5 text-white/60 hover:text-white",
 					)}
 				>
-					<Map className="h-4 w-4" />
+					<MapIcon className="h-4 w-4" />
 					{viewMode === "map" ? "List" : "Map"}
 				</button>
 			</div>

@@ -44,6 +44,10 @@ export type VectorSearchState<T> = {
 /**
  * Searches for profiles similar to the given text query.
  *
+ * Uses pgvector cosine similarity with HNSW index for fast ANN lookup.
+ * Per pgvector.md: "Per-query: ef controls search beam width" - the server
+ * function uses default ef_search=100 for good recall (~99%).
+ *
  * The hook is enabled only when the query is at least 2 characters long.
  * Returns structured state so callers can render loading, empty, and error
  * states without inspecting React Query internals.
@@ -89,6 +93,10 @@ export function useVectorSearch(
 
 /**
  * Searches for messages similar to the given text within a conversation.
+ *
+ * Uses pgvector cosine similarity filtered by conversation_id for efficiency.
+ * Per pgvector.md: "Filter by conversation BEFORE ordering for efficiency"
+ * and "Only return results with similarity > threshold".
  *
  * Generates the hash-based embedding locally and passes it to the RPC.
  */
@@ -138,6 +146,9 @@ export function useVectorMessageSearch(
  *
  * Triggered automatically when the profile has embeddable text (pseudo or
  * description). Inspect isError / error to surface failures to the user.
+ *
+ * Per pgvector.md: "Batch upserts with execute_values" for high throughput.
+ * The upsert uses ON CONFLICT to handle re-embeddings gracefully.
  */
 export function useProfileEmbedding(profile: Profile) {
   const text = buildEmbeddingText(profile);
@@ -173,6 +184,8 @@ export function useProfileEmbedding(profile: Profile) {
  * Hash-based embedding generation. Duplicated from vector.ts because that
  * module does not export the generator (only the RPC wrappers use it).
  * Produces the same 384-dim normalized vector.
+ *
+ * Production note: replace with a real embedding model for meaningful results.
  */
 function generateHashEmbeddingFromText(text: string, dimensions = 384): number[] {
   const embedding = new Array(dimensions).fill(0);

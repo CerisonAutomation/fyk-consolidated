@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../generated/prisma";
+import { PrismaClient } from "../../generated/prisma/client";
 import type { PetState, PetItem, PetAdventure } from "../../core/domain/types";
 import type { PetRepository } from "../../core/ports/repositories";
 

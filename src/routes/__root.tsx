@@ -4,9 +4,12 @@ import {
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
+import { Suspense } from "react";
 import appCss from "../styles.css?url";
 import { TanstackQueryProvider } from "#/integrations/tanstack-query/root-provider";
 import { EntryShell } from "#/components/EntryShell";
+import { ErrorBoundary } from "#/components/ErrorBoundary";
+import { LoadingSpinner } from "#/components/FYKLoadingSpinner";
 
 export const Route = createRootRouteWithContext()({
 	head: () => ({
@@ -19,7 +22,9 @@ export const Route = createRootRouteWithContext()({
 		links: [
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
-			{ rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" },
+				{ rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+			{ rel: "preload", href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap", as: "style" },
+				{ rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap" },
 		],
 	}),
 	shellComponent: RootDocument,
@@ -41,17 +46,28 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Root layout -- wraps every route with the auth boundary and query provider.
- * EntryShell checks the Supabase session, renders sign-in when signed out,
- * renders onboarding when the profile is incomplete, and renders children
- * (via Outlet) when fully authenticated.
+ * Root layout -- wraps every route with error boundary, suspense, query provider, and auth boundary.
+ *
+ * - ErrorBoundary catches rendering errors and shows a fallback (React docs pattern).
+ * - Suspense shows a loading spinner while route components load (code splitting pattern).
+ * - Per the performance docs: "Route-based splitting with Suspense fallback".
  */
 function RootLayout() {
 	return (
-		<TanstackQueryProvider>
-			<EntryShell>
-				<Outlet />
-			</EntryShell>
-		</TanstackQueryProvider>
+		<ErrorBoundary>
+			<TanstackQueryProvider>
+				<EntryShell>
+					<Suspense
+						fallback={
+							<div className="grid min-h-[100svh] place-items-center bg-canvas">
+								<LoadingSpinner size="lg" />
+							</div>
+						}
+					>
+						<Outlet />
+					</Suspense>
+				</EntryShell>
+			</TanstackQueryProvider>
+		</ErrorBoundary>
 	);
 }

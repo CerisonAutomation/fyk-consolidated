@@ -268,7 +268,7 @@ export function CallOverlay() {
   const mmss = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
   return (
-    <div className="fixed inset-0 z-[130] flex flex-col bg-[#05060a]">
+    <div role="dialog" aria-modal="true" aria-label={`Call with ${person.name}`} className="fixed inset-0 z-[130] flex flex-col bg-[#05060a]">
       <div className="anim-fade relative flex-1 overflow-hidden">
         {wantsVideo ? (
           <>
@@ -282,6 +282,7 @@ export function CallOverlay() {
             <img
               src={px(person.photo, 900, 1200)}
               alt=""
+              aria-hidden="true"
               className={cn(
                 "absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
                 callStatus === "connected" ? "opacity-0" : "opacity-100",
@@ -302,6 +303,7 @@ export function CallOverlay() {
               <img
                 src={px(person.photo, 320, 320)}
                 alt=""
+                aria-hidden="true"
                 className="relative h-[150px] w-[150px] rounded-full object-cover ring-4 ring-gold/35"
               />
             </span>
@@ -320,13 +322,13 @@ export function CallOverlay() {
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1.5 text-[11.5px] font-medium text-white/80 backdrop-blur">
-            <ShieldCheck className="h-3.5 w-3.5 text-gold" />
+            <ShieldCheck className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
             End-to-end encrypted
           </span>
         </div>
 
         {error && (
-          <p className="absolute inset-x-4 bottom-28 rounded-xl border border-white/10 bg-black/70 p-3.5 text-center text-[13px] text-white/85 backdrop-blur">
+          <p role="alert" className="absolute inset-x-4 bottom-28 rounded-xl border border-white/10 bg-black/70 p-3.5 text-center text-[13px] text-white/85 backdrop-blur">
             {error}
           </p>
         )}

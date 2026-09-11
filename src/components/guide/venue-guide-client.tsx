@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { lazy, Suspense, useState, useMemo, useCallback } from "react";
 import {
   MapPin, Heart, Star, Clock, DollarSign, X, Search,
   Navigation,
 } from "lucide-react";
 import { CURATED_VENUES, VENUE_CATEGORIES, type Venue, type VenueCategory } from "@/data/venues";
-import { MapView, type MapPinItem } from "@/components/MapView";
+import type { MapPinItem } from "@/components/MapView";
+const MapView = lazy(() => import("@/components/MapView").then(m => ({ default: m.MapView })));
 import { Badge, Button, EmptyState } from "@/components/ui/primitives";
 import { cn, gradient } from "@/lib/utils";
 
@@ -167,15 +168,17 @@ export function VenueGuideClient() {
       {/* Content */}
       {viewMode === "map" ? (
         <div className="mb-4">
-          <MapView
-            city="valletta"
-            pins={mapPins}
-            height={400}
-            onSelect={(id) => {
-              const v = CURATED_VENUES.find((x) => x.id === id);
-              if (v) setSelectedVenue(v);
-            }}
-          />
+          <Suspense fallback={<div className="flex items-center justify-center rounded-2xl border border-line bg-surface-2" style={{ height: 400 }}><span className="text-sm text-muted">Loading map...</span></div>}>
+            <MapView
+              city="valletta"
+              pins={mapPins}
+              height={400}
+              onSelect={(id) => {
+                const v = CURATED_VENUES.find((x) => x.id === id);
+                if (v) setSelectedVenue(v);
+              }}
+            />
+          </Suspense>
           <p className="mt-2 text-center text-[11px] text-muted">
             {filtered.length} venue{filtered.length !== 1 ? "s" : ""} shown · tap a pin for details
           </p>
@@ -417,12 +420,14 @@ function VenueDetailSheet({
 
           {/* Mini Map */}
           <div className="mt-4">
-            <MapView
-              city="valletta"
-              pins={detailPins}
-              height={200}
-              interactive={false}
-            />
+            <Suspense fallback={<div className="flex items-center justify-center rounded-2xl border border-line bg-surface-2" style={{ height: 200 }}><span className="text-sm text-muted">Loading map...</span></div>}>
+              <MapView
+                city="valletta"
+                pins={detailPins}
+                height={200}
+                interactive={false}
+              />
+            </Suspense>
           </div>
 
           {/* Actions */}

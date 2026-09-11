@@ -241,6 +241,9 @@ export function StoriesRail() {
 						<img
 							src={viewing.items[idx]?.media_url}
 							alt=""
+							width={384}
+							height={683}
+							decoding="async"
 							className="h-full w-full object-cover"
 						/>
 						<div
@@ -255,6 +258,10 @@ export function StoriesRail() {
 									<img
 										src={viewing.authorAvatar}
 										alt=""
+										width={34}
+										height={34}
+										loading="lazy"
+										decoding="async"
 										className="h-[34px] w-[34px] rounded-full object-cover"
 									/>
 								) : (
@@ -353,7 +360,7 @@ function StoryComposer({
 							url === p.url ? "border-gold" : "border-line",
 						)}
 					>
-						<img src={p.url} alt={p.label} className="h-16 w-full object-cover" />
+						<img src={p.url} alt={p.label} width={200} height={64} loading="lazy" decoding="async" className="h-16 w-full object-cover" />
 						<span className="block py-1 text-[10px] text-muted">{p.label}</span>
 					</button>
 				))}

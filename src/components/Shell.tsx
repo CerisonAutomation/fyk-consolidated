@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   ArrowLeft,
   BookMarked,
@@ -59,10 +59,21 @@ function Logo({ onClick }: { onClick: () => void }) {
   );
 }
 
+/**
+ * NavList uses Zustand selectors to avoid re-rendering on unrelated state changes.
+ * Per the Zustand docs: "use selectors to avoid unnecessary re-renders".
+ */
 function NavList({ vertical = true }: { vertical?: boolean }) {
-  const { view, go, threads, likesReceived } = useStore();
-  const unread = threads.reduce((n, t) => n + (t.unread > 0 ? 1 : 0), 0);
-  const badge = (id: ViewId) => (id === "chats" ? unread : id === "likes" ? likesReceived : 0);
+  const view = useStore((s) => s.view);
+  const go = useStore((s) => s.go);
+  const threads = useStore((s) => s.threads);
+  const likesReceived = useStore((s) => s.likesReceived);
+
+  const unread = useMemo(
+    () => threads.reduce((n, t) => n + ((t as any).unread > 0 ? 1 : 0), 0),
+    [threads],
+  );
+  const badge = useCallback((id: ViewId) => (id === "chats" ? unread : id === "likes" ? likesReceived : 0), [unread, likesReceived]);
 
   return (
     <nav aria-label="Primary" className={cn(vertical ? "flex flex-col gap-1 px-2" : "flex")}>
@@ -81,10 +92,10 @@ function NavList({ vertical = true }: { vertical?: boolean }) {
           >
             {active && (
               <>
-                <span className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-gold" aria-hidden="true" />
+                <span aria-hidden="true" className="absolute inset-y-1 left-0 w-[3px] rounded-full bg-gold" />
                 <span
-                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-gold-ghost to-transparent"
                   aria-hidden="true"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-gold-ghost to-transparent"
                 />
               </>
             )}
@@ -94,6 +105,7 @@ function NavList({ vertical = true }: { vertical?: boolean }) {
                 !active && "group-hover:scale-110",
               )}
               strokeWidth={active ? 2.1 : 1.8}
+              aria-hidden="true"
             />
             <span className="relative">{label}</span>
             {badge(id) > 0 && (
@@ -121,7 +133,7 @@ function AccountPanel() {
     <div className="m-3 rounded-2xl border border-line bg-surface p-3">
       <div className="flex items-center gap-2.5">
         {profile.avatar_url ? (
-          <img src={profile.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover ring-1 ring-line" />
+          <img src={profile.avatar_url} alt="" width={36} height={36} loading="lazy" decoding="async" className="h-9 w-9 rounded-full object-cover ring-1 ring-line" />
         ) : (
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gold text-[13px] font-bold text-black">
             {initial}
@@ -147,7 +159,8 @@ function AccountPanel() {
 }
 
 function SecondaryNav() {
-  const { view, go } = useStore();
+  const view = useStore((s) => s.view);
+  const go = useStore((s) => s.go);
   return (
     <div className="border-t border-line-soft px-2 pt-3">
       <p className="mb-1 px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-faint">Discover & account</p>
@@ -162,7 +175,7 @@ function SecondaryNav() {
             view === id ? "bg-surface-2 text-gold" : "text-muted hover:bg-surface-2 hover:text-ink",
           )}
         >
-          <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} aria-hidden="true" />
           {label}
         </button>
       ))}
@@ -171,7 +184,11 @@ function SecondaryNav() {
 }
 
 function SystemRow() {
-  const { theme, toggleTheme, voiceOn, setVoiceOn, setPaletteOpen } = useStore();
+  const theme = useStore((s) => s.theme);
+  const toggleTheme = useStore((s) => s.toggleTheme);
+  const voiceOn = useStore((s) => s.voiceOn);
+  const setVoiceOn = useStore((s) => s.setVoiceOn);
+  const setPaletteOpen = useStore((s) => s.setPaletteOpen);
   return (
     <div className="mx-3 mb-1 grid grid-cols-3 gap-1 rounded-xl bg-surface-2 p-1">
       <button
@@ -181,7 +198,7 @@ function SystemRow() {
         title="Toggle theme"
         className="press grid h-9 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-ink"
       >
-        {theme === "dark" ? <Moon className="h-[17px] w-[17px]" /> : <Sun className="h-[17px] w-[17px]" />}
+        {theme === "dark" ? <Moon className="h-[17px] w-[17px]" aria-hidden="true" /> : <Sun className="h-[17px] w-[17px]" aria-hidden="true" />}
       </button>
       <button
         type="button"
@@ -194,7 +211,7 @@ function SystemRow() {
           voiceOn ? "bg-gold-ghost text-gold" : "text-muted hover:bg-surface-2 hover:text-ink",
         )}
       >
-        {voiceOn ? <Mic className="h-[17px] w-[17px]" /> : <MicOff className="h-[17px] w-[17px]" />}
+        {voiceOn ? <Mic className="h-[17px] w-[17px]" aria-hidden="true" /> : <MicOff className="h-[17px] w-[17px]" aria-hidden="true" />}
       </button>
       <button
         type="button"
@@ -203,18 +220,20 @@ function SystemRow() {
         title="Command palette (⌘K)"
         className="press grid h-9 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-ink"
       >
-        <Command className="h-[17px] w-[17px]" />
+        <Command className="h-[17px] w-[17px]" aria-hidden="true" />
       </button>
     </div>
   );
 }
 
 export function Sidebar() {
-  const { navOpen, setNavOpen, go } = useStore();
+  const navOpen = useStore((s) => s.navOpen);
+  const setNavOpen = useStore((s) => s.setNavOpen);
+  const go = useStore((s) => s.go);
   return (
     <>
       {/* Desktop rail */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[200px] flex-col border-r border-line bg-rail lg:flex">
+      <aside aria-label="Navigation sidebar" className="fixed inset-y-0 left-0 z-40 hidden w-[200px] flex-col border-r border-line bg-rail lg:flex">
         <Logo onClick={() => go("nearby")} />
         <NavList />
         <div className="mt-auto">
@@ -226,7 +245,7 @@ export function Sidebar() {
 
       {/* Mobile drawer */}
       {navOpen && (
-        <div className="fixed inset-0 z-[95] lg:hidden">
+        <div className="fixed inset-0 z-[95] lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
           <div className="anim-fade absolute inset-0 bg-black/70" onClick={() => setNavOpen(false)} />
           <div className="anim-sheet absolute inset-y-0 left-0 flex w-[248px] flex-col border-r border-line bg-rail">
             <button
@@ -252,8 +271,13 @@ export function Sidebar() {
 }
 
 export function MobileNav() {
-  const { view, go, threads } = useStore();
-  const unread = threads.reduce((n, t) => n + (t.unread > 0 ? 1 : 0), 0);
+  const view = useStore((s) => s.view);
+  const go = useStore((s) => s.go);
+  const threads = useStore((s) => s.threads);
+  const unread = useMemo(
+    () => threads.reduce((n, t) => n + ((t as any).unread > 0 ? 1 : 0), 0),
+    [threads],
+  );
   return (
     <nav
       aria-label="Primary"
@@ -298,7 +322,14 @@ export function TopBar({
   onBack?: () => void;
   right?: React.ReactNode;
 }) {
-  const { query, setQuery, setNavOpen, go, view, online, queued, setPaletteOpen } = useStore();
+  const query = useStore((s) => s.query);
+  const setQuery = useStore((s) => s.setQuery);
+  const setNavOpen = useStore((s) => s.setNavOpen);
+  const go = useStore((s) => s.go);
+  const view = useStore((s) => s.view);
+  const online = useStore((s) => s.online);
+  const queued = useStore((s) => s.queued);
+  const setPaletteOpen = useStore((s) => s.setPaletteOpen);
   const { profile, user } = useAuth();
   const [focused, setFocused] = useState(false);
   const name = profile.display_name || profile.handle || user.email || "Your account";
@@ -393,6 +424,7 @@ export function TopBar({
               alt=""
               width={38}
               height={38}
+              decoding="async"
               className="h-full w-full object-cover"
             />
           ) : (

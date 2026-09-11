@@ -68,10 +68,10 @@ export async function searchPlaces(
     const data = await res.json();
     return (data.features ?? []).map((f: Record<string, unknown>) => ({
       id: String(f.id ?? ""),
-      name: String(f.properties?.name ?? f.text ?? ""),
-      address: String(f.properties?.address ?? ""),
-      place_name: String(f.place_name ?? f.properties?.full_address ?? ""),
-      center: (f.center ?? f.geometry?.coordinates ?? [0, 0]) as [number, number],
+      name: String((f.properties as Record<string, unknown>)?.name ?? f.text ?? ""),
+      address: String((f.properties as Record<string, unknown>)?.address ?? ""),
+      place_name: String(f.place_name ?? (f.properties as Record<string, unknown>)?.full_address ?? ""),
+      center: (f.center ?? (f.geometry as Record<string, unknown>)?.coordinates ?? [0, 0]) as [number, number],
       bbox: f.bbox as [number, number, number, number] | undefined,
       properties: (f.properties ?? {}) as Record<string, unknown>,
       context: f.context as GeocodingFeature["context"],
@@ -141,10 +141,10 @@ export async function searchCategory(
     const data = await res.json();
     return (data.features ?? []).map((f: Record<string, unknown>) => ({
       id: String(f.id ?? ""),
-      name: String(f.properties?.name ?? f.text ?? ""),
-      address: String(f.properties?.address ?? ""),
-      place_name: String(f.place_name ?? f.properties?.full_address ?? ""),
-      center: (f.center ?? f.geometry?.coordinates ?? [0, 0]) as [number, number],
+      name: String((f.properties as Record<string, unknown>)?.name ?? f.text ?? ""),
+      address: String((f.properties as Record<string, unknown>)?.address ?? ""),
+      place_name: String(f.place_name ?? (f.properties as Record<string, unknown>)?.full_address ?? ""),
+      center: (f.center ?? (f.geometry as Record<string, unknown>)?.coordinates ?? [0, 0]) as [number, number],
       bbox: f.bbox as [number, number, number, number] | undefined,
       properties: (f.properties ?? {}) as Record<string, unknown>,
     }));
@@ -176,20 +176,14 @@ export async function getDirections(
     const res = await fetch(`${DIRECTIONS_BASE}/${profile}/${coords}?${params}`);
     if (!res.ok) return null;
     const data = await res.json();
-    const route = data.routes?.[0];
+    const route = data.routes?.[0] as Record<string, unknown> | undefined;
     if (!route) return null;
 
     return {
       geometry: route.geometry,
-      distance: route.distance,
-      duration: route.duration,
-      steps: route.legs?.[0]?.steps?.map((s: Record<string, unknown>) => ({
-        maneuver: s.maneuver as DirectionRoute["steps"][0]["maneuver"],
-        name: String(s.name ?? ""),
-        distance: Number(s.distance ?? 0),
-        duration: Number(s.duration ?? 0),
-        instruction: String(s.maneuver?.instruction ?? ""),
-      })),
+      distance: route.distance as number,
+      duration: route.duration as number,
+      steps: ((route.legs as Record<string, unknown>[])?.[0] as Record<string, unknown>)?.steps as DirectionRoute["steps"],
     };
   } catch {
     return null;

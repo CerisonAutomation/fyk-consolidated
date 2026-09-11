@@ -76,7 +76,7 @@ export function Topbar({ user }: { user: ProfileUser }) {
           onChange={(e) => { setQ(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
           placeholder="Search kings, tribes, interests…"
-          className="w-full rounded-full border border-line bg-surface-2 py-2 pl-9 pr-4 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
+          className="w-full rounded-full border border-line bg-surface-2 py-2 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-gold/50 focus:outline-none"
         />
         {open && q.trim() && (
           <>
@@ -89,11 +89,11 @@ export function Topbar({ user }: { user: ProfileUser }) {
                   <button
                     key={r.id}
                     onClick={() => { router.push(`/profile/${r.id}`); setOpen(false); setQ(""); }}
-                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-white/5"
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-hover"
                   >
                     <Avatar name={r.pseudo} photoUrl={r.photos?.[0]} size={32} />
                     <div className="min-w-0">
-                      <p className="truncate text-sm text-white">{r.pseudo}</p>
+                      <p className="truncate text-sm text-foreground">{r.pseudo}</p>
                       <p className="truncate text-[11px] text-muted">
                         {r.age ?? "—"} · {r.tribes.join(", ") || r.geo?.city}
                       </p>
@@ -109,7 +109,7 @@ export function Topbar({ user }: { user: ProfileUser }) {
       <div className="ml-auto flex items-center gap-1.5">
         <Link
           href="/notifications"
-          className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-white/5 hover:text-white"
+          className="relative flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-hover hover:text-white"
           aria-label="Notifications"
         >
           <Bell className="h-[18px] w-[18px]" />
@@ -121,14 +121,14 @@ export function Topbar({ user }: { user: ProfileUser }) {
         </Link>
         <Link
           href="/profile"
-          className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-white/5"
+          className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-3 transition-colors hover:bg-surface-hover"
         >
           <Avatar name={user.pseudo} photoUrl={user.photos?.[0]} size={32} online={user.online} />
-          <span className="hidden text-sm font-medium text-white sm:inline">{user.pseudo}</span>
+          <span className="hidden text-sm font-medium text-foreground sm:inline">{user.pseudo}</span>
         </Link>
         <button
           onClick={logout}
-          className="rounded-lg px-2 py-1.5 text-[11px] text-muted transition-colors hover:bg-white/5 hover:text-rose-300"
+          className="rounded-lg px-2 py-1.5 text-[11px] text-muted transition-colors hover:bg-surface-hover hover:text-rose-300"
         >
           Sign out
         </button>

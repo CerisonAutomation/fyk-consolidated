@@ -38,7 +38,7 @@ const YOU = [
 function Group({ title, items, pathname }: { title: string; items: typeof MAIN; pathname: string }) {
   return (
     <div className="mb-3">
-      <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted/60">
+      <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
         {title}
       </p>
       <nav className="space-y-0.5">
@@ -51,7 +51,7 @@ function Group({ title, items, pathname }: { title: string; items: typeof MAIN; 
               href={item.href}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
-                active ? "bg-gold/15 text-gold-soft" : "text-muted hover:bg-white/5 hover:text-white"
+                active ? "bg-gold/15 text-gold-soft" : "text-muted hover:bg-surface-hover hover:text-foreground"
               )}
             >
               <Icon className="h-[17px] w-[17px]" />
@@ -105,11 +105,11 @@ export function Sidebar({ user }: { user: ProfileUser }) {
       <div className="border-t border-line p-3">
         <Link
           href="/profile"
-          className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-white/5"
+          className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-surface-hover"
         >
           <Avatar name={user.pseudo} photoUrl={user.photos?.[0]} size={38} online={user.online} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{user.pseudo}</p>
+            <p className="truncate text-sm font-semibold text-foreground">{user.pseudo}</p>
             <p className="truncate text-xs text-gold/80">{tier.name} member</p>
           </div>
         </Link>

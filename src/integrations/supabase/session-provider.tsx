@@ -34,6 +34,15 @@ interface SessionProviderProps {
 	children: ReactNode;
 }
 
+/**
+ * Manages Supabase auth session state.
+ *
+ * Per Supabase Auth docs:
+ *   - Listen to onAuthStateChange for SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED events
+ *   - signOut should handle errors and clear app state
+ *   - Use scope: 'global' to sign out from all sessions
+ *   - getSession() may return stale data; onAuthStateChange is the source of truth
+ */
 export function SupabaseSessionProvider({ children }: SessionProviderProps) {
 	const [session, setSession] = useState<Session | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -47,6 +56,7 @@ export function SupabaseSessionProvider({ children }: SessionProviderProps) {
 			return;
 		}
 
+		// Get initial session
 		client.auth.getSession().then(({ data: { session: current } }) => {
 			if (mounted) {
 				setSession(current);
@@ -54,6 +64,8 @@ export function SupabaseSessionProvider({ children }: SessionProviderProps) {
 			}
 		});
 
+		// Listen for auth state changes
+		// Per docs: Events are SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED, PASSWORD_RECOVERY
 		const {
 			data: { subscription },
 		} = client.auth.onAuthStateChange((_event, current) => {
@@ -69,9 +81,21 @@ export function SupabaseSessionProvider({ children }: SessionProviderProps) {
 		};
 	}, []);
 
+	/**
+	 * Sign out from all sessions and clean up app state.
+	 * Per Supabase docs:
+	 *   - Use scope: 'global' to sign out from all sessions
+	 *   - Clear any app state before signing out
+	 *   - Handle errors gracefully
+	 */
 	const signOut = useCallback(async () => {
 		const client = getSupabase();
-		if (client) await client.auth.signOut();
+		if (client) {
+			const { error } = await client.auth.signOut({ scope: "global" });
+			if (error) {
+				console.error("Sign out error:", error.message);
+			}
+		}
 		setSession(null);
 	}, []);
 

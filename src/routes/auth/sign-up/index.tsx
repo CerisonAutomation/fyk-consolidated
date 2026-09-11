@@ -336,7 +336,7 @@ function SignUpPage() {
 									onFocus={onFocus}
 									onBlur={onBlur}
 									required
-									minLength={8}
+									minLength={12}
 								/>
 								<button
 									type="button"

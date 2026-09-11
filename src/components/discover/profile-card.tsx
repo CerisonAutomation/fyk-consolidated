@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Zap, Crown, ShieldCheck, Star } from "lucide-react";
+import { Heart, Zap, Crown, ShieldCheck, Star, Cpu } from "lucide-react";
 import { cn, gradient } from "@/lib/utils";
 import type { Candidate } from "@/lib/types";
 
@@ -10,12 +10,14 @@ export function ProfileCard({
   onTap,
   onFavorite,
   onOpen,
+  isAiRecommended,
 }: {
   candidate: Candidate;
   isTapped: boolean;
   onTap: () => void;
   onFavorite: () => void;
   onOpen: () => void;
+  isAiRecommended?: boolean;
 }) {
   const photo = candidate.photos?.[0];
   const isTopMatch = candidate.matchScore >= 85;
@@ -30,7 +32,10 @@ export function ProfileCard({
         <img
           src={photo}
           alt={candidate.pseudo}
+          width={400}
+          height={533}
           loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       ) : (
@@ -52,6 +57,11 @@ export function ProfileCard({
           {isTopMatch && (
             <span className="flex w-fit items-center gap-0.5 rounded-full bg-gold px-1.5 py-0.5 text-[9px] font-bold text-ink">
               <Star className="h-2.5 w-2.5" /> Top match
+            </span>
+          )}
+          {isAiRecommended && (
+            <span className="flex w-fit items-center gap-0.5 rounded-full bg-purple-500/90 px-1.5 py-0.5 text-[9px] font-bold text-white">
+              <Cpu className="h-2.5 w-2.5" /> AI Recommended
             </span>
           )}
         </div>

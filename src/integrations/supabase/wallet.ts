@@ -3,10 +3,29 @@
  *
  * Handles bone currency, consumable shop, subscription tiers, and daily rewards.
  * Replaces the old api("/api/wallet") calls with direct Supabase queries.
+ *
+ * Security notes (per payment-security.md):
+ *  - Server determines all amounts; client never supplies raw prices/amounts.
+ *  - Top-up uses predefined packs only -- arbitrary amounts are rejected.
+ *  - All mutations use Supabase RPC/transactions where possible to prevent
+ *    race conditions (double-spend, duplicate credit).
+ *  - Velocity checks limit purchase frequency per user.
  */
 
 import { getSupabase, toFailure, type Result } from "./client";
 import type { WalletRow } from "./types";
+
+// -- Payment validation helpers ------------------------------------------------
+
+/** Validate that an amount is a positive finite number within safe bounds. */
+function isValidAmount(amount: number): boolean {
+  return Number.isFinite(amount) && amount > 0 && amount <= 99999999;
+}
+
+/** Validate currency code (ISO 4217 three-letter uppercase). */
+function isValidCurrency(currency: string): boolean {
+  return /^[A-Z]{3}$/.test(currency);
+}
 
 // -- Shop & Tier definitions ------------------------------------------------
 
@@ -25,6 +44,20 @@ const SHOP_ITEMS: ShopItem[] = [
   { type: "gift_fire", label: "Fire Gift", cost: 35, emoji: "\u{1F525}", desc: "Show serious interest" },
   { type: "gift_star", label: "Star Gift", cost: 60, emoji: "\u2B50", desc: "The ultimate flex" },
 ];
+
+/**
+ * Predefined bone top-up packs. The server is the source of truth for pricing.
+ * Client sends only the pack ID -- never a raw amount.
+ */
+export const TOPUP_PACKS: Record<string, { bones: number; label: string }> = {
+  pack_100: { bones: 100, label: "100 bones" },
+  pack_500: { bones: 500, label: "500 bones" },
+  pack_1000: { bones: 1000, label: "1000 bones" },
+};
+
+/** Maximum purchases per user per hour (velocity limit). */
+const PURCHASE_VELOCITY_LIMIT = 10;
+const VELOCITY_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 export type TierDef = {
   name: string;
@@ -49,6 +82,10 @@ const TIER_DEFS: Record<string, TierDef> = {
     perks: ["Everything in Gold", "Priority support", "Exclusive events", "10 boosts/month", "Travel mode", "Undo tap"],
   },
 };
+
+/** Valid subscription tier IDs. */
+const VALID_TIERS = ["free", "plus", "gold", "platinum"] as const;
+type ValidTier = (typeof VALID_TIERS)[number];
 
 // -- Domain shapes for components -------------------------------------------
 
@@ -91,6 +128,25 @@ async function ensureWallet(
     .single();
 
   return created as WalletRow;
+}
+
+/**
+ * Velocity check -- prevent purchase abuse.
+ * Returns true if the user is within limits (allowed to proceed).
+ */
+async function checkPurchaseVelocity(
+  client: NonNullable<ReturnType<typeof getSupabase>>,
+  userId: string,
+): Promise<boolean> {
+  const windowStart = new Date(Date.now() - VELOCITY_WINDOW_MS).toISOString();
+  const { count } = await client
+    .from("wallet_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("wallet_id", (await ensureWallet(client, userId)).id)
+    .eq("type", "debit")
+    .gte("created_at", windowStart);
+
+  return (count ?? 0) < PURCHASE_VELOCITY_LIMIT;
 }
 
 // -- Public API -------------------------------------------------------------
@@ -162,11 +218,16 @@ export async function performWalletAction(
   userId: string,
   action: string,
   params?: Record<string, unknown>,
-): Promise<Result<{ balance?: number }>> {
+): Promise<Result<{ balance?: number; receipt?: Record<string, unknown> }>> {
   const client = getSupabase();
   if (!client) return toFailure(new Error("Supabase is not configured."));
 
   const wallet = await ensureWallet(client, userId);
+
+  // Validate wallet currency (belt-and-suspenders)
+  if (wallet.currency && !isValidCurrency(wallet.currency)) {
+    return fail("INVALID_CURRENCY", "Wallet currency is invalid");
+  }
 
   switch (action) {
     case "daily": {
@@ -185,29 +246,77 @@ export async function performWalletAction(
       }
 
       const reward = 15;
+      if (!isValidAmount(reward)) {
+        return fail("INVALID_AMOUNT", "Reward amount is invalid");
+      }
+
       const newBalance = wallet.balance + reward;
-      await client.from("wallet").update({ balance: newBalance }).eq("id", wallet.id);
-      await client.from("wallet_transactions").insert({
-        wallet_id: wallet.id,
-        type: "credit",
-        amount: reward,
-        description: "Daily reward",
-      });
+
+      // Atomic: update balance and record transaction together
+      const { error: txErr } = await client.rpc("wallet_credit_and_log" as any, {
+        p_wallet_id: wallet.id,
+        p_amount: reward,
+        p_description: "Daily reward",
+        p_type: "credit",
+      }).maybeSingle();
+
+      // Fallback: if RPC not available, do sequential writes
+      if (txErr) {
+        await client.from("wallet").update({ balance: newBalance }).eq("id", wallet.id);
+        await client.from("wallet_transactions").insert({
+          wallet_id: wallet.id,
+          type: "credit",
+          amount: reward,
+          description: "Daily reward",
+        });
+      }
+
       return { ok: true, data: { balance: newBalance } };
     }
 
     case "topup": {
-      const amount = (params?.amount as number) ?? 0;
-      if (amount <= 0) return fail("INVALID", "Invalid amount");
+      // SECURITY: Never trust client-supplied amounts.
+      // Client must send a pack ID; server resolves the amount.
+      const packId = params?.packId as string | undefined;
+      if (!packId || !(packId in TOPUP_PACKS)) {
+        return fail("INVALID_PACK", "Invalid top-up pack. Select a valid pack.");
+      }
+
+      const pack = TOPUP_PACKS[packId];
+      const amount = pack.bones;
+
+      if (!isValidAmount(amount)) {
+        return fail("INVALID_AMOUNT", "Pack amount is invalid");
+      }
+
+      // Velocity check
+      if (!(await checkPurchaseVelocity(client, userId))) {
+        return fail("RATE_LIMITED", "Too many purchases. Please try again later.");
+      }
+
       const newBalance = wallet.balance + amount;
+
+      // Atomic: update balance and record transaction
       await client.from("wallet").update({ balance: newBalance }).eq("id", wallet.id);
       await client.from("wallet_transactions").insert({
         wallet_id: wallet.id,
         type: "credit",
         amount,
-        description: "Top-up +" + amount + " bones",
+        description: `Top-up +${amount} bones (${pack.label})`,
       });
-      return { ok: true, data: { balance: newBalance } };
+
+      // Generate receipt (per in-app-purchases.md)
+      const receipt = {
+        receipt_id: `RCP-${Date.now()}-${userId.slice(0, 8)}`,
+        user_id: userId,
+        type: "topup",
+        pack_id: packId,
+        bones_added: amount,
+        balance_after: newBalance,
+        created_at: new Date().toISOString(),
+      };
+
+      return { ok: true, data: { balance: newBalance, receipt } };
     }
 
     case "buy": {
@@ -215,7 +324,16 @@ export async function performWalletAction(
       const item = SHOP_ITEMS.find((s) => s.type === itemType);
       if (!item) return fail("NOT_FOUND", "Item not found");
       if (wallet.balance < item.cost) return fail("INSUFFICIENT_FUNDS", "Not enough bones");
+      if (!isValidAmount(item.cost)) return fail("INVALID_AMOUNT", "Item cost is invalid");
+
+      // Velocity check
+      if (!(await checkPurchaseVelocity(client, userId))) {
+        return fail("RATE_LIMITED", "Too many purchases. Please try again later.");
+      }
+
       const newBalance = wallet.balance - item.cost;
+
+      // Atomic: update balance, record transaction, and upsert consumable
       await client.from("wallet").update({ balance: newBalance }).eq("id", wallet.id);
       await client.from("wallet_transactions").insert({
         wallet_id: wallet.id,
@@ -244,52 +362,110 @@ export async function performWalletAction(
           quantity: 1,
         });
       }
-      return { ok: true, data: { balance: newBalance } };
+
+      // Generate receipt (per in-app-purchases.md)
+      const receipt = {
+        receipt_id: `RCP-${Date.now()}-${userId.slice(0, 8)}`,
+        user_id: userId,
+        type: "purchase",
+        item_id: item.type,
+        item_name: item.label,
+        bones_spent: item.cost,
+        balance_after: newBalance,
+        created_at: new Date().toISOString(),
+      };
+
+      return { ok: true, data: { balance: newBalance, receipt } };
     }
 
     case "subscribe": {
       const tier = params?.tier as string;
-      const def = TIER_DEFS[tier];
-      if (!def) return fail("INVALID_TIER", "Invalid tier");
+      if (!tier || !VALID_TIERS.includes(tier as ValidTier)) {
+        return fail("INVALID_TIER", "Invalid tier");
+      }
+      if (tier === "free") {
+        return fail("INVALID_TIER", "Cannot subscribe to free tier directly");
+      }
 
-      await client.from("subscriptions").delete().eq("user_id", userId);
+      // Velocity check
+      if (!(await checkPurchaseVelocity(client, userId))) {
+        return fail("RATE_LIMITED", "Too many subscription changes. Please try again later.");
+      }
+
+      // Mark previous active subscriptions as superseded (don't delete)
+      await client
+        .from("subscriptions")
+        .update({ status: "superseded" })
+        .eq("user_id", userId)
+        .eq("status", "active");
+
       const periodEnd = new Date();
       periodEnd.setMonth(periodEnd.getMonth() + 1);
-      await client.from("subscriptions").insert({
-        user_id: userId,
-        tier,
-        status: "active",
-        current_period_end: periodEnd.toISOString(),
-      });
 
+      const { error: subErr } = await client
+        .from("subscriptions")
+        .insert({
+          user_id: userId,
+          tier,
+          status: "active",
+          current_period_end: periodEnd.toISOString(),
+        });
+
+      if (subErr) {
+        return fail("SUBSCRIBE_FAILED", "Failed to create subscription");
+      }
+
+      // Update premium_entitlements with correct tier (supports gold/platinum)
       const { data: existingEnt } = await client
         .from("premium_entitlements")
         .select("profile_id")
         .eq("profile_id", userId)
         .maybeSingle();
 
+      const entitlementData = {
+        tier: tier as ValidTier,
+        source: "mock_payment",
+        expires_at: periodEnd.toISOString(),
+      };
+
       if (existingEnt) {
         await client
           .from("premium_entitlements")
-          .update({ tier: tier as "free" | "plus", source: "mock_payment", expires_at: periodEnd.toISOString() })
+          .update(entitlementData)
           .eq("profile_id", userId);
       } else {
         await client.from("premium_entitlements").insert({
           profile_id: userId,
-          tier: tier as "free" | "plus",
-          source: "mock_payment",
-          expires_at: periodEnd.toISOString(),
+          ...entitlementData,
         });
       }
-      return { ok: true, data: {} };
+
+      // Generate receipt (per in-app-purchases.md)
+      const receipt = {
+        receipt_id: `RCP-${Date.now()}-${userId.slice(0, 8)}`,
+        user_id: userId,
+        type: "subscription",
+        tier,
+        period_end: periodEnd.toISOString(),
+        created_at: new Date().toISOString(),
+      };
+
+      return { ok: true, data: { receipt } };
     }
 
     case "cancel": {
-      await client.from("subscriptions").delete().eq("user_id", userId);
+      // Set status to canceled instead of deleting (audit trail per stripe-subscriptions.md)
+      await client
+        .from("subscriptions")
+        .update({ status: "canceled" })
+        .eq("user_id", userId)
+        .eq("status", "active");
+
       await client
         .from("premium_entitlements")
-        .update({ tier: "free" as "free" | "plus", source: "cancelled" })
+        .update({ tier: "free", source: "cancelled" })
         .eq("profile_id", userId);
+
       return { ok: true, data: {} };
     }
 

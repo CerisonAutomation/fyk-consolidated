@@ -5,10 +5,12 @@ import {
   useEffect,
   useMemo,
   useState,
-  type FormEvent,
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import {
   ArrowRight,
   Check,
@@ -28,6 +30,32 @@ import { px } from "@/lib/data";
 import { envMissing, isConfigured } from "@/lib/supabase/env";
 import { getSupabase, toFailure } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
+
+// --- Zod schemas for form validation (per react-forms.md docs) ---
+
+const authSchema = z.object({
+  email: z.string().min(1, "Enter your email address.").email("Please enter a valid email address."),
+  password: z.string().min(10, "Use at least 10 characters for your password."),
+});
+
+const authForgotSchema = z.object({
+  email: z.string().min(1, "Enter your email address.").email("Please enter a valid email address."),
+});
+
+const authSignupSchema = z.object({
+  email: z.string().min(1, "Enter your email address.").email("Please enter a valid email address."),
+  password: z.string().min(10, "Use at least 10 characters for your password."),
+  adult: z.boolean().refine((v) => v === true, "You must confirm you are 18+."),
+  legal: z.boolean().refine((v) => v === true, "You must accept the Terms and Privacy Policy."),
+});
+
+const passwordUpdateSchema = z.object({
+  password: z.string().min(10, "Use at least 10 characters."),
+  confirm: z.string(),
+}).refine((data) => data.password === data.confirm, {
+  message: "The passwords do not match.",
+  path: ["confirm"],
+});
 
 type AuthState = {
   user: User;
@@ -278,7 +306,8 @@ function AuthenticatedBoundary({
     [profile, readiness, session, signOut, updateProfile],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  // React 19: render <Context> directly as a provider instead of <Context.Provider>
+  return <AuthContext value={value}>{children}</AuthContext>;
 }
 
 function EntryLoading() {
@@ -357,67 +386,96 @@ function SetupRequired({ reason, missing, onRetry }: { reason: string; missing: 
 
 type AuthMode = "signin" | "signup" | "forgot";
 
+/**
+ * SignedOut component — now uses react-hook-form + zod for validation
+ * per the react-forms.md docs: "use zodResolver for type-safe validation".
+ */
 function SignedOut() {
   const [mode, setMode] = useState<AuthMode>("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [adult, setAdult] = useState(false);
-  const [legal, setLegal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
+  // Sign-in form
+  const signinForm = useForm<z.infer<typeof authSchema>>({
+    resolver: zodResolver(authSchema),
+    mode: "onBlur",
+  });
+
+  // Sign-up form
+  const signupForm = useForm<z.infer<typeof authSignupSchema>>({
+    resolver: zodResolver(authSignupSchema),
+    mode: "onBlur",
+    defaultValues: { adult: false, legal: false },
+  });
+
+  // Forgot form
+  const forgotForm = useForm<z.infer<typeof authForgotSchema>>({
+    resolver: zodResolver(authForgotSchema),
+    mode: "onBlur",
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+
+  const submitSignIn = async (data: z.infer<typeof authSchema>) => {
     const client = getSupabase();
     if (!client) return;
     setError("");
     setNotice("");
-
-    if (!email.trim()) {
-      setError("Enter your email address.");
-      return;
-    }
-    if (mode === "signup" && (!adult || !legal)) {
-      setError("Confirm that you are 18+ and accept the Terms and Privacy Policy.");
-      return;
-    }
-    if (mode !== "forgot" && password.length < 10) {
-      setError("Use at least 10 characters for your password.");
-      return;
-    }
-
     setBusy(true);
     try {
-      if (mode === "signin") {
-        const { error: authError } = await client.auth.signInWithPassword({ email: email.trim(), password });
-        if (authError) setError("We couldn't sign you in. Check your details or confirm your email first.");
-      } else if (mode === "signup") {
-        const { data, error: authError } = await client.auth.signUp({
-          email: email.trim(),
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (authError) setError(toFailure(authError).message);
-        else if (!data.session) setNotice("Check your inbox to confirm your email, then come back and sign in.");
-      } else {
-        const { error: authError } = await client.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: window.location.origin,
-        });
-        if (authError) setError(toFailure(authError).message);
-        else setNotice("If that address has an account, a reset link is on its way.");
-      }
+      const { error: authError } = await client.auth.signInWithPassword({ email: data.email.trim(), password: data.password });
+      if (authError) setError("We couldn't sign you in. Check your details or confirm your email first.");
     } finally {
       setBusy(false);
     }
   };
+
+  const submitSignUp = async (data: z.infer<typeof authSignupSchema>) => {
+    const client = getSupabase();
+    if (!client) return;
+    setError("");
+    setNotice("");
+    setBusy(true);
+    try {
+      const { data: result, error: authError } = await client.auth.signUp({
+        email: data.email.trim(),
+        password: data.password,
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (authError) setError(toFailure(authError).message);
+      else if (!result.session) setNotice("Check your inbox to confirm your email, then come back and sign in.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitForgot = async (data: z.infer<typeof authForgotSchema>) => {
+    const client = getSupabase();
+    if (!client) return;
+    setError("");
+    setNotice("");
+    setBusy(true);
+    try {
+      const { error: authError } = await client.auth.resetPasswordForEmail(data.email.trim(), {
+        redirectTo: window.location.origin,
+      });
+      if (authError) setError(toFailure(authError).message);
+      else setNotice("If that address has an account, a reset link is on its way.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
 
   return (
     <div className="relative min-h-[100svh] overflow-hidden bg-[#07080a] text-white">
       <img
         src={px(15141201, 1900, 1300)}
         alt=""
+        width={1900}
+        height={1300}
+        fetchPriority="high"
         className="absolute inset-0 h-full w-full object-cover opacity-45"
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,.96)_0%,rgba(5,6,8,.78)_48%,rgba(5,6,8,.42)_100%)]" />
@@ -468,66 +526,201 @@ function SignedOut() {
             </h2>
           </div>
 
-          <form onSubmit={(event) => void submit(event)} className="mt-6 space-y-4">
-            <label className="block">
-              <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Email</span>
-              <span className="relative block">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-white/12 bg-white/[0.06] pl-10 pr-4 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70"
-                  placeholder="you@example.com"
-                />
-              </span>
-            </label>
+          {/* Sign-in form with react-hook-form + zod */}
+          {mode === "signin" && (
+            <form onSubmit={signinForm.handleSubmit(submitSignIn)} className="mt-6 space-y-4" noValidate>
+              <label className="block">
+                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Email</span>
+                <span className="relative block">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    {...signinForm.register("email")}
+                    className={cn(
+                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-4 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
+                      signinForm.formState.errors.email ? "border-live/50" : "border-white/12",
+                    )}
+                    placeholder="you@example.com"
+                    aria-invalid={signinForm.formState.errors.email ? "true" : "false"}
+                  />
+                </span>
+                {signinForm.formState.errors.email && (
+                  <p className="mt-1 text-[12px] text-live" role="alert">{signinForm.formState.errors.email.message}</p>
+                )}
+              </label>
 
-            {mode !== "forgot" && (
               <label className="block">
                 <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Password</span>
                 <span className="relative block">
                   <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
                   <input
                     type={showPassword ? "text" : "password"}
-                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-white/12 bg-white/[0.06] pl-10 pr-11 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70"
-                    placeholder={mode === "signup" ? "10+ characters" : "Your password"}
+                    autoComplete="current-password"
+                    {...signinForm.register("password")}
+                    className={cn(
+                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-11 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
+                      signinForm.formState.errors.password ? "border-live/50" : "border-white/12",
+                    )}
+                    placeholder="Your password"
+                    aria-invalid={signinForm.formState.errors.password ? "true" : "false"}
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((value) => !value)}
+                    onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     className="press absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-white/45 hover:text-white"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </span>
+                {signinForm.formState.errors.password && (
+                  <p className="mt-1 text-[12px] text-live" role="alert">{signinForm.formState.errors.password.message}</p>
+                )}
               </label>
-            )}
 
-            {mode === "signup" && (
+              {error && <p role="alert" className="rounded-xl border border-live/35 bg-live/12 px-3.5 py-3 text-[13px] text-[#ff9aa6]">{error}</p>}
+              {notice && <p role="status" className="rounded-xl border border-online/35 bg-online/10 px-3.5 py-3 text-[13px] text-[#8ee2b4]">{notice}</p>}
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                Sign in
+              </button>
+            </form>
+          )}
+
+          {/* Sign-up form with react-hook-form + zod */}
+          {mode === "signup" && (
+            <form onSubmit={signupForm.handleSubmit(submitSignUp)} className="mt-6 space-y-4" noValidate>
+              <label className="block">
+                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Email</span>
+                <span className="relative block">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    {...signupForm.register("email")}
+                    className={cn(
+                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-4 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
+                      signupForm.formState.errors.email ? "border-live/50" : "border-white/12",
+                    )}
+                    placeholder="you@example.com"
+                    aria-invalid={signupForm.formState.errors.email ? "true" : "false"}
+                  />
+                </span>
+                {signupForm.formState.errors.email && (
+                  <p className="mt-1 text-[12px] text-live" role="alert">{signupForm.formState.errors.email.message}</p>
+                )}
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Password</span>
+                <span className="relative block">
+                  <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    {...signupForm.register("password")}
+                    className={cn(
+                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-11 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
+                      signupForm.formState.errors.password ? "border-live/50" : "border-white/12",
+                    )}
+                    placeholder="10+ characters"
+                    aria-invalid={signupForm.formState.errors.password ? "true" : "false"}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="press absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-white/45 hover:text-white"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </span>
+                {signupForm.formState.errors.password && (
+                  <p className="mt-1 text-[12px] text-live" role="alert">{signupForm.formState.errors.password.message}</p>
+                )}
+              </label>
+
               <div className="space-y-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-3.5">
-                <ConsentCheck checked={adult} onChange={setAdult} label="I confirm I am at least 18 years old." />
-                <ConsentCheck checked={legal} onChange={setLegal} label="I accept the Terms and Privacy Policy." />
+                <label className="flex cursor-pointer items-start gap-3 text-[12.5px] leading-relaxed text-white/68">
+                  <input
+                    type="checkbox"
+                    {...signupForm.register("adult")}
+                    className="mt-0.5 h-4 w-4 accent-[var(--c-gold)]"
+                  />
+                  I confirm I am at least 18 years old.
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 text-[12.5px] leading-relaxed text-white/68">
+                  <input
+                    type="checkbox"
+                    {...signupForm.register("legal")}
+                    className="mt-0.5 h-4 w-4 accent-[var(--c-gold)]"
+                  />
+                  I accept the Terms and Privacy Policy.
+                </label>
+                {(signupForm.formState.errors.adult || signupForm.formState.errors.legal) && (
+                  <p className="text-[12px] text-live" role="alert">
+                    {signupForm.formState.errors.adult?.message || signupForm.formState.errors.legal?.message}
+                  </p>
+                )}
               </div>
-            )}
 
-            {error && <p role="alert" className="rounded-xl border border-live/35 bg-live/12 px-3.5 py-3 text-[13px] text-[#ff9aa6]">{error}</p>}
-            {notice && <p role="status" className="rounded-xl border border-online/35 bg-online/10 px-3.5 py-3 text-[13px] text-[#8ee2b4]">{notice}</p>}
+              {error && <p role="alert" className="rounded-xl border border-live/35 bg-live/12 px-3.5 py-3 text-[13px] text-[#ff9aa6]">{error}</p>}
+              {notice && <p role="status" className="rounded-xl border border-online/35 bg-online/10 px-3.5 py-3 text-[13px] text-[#8ee2b4]">{notice}</p>}
 
-            <button
-              type="submit"
-              disabled={busy}
-              className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {mode === "signin" ? "Sign in" : mode === "signup" ? "Create account" : "Send reset link"}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={busy}
+                className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                Create account
+              </button>
+            </form>
+          )}
+
+          {/* Forgot password form with react-hook-form + zod */}
+          {mode === "forgot" && (
+            <form onSubmit={forgotForm.handleSubmit(submitForgot)} className="mt-6 space-y-4" noValidate>
+              <label className="block">
+                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Email</span>
+                <span className="relative block">
+                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
+                  <input
+                    type="email"
+                    autoComplete="email"
+                    {...forgotForm.register("email")}
+                    className={cn(
+                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-4 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
+                      forgotForm.formState.errors.email ? "border-live/50" : "border-white/12",
+                    )}
+                    placeholder="you@example.com"
+                    aria-invalid={forgotForm.formState.errors.email ? "true" : "false"}
+                  />
+                </span>
+                {forgotForm.formState.errors.email && (
+                  <p className="mt-1 text-[12px] text-live" role="alert">{forgotForm.formState.errors.email.message}</p>
+                )}
+              </label>
+
+              {error && <p role="alert" className="rounded-xl border border-live/35 bg-live/12 px-3.5 py-3 text-[13px] text-[#ff9aa6]">{error}</p>}
+              {notice && <p role="status" className="rounded-xl border border-online/35 bg-online/10 px-3.5 py-3 text-[13px] text-[#8ee2b4]">{notice}</p>}
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55"
+              >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                Send reset link
+              </button>
+            </form>
+          )}
 
           <button
             type="button"
@@ -547,21 +740,24 @@ function SignedOut() {
 }
 
 function PasswordUpdate({ onComplete }: { onComplete: () => Promise<void> }) {
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<z.infer<typeof passwordUpdateSchema>>({
+    resolver: zodResolver(passwordUpdateSchema),
+    mode: "onBlur",
+  });
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setError("");
-    if (password.length < 10) return setError("Use at least 10 characters.");
-    if (password !== confirm) return setError("The passwords do not match.");
+  const submit = async (data: z.infer<typeof passwordUpdateSchema>) => {
     const client = getSupabase();
     if (!client) return;
     setBusy(true);
-    const { error: updateError } = await client.auth.updateUser({ password });
+    setError("");
+    const { error: updateError } = await client.auth.updateUser({ password: data.password });
     setBusy(false);
     if (updateError) {
       setError(toFailure(updateError).message);
@@ -581,17 +777,34 @@ function PasswordUpdate({ onComplete }: { onComplete: () => Promise<void> }) {
         <p className="mt-2 text-[14px] leading-relaxed text-muted">
           This recovery session came from your Supabase email link. After updating, you will sign in again with the new password.
         </p>
-        <form onSubmit={(event) => void submit(event)} className="mt-6 space-y-4">
-          <Field label="New password">
+        <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4" noValidate>
+          <Field label="New password" error={errors.password?.message}>
             <div className="relative">
-              <input type={show ? "text" : "password"} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} className="entry-input pr-11" />
-              <button type="button" onClick={() => setShow((value) => !value)} aria-label={show ? "Hide password" : "Show password"} className="press absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-muted hover:text-ink">
+              <input
+                type={show ? "text" : "password"}
+                autoComplete="new-password"
+                {...register("password")}
+                className={cn("entry-input pr-11", errors.password && "border-live/50")}
+                aria-invalid={errors.password ? "true" : "false"}
+              />
+              <button
+                type="button"
+                onClick={() => setShow((v) => !v)}
+                aria-label={show ? "Hide password" : "Show password"}
+                className="press absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-muted hover:text-ink"
+              >
                 {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </Field>
-          <Field label="Confirm password">
-            <input type={show ? "text" : "password"} autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="entry-input" />
+          <Field label="Confirm password" error={errors.confirm?.message}>
+            <input
+              type={show ? "text" : "password"}
+              autoComplete="new-password"
+              {...register("confirm")}
+              className={cn("entry-input", errors.confirm && "border-live/50")}
+              aria-invalid={errors.confirm ? "true" : "false"}
+            />
           </Field>
           {error && <p role="alert" className="text-[13px] text-live">{error}</p>}
           <button type="submit" disabled={busy} className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55">
@@ -601,20 +814,6 @@ function PasswordUpdate({ onComplete }: { onComplete: () => Promise<void> }) {
         </form>
       </main>
     </div>
-  );
-}
-
-function ConsentCheck({ checked, onChange, label }: { checked: boolean; onChange: (value: boolean) => void; label: string }) {
-  return (
-    <label className="flex cursor-pointer items-start gap-3 text-[12.5px] leading-relaxed text-white/68">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="mt-0.5 h-4 w-4 accent-[var(--c-gold)]"
-      />
-      {label}
-    </label>
   );
 }
 
@@ -786,6 +985,12 @@ function Onboarding({ session, initial, onComplete }: { session: Session; initia
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">{label}</span>{children}</label>;
+function Field({ label, children, error }: { label: string; children: ReactNode; error?: string }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">{label}</span>
+      {children}
+      {error && <p className="mt-1 text-[12px] text-live" role="alert">{error}</p>}
+    </label>
+  );
 }

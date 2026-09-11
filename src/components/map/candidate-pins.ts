@@ -38,7 +38,7 @@ export function candidatesToPins(
         lng: center.lng + (Math.random() - 0.5) * 0.02,
       };
       const hash = pairHash(viewerId, c.id);
-      const fuzzed = fuzzPin(raw, hash);
+      const fuzzed = fuzzPin(raw, String(hash), c.id);
 
       return {
         id: c.id,

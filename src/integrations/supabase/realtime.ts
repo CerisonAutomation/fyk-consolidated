@@ -1,4 +1,3 @@
-import { RealtimeClient, type RealtimeChannel } from "@supabase/realtime-js";
 import { getSupabase } from "./client";
 
 type RealtimeEvent = {
@@ -15,20 +14,15 @@ type PresenceState = {
 };
 
 export class SupabaseRealtime {
-  private client: RealtimeClient | null = null;
-  private channels = new Map<string, RealtimeChannel>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private channels = new Map<string, any>();
   private listeners = new Map<string, Set<(event: RealtimeEvent) => void>>();
   private presenceListeners = new Map<string, Set<(state: PresenceState[]) => void>>();
 
-  private getClient(): RealtimeClient {
-    if (!this.client) {
-      const supabase = getSupabase();
-      if (!supabase) throw new Error("Supabase not configured");
-      const rt = supabase.realtime;
-      if (!rt) throw new Error("Realtime client not available");
-      this.client = rt as unknown as RealtimeClient;
-    }
-    return this.client;
+  private getSupabaseClient() {
+    const supabase = getSupabase();
+    if (!supabase) throw new Error("Supabase not configured");
+    return supabase;
   }
 
   subscribeToTable(
@@ -37,7 +31,7 @@ export class SupabaseRealtime {
     filter?: { event?: string; schema?: string },
   ): () => void {
     const channelName = `realtime:${table}`;
-    const channel = this.getClient().channel(channelName);
+    const channel = this.getSupabaseClient().channel(channelName);
 
     if (!this.channels.has(channelName)) {
       this.channels.set(channelName, channel);
@@ -70,43 +64,96 @@ export class SupabaseRealtime {
     return () => {
       this.listeners.get(channelName)?.delete(callback);
       if (this.listeners.get(channelName)?.size === 0) {
-        this.channels.get(channelName)?.unsubscribe();
+        const ch = this.channels.get(channelName);
+        if (ch) {
+          this.getSupabaseClient().removeChannel(ch);
+        }
         this.channels.delete(channelName);
         this.listeners.delete(channelName);
       }
     };
   }
 
+  /**
+   * Subscribe to a conversation's messages with a filter on conversation_id,
+   * and optionally listen for typing indicators via Broadcast (not Presence).
+   *
+   * Per Supabase docs:
+   *   - Postgres Changes: use filter to scope to a specific conversation
+   *   - Typing indicators: use Broadcast (fire-and-forget), NOT Presence
+   *     (Presence is for slow-changing state like online/offline status)
+   *   - Presence for typing floods the channel with rapid track() calls
+   */
   subscribeToConversation(
     conversationId: string,
     onMessage: (event: RealtimeEvent) => void,
     onTyping?: (userId: string, typing: boolean) => void,
   ): () => void {
-    const unsubMessage = this.subscribeToTable("messages", onMessage, {
-      event: "INSERT",
-    });
+    // 1. Postgres Changes for messages — filtered to this conversation
+    const messageChannelName = `realtime:messages:${conversationId}`;
+    const messageChannel = this.getSupabaseClient().channel(messageChannelName);
 
+    if (!this.channels.has(messageChannelName)) {
+      this.channels.set(messageChannelName, messageChannel);
+
+      messageChannel
+        .on("postgres_changes", {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        }, (payload: { eventType: string; new: Record<string, unknown>; old: Record<string, unknown>; schema: string; table: string }) => {
+          const listeners = this.listeners.get(messageChannelName);
+          if (listeners) {
+            listeners.forEach((cb) => cb({
+              event: payload.eventType as RealtimeEvent["event"],
+              schema: payload.schema,
+              table: payload.table,
+              new: payload.new,
+              old: payload.old,
+            }));
+          }
+        })
+        .subscribe();
+    }
+
+    if (!this.listeners.has(messageChannelName)) {
+      this.listeners.set(messageChannelName, new Set());
+    }
+    this.listeners.get(messageChannelName)!.add(onMessage);
+
+    const unsubMessage = () => {
+      this.listeners.get(messageChannelName)?.delete(onMessage);
+      if (this.listeners.get(messageChannelName)?.size === 0) {
+        const ch = this.channels.get(messageChannelName);
+        if (ch) {
+          this.getSupabaseClient().removeChannel(ch);
+        }
+        this.channels.delete(messageChannelName);
+        this.listeners.delete(messageChannelName);
+      }
+    };
+
+    // 2. Typing indicators via Broadcast (not Presence)
+    //    Per docs: "Typing indicators: Use Broadcast with throttle"
     let unsubTyping: (() => void) | undefined;
     if (onTyping) {
-      const channelName = `typing:${conversationId}`;
-      const channel = this.getClient().channel(channelName);
+      const typingChannelName = `typing:${conversationId}`;
+      const typingChannel = this.getSupabaseClient().channel(typingChannelName);
 
-      channel
-        .on("presence", { event: "sync" }, () => {
-          const state = channel.presenceState();
-          Object.entries(state).forEach(([_key, presences]) => {
-            const presence = (presences as any[])[0];
-            if (presence) {
-              onTyping(presence.user_id, presence.typing);
-            }
-          });
+      typingChannel
+        .on("broadcast", { event: "typing" }, ({ payload }: { payload: any }) => {
+          onTyping(payload.userId, payload.isTyping);
         })
         .subscribe();
 
-      this.channels.set(channelName, channel);
+      this.channels.set(typingChannelName, typingChannel);
       unsubTyping = () => {
-        channel.unsubscribe();
-        this.channels.delete(channelName);
+        const ch = this.channels.get(typingChannelName);
+        if (ch) {
+          this.getSupabaseClient().removeChannel(ch);
+        }
+        this.channels.delete(typingChannelName);
       };
     }
 
@@ -116,12 +163,31 @@ export class SupabaseRealtime {
     };
   }
 
+  /**
+   * Track user presence (online/offline status).
+   * Per docs: Presence is for slow-changing state like online status.
+   * Uses supabase.removeChannel() for cleanup.
+   */
   trackPresence(userId: string, data: Record<string, unknown>): void {
-    const channel = this.getClient().channel("online");
+    // Clean up existing presence channel before creating a new one
+    const existing = this.channels.get("online");
+    if (existing) {
+      this.getSupabaseClient().removeChannel(existing);
+      this.channels.delete("online");
+    }
+
+    const channel = this.getSupabaseClient().channel("online", {
+      config: {
+        presence: {
+          key: `user-${userId}`,
+        },
+      },
+    });
+
     channel.subscribe(async (status) => {
       if (status === "SUBSCRIBED") {
         await channel.track({
-          user_id: userId,
+          userId,
           online_at: new Date().toISOString(),
           ...data,
         });
@@ -130,23 +196,37 @@ export class SupabaseRealtime {
     this.channels.set("online", channel);
   }
 
+  /**
+   * Broadcast a typing indicator using Broadcast (fire-and-forget),
+   * NOT Presence. Per Supabase docs:
+   *   - Broadcast for high-frequency ephemeral events (typing, cursors)
+   *   - Presence for slow-changing state (online status, active document)
+   *   - Calling track() rapidly floods the channel
+   */
   broadcastTyping(conversationId: string, userId: string, isTyping: boolean): void {
     const channelName = `typing:${conversationId}`;
     let channel = this.channels.get(channelName);
     if (!channel) {
-      channel = this.getClient().channel(channelName);
+      channel = this.getSupabaseClient().channel(channelName);
       this.channels.set(channelName, channel);
       channel.subscribe();
     }
-    channel.track({
-      user_id: userId,
-      typing: isTyping,
-      timestamp: Date.now(),
+    // Use broadcast.send() instead of channel.track() (presence)
+    channel.send({
+      type: "broadcast",
+      event: "typing",
+      payload: {
+        userId,
+        isTyping,
+        timestamp: Date.now(),
+      },
     });
   }
 
   unsubscribeAll(): void {
-    this.channels.forEach((channel) => channel.unsubscribe());
+    this.channels.forEach((channel) => {
+      this.getSupabaseClient().removeChannel(channel);
+    });
     this.channels.clear();
     this.listeners.clear();
     this.presenceListeners.clear();

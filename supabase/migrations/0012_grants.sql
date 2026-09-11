@@ -1,4 +1,8 @@
 -- Grant permissions for Prisma-created tables
+-- Per docs: "Never expose service_role key to clients" and
+-- "audit_events: NO grant to authenticated — cannot be read or written by clients"
+-- Per docs: "premium_entitlements has NO client write policy — Plus cannot be self-granted"
+
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.users TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.sessions TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.taps TO authenticated;
@@ -44,8 +48,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pet_items TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pet_adventures TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.event_waitlist TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.auth_rate_limits TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.premium_entitlements TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.audit_events TO authenticated;
+-- premium_entitlements: SELECT only — cannot be self-granted by clients
+GRANT SELECT ON TABLE public.premium_entitlements TO authenticated;
+-- audit_events: NO grant to authenticated — the log cannot be forged or read by clients
+-- audit_events: only accessible by service_role (which bypasses RLS)
 -- Allow anon to read tribes and events
 GRANT SELECT ON TABLE public.tribes TO anon;
 GRANT SELECT ON TABLE public.events TO anon;

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Compass, Sparkles, SlidersHorizontal, LayoutGrid, Map as MapIcon, RotateCcw, X } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
+import { useVectorSearch } from "@/hooks/use-vector-search";
 import type { Candidate } from "@/lib/types";
 import { Skeleton, EmptyState, Button } from "@/components/ui/primitives";
 import { ProfileCard } from "@/components/discover/profile-card";
@@ -35,6 +36,31 @@ export function DiscoverClient() {
   const [mode, setMode] = useState<"grid" | "map">("grid");
   const [selected, setSelected] = useState<Candidate | null>(null);
   const [tapped, setTapped] = useState<string[]>([]);
+
+  // --- Vector search: GPU-accelerated similarity for profile ranking ---
+  const vectorQuery = useMemo(() => {
+    if (!me) return "";
+    const parts = [
+      me.pseudo, me.description, me.city, me.occupation,
+      ...(me.interests || []), ...(me.tribes || []), ...(me.lookingFor || []),
+    ].filter(Boolean);
+    return parts.join(" ");
+  }, [me]);
+
+  const vectorResults = useVectorSearch(vectorQuery, {
+    enabled: vectorQuery.length >= 2,
+    matchCount: 30,
+    threshold: 0.3,
+  });
+
+  // Build a Map of profile_id -> similarity score from vector results
+  const vectorScores = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const r of vectorResults.data) {
+      map.set(r.profile_id, r.similarity);
+    }
+    return map;
+  }, [vectorResults.data]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["discover"],
@@ -72,19 +98,29 @@ export function DiscoverClient() {
   const meta = data?.meta;
 
   const candidates = useMemo(() => {
-    return all.filter((c) => {
-      if (filters.tribe !== "All" && !c.tribes.includes(filters.tribe)) return false;
-      if (filters.looking !== "All" && !c.lookingFor.includes(filters.looking)) return false;
-      if (filters.body !== "All" && c.bodyType !== filters.body) return false;
-      if (filters.intent !== "All" && !c.intents.includes(filters.intent)) return false;
-      if (c.age && (c.age < filters.minAge || c.age > filters.maxAge)) return false;
-      if (c.distanceKm > filters.maxDistance) return false;
-      if (filters.onlineOnly && !c.online) return false;
-      if (filters.verifiedOnly && !c.verified) return false;
-      if (c.matchScore < filters.minMatch) return false;
-      return true;
-    });
-  }, [all, filters]);
+    return all
+      .filter((c) => {
+        if (filters.tribe !== "All" && !c.tribes.includes(filters.tribe)) return false;
+        if (filters.looking !== "All" && !c.lookingFor.includes(filters.looking)) return false;
+        if (filters.body !== "All" && c.bodyType !== filters.body) return false;
+        if (filters.intent !== "All" && !c.intents.includes(filters.intent)) return false;
+        if (c.age && (c.age < filters.minAge || c.age > filters.maxAge)) return false;
+        if (c.distanceKm > filters.maxDistance) return false;
+        if (filters.onlineOnly && !c.online) return false;
+        if (filters.verifiedOnly && !c.verified) return false;
+        if (c.matchScore < filters.minMatch) return false;
+        return true;
+      })
+      .map((c) => {
+        const similarity = vectorScores.get(c.id);
+        // Similarity >= 0.6 from cosine distance = strong semantic match
+        const isAiRecommended = similarity != null && similarity >= 0.6;
+        return { ...c, vectorSimilarity: similarity, isAiRecommended } as Candidate & {
+          vectorSimilarity?: number;
+          isAiRecommended: boolean;
+        };
+      });
+  }, [all, filters, vectorScores]);
 
   const activeFilterCount =
     (filters.tribe !== "All" ? 1 : 0) + (filters.looking !== "All" ? 1 : 0) +
@@ -131,6 +167,9 @@ export function DiscoverClient() {
         <p className="text-xs leading-relaxed text-white/80">
           <span className="font-semibold text-gold-soft">AI smart defaults active.</span>{" "}
           Showing {candidates.length} kings ranked by 5-dimension compatibility.
+          {vectorScores.size > 0 && (
+            <> <span className="text-purple-300">Vector search boosted {vectorScores.size} profiles.</span></>
+          )}
           {meta && meta.newCount > 0 && <> <span className="text-white">{meta.newCount} are new to you.</span></>}
         </p>
       </div>
@@ -186,6 +225,7 @@ export function DiscoverClient() {
               onTap={() => tapMutation.mutate(c.id)}
               onFavorite={() => favMutation.mutate(c.id)}
               onOpen={() => { setSelected(c); trackView.mutate(c.id); }}
+              isAiRecommended={(c as any).isAiRecommended}
             />
           ))}
         </div>

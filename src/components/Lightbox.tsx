@@ -137,6 +137,7 @@ export function Lightbox({
 	// Container size (re-measured on resize)
 	const containerRectRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
 
+
 	const total = images.length;
 	const canPrev = index > 0;
 	const canNext = index < total - 1;

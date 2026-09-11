@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { prisma } from "#/db";
 import { auth } from "#/lib/auth";
+import { withSecurity, json, jsonError, parseJsonBody, validateString } from "#/middleware";
+import { checkRateLimit } from "#/lib/rate-limit";
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// -- Helpers --
 
 async function getCurrentUser(request: Request) {
   try {
@@ -15,19 +17,19 @@ async function getCurrentUser(request: Request) {
   }
 }
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-// ── Route ──────────────────────────────────────────────────────────────────
+// -- Route --
 
 export const Route = createFileRoute("/api/notifications/")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        // Rate limit: 100 requests per 15 minutes per IP
+        const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+        const rateLimitResult = await checkRateLimit(`notifications:GET:${ip}`, 100, 15 * 60 * 1000);
+        if (!rateLimitResult.allowed) {
+          return jsonError("Rate limit exceeded", 429);
+        }
+
         const user = await getCurrentUser(request);
         if (!user) {
           return json({ notifications: [], unread: 0 });
@@ -87,25 +89,39 @@ export const Route = createFileRoute("/api/notifications/")({
         return json({ notifications: mapped, unread });
       },
 
-      POST: async ({ request }) => {
+      POST: withSecurity(async ({ request }) => {
         const user = await getCurrentUser(request);
         if (!user) {
-          return json({ error: "Unauthorized" }, 401);
+          return jsonError("Unauthorized", 401);
         }
 
-        const body = await request.json();
-        const { action, notificationId } = body;
+        // Rate limit: 30 mutations per 15 minutes per user
+        const rateLimitResult = await checkRateLimit(`notifications:POST:${user.id}`, 30, 15 * 60 * 1000);
+        if (!rateLimitResult.allowed) {
+          return jsonError("Rate limit exceeded", 429);
+        }
 
-        // ── Mark single notification as read ──────────────────────────
+        const bodyResult = await parseJsonBody<{
+          action?: string;
+          notificationId?: string;
+        }>(request);
+
+        if (!bodyResult.ok) return bodyResult.response;
+        const { action, notificationId } = bodyResult.data;
+
+        // -- Mark single notification as read --
         if (action === "markRead" && notificationId) {
+          const idResult = validateString(notificationId, "notificationId");
+          if (!idResult.ok) return jsonError(idResult.error, 400);
+
           await prisma.notification.updateMany({
-            where: { id: notificationId, userId: user.id },
+            where: { id: idResult.value, userId: user.id },
             data: { read: true, readAt: new Date() },
           });
           return json({ ok: true });
         }
 
-        // ── Mark all as read ──────────────────────────────────────────
+        // -- Mark all as read --
         if (action === "markAllRead") {
           await prisma.notification.updateMany({
             where: { userId: user.id, read: false },
@@ -114,7 +130,7 @@ export const Route = createFileRoute("/api/notifications/")({
           return json({ ok: true });
         }
 
-        // ── Clear all notifications ───────────────────────────────────
+        // -- Clear all notifications --
         if (action === "clear") {
           await prisma.notification.deleteMany({
             where: { userId: user.id },
@@ -122,8 +138,8 @@ export const Route = createFileRoute("/api/notifications/")({
           return json({ ok: true });
         }
 
-        return json({ error: "Unknown action" }, 400);
-      },
+        return jsonError("Unknown action", 400);
+      }, { maxBodySize: 4 * 1024 }), // 4KB max for notification actions
     },
   },
 });

@@ -157,7 +157,7 @@ export function KingPetClient() {
             <span>{pet.experience} / {pet.level * 100}</span>
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-gradient-to-r from-gold to-gold-soft transition-all duration-500" style={{ width: `${progress}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-gold to-gold-soft transition-[width] duration-500" style={{ width: `${progress}%` }} />
           </div>
         </div>
       </div>
@@ -188,7 +188,7 @@ export function KingPetClient() {
                   key={a.key}
                   onClick={() => act.mutate({ action: a.key })}
                   disabled={act.isPending}
-                  className="group flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface p-4 text-center transition-all hover:-translate-y-0.5 hover:border-gold/40 disabled:opacity-60"
+                  className="group flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-gold/40 disabled:opacity-60"
                 >
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gold/15 text-gold transition-colors group-hover:bg-gold group-hover:text-ink">
                     <Icon className="h-5 w-5" />

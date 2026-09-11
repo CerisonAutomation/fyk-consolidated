@@ -9,7 +9,7 @@ export function ToastStack({
   onDismiss: (id: number) => void;
 }) {
   return (
-    <div className="pointer-events-none fixed bottom-24 left-1/2 z-[120] flex w-[min(94vw,26rem)] -translate-x-1/2 flex-col gap-2 md:bottom-6 md:left-auto md:right-6 md:translate-x-0">
+    <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed bottom-24 left-1/2 z-[120] flex w-[min(94vw,26rem)] -translate-x-1/2 flex-col gap-2 md:bottom-6 md:left-auto md:right-6 md:translate-x-0">
       {toasts.map((t) => (
         <div
           key={t.id}
@@ -17,6 +17,7 @@ export function ToastStack({
           className="anim-sheet pointer-events-auto flex items-start gap-3 rounded-2xl border border-line bg-surface/95 p-3.5 shadow-[var(--shadow-pop)] backdrop-blur"
         >
           <span
+            aria-hidden="true"
             className={cn(
               "mt-1.5 h-2 w-2 shrink-0 rounded-full",
               t.tone === "violet" ? "bg-violet" : t.tone === "live" ? "bg-live" : "bg-gold",

@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 interface LoadingSpinnerProps {
 	size?: "sm" | "md" | "lg";
 	className?: string;
@@ -9,7 +11,11 @@ const sizes = {
 	lg: "w-12 h-12",
 };
 
-export function LoadingSpinner({
+/**
+ * React.memo prevents re-renders when props haven't changed.
+ * Per the performance docs: "Use when component receives the same props frequently".
+ */
+export const LoadingSpinner = memo(function LoadingSpinner({
 	size = "md",
 	className = "",
 }: LoadingSpinnerProps) {
@@ -20,4 +26,4 @@ export function LoadingSpinner({
 			/>
 		</div>
 	);
-}
+});

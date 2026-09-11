@@ -38,7 +38,7 @@ export function CheckInBar() {
         )}
       >
         <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl", overdue ? "bg-live/20 text-live" : "bg-gold-ghost text-gold")}>
-          {overdue ? <AlertTriangle className="h-[19px] w-[19px]" /> : <ShieldCheck className="h-[19px] w-[19px]" />}
+          {overdue ? <AlertTriangle className="h-[19px] w-[19px]" aria-hidden="true" /> : <ShieldCheck className="h-[19px] w-[19px]" aria-hidden="true" />}
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[13.5px] font-semibold text-ink">
@@ -53,9 +53,9 @@ export function CheckInBar() {
         {overdue && (
           <a
             href="tel:+35699255559"
-            className="press hidden shrink-0 items-center gap-1.5 rounded-full bg-live px-3.5 py-2 text-[12.5px] font-semibold text-white sm:inline-flex"
+            className="press hidden shrink-0 items-center gap-1.5 rounded-full bg-live px-3.5 py-2 text-[12.5px] font-semibold text-primary-foreground sm:inline-flex"
           >
-            <Phone className="h-3.5 w-3.5" /> Call
+            <Phone className="h-3.5 w-3.5" aria-hidden="true" /> Call
           </a>
         )}
         <button
@@ -64,7 +64,7 @@ export function CheckInBar() {
             resolveCheckIn(true);
             toast("Check-in cleared", "gold");
           }}
-          className="press shrink-0 rounded-full bg-gold px-3.5 py-2 text-[12.5px] font-semibold text-black hover:bg-gold-2"
+          className="press shrink-0 rounded-full bg-gold px-3.5 py-2 text-[12.5px] font-semibold text-primary-foreground hover:bg-gold-2"
         >
           I'm fine
         </button>
@@ -138,7 +138,7 @@ export function PartyModeSheet() {
     <Modal open onClose={() => setQrOpen(false)} labelledBy="party-title">
       <div className="p-6 text-center">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-gold-ghost text-gold">
-          <QrCode className="h-6 w-6" />
+          <QrCode className="h-6 w-6" aria-hidden="true" />
         </span>
         <h2 id="party-title" className="mt-4 text-[21px] font-bold tracking-[-0.01em] text-ink">
           Party mode
@@ -168,7 +168,7 @@ export function PartyModeSheet() {
           <button
             type="button"
             onClick={() => setQrOpen(false)}
-            className="press flex-1 rounded-full bg-gold py-3 text-[14.5px] font-semibold text-black hover:bg-gold-2"
+            className="press flex-1 rounded-full bg-gold py-3 text-[14.5px] font-semibold text-primary-foreground hover:bg-gold-2"
           >
             Done
           </button>
@@ -196,8 +196,8 @@ export function FootprintPicker({
     <div className="anim-pop rounded-xl border border-line bg-surface-2 p-3.5">
       <div className="mb-2.5 flex items-center gap-2">
         <p className="text-[12px] font-bold uppercase tracking-wide text-faint">Leave a footprint</p>
-        <button type="button" onClick={onClose} aria-label="Close" className="press ml-auto text-faint hover:text-ink">
-          <X className="h-3.5 w-3.5" />
+        <button type="button" onClick={onClose} aria-label="Close footprint picker" className="press ml-auto text-faint hover:text-ink">
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -216,7 +216,7 @@ export function FootprintPicker({
           >
             <span aria-hidden="true">{f.emoji}</span>
             {f.label}
-            {current === f.id && <Check className="h-3 w-3" />}
+            {current === f.id && <Check className="h-3 w-3" aria-hidden="true" />}
           </button>
         ))}
       </div>

@@ -92,7 +92,9 @@ export type WhereMode = (typeof WhereMode)[keyof typeof WhereMode]
 
 export const PlanTier = {
   free: 'free',
-  plus: 'plus'
+  plus: 'plus',
+  gold: 'gold',
+  platinum: 'platinum'
 } as const
 
 export type PlanTier = (typeof PlanTier)[keyof typeof PlanTier]

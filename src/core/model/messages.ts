@@ -202,7 +202,7 @@ export const locationMessageSchema = messageBaseSchema.safeExtend({
 				durationMs: z.number(),
 				expiresAt: z.number(),
 			})
-			.null()
+			.nullable()
 			.optional(),
 	}),
 });

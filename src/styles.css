@@ -123,6 +123,8 @@
 /* ================================================================== */
 
 :root {
+  color-scheme: light dark;
+
   /* Brand */
   --gold: var(--color-gold);
   --neon: var(--color-neon);
@@ -374,10 +376,16 @@
     min-height: 100dvh;
   }
 
-  /* Focus visible ring for keyboard navigation */
+  /* Focus visible ring for keyboard navigation (WCAG 2.4.11, 2.4.13) */
   :focus-visible {
-    outline: 2px solid var(--color-ring);
+    outline: 3px solid var(--color-ring);
     outline-offset: 2px;
+  }
+
+  /* Ensure focused elements are not obscured by sticky headers/footers */
+  :focus-visible {
+    scroll-margin-top: 80px;
+    scroll-margin-bottom: 80px;
   }
 
   /* Smooth scrolling for reduced motion preference */
@@ -388,6 +396,7 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
   }
 }
@@ -469,8 +478,8 @@
 
 /* ── Shimmer / Loading ── */
 @keyframes shimmer {
-  0% { left: -100%; }
-  100% { left: 200%; }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }
 
 @keyframes skeleton-pulse {
@@ -570,6 +579,12 @@
 }
 
 /* ── Holo / Special ── */
+@property --holo-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
 @keyframes holo-spin {
   from { --holo-angle: 0deg; }
   to { --holo-angle: 360deg; }
@@ -581,8 +596,8 @@
 }
 
 @keyframes indicator-in {
-  from { width: 0; opacity: 0; }
-  to { width: 20px; opacity: 1; }
+  from { transform: scaleX(0); opacity: 0; }
+  to { transform: scaleX(1); opacity: 1; }
 }
 
 @keyframes divider-glow {

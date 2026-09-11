@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, type ReactNode } from "react";
-import { X, Navigation, MapPin } from "lucide-react";
+import { X, MapPin } from "lucide-react";
 import { cn } from "../cn";
 import { MapPicker } from "#/components/map/MapPicker";
 import { encodeGeohash } from "#/core/model/geohash";
