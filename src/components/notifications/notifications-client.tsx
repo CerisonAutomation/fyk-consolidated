@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Bell, Zap, MessageCircle, Eye, CalendarDays, Sparkles, PawPrint, Crown, CheckCheck, Trash2 } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
-import type { NotificationItem } from "@/lib/types";
+import type { Notification } from "@/lib/types";
 import { EmptyState, Skeleton, Button } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/avatar";
 import { cn, timeAgo } from "@/lib/utils";
@@ -29,7 +29,7 @@ export function NotificationsClient() {
   const { data, isLoading } = useQuery({
     queryKey: ["notifications"],
     queryFn: () =>
-      api<{ notifications: NotificationItem[]; unread: number }>("/api/notifications"),
+      api<{ notifications: Notification[]; unread: number }>("/api/notifications"),
   });
 
   const act = useMutation({
@@ -43,7 +43,7 @@ export function NotificationsClient() {
   const items = data?.notifications ?? [];
   const unread = data?.unread ?? 0;
 
-  const groups = items.reduce<Record<string, NotificationItem[]>>((acc, n) => {
+  const groups = items.reduce<Record<string, Notification[]>>((acc, n) => {
     const bucket = !n.read ? "New" : timeAgo(n.created_at).includes("h ago") ? "Earlier today" : "Older";
     (acc[bucket] ??= []).push(n);
     return acc;

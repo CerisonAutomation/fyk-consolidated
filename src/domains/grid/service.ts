@@ -146,11 +146,11 @@ export async function getGrid(query: {
 	};
 }
 
-const profileCache = new TtlCache<number, RenderedGridProfile>({
+const profileCache = new TtlCache<string, RenderedGridProfile>({
 	ttlMs: 60_000,
 });
 
-export function getCachedProfile(id: number): RenderedGridProfile | null {
+export function getCachedProfile(id: string): RenderedGridProfile | null {
 	return profileCache.get(id);
 }
 
@@ -162,7 +162,7 @@ export function patchCachedProfile({
 	id,
 	patch,
 }: {
-	id: number;
+	id: string;
 	patch: Partial<RenderedGridProfile>;
 }): void {
 	profileCache.update(id, (profile) => ({ ...profile, ...patch }));
@@ -171,13 +171,53 @@ export function patchCachedProfile({
 export async function resolveLazyProfile(
 	profile: LazyGridProfile,
 ): Promise<RenderedGridProfile | null> {
+	const { demoEnabled } = await import("#/domains/demo/config");
+
+	// ── Production path: fetch real data from Supabase ──
+	if (!demoEnabled) {
+		const client = getSupabase();
+		if (!client) return null;
+
+		const { data: user } = await client
+			.from("users")
+			.select("id, pseudo, nick, age, position, headline, photos, lat_coarse, lng_coarse, online, visible, hidden, incognito, last_active_at, created_at")
+			.eq("id", profile.id)
+			.single();
+
+		if (!user) return null;
+
+		const photos = (user.photos as string[] | null) ?? [];
+		const primaryPhoto = photos[0] ?? null;
+		const createdAt = new Date(user.created_at);
+		const isNew = Date.now() - createdAt.getTime() < 7 * 24 * 60 * 60 * 1000;
+
+		return {
+			type: "rendered",
+			id: profile.id,
+			displayName: user.nick ?? user.pseudo,
+			age: user.age ?? null,
+			position: Array.isArray(user.position) ? user.position[0] : user.position,
+			headline: user.headline ?? null,
+			compatibilityScore: 50,
+			isNew,
+			distance: null,
+			profilePhotosHashes: primaryImageHashes(primaryPhoto),
+			unread: profile.unread,
+			onlineUntil: user.online ? Date.now() + 30 * 60 * 1000 : null,
+			isFavorite: false,
+			isVisiting: profile.isVisiting,
+			hasChattedInLast24Hrs: false,
+		};
+	}
+
+	// ── Demo path: use mock data ──
 	const [{ demoFavoriteOf }, { onlineUntilOf, photosOf, profileSeed }] =
 		await Promise.all([
 			import("#/domains/demo/mock/grid"),
 			import("#/domains/demo/mock/profiles"),
 		]);
-	const seed = profileSeed(profile.id);
-	const photos = photosOf(profile.id);
+	const seed = profileSeed(Number(profile.id));
+	const photos = photosOf(Number(profile.id));
 	return {
 		type: "rendered",
 		id: profile.id,
@@ -185,13 +225,13 @@ export async function resolveLazyProfile(
 		age: seed.showAge ? seed.age : null,
 		position: seed.position,
 		headline: seed.bio || seed.lookingFor.join(" · "),
-		compatibilityScore: 58 + (profile.id % 39),
-		isNew: profile.id % 11 === 0,
+		compatibilityScore: 58 + ((Number(profile.id) % 39)),
+		isNew: (Number(profile.id) % 11) === 0,
 		distance: seed.distanceM,
 		profilePhotosHashes: photos.length > 0 ? photos : null,
 		unread: profile.unread,
 		onlineUntil: onlineUntilOf(seed),
-		isFavorite: demoFavoriteOf({ profileId: profile.id }),
+		isFavorite: demoFavoriteOf({ profileId: Number(profile.id) }),
 		isVisiting: profile.isVisiting,
 		hasChattedInLast24Hrs: seed.unread > 0,
 	};

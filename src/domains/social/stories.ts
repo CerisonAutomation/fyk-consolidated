@@ -66,7 +66,7 @@ export async function createStory(
 		userId: story.userId,
 		mediaUrl: story.mediaUrl,
 		mediaType: story.mediaType,
-		caption: story.caption,
+		caption: story.caption ?? "",
 		createdAt: story.createdAt,
 		expiresAt: story.expiresAt,
 		viewCount: 0,
@@ -136,7 +136,7 @@ export async function getStoryRings(
 		},
 		include: {
 			user: {
-				select: { id: true, name: true, avatar: true },
+				select: { id: true, name: true, photos: true },
 			},
 		},
 		orderBy: { createdAt: "desc" },
@@ -161,7 +161,7 @@ export async function getStoryRings(
 			userId: story.userId,
 			mediaUrl: story.mediaUrl,
 			mediaType: story.mediaType,
-			caption: story.caption,
+			caption: story.caption ?? "",
 			createdAt: story.createdAt,
 			expiresAt: story.expiresAt,
 			viewCount: viewedBy.length,
@@ -173,9 +173,11 @@ export async function getStoryRings(
 			existing.stories.push(storyData);
 			if (!hasViewed) existing.unviewedCount++;
 		} else {
+			const userPhotos = (story.user.photos as string[]) ?? [];
+			const userAvatar = userPhotos[0] ?? "";
 			grouped.set(story.userId, {
-				userName: story.user.name,
-				userAvatar: story.user.avatar,
+				userName: story.user.name ?? "",
+				userAvatar,
 				stories: [storyData],
 				unviewedCount: hasViewed ? 0 : 1,
 			});

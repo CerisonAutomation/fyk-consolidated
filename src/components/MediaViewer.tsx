@@ -96,8 +96,8 @@ export function MediaViewer() {
 
   if (!item) return null;
 
-  const src = item.url ?? (item.photo ? px(item.photo, 1400, 1900) : "");
-  const posterSrc = item.poster ? px(item.poster, 900, 1200) : src;
+  const src = item.url ?? (item.photo ? px(Number(item.photo), 1400, 1900) : "");
+  const posterSrc = item.poster ? px(Number(item.poster), 900, 1200) : src;
 
   return (
     <div className="fixed inset-0 z-[135] flex flex-col bg-black">

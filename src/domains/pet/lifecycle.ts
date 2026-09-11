@@ -58,21 +58,7 @@ function nowISO(): string {
 	return new Date().toISOString();
 }
 
-function mapPet(raw: {
-	id: string;
-	name: string;
-	stage: string;
-	mood: string;
-	bones: number;
-	hunger: number;
-	happiness: number;
-	experience: number;
-	level: number;
-	activity: string;
-	costume: string;
-	adventures: unknown;
-	equipped: unknown;
-}): PetState {
+function mapPet(raw: Record<string, any>): PetState {
 	return {
 		id: raw.id,
 		name: raw.name,
@@ -115,9 +101,8 @@ export async function ensurePet(
 			level: 1,
 			activity: "at_home",
 			costume: "none",
-			adventures: [],
-			equipped: null,
-			moodLog: [{ mood: "happy", at: nowISO() }],
+			adventures: [] as any,
+			moodLog: [{ mood: "happy", at: nowISO() }] as any,
 		},
 	});
 
@@ -151,7 +136,7 @@ export async function feedPet(
 			hunger: Math.min(100, before.hunger + 25),
 			happiness: Math.min(100, before.happiness + 10),
 			lastFed: new Date(),
-			moodLog,
+			moodLog: moodLog as any,
 		},
 	});
 
@@ -183,7 +168,7 @@ export async function playPet(
 			stage: newStage,
 			mood: "excited",
 			happiness: Math.min(100, before.happiness + 20),
-			moodLog,
+			moodLog: moodLog as any,
 		},
 	});
 
@@ -216,7 +201,7 @@ export async function restPet(
 			mood: "sleepy",
 			hunger: Math.max(0, before.hunger - 5),
 			happiness: Math.min(100, before.happiness + 5),
-			moodLog,
+			moodLog: moodLog as any,
 		},
 	});
 
@@ -248,7 +233,7 @@ export async function dressPet(
 			stage: newStage,
 			mood: "happy",
 			happiness: Math.min(100, before.happiness + 15),
-			moodLog,
+			moodLog: moodLog as any,
 		},
 	});
 
@@ -297,9 +282,9 @@ export async function adventurePet(
 			bones: pet.bones - adventure.cost,
 			activity: `adventure:${adventureId}`,
 			adventureEndsAt: adventureEnds,
-			adventures: [...pet.adventures, adventureId],
+			adventures: [...pet.adventures, adventureId] as any,
 			happiness: Math.min(100, pet.happiness + 30),
-			moodLog,
+			moodLog: moodLog as any,
 		},
 	});
 
@@ -350,7 +335,7 @@ export async function buyPetItem(
 		where: { userId },
 		data: {
 			bones: pet.bones - item.price,
-			adventures: [...owned],
+			adventures: [...owned] as any,
 		},
 	});
 
@@ -372,7 +357,7 @@ export async function equipPetItem(
 
 	const updated = await db.kingPet.update({
 		where: { userId },
-		data: { equipped: newEquipped },
+		data: { equipped: newEquipped as any },
 	});
 
 	return { pet: mapPet(updated), equipped: !isEquipped };

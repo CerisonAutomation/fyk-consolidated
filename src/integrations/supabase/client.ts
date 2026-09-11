@@ -81,3 +81,4 @@ export function toFailure(error: unknown): Failure {
 }
 
 export const ok = <T,>(data: T): Success<T> => ({ ok: true, data });
+export const fail = (code: string, message: string): Failure => ({ ok: false, code, message });

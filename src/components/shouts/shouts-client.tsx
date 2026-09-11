@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Megaphone, Send, Heart, Sparkles } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
-import type { Shout } from "@/lib/types";
+import type { Shout, ProfileUser } from "@/lib/types";
 import { EmptyState, Skeleton, Spinner } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/avatar";
 import { cn, timeAgo } from "@/lib/utils";
@@ -123,7 +123,7 @@ export function ShoutsClient() {
         <EmptyState icon="📣" title="No shouts yet" description="Be the first to break the silence." />
       ) : (
         <div className="space-y-3">
-          {shouts.map((s) => (
+          {shouts.filter((s): s is Shout & { author: ProfileUser } => !!s.author).map((s) => (
             <div key={s.id} className="rounded-2xl border border-line bg-surface p-4">
               <div className="flex items-center gap-3">
                 <Avatar name={s.author.pseudo} photoUrl={s.author.photos?.[0]} size={40} online={s.author.online} />

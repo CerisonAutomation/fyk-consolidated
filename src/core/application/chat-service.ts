@@ -6,7 +6,7 @@
 // Contains NO Prisma imports — only port interfaces.
 
 import type { ConversationRepository, NotificationRepository, ProfileRepository } from "../ports/repositories";
-import type { Conversation, Message } from "../domain/types";
+import type { Message } from "../domain/types";
 import { ok, fail, type Result } from "../domain/errors";
 
 // ─── Types ───────────────────────────────────────────────────────────────────

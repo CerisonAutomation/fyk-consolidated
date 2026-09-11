@@ -33,9 +33,9 @@ interface GridState {
 	refresh: (opts?: { background?: boolean }) => Promise<void>;
 	retry: () => void;
 	reset: () => void;
-	setFavorite: (args: { profileId: number; isFavorite: boolean }) => void;
-	removeProfile: (profileId: number) => void;
-	resolveProfile: (id: number) => Promise<void>;
+	setFavorite: (args: { profileId: string; isFavorite: boolean }) => void;
+	removeProfile: (profileId: string) => void;
+	resolveProfile: (id: string) => Promise<void>;
 	_withLiveLocation: (
 		currentGeohash: string,
 		token: number,
@@ -51,7 +51,7 @@ interface GridState {
 let fetchToken = 0;
 let geohash: string | null = null;
 let retargeted: string | null = null;
-const resolvingIds = new Set<number>();
+const resolvingIds = new Set<string>();
 
 export const useGridStore = create<GridState>((set, get) => ({
 	items: [],
@@ -143,7 +143,7 @@ export const useGridStore = create<GridState>((set, get) => ({
 		}
 	},
 
-	async resolveProfile(id: number) {
+	async resolveProfile(id: string) {
 		if (resolvingIds.has(id)) return;
 		resolvingIds.add(id);
 		const token = fetchToken;

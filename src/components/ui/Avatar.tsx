@@ -9,7 +9,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export function Avatar({ name, photoUrl, size = 40, online, verified, className }: AvatarProps) {
+export function Avatar({ name, photoUrl, size = 40, online, className }: AvatarProps) {
   const initials = name
     .split(" ")
     .map((w) => w[0])

@@ -1,4 +1,4 @@
-import type { WalletRepository, SubscriptionRepository, NotificationRepository } from "../ports/repositories";
+import type { WalletRepository, SubscriptionRepository } from "../ports/repositories";
 import { canAfford } from "../domain/wallet";
 import { ok, fail, type Result } from "../domain/errors";
 import type { Wallet, Subscription, ShopItem } from "../domain/types";
@@ -21,7 +21,6 @@ export class SubscriptionService {
   constructor(
     private walletRepo: WalletRepository,
     private subscriptionRepo: SubscriptionRepository,
-    private notificationRepo: NotificationRepository,
   ) {}
 
   async getWallet(userId: string): Promise<Result<{ wallet: Wallet; shop: ShopItem[]; tiers: typeof TIER_DEFS; consumables: any[]; subscription: Subscription | null }>> {

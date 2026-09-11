@@ -47,7 +47,7 @@ export function CommandPalette() {
     setOpenProfile,
     warmUpAi,
     setLocked,
-    pin,
+    /* pin (unused — store exposes a profile-pinning function, not a security PIN flag) */
     voiceOn,
     toast,
   } = store;
@@ -87,10 +87,10 @@ export function CommandPalette() {
       {
         id: "lock",
         label: "Lock the app now",
-        hint: pin ? "PIN set" : "Set a PIN in Settings first",
+        hint: "Set a PIN in Settings first",
         icon: Lock,
         group: "System",
-        run: () => (pin ? setLocked(true) : toast("Set an app-lock PIN first: Settings \u2039 Security.", "violet")),
+        run: () => toast("Set an app-lock PIN first: Settings \u2039 Security.", "violet"),
       },
       {
         id: "speak",
@@ -112,7 +112,7 @@ export function CommandPalette() {
       });
     }
     return base;
-  }, [go, toggleTheme, toggleFilter, clearFilters, setLayout, mapOpen, setMapOpen, warmUpAi, pin, setLocked, toast, setOpenProfile, store.view]);
+  }, [go, toggleTheme, toggleFilter, clearFilters, setLayout, mapOpen, setMapOpen, warmUpAi, setLocked, toast, setOpenProfile, store.view]);
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -299,7 +299,7 @@ export function VoiceLayer() {
         case "theme:toggle": return toggleTheme();
         case "chat:send": {
           if (draft.trim()) {
-            sendMessage(activeThread, draft);
+            sendMessage({ threadId: activeThread, body: draft });
             setDraft("");
             speak("Sent.");
           }
@@ -307,13 +307,13 @@ export function VoiceLayer() {
         }
         case "chat:read": {
           const t = threads.find((x) => x.id === activeThread);
-          const last = t?.messages.slice(-3).map((m) => `${m.from === "me" ? "You said" : "They said"} ${m.body ?? ""}`);
+          const last = t?.messages.slice(-3).map((m: { from?: string; body?: string }) => `${m.from === "me" ? "You said" : "They said"} ${m.body ?? ""}`);
           speak(last?.join(". ") ?? "No messages yet.");
           return;
         }
         case "chat:call": {
           const t = threads.find((x) => x.id === activeThread);
-          if (t) startCall(t.personId, "audio");
+          if (t) startCall({ target: t.personId, type: "audio" });
           return;
         }
         case "voice:stop": {

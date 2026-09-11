@@ -71,7 +71,7 @@ async function getPostHog(): Promise<PostHog | null> {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
     capture_pageview: false,
     capture_pageleave: true,
-    persistence: "localStorage+sessionStorage",
+    persistence: "localStorage" as any,
   });
   posthogInstance = posthog;
   return posthogInstance;

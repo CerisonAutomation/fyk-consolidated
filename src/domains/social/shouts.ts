@@ -51,10 +51,13 @@ export async function createShout(
 		},
 		include: {
 			user: {
-				select: { id: true, name: true, avatar: true },
+				select: { id: true, name: true, photos: true },
 			},
 		},
 	});
+
+	const userPhotos = (shout.user.photos as string[]) ?? [];
+	const userAvatar = userPhotos[0] ?? "";
 
 	return {
 		shout: {
@@ -66,7 +69,7 @@ export async function createShout(
 			isPinned: shout.isPinned,
 			createdAt: shout.createdAt,
 			userName: shout.user.name ?? "Anonymous",
-			userAvatar: shout.user.avatar ?? "",
+			userAvatar,
 			hasLiked: false,
 		},
 	};
@@ -124,7 +127,7 @@ export async function listShouts(
 		where: { status: "published" },
 		include: {
 			user: {
-				select: { id: true, name: true, avatar: true },
+				select: { id: true, name: true, photos: true },
 			},
 		},
 		orderBy: { createdAt: "desc" },
@@ -140,16 +143,20 @@ export async function listShouts(
 
 	const likedSet = new Set(userLikes.map((l) => l.shoutId));
 
-	return shouts.map((shout) => ({
-		id: shout.id,
-		userId: shout.userId,
-		content: shout.content,
-		likeCount: shout.likeCount,
-		commentCount: shout.commentCount,
-		isPinned: shout.isPinned,
-		createdAt: shout.createdAt,
-		userName: shout.user.name,
-		userAvatar: shout.user.avatar,
-		hasLiked: likedSet.has(shout.id),
-	}));
+	return shouts.map((shout) => {
+		const userPhotos = (shout.user.photos as string[]) ?? [];
+		const userAvatar = userPhotos[0] ?? "";
+		return {
+			id: shout.id,
+			userId: shout.userId,
+			content: shout.content,
+			likeCount: shout.likeCount,
+			commentCount: shout.commentCount,
+			isPinned: shout.isPinned,
+			createdAt: shout.createdAt,
+			userName: shout.user.name ?? "",
+			userAvatar,
+			hasLiked: likedSet.has(shout.id),
+		};
+	});
 }

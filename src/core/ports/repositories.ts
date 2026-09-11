@@ -1,4 +1,4 @@
-import type { Profile, Wallet, WalletTransaction, Tap, Match, Favorite, Block, Report, Conversation, Message, Notification, PetState, PetItem, PetAdventure, Story, Shout, MeetNowPost, Fansite, Album, AlbumPhoto, BoardPost, Subscription, Consumable, ShopItem, Footprint, UserNote } from "../domain/types";
+import type { Profile, Wallet, WalletTransaction, Tap, Match, Favorite, Block, Report, Conversation, Message, Notification, PetState, PetItem, PetAdventure, Story, Shout, MeetNowPost, Fansite, Album, AlbumPhoto, BoardPost, Subscription, Consumable,  Footprint, UserNote } from "../domain/types";
 
 export interface WalletRepository {
   findByUserId(userId: string): Promise<Wallet | null>;

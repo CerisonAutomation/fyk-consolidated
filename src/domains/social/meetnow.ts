@@ -50,7 +50,7 @@ export async function createPost(
 		data: {
 			userId,
 			place: note ?? "",
-			type: category,
+			category: category,
 			tags: [],
 			lat: location?.lat ?? null,
 			lng: location?.lng ?? null,
@@ -67,16 +67,16 @@ export async function createPost(
 	return {
 		id: post.id,
 		userId: post.userId,
-		place: post.place,
-		type: post.type,
+		place: post.place ?? "",
+		type: post.type ?? "",
 		tags: (post.tags as string[]) ?? [],
 		lat: post.lat,
 		lng: post.lng,
 		status: post.status,
 		expiresAt: post.expiresAt,
 		createdAt: post.createdAt,
-		userName: post.user.name,
-		userAvatar: post.user.avatar,
+		userName: post.user.name ?? "",
+		userAvatar: post.user.avatar ?? "",
 		hasJoined: false,
 	};
 }
@@ -170,16 +170,16 @@ export async function listPosts(
 	return posts.map((post) => ({
 		id: post.id,
 		userId: post.userId,
-		place: post.place,
-		type: post.type,
+		place: post.place ?? "",
+		type: post.type ?? "",
 		tags: (post.tags as string[]) ?? [],
 		lat: post.lat,
 		lng: post.lng,
 		status: post.status,
 		expiresAt: post.expiresAt,
 		createdAt: post.createdAt,
-		userName: post.user.name,
-		userAvatar: post.user.avatar,
+		userName: post.user.name ?? "",
+		userAvatar: post.user.avatar ?? "",
 		hasJoined: tappedAuthors.has(post.userId),
 	}));
 }

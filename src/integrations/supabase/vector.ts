@@ -20,30 +20,30 @@ export async function findSimilarProfiles(
   threshold: number = 0.5,
 ): Promise<Result<Array<{ profile_id: string; similarity: number; display_name: string; avatar_url: string; age: number; city: string }>>> {
   const client = getSupabase();
-  if (!client) return fail({ code: "NOT_CONFIGURED", message: "Supabase not configured" } as any);
+  if (!client) return fail("NOT_CONFIGURED", "Supabase not configured");
 
   const embedding = generateHashEmbedding(text);
-  const { data, error } = await client.rpc("find_similar_profiles", {
+  const { data, error } = await client.rpc("find_similar_profiles" as any, {
     query_embedding: JSON.stringify(embedding),
     match_count: matchCount,
     match_threshold: threshold,
   });
 
-  if (error) return fail({ code: "VECTOR_ERROR", message: error.message } as any);
-  return ok(data ?? []);
+  if (error) return fail("VECTOR_ERROR", error.message);
+  return ok((data ?? []) as any);
 }
 
 export async function upsertProfileEmbedding(profileId: string, text: string): Promise<Result<void>> {
   const client = getSupabase();
-  if (!client) return fail({ code: "NOT_CONFIGURED", message: "Supabase not configured" } as any);
+  if (!client) return fail("NOT_CONFIGURED", "Supabase not configured");
 
   const embedding = generateHashEmbedding(text);
   const { error } = await client.from("profile_embeddings").upsert(
-    { profile_id: profileId, embedding: JSON.stringify(embedding), model: "hash-v1" },
+    { profile_id: profileId, embedding: JSON.stringify(embedding), model: "hash-v1" } as any,
     { onConflict: "profile_id,model" },
   );
 
-  if (error) return fail({ code: "UPSERT_ERROR", message: error.message } as any);
+  if (error) return fail("UPSERT_ERROR", error.message);
   return ok(undefined);
 }
 
@@ -53,29 +53,29 @@ export async function findSimilarMessages(
   matchCount: number = 10,
 ): Promise<Result<Array<{ message_id: string; similarity: number; content: string; sender_id: string; created_at: string }>>> {
   const client = getSupabase();
-  if (!client) return fail({ code: "NOT_CONFIGURED", message: "Supabase not configured" } as any);
+  if (!client) return fail("NOT_CONFIGURED", "Supabase not configured");
 
-  const { data, error } = await client.rpc("find_similar_messages", {
+  const { data, error } = await client.rpc("find_similar_messages" as any, {
     query_embedding: JSON.stringify(queryEmbedding),
     conv_id: conversationId,
     match_count: matchCount,
   });
 
-  if (error) return fail({ code: "VECTOR_ERROR", message: error.message } as any);
-  return ok(data ?? []);
+  if (error) return fail("VECTOR_ERROR", error.message);
+  return ok((data ?? []) as any);
 }
 
 export async function upsertMessageEmbedding(messageId: string, text: string): Promise<Result<void>> {
   const client = getSupabase();
-  if (!client) return fail({ code: "NOT_CONFIGURED", message: "Supabase not configured" } as any);
+  if (!client) return fail("NOT_CONFIGURED", "Supabase not configured");
 
   const embedding = generateHashEmbedding(text);
   const { error } = await client.from("message_embeddings").upsert(
-    { message_id: messageId, embedding: JSON.stringify(embedding) },
+    { message_id: messageId, embedding: JSON.stringify(embedding) } as any,
     { onConflict: "message_id" },
   );
 
-  if (error) return fail({ code: "UPSERT_ERROR", message: error.message } as any);
+  if (error) return fail("UPSERT_ERROR", error.message);
   return ok(undefined);
 }
 

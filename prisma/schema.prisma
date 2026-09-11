@@ -129,6 +129,7 @@ model User {
   tagCodes       Json     @map("tag_codes")
   languages      Json     @default("[]")
   photos         Json     @default("[]")
+  avatar         String?
 
   // Location
   lat       Float?
@@ -891,6 +892,17 @@ model Fansite {
   id              String   @id @default(uuid()) @db.Uuid
   userId          String   @map("user_id") @db.Uuid
   name            String
+  displayName     String?  @map("display_name")
+  headline        String?
+  bio             String?
+  mainPhotoUrl    String?  @map("main_photo_url")
+  packageSize     String?  @map("package_size")
+  city            String?
+  availableNow    Boolean  @default(false) @map("available_now")
+  plusBadge       Boolean  @default(false) @map("plus_badge")
+  photos          Json     @default("[]")
+  interests       Json     @default("[]")
+  tags            Json     @default("[]")
   description     String?
   coverUrl        String?  @map("cover_url")
   subscriberCount Int      @default(0) @map("subscriber_count")
@@ -909,6 +921,12 @@ model MeetNowPost {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
   category  String
+  place     String?
+  type      String?
+  tags      Json     @default("[]")
+  lat       Float?
+  lng       Float?
+  status    String   @default("active")
   note      String?
   location  String?
   expiresAt DateTime @map("expires_at")

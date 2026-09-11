@@ -309,6 +309,76 @@ export type Subscription = {
   updated_at: string;
 };
 
+export type User = {
+  id: string;
+  email: string;
+  phone: string | null;
+  password_hash: string;
+  pseudo: string | null;
+  nick: string | null;
+  birthday: string | null;
+  age: number | null;
+  description: string | null;
+  headline: string | null;
+  occupation: string | null;
+  relationship_status: string | null;
+  ethnicity: string | null;
+  height: number | null;
+  weight: number | null;
+  body_type: string | null;
+  position: unknown;
+  languages: unknown;
+  looking_for: unknown;
+  intents: unknown;
+  tag_codes: unknown;
+  interests: unknown;
+  tribes: unknown;
+  photos: unknown;
+  geo_mode: string | null;
+  h3_index: string | null;
+  lat: number | null;
+  lng: number | null;
+  city: string | null;
+  area: string | null;
+  lat_coarse: number | null;
+  lng_coarse: number | null;
+  status: string | null;
+  role: string | null;
+  tier: string | null;
+  verification: number | null;
+  trust_score: number | null;
+  profile_complete: number | null;
+  online: boolean | null;
+  visible: boolean | null;
+  hidden: boolean | null;
+  incognito: boolean | null;
+  is_demo: boolean | null;
+  is_suspended: boolean | null;
+  exposure_level: string | null;
+  hide_distance: boolean | null;
+  hide_online: boolean | null;
+  theme: string | null;
+  accent: string | null;
+  font_size: number | null;
+  grid_columns: number | null;
+  card_style: string | null;
+  dnd_mode: boolean | null;
+  colorblind_mode: boolean | null;
+  language: string | null;
+  notif_prefs: unknown;
+  ai_prefs: unknown;
+  pronouns: string | null;
+  apple_id: string | null;
+  google_id: string | null;
+  last_cursor: string | null;
+  last_seen: string | null;
+  last_active_at: string;
+  onboarding_done: boolean | null;
+  onboarding_completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type Table<T> = {
   Row: T;
   Insert: Partial<T>;
@@ -319,6 +389,7 @@ type Table<T> = {
 export type Database = {
   public: {
     Tables: {
+      users: Table<User>;
       profiles: Table<Profile>;
       profile_private: Table<ProfilePrivate>;
       profile_photos: Table<ProfilePhoto>;
@@ -355,6 +426,8 @@ export type Database = {
     Functions: {
       register_media_open: { Args: { target: string }; Returns: MessageAttachment };
       register_album_open: { Args: { target: string }; Returns: AlbumShare };
+      find_similar_profiles: { Args: { query_embedding: string; match_count: number; match_threshold: number }; Returns: Record<string, unknown>[] };
+      find_similar_messages: { Args: { query_embedding: string; conv_id: string; match_count: number }; Returns: Record<string, unknown>[] };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

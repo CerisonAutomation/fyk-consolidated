@@ -75,7 +75,7 @@ export function createConversationRepository(db: PrismaClient): ConversationRepo
         },
       });
 
-      return participations.map((p) => {
+      return participations.map((p: any) => {
         const conv = p.conversation;
         const participantIds = conv.participants.map((pp: any) => pp.userId);
         const lastMsg = conv.messages[0] ?? null;

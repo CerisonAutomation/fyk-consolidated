@@ -114,15 +114,17 @@ export function createProfileRepository(db: PrismaClient): ProfileRepository {
           bodyType: data.bodyType ?? "",
           position: Array.isArray(data.position) ? data.position.join(", ") : (data.position ?? ""),
           lookingForTags: data.lookingFor ?? [],
-          interests: JSON.stringify(data.interests ?? []),
-          tribes: JSON.stringify(data.tribes ?? []),
+          interests: JSON.stringify(data.interests ?? []) as any,
+          tribes: JSON.stringify(data.tribes ?? []) as any,
           tagCodes: data.tagCodes ?? [],
-          languages: JSON.stringify(data.languages ?? []),
-          photos: JSON.stringify(data.photos ?? []),
+          languages: JSON.stringify(data.languages ?? []) as any,
+          photos: JSON.stringify(data.photos ?? []) as any,
           lat: data.geo?.lat ?? null,
           lng: data.geo?.lng ?? null,
           city: data.city ?? "",
           area: data.area ?? "",
+          showDistance: true,
+          showOnline: true,
         },
       });
       return toDomainProfile(row);
@@ -193,7 +195,7 @@ export function createProfileRepository(db: PrismaClient): ProfileRepository {
 
       const rows = await db.user.findMany({ where });
       return rows
-        .filter((row) => {
+        .filter((row: any) => {
           const d = haversineKm(lat, lng, row.lat!, row.lng!);
           return d <= radiusKm;
         })

@@ -74,6 +74,7 @@ export type UserMinAggregateOutputType = {
   weight: number | null
   bodyType: string | null
   position: string | null
+  avatar: string | null
   lat: number | null
   lng: number | null
   latCoarse: number | null
@@ -142,6 +143,7 @@ export type UserMaxAggregateOutputType = {
   weight: number | null
   bodyType: string | null
   position: string | null
+  avatar: string | null
   lat: number | null
   lng: number | null
   latCoarse: number | null
@@ -216,6 +218,7 @@ export type UserCountAggregateOutputType = {
   tagCodes: number
   languages: number
   photos: number
+  avatar: number
   lat: number
   lng: number
   latCoarse: number
@@ -318,6 +321,7 @@ export type UserMinAggregateInputType = {
   weight?: true
   bodyType?: true
   position?: true
+  avatar?: true
   lat?: true
   lng?: true
   latCoarse?: true
@@ -386,6 +390,7 @@ export type UserMaxAggregateInputType = {
   weight?: true
   bodyType?: true
   position?: true
+  avatar?: true
   lat?: true
   lng?: true
   latCoarse?: true
@@ -460,6 +465,7 @@ export type UserCountAggregateInputType = {
   tagCodes?: true
   languages?: true
   photos?: true
+  avatar?: true
   lat?: true
   lng?: true
   latCoarse?: true
@@ -623,6 +629,7 @@ export type UserGroupByOutputType = {
   tagCodes: runtime.JsonValue
   languages: runtime.JsonValue
   photos: runtime.JsonValue
+  avatar: string | null
   lat: number | null
   lng: number | null
   latCoarse: number | null
@@ -722,6 +729,7 @@ export type UserWhereInput = {
   tagCodes?: Prisma.JsonFilter<"User">
   languages?: Prisma.JsonFilter<"User">
   photos?: Prisma.JsonFilter<"User">
+  avatar?: Prisma.StringNullableFilter<"User"> | string | null
   lat?: Prisma.FloatNullableFilter<"User"> | number | null
   lng?: Prisma.FloatNullableFilter<"User"> | number | null
   latCoarse?: Prisma.FloatNullableFilter<"User"> | number | null
@@ -849,6 +857,7 @@ export type UserOrderByWithRelationInput = {
   tagCodes?: Prisma.SortOrder
   languages?: Prisma.SortOrder
   photos?: Prisma.SortOrder
+  avatar?: Prisma.SortOrderInput | Prisma.SortOrder
   lat?: Prisma.SortOrderInput | Prisma.SortOrder
   lng?: Prisma.SortOrderInput | Prisma.SortOrder
   latCoarse?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -979,6 +988,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   tagCodes?: Prisma.JsonFilter<"User">
   languages?: Prisma.JsonFilter<"User">
   photos?: Prisma.JsonFilter<"User">
+  avatar?: Prisma.StringNullableFilter<"User"> | string | null
   lat?: Prisma.FloatNullableFilter<"User"> | number | null
   lng?: Prisma.FloatNullableFilter<"User"> | number | null
   latCoarse?: Prisma.FloatNullableFilter<"User"> | number | null
@@ -1106,6 +1116,7 @@ export type UserOrderByWithAggregationInput = {
   tagCodes?: Prisma.SortOrder
   languages?: Prisma.SortOrder
   photos?: Prisma.SortOrder
+  avatar?: Prisma.SortOrderInput | Prisma.SortOrder
   lat?: Prisma.SortOrderInput | Prisma.SortOrder
   lng?: Prisma.SortOrderInput | Prisma.SortOrder
   latCoarse?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -1190,6 +1201,7 @@ export type UserScalarWhereWithAggregatesInput = {
   tagCodes?: Prisma.JsonWithAggregatesFilter<"User">
   languages?: Prisma.JsonWithAggregatesFilter<"User">
   photos?: Prisma.JsonWithAggregatesFilter<"User">
+  avatar?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   lat?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
   lng?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
   latCoarse?: Prisma.FloatNullableWithAggregatesFilter<"User"> | number | null
@@ -1266,6 +1278,7 @@ export type UserCreateInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -1393,6 +1406,7 @@ export type UserUncheckedCreateInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -1520,6 +1534,7 @@ export type UserUpdateInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1647,6 +1662,7 @@ export type UserUncheckedUpdateInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1774,6 +1790,7 @@ export type UserCreateManyInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -1850,6 +1867,7 @@ export type UserUpdateManyMutationInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -1926,6 +1944,7 @@ export type UserUncheckedUpdateManyInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -2010,6 +2029,7 @@ export type UserCountOrderByAggregateInput = {
   tagCodes?: Prisma.SortOrder
   languages?: Prisma.SortOrder
   photos?: Prisma.SortOrder
+  avatar?: Prisma.SortOrder
   lat?: Prisma.SortOrder
   lng?: Prisma.SortOrder
   latCoarse?: Prisma.SortOrder
@@ -2095,6 +2115,7 @@ export type UserMaxOrderByAggregateInput = {
   weight?: Prisma.SortOrder
   bodyType?: Prisma.SortOrder
   position?: Prisma.SortOrder
+  avatar?: Prisma.SortOrder
   lat?: Prisma.SortOrder
   lng?: Prisma.SortOrder
   latCoarse?: Prisma.SortOrder
@@ -2163,6 +2184,7 @@ export type UserMinOrderByAggregateInput = {
   weight?: Prisma.SortOrder
   bodyType?: Prisma.SortOrder
   position?: Prisma.SortOrder
+  avatar?: Prisma.SortOrder
   lat?: Prisma.SortOrder
   lng?: Prisma.SortOrder
   latCoarse?: Prisma.SortOrder
@@ -3023,6 +3045,7 @@ export type UserCreateWithoutSessionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -3149,6 +3172,7 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -3291,6 +3315,7 @@ export type UserUpdateWithoutSessionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3417,6 +3442,7 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -3543,6 +3569,7 @@ export type UserCreateWithoutTapsMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -3669,6 +3696,7 @@ export type UserUncheckedCreateWithoutTapsMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -3800,6 +3828,7 @@ export type UserCreateWithoutTapsReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -3926,6 +3955,7 @@ export type UserUncheckedCreateWithoutTapsReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -4068,6 +4098,7 @@ export type UserUpdateWithoutTapsMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -4194,6 +4225,7 @@ export type UserUncheckedUpdateWithoutTapsMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -4331,6 +4363,7 @@ export type UserUpdateWithoutTapsReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -4457,6 +4490,7 @@ export type UserUncheckedUpdateWithoutTapsReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -4583,6 +4617,7 @@ export type UserCreateWithoutLikesMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -4709,6 +4744,7 @@ export type UserUncheckedCreateWithoutLikesMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -4840,6 +4876,7 @@ export type UserCreateWithoutLikesReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -4966,6 +5003,7 @@ export type UserUncheckedCreateWithoutLikesReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -5108,6 +5146,7 @@ export type UserUpdateWithoutLikesMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -5234,6 +5273,7 @@ export type UserUncheckedUpdateWithoutLikesMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -5371,6 +5411,7 @@ export type UserUpdateWithoutLikesReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -5497,6 +5538,7 @@ export type UserUncheckedUpdateWithoutLikesReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -5623,6 +5665,7 @@ export type UserCreateWithoutMatchesAInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -5749,6 +5792,7 @@ export type UserUncheckedCreateWithoutMatchesAInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -5880,6 +5924,7 @@ export type UserCreateWithoutMatchesBInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -6006,6 +6051,7 @@ export type UserUncheckedCreateWithoutMatchesBInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -6148,6 +6194,7 @@ export type UserUpdateWithoutMatchesAInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -6274,6 +6321,7 @@ export type UserUncheckedUpdateWithoutMatchesAInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -6411,6 +6459,7 @@ export type UserUpdateWithoutMatchesBInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -6537,6 +6586,7 @@ export type UserUncheckedUpdateWithoutMatchesBInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -6663,6 +6713,7 @@ export type UserCreateWithoutFavoritesOwnedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -6789,6 +6840,7 @@ export type UserUncheckedCreateWithoutFavoritesOwnedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -6920,6 +6972,7 @@ export type UserCreateWithoutFavoritesReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -7046,6 +7099,7 @@ export type UserUncheckedCreateWithoutFavoritesReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -7188,6 +7242,7 @@ export type UserUpdateWithoutFavoritesOwnedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -7314,6 +7369,7 @@ export type UserUncheckedUpdateWithoutFavoritesOwnedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -7451,6 +7507,7 @@ export type UserUpdateWithoutFavoritesReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -7577,6 +7634,7 @@ export type UserUncheckedUpdateWithoutFavoritesReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -7703,6 +7761,7 @@ export type UserCreateWithoutBlocksMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -7829,6 +7888,7 @@ export type UserUncheckedCreateWithoutBlocksMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -7960,6 +8020,7 @@ export type UserCreateWithoutBlocksReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -8086,6 +8147,7 @@ export type UserUncheckedCreateWithoutBlocksReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -8228,6 +8290,7 @@ export type UserUpdateWithoutBlocksMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -8354,6 +8417,7 @@ export type UserUncheckedUpdateWithoutBlocksMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -8491,6 +8555,7 @@ export type UserUpdateWithoutBlocksReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -8617,6 +8682,7 @@ export type UserUncheckedUpdateWithoutBlocksReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -8743,6 +8809,7 @@ export type UserCreateWithoutReportsMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -8869,6 +8936,7 @@ export type UserUncheckedCreateWithoutReportsMadeInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -9011,6 +9079,7 @@ export type UserUpdateWithoutReportsMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -9137,6 +9206,7 @@ export type UserUncheckedUpdateWithoutReportsMadeInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -9263,6 +9333,7 @@ export type UserCreateWithoutFootprintsVisitedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -9389,6 +9460,7 @@ export type UserUncheckedCreateWithoutFootprintsVisitedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -9520,6 +9592,7 @@ export type UserCreateWithoutFootprintsReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -9646,6 +9719,7 @@ export type UserUncheckedCreateWithoutFootprintsReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -9788,6 +9862,7 @@ export type UserUpdateWithoutFootprintsVisitedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -9914,6 +9989,7 @@ export type UserUncheckedUpdateWithoutFootprintsVisitedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -10051,6 +10127,7 @@ export type UserUpdateWithoutFootprintsReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -10177,6 +10254,7 @@ export type UserUncheckedUpdateWithoutFootprintsReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -10303,6 +10381,7 @@ export type UserCreateWithoutStoriesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -10429,6 +10508,7 @@ export type UserUncheckedCreateWithoutStoriesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -10571,6 +10651,7 @@ export type UserUpdateWithoutStoriesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -10697,6 +10778,7 @@ export type UserUncheckedUpdateWithoutStoriesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -10823,6 +10905,7 @@ export type UserCreateWithoutStoryViewsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -10949,6 +11032,7 @@ export type UserUncheckedCreateWithoutStoryViewsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -11091,6 +11175,7 @@ export type UserUpdateWithoutStoryViewsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -11217,6 +11302,7 @@ export type UserUncheckedUpdateWithoutStoryViewsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -11343,6 +11429,7 @@ export type UserCreateWithoutShoutsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -11469,6 +11556,7 @@ export type UserUncheckedCreateWithoutShoutsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -11611,6 +11699,7 @@ export type UserUpdateWithoutShoutsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -11737,6 +11826,7 @@ export type UserUncheckedUpdateWithoutShoutsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -11863,6 +11953,7 @@ export type UserCreateWithoutShoutLikesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -11989,6 +12080,7 @@ export type UserUncheckedCreateWithoutShoutLikesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -12131,6 +12223,7 @@ export type UserUpdateWithoutShoutLikesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -12257,6 +12350,7 @@ export type UserUncheckedUpdateWithoutShoutLikesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -12383,6 +12477,7 @@ export type UserCreateWithoutConversationParticipationsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -12509,6 +12604,7 @@ export type UserUncheckedCreateWithoutConversationParticipationsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -12651,6 +12747,7 @@ export type UserUpdateWithoutConversationParticipationsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -12777,6 +12874,7 @@ export type UserUncheckedUpdateWithoutConversationParticipationsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -12903,6 +13001,7 @@ export type UserCreateWithoutSentMessagesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -13029,6 +13128,7 @@ export type UserUncheckedCreateWithoutSentMessagesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -13171,6 +13271,7 @@ export type UserUpdateWithoutSentMessagesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -13297,6 +13398,7 @@ export type UserUncheckedUpdateWithoutSentMessagesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -13423,6 +13525,7 @@ export type UserCreateWithoutMessageReadsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -13549,6 +13652,7 @@ export type UserUncheckedCreateWithoutMessageReadsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -13691,6 +13795,7 @@ export type UserUpdateWithoutMessageReadsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -13817,6 +13922,7 @@ export type UserUncheckedUpdateWithoutMessageReadsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -13943,6 +14049,7 @@ export type UserCreateWithoutMessageReactionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -14069,6 +14176,7 @@ export type UserUncheckedCreateWithoutMessageReactionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -14211,6 +14319,7 @@ export type UserUpdateWithoutMessageReactionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -14337,6 +14446,7 @@ export type UserUncheckedUpdateWithoutMessageReactionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -14463,6 +14573,7 @@ export type UserCreateWithoutTypingIndicatorsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -14589,6 +14700,7 @@ export type UserUncheckedCreateWithoutTypingIndicatorsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -14731,6 +14843,7 @@ export type UserUpdateWithoutTypingIndicatorsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -14857,6 +14970,7 @@ export type UserUncheckedUpdateWithoutTypingIndicatorsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -14983,6 +15097,7 @@ export type UserCreateWithoutAlbumGrantsOwnedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -15109,6 +15224,7 @@ export type UserUncheckedCreateWithoutAlbumGrantsOwnedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -15240,6 +15356,7 @@ export type UserCreateWithoutAlbumGrantsReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -15366,6 +15483,7 @@ export type UserUncheckedCreateWithoutAlbumGrantsReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -15508,6 +15626,7 @@ export type UserUpdateWithoutAlbumGrantsOwnedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -15634,6 +15753,7 @@ export type UserUncheckedUpdateWithoutAlbumGrantsOwnedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -15771,6 +15891,7 @@ export type UserUpdateWithoutAlbumGrantsReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -15897,6 +16018,7 @@ export type UserUncheckedUpdateWithoutAlbumGrantsReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -16023,6 +16145,7 @@ export type UserCreateWithoutKingPetInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -16149,6 +16272,7 @@ export type UserUncheckedCreateWithoutKingPetInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -16291,6 +16415,7 @@ export type UserUpdateWithoutKingPetInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -16417,6 +16542,7 @@ export type UserUncheckedUpdateWithoutKingPetInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -16543,6 +16669,7 @@ export type UserCreateWithoutWalletInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -16669,6 +16796,7 @@ export type UserUncheckedCreateWithoutWalletInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -16811,6 +16939,7 @@ export type UserUpdateWithoutWalletInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -16937,6 +17066,7 @@ export type UserUncheckedUpdateWithoutWalletInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -17063,6 +17193,7 @@ export type UserCreateWithoutConsumablesInventoriesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -17189,6 +17320,7 @@ export type UserUncheckedCreateWithoutConsumablesInventoriesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -17331,6 +17463,7 @@ export type UserUpdateWithoutConsumablesInventoriesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -17457,6 +17590,7 @@ export type UserUncheckedUpdateWithoutConsumablesInventoriesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -17583,6 +17717,7 @@ export type UserCreateWithoutSubscriptionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -17709,6 +17844,7 @@ export type UserUncheckedCreateWithoutSubscriptionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -17851,6 +17987,7 @@ export type UserUpdateWithoutSubscriptionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -17977,6 +18114,7 @@ export type UserUncheckedUpdateWithoutSubscriptionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -18103,6 +18241,7 @@ export type UserCreateWithoutNotificationsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -18229,6 +18368,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -18360,6 +18500,7 @@ export type UserCreateWithoutNotificationsActorInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -18486,6 +18627,7 @@ export type UserUncheckedCreateWithoutNotificationsActorInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -18628,6 +18770,7 @@ export type UserUpdateWithoutNotificationsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -18754,6 +18897,7 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -18891,6 +19035,7 @@ export type UserUpdateWithoutNotificationsActorInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -19017,6 +19162,7 @@ export type UserUncheckedUpdateWithoutNotificationsActorInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -19143,6 +19289,7 @@ export type UserCreateWithoutGroupsCreatedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -19269,6 +19416,7 @@ export type UserUncheckedCreateWithoutGroupsCreatedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -19411,6 +19559,7 @@ export type UserUpdateWithoutGroupsCreatedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -19537,6 +19686,7 @@ export type UserUncheckedUpdateWithoutGroupsCreatedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -19663,6 +19813,7 @@ export type UserCreateWithoutGroupMembershipsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -19789,6 +19940,7 @@ export type UserUncheckedCreateWithoutGroupMembershipsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -19931,6 +20083,7 @@ export type UserUpdateWithoutGroupMembershipsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -20057,6 +20210,7 @@ export type UserUncheckedUpdateWithoutGroupMembershipsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -20183,6 +20337,7 @@ export type UserCreateWithoutGroupMessagesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -20309,6 +20464,7 @@ export type UserUncheckedCreateWithoutGroupMessagesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -20451,6 +20607,7 @@ export type UserUpdateWithoutGroupMessagesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -20577,6 +20734,7 @@ export type UserUncheckedUpdateWithoutGroupMessagesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -20703,6 +20861,7 @@ export type UserCreateWithoutFansitesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -20829,6 +20988,7 @@ export type UserUncheckedCreateWithoutFansitesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -20971,6 +21131,7 @@ export type UserUpdateWithoutFansitesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -21097,6 +21258,7 @@ export type UserUncheckedUpdateWithoutFansitesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -21223,6 +21385,7 @@ export type UserCreateWithoutMeetNowPostsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -21349,6 +21512,7 @@ export type UserUncheckedCreateWithoutMeetNowPostsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -21491,6 +21655,7 @@ export type UserUpdateWithoutMeetNowPostsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -21617,6 +21782,7 @@ export type UserUncheckedUpdateWithoutMeetNowPostsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -21743,6 +21909,7 @@ export type UserCreateWithoutOffersInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -21869,6 +22036,7 @@ export type UserUncheckedCreateWithoutOffersInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -22011,6 +22179,7 @@ export type UserUpdateWithoutOffersInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -22137,6 +22306,7 @@ export type UserUncheckedUpdateWithoutOffersInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -22263,6 +22433,7 @@ export type UserCreateWithoutEventsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -22389,6 +22560,7 @@ export type UserUncheckedCreateWithoutEventsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -22531,6 +22703,7 @@ export type UserUpdateWithoutEventsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -22657,6 +22830,7 @@ export type UserUncheckedUpdateWithoutEventsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -22783,6 +22957,7 @@ export type UserCreateWithoutEventRsvpsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -22909,6 +23084,7 @@ export type UserUncheckedCreateWithoutEventRsvpsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -23051,6 +23227,7 @@ export type UserUpdateWithoutEventRsvpsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -23177,6 +23354,7 @@ export type UserUncheckedUpdateWithoutEventRsvpsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -23303,6 +23481,7 @@ export type UserCreateWithoutEventWaitlistsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -23429,6 +23608,7 @@ export type UserUncheckedCreateWithoutEventWaitlistsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -23571,6 +23751,7 @@ export type UserUpdateWithoutEventWaitlistsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -23697,6 +23878,7 @@ export type UserUncheckedUpdateWithoutEventWaitlistsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -23823,6 +24005,7 @@ export type UserCreateWithoutBoardPostsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -23949,6 +24132,7 @@ export type UserUncheckedCreateWithoutBoardPostsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -24091,6 +24275,7 @@ export type UserUpdateWithoutBoardPostsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -24217,6 +24402,7 @@ export type UserUncheckedUpdateWithoutBoardPostsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -24343,6 +24529,7 @@ export type UserCreateWithoutBoardCommentsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -24469,6 +24656,7 @@ export type UserUncheckedCreateWithoutBoardCommentsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -24611,6 +24799,7 @@ export type UserUpdateWithoutBoardCommentsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -24737,6 +24926,7 @@ export type UserUncheckedUpdateWithoutBoardCommentsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -24863,6 +25053,7 @@ export type UserCreateWithoutUserNotesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -24989,6 +25180,7 @@ export type UserUncheckedCreateWithoutUserNotesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -25120,6 +25312,7 @@ export type UserCreateWithoutUserNotesReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -25246,6 +25439,7 @@ export type UserUncheckedCreateWithoutUserNotesReceivedInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -25388,6 +25582,7 @@ export type UserUpdateWithoutUserNotesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -25514,6 +25709,7 @@ export type UserUncheckedUpdateWithoutUserNotesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -25651,6 +25847,7 @@ export type UserUpdateWithoutUserNotesReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -25777,6 +25974,7 @@ export type UserUncheckedUpdateWithoutUserNotesReceivedInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -25903,6 +26101,7 @@ export type UserCreateWithoutPushSubscriptionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -26029,6 +26228,7 @@ export type UserUncheckedCreateWithoutPushSubscriptionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -26171,6 +26371,7 @@ export type UserUpdateWithoutPushSubscriptionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -26297,6 +26498,7 @@ export type UserUncheckedUpdateWithoutPushSubscriptionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -26423,6 +26625,7 @@ export type UserCreateWithoutAiMemoriesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -26549,6 +26752,7 @@ export type UserUncheckedCreateWithoutAiMemoriesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -26691,6 +26895,7 @@ export type UserUpdateWithoutAiMemoriesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -26817,6 +27022,7 @@ export type UserUncheckedUpdateWithoutAiMemoriesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -26943,6 +27149,7 @@ export type UserCreateWithoutAiSuggestionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -27069,6 +27276,7 @@ export type UserUncheckedCreateWithoutAiSuggestionsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -27211,6 +27419,7 @@ export type UserUpdateWithoutAiSuggestionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -27337,6 +27546,7 @@ export type UserUncheckedUpdateWithoutAiSuggestionsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -27463,6 +27673,7 @@ export type UserCreateWithoutProfileEmbeddingsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -27589,6 +27800,7 @@ export type UserUncheckedCreateWithoutProfileEmbeddingsInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -27731,6 +27943,7 @@ export type UserUpdateWithoutProfileEmbeddingsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -27857,6 +28070,7 @@ export type UserUncheckedUpdateWithoutProfileEmbeddingsInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -27983,6 +28197,7 @@ export type UserCreateWithoutPremiumEntitlementInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -28109,6 +28324,7 @@ export type UserUncheckedCreateWithoutPremiumEntitlementInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -28251,6 +28467,7 @@ export type UserUpdateWithoutPremiumEntitlementInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -28377,6 +28594,7 @@ export type UserUncheckedUpdateWithoutPremiumEntitlementInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -28503,6 +28721,7 @@ export type UserCreateWithoutSavedFiltersInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -28629,6 +28848,7 @@ export type UserUncheckedCreateWithoutSavedFiltersInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -28771,6 +28991,7 @@ export type UserUpdateWithoutSavedFiltersInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -28897,6 +29118,7 @@ export type UserUncheckedUpdateWithoutSavedFiltersInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -29023,6 +29245,7 @@ export type UserCreateWithoutSavedPhrasesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -29149,6 +29372,7 @@ export type UserUncheckedCreateWithoutSavedPhrasesInput = {
   tagCodes: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: string | null
   lat?: number | null
   lng?: number | null
   latCoarse?: number | null
@@ -29291,6 +29515,7 @@ export type UserUpdateWithoutSavedPhrasesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -29417,6 +29642,7 @@ export type UserUncheckedUpdateWithoutSavedPhrasesInput = {
   tagCodes?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   languages?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
   latCoarse?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
@@ -29997,6 +30223,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   tagCodes?: boolean
   languages?: boolean
   photos?: boolean
+  avatar?: boolean
   lat?: boolean
   lng?: boolean
   latCoarse?: boolean
@@ -30125,6 +30352,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   tagCodes?: boolean
   languages?: boolean
   photos?: boolean
+  avatar?: boolean
   lat?: boolean
   lng?: boolean
   latCoarse?: boolean
@@ -30201,6 +30429,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   tagCodes?: boolean
   languages?: boolean
   photos?: boolean
+  avatar?: boolean
   lat?: boolean
   lng?: boolean
   latCoarse?: boolean
@@ -30277,6 +30506,7 @@ export type UserSelectScalar = {
   tagCodes?: boolean
   languages?: boolean
   photos?: boolean
+  avatar?: boolean
   lat?: boolean
   lng?: boolean
   latCoarse?: boolean
@@ -30329,7 +30559,7 @@ export type UserSelectScalar = {
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "phone" | "passwordHash" | "name" | "handle" | "bio" | "gender" | "pronouns" | "dateOfBirth" | "age" | "occupation" | "ethnicity" | "height" | "weight" | "bodyType" | "position" | "lookingForTags" | "interests" | "tribes" | "tagCodes" | "languages" | "photos" | "lat" | "lng" | "latCoarse" | "lngCoarse" | "city" | "area" | "geoMode" | "h3Index" | "status" | "role" | "tier" | "premiumTier" | "isPremium" | "online" | "visible" | "hidden" | "incognitoMode" | "isDemo" | "isSuspended" | "showDistance" | "showOnline" | "contentRating" | "verification" | "verifiedType" | "trustScore" | "profileComplete" | "themePreference" | "accent" | "fontSize" | "gridColumns" | "cardStyle" | "dndMode" | "colorblindMode" | "language" | "notifPrefs" | "aiPrefs" | "appleId" | "googleId" | "lastFed" | "costume" | "activity" | "adventureEndsAt" | "lastCursor" | "lastSeenAt" | "lastActive" | "onboardingDone" | "onboardingCompletedAt" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "phone" | "passwordHash" | "name" | "handle" | "bio" | "gender" | "pronouns" | "dateOfBirth" | "age" | "occupation" | "ethnicity" | "height" | "weight" | "bodyType" | "position" | "lookingForTags" | "interests" | "tribes" | "tagCodes" | "languages" | "photos" | "avatar" | "lat" | "lng" | "latCoarse" | "lngCoarse" | "city" | "area" | "geoMode" | "h3Index" | "status" | "role" | "tier" | "premiumTier" | "isPremium" | "online" | "visible" | "hidden" | "incognitoMode" | "isDemo" | "isSuspended" | "showDistance" | "showOnline" | "contentRating" | "verification" | "verifiedType" | "trustScore" | "profileComplete" | "themePreference" | "accent" | "fontSize" | "gridColumns" | "cardStyle" | "dndMode" | "colorblindMode" | "language" | "notifPrefs" | "aiPrefs" | "appleId" | "googleId" | "lastFed" | "costume" | "activity" | "adventureEndsAt" | "lastCursor" | "lastSeenAt" | "lastActive" | "onboardingDone" | "onboardingCompletedAt" | "deletedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessions?: boolean | Prisma.User$sessionsArgs<ExtArgs>
   tapsMade?: boolean | Prisma.User$tapsMadeArgs<ExtArgs>
@@ -30466,6 +30696,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     tagCodes: runtime.JsonValue
     languages: runtime.JsonValue
     photos: runtime.JsonValue
+    avatar: string | null
     lat: number | null
     lng: number | null
     latCoarse: number | null
@@ -31013,6 +31244,7 @@ export interface UserFieldRefs {
   readonly tagCodes: Prisma.FieldRef<"User", 'Json'>
   readonly languages: Prisma.FieldRef<"User", 'Json'>
   readonly photos: Prisma.FieldRef<"User", 'Json'>
+  readonly avatar: Prisma.FieldRef<"User", 'String'>
   readonly lat: Prisma.FieldRef<"User", 'Float'>
   readonly lng: Prisma.FieldRef<"User", 'Float'>
   readonly latCoarse: Prisma.FieldRef<"User", 'Float'>

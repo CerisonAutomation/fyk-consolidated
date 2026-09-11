@@ -19,7 +19,7 @@ export interface VibeResult {
 }
 
 const VIBE_RULES: {
-  name: string;
+  name: VibeType;
   emoji: string;
   blurb: string;
   interestMatches: string[];
@@ -96,7 +96,7 @@ export function inferVibe(user: VibeUser): VibeResult {
   const interests = user.interests.map((i) => i.toLowerCase().trim());
   const tags = new Set(user.tagCodes.map((t) => t.toLowerCase().trim()));
 
-  const scores: { name: string; emoji: string; blurb: string; score: number }[] = [];
+  const scores: { name: VibeType; emoji: string; blurb: string; score: number }[] = [];
 
   for (const rule of VIBE_RULES) {
     let score = 0;

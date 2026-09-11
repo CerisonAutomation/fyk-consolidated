@@ -66,7 +66,7 @@ function Group({ title, items, pathname }: { title: string; items: typeof MAIN; 
 
 export function Sidebar({ user }: { user: ProfileUser }) {
   const pathname = usePathname();
-  const tier = TIERS[user.tier];
+  const tier = TIERS[user.tier as keyof typeof TIERS];
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col overflow-y-auto border-r border-line bg-surface md:flex">

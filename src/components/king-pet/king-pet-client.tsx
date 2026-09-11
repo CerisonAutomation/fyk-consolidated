@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
-import type { Pet, PetItem, PetAdventure } from "@/lib/types";
+import type { KingPet, PetItem, PetAdventure } from "@/lib/types";
 import { Skeleton, Badge, Button, EmptyState } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
@@ -34,12 +34,12 @@ export function KingPetClient() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["pet"],
-    queryFn: () => api<{ pet: Pet; items: PetItem[]; adventures: PetAdventure[]; bones: number }>("/api/pet"),
+    queryFn: () => api<{ pet: KingPet; items: PetItem[]; adventures: PetAdventure[]; bones: number }>("/api/pet"),
   });
 
   const act = useMutation({
     mutationFn: (body: Record<string, unknown>) =>
-      api<{ pet: Pet; reward?: { type: string; amount: number; theme: string }; leveledUp?: boolean }>("/api/pet", {
+      api<{ pet: KingPet; reward?: { type: string; amount: number; theme: string }; leveledUp?: boolean }>("/api/pet", {
         method: "POST", body,
       }),
     onSuccess: (res, vars) => {
@@ -299,7 +299,7 @@ export function KingPetClient() {
             <div className="space-y-1.5">
               {[...pet.mood_log].reverse().slice(0, 6).map((m, i) => (
                 <div key={i} className="flex items-center justify-between text-xs">
-                  <span className="text-muted">{new Date(m.at).toLocaleDateString()} {new Date(m.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                  <span className="text-muted">{new Date(m.time).toLocaleDateString()} {new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
                   <span className="capitalize text-white/80">{m.mood} {MOOD_EMOJI[m.mood]}</span>
                 </div>
               ))}

@@ -14,7 +14,7 @@ export interface CryptoService {
   encrypt(key: CryptoKey, plaintext: string): Promise<{ iv: string; ct: string }>;
   decrypt(key: CryptoKey, envelope: { iv: string; ct: string }): Promise<string>;
   safetyNumber(myPublic: string, theirPublic: string): Promise<string>;
-  hashPin(pin: string): Promise<{ hash: string; salt: string }>;
+  hashPin(pin: string, saltB64?: string): Promise<{ hash: string; salt: string }>;
   verifyPin(pin: string, hash: string, salt: string): Promise<boolean>;
   registerPasskey(label: string): Promise<{ id: string; type: string }>;
 }

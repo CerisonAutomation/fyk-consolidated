@@ -38,6 +38,14 @@ export type FansiteMinAggregateOutputType = {
   id: string | null
   userId: string | null
   name: string | null
+  displayName: string | null
+  headline: string | null
+  bio: string | null
+  mainPhotoUrl: string | null
+  packageSize: string | null
+  city: string | null
+  availableNow: boolean | null
+  plusBadge: boolean | null
   description: string | null
   coverUrl: string | null
   subscriberCount: number | null
@@ -48,6 +56,14 @@ export type FansiteMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   name: string | null
+  displayName: string | null
+  headline: string | null
+  bio: string | null
+  mainPhotoUrl: string | null
+  packageSize: string | null
+  city: string | null
+  availableNow: boolean | null
+  plusBadge: boolean | null
   description: string | null
   coverUrl: string | null
   subscriberCount: number | null
@@ -58,6 +74,17 @@ export type FansiteCountAggregateOutputType = {
   id: number
   userId: number
   name: number
+  displayName: number
+  headline: number
+  bio: number
+  mainPhotoUrl: number
+  packageSize: number
+  city: number
+  availableNow: number
+  plusBadge: number
+  photos: number
+  interests: number
+  tags: number
   description: number
   coverUrl: number
   subscriberCount: number
@@ -78,6 +105,14 @@ export type FansiteMinAggregateInputType = {
   id?: true
   userId?: true
   name?: true
+  displayName?: true
+  headline?: true
+  bio?: true
+  mainPhotoUrl?: true
+  packageSize?: true
+  city?: true
+  availableNow?: true
+  plusBadge?: true
   description?: true
   coverUrl?: true
   subscriberCount?: true
@@ -88,6 +123,14 @@ export type FansiteMaxAggregateInputType = {
   id?: true
   userId?: true
   name?: true
+  displayName?: true
+  headline?: true
+  bio?: true
+  mainPhotoUrl?: true
+  packageSize?: true
+  city?: true
+  availableNow?: true
+  plusBadge?: true
   description?: true
   coverUrl?: true
   subscriberCount?: true
@@ -98,6 +141,17 @@ export type FansiteCountAggregateInputType = {
   id?: true
   userId?: true
   name?: true
+  displayName?: true
+  headline?: true
+  bio?: true
+  mainPhotoUrl?: true
+  packageSize?: true
+  city?: true
+  availableNow?: true
+  plusBadge?: true
+  photos?: true
+  interests?: true
+  tags?: true
   description?: true
   coverUrl?: true
   subscriberCount?: true
@@ -195,6 +249,17 @@ export type FansiteGroupByOutputType = {
   id: string
   userId: string
   name: string
+  displayName: string | null
+  headline: string | null
+  bio: string | null
+  mainPhotoUrl: string | null
+  packageSize: string | null
+  city: string | null
+  availableNow: boolean
+  plusBadge: boolean
+  photos: runtime.JsonValue
+  interests: runtime.JsonValue
+  tags: runtime.JsonValue
   description: string | null
   coverUrl: string | null
   subscriberCount: number
@@ -228,6 +293,17 @@ export type FansiteWhereInput = {
   id?: Prisma.UuidFilter<"Fansite"> | string
   userId?: Prisma.UuidFilter<"Fansite"> | string
   name?: Prisma.StringFilter<"Fansite"> | string
+  displayName?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  headline?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  bio?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  mainPhotoUrl?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  packageSize?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  city?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  availableNow?: Prisma.BoolFilter<"Fansite"> | boolean
+  plusBadge?: Prisma.BoolFilter<"Fansite"> | boolean
+  photos?: Prisma.JsonFilter<"Fansite">
+  interests?: Prisma.JsonFilter<"Fansite">
+  tags?: Prisma.JsonFilter<"Fansite">
   description?: Prisma.StringNullableFilter<"Fansite"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Fansite"> | string | null
   subscriberCount?: Prisma.IntFilter<"Fansite"> | number
@@ -239,6 +315,17 @@ export type FansiteOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  displayName?: Prisma.SortOrderInput | Prisma.SortOrder
+  headline?: Prisma.SortOrderInput | Prisma.SortOrder
+  bio?: Prisma.SortOrderInput | Prisma.SortOrder
+  mainPhotoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  packageSize?: Prisma.SortOrderInput | Prisma.SortOrder
+  city?: Prisma.SortOrderInput | Prisma.SortOrder
+  availableNow?: Prisma.SortOrder
+  plusBadge?: Prisma.SortOrder
+  photos?: Prisma.SortOrder
+  interests?: Prisma.SortOrder
+  tags?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   subscriberCount?: Prisma.SortOrder
@@ -253,6 +340,17 @@ export type FansiteWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.FansiteWhereInput | Prisma.FansiteWhereInput[]
   userId?: Prisma.UuidFilter<"Fansite"> | string
   name?: Prisma.StringFilter<"Fansite"> | string
+  displayName?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  headline?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  bio?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  mainPhotoUrl?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  packageSize?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  city?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  availableNow?: Prisma.BoolFilter<"Fansite"> | boolean
+  plusBadge?: Prisma.BoolFilter<"Fansite"> | boolean
+  photos?: Prisma.JsonFilter<"Fansite">
+  interests?: Prisma.JsonFilter<"Fansite">
+  tags?: Prisma.JsonFilter<"Fansite">
   description?: Prisma.StringNullableFilter<"Fansite"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Fansite"> | string | null
   subscriberCount?: Prisma.IntFilter<"Fansite"> | number
@@ -264,6 +362,17 @@ export type FansiteOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  displayName?: Prisma.SortOrderInput | Prisma.SortOrder
+  headline?: Prisma.SortOrderInput | Prisma.SortOrder
+  bio?: Prisma.SortOrderInput | Prisma.SortOrder
+  mainPhotoUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  packageSize?: Prisma.SortOrderInput | Prisma.SortOrder
+  city?: Prisma.SortOrderInput | Prisma.SortOrder
+  availableNow?: Prisma.SortOrder
+  plusBadge?: Prisma.SortOrder
+  photos?: Prisma.SortOrder
+  interests?: Prisma.SortOrder
+  tags?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   coverUrl?: Prisma.SortOrderInput | Prisma.SortOrder
   subscriberCount?: Prisma.SortOrder
@@ -282,6 +391,17 @@ export type FansiteScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"Fansite"> | string
   userId?: Prisma.UuidWithAggregatesFilter<"Fansite"> | string
   name?: Prisma.StringWithAggregatesFilter<"Fansite"> | string
+  displayName?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
+  headline?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
+  bio?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
+  mainPhotoUrl?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
+  packageSize?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
+  city?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
+  availableNow?: Prisma.BoolWithAggregatesFilter<"Fansite"> | boolean
+  plusBadge?: Prisma.BoolWithAggregatesFilter<"Fansite"> | boolean
+  photos?: Prisma.JsonWithAggregatesFilter<"Fansite">
+  interests?: Prisma.JsonWithAggregatesFilter<"Fansite">
+  tags?: Prisma.JsonWithAggregatesFilter<"Fansite">
   description?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
   coverUrl?: Prisma.StringNullableWithAggregatesFilter<"Fansite"> | string | null
   subscriberCount?: Prisma.IntWithAggregatesFilter<"Fansite"> | number
@@ -291,6 +411,17 @@ export type FansiteScalarWhereWithAggregatesInput = {
 export type FansiteCreateInput = {
   id?: string
   name: string
+  displayName?: string | null
+  headline?: string | null
+  bio?: string | null
+  mainPhotoUrl?: string | null
+  packageSize?: string | null
+  city?: string | null
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: string | null
   coverUrl?: string | null
   subscriberCount?: number
@@ -302,6 +433,17 @@ export type FansiteUncheckedCreateInput = {
   id?: string
   userId: string
   name: string
+  displayName?: string | null
+  headline?: string | null
+  bio?: string | null
+  mainPhotoUrl?: string | null
+  packageSize?: string | null
+  city?: string | null
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: string | null
   coverUrl?: string | null
   subscriberCount?: number
@@ -311,6 +453,17 @@ export type FansiteUncheckedCreateInput = {
 export type FansiteUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mainPhotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  packageSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  availableNow?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plusBadge?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriberCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -322,6 +475,17 @@ export type FansiteUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mainPhotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  packageSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  availableNow?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plusBadge?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriberCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -332,6 +496,17 @@ export type FansiteCreateManyInput = {
   id?: string
   userId: string
   name: string
+  displayName?: string | null
+  headline?: string | null
+  bio?: string | null
+  mainPhotoUrl?: string | null
+  packageSize?: string | null
+  city?: string | null
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: string | null
   coverUrl?: string | null
   subscriberCount?: number
@@ -341,6 +516,17 @@ export type FansiteCreateManyInput = {
 export type FansiteUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mainPhotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  packageSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  availableNow?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plusBadge?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriberCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -351,6 +537,17 @@ export type FansiteUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mainPhotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  packageSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  availableNow?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plusBadge?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriberCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -371,6 +568,17 @@ export type FansiteCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  displayName?: Prisma.SortOrder
+  headline?: Prisma.SortOrder
+  bio?: Prisma.SortOrder
+  mainPhotoUrl?: Prisma.SortOrder
+  packageSize?: Prisma.SortOrder
+  city?: Prisma.SortOrder
+  availableNow?: Prisma.SortOrder
+  plusBadge?: Prisma.SortOrder
+  photos?: Prisma.SortOrder
+  interests?: Prisma.SortOrder
+  tags?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
   subscriberCount?: Prisma.SortOrder
@@ -385,6 +593,14 @@ export type FansiteMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  displayName?: Prisma.SortOrder
+  headline?: Prisma.SortOrder
+  bio?: Prisma.SortOrder
+  mainPhotoUrl?: Prisma.SortOrder
+  packageSize?: Prisma.SortOrder
+  city?: Prisma.SortOrder
+  availableNow?: Prisma.SortOrder
+  plusBadge?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
   subscriberCount?: Prisma.SortOrder
@@ -395,6 +611,14 @@ export type FansiteMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   name?: Prisma.SortOrder
+  displayName?: Prisma.SortOrder
+  headline?: Prisma.SortOrder
+  bio?: Prisma.SortOrder
+  mainPhotoUrl?: Prisma.SortOrder
+  packageSize?: Prisma.SortOrder
+  city?: Prisma.SortOrder
+  availableNow?: Prisma.SortOrder
+  plusBadge?: Prisma.SortOrder
   description?: Prisma.SortOrder
   coverUrl?: Prisma.SortOrder
   subscriberCount?: Prisma.SortOrder
@@ -450,6 +674,17 @@ export type FansiteUncheckedUpdateManyWithoutUserNestedInput = {
 export type FansiteCreateWithoutUserInput = {
   id?: string
   name: string
+  displayName?: string | null
+  headline?: string | null
+  bio?: string | null
+  mainPhotoUrl?: string | null
+  packageSize?: string | null
+  city?: string | null
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: string | null
   coverUrl?: string | null
   subscriberCount?: number
@@ -459,6 +694,17 @@ export type FansiteCreateWithoutUserInput = {
 export type FansiteUncheckedCreateWithoutUserInput = {
   id?: string
   name: string
+  displayName?: string | null
+  headline?: string | null
+  bio?: string | null
+  mainPhotoUrl?: string | null
+  packageSize?: string | null
+  city?: string | null
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: string | null
   coverUrl?: string | null
   subscriberCount?: number
@@ -498,6 +744,17 @@ export type FansiteScalarWhereInput = {
   id?: Prisma.UuidFilter<"Fansite"> | string
   userId?: Prisma.UuidFilter<"Fansite"> | string
   name?: Prisma.StringFilter<"Fansite"> | string
+  displayName?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  headline?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  bio?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  mainPhotoUrl?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  packageSize?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  city?: Prisma.StringNullableFilter<"Fansite"> | string | null
+  availableNow?: Prisma.BoolFilter<"Fansite"> | boolean
+  plusBadge?: Prisma.BoolFilter<"Fansite"> | boolean
+  photos?: Prisma.JsonFilter<"Fansite">
+  interests?: Prisma.JsonFilter<"Fansite">
+  tags?: Prisma.JsonFilter<"Fansite">
   description?: Prisma.StringNullableFilter<"Fansite"> | string | null
   coverUrl?: Prisma.StringNullableFilter<"Fansite"> | string | null
   subscriberCount?: Prisma.IntFilter<"Fansite"> | number
@@ -507,6 +764,17 @@ export type FansiteScalarWhereInput = {
 export type FansiteCreateManyUserInput = {
   id?: string
   name: string
+  displayName?: string | null
+  headline?: string | null
+  bio?: string | null
+  mainPhotoUrl?: string | null
+  packageSize?: string | null
+  city?: string | null
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: string | null
   coverUrl?: string | null
   subscriberCount?: number
@@ -516,6 +784,17 @@ export type FansiteCreateManyUserInput = {
 export type FansiteUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mainPhotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  packageSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  availableNow?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plusBadge?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriberCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -525,6 +804,17 @@ export type FansiteUpdateWithoutUserInput = {
 export type FansiteUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mainPhotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  packageSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  availableNow?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plusBadge?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriberCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -534,6 +824,17 @@ export type FansiteUncheckedUpdateWithoutUserInput = {
 export type FansiteUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  displayName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  headline?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  bio?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mainPhotoUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  packageSize?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  city?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  availableNow?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  plusBadge?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  photos?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  interests?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   coverUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   subscriberCount?: Prisma.IntFieldUpdateOperationsInput | number
@@ -546,6 +847,17 @@ export type FansiteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   id?: boolean
   userId?: boolean
   name?: boolean
+  displayName?: boolean
+  headline?: boolean
+  bio?: boolean
+  mainPhotoUrl?: boolean
+  packageSize?: boolean
+  city?: boolean
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: boolean
+  interests?: boolean
+  tags?: boolean
   description?: boolean
   coverUrl?: boolean
   subscriberCount?: boolean
@@ -557,6 +869,17 @@ export type FansiteSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   userId?: boolean
   name?: boolean
+  displayName?: boolean
+  headline?: boolean
+  bio?: boolean
+  mainPhotoUrl?: boolean
+  packageSize?: boolean
+  city?: boolean
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: boolean
+  interests?: boolean
+  tags?: boolean
   description?: boolean
   coverUrl?: boolean
   subscriberCount?: boolean
@@ -568,6 +891,17 @@ export type FansiteSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   userId?: boolean
   name?: boolean
+  displayName?: boolean
+  headline?: boolean
+  bio?: boolean
+  mainPhotoUrl?: boolean
+  packageSize?: boolean
+  city?: boolean
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: boolean
+  interests?: boolean
+  tags?: boolean
   description?: boolean
   coverUrl?: boolean
   subscriberCount?: boolean
@@ -579,13 +913,24 @@ export type FansiteSelectScalar = {
   id?: boolean
   userId?: boolean
   name?: boolean
+  displayName?: boolean
+  headline?: boolean
+  bio?: boolean
+  mainPhotoUrl?: boolean
+  packageSize?: boolean
+  city?: boolean
+  availableNow?: boolean
+  plusBadge?: boolean
+  photos?: boolean
+  interests?: boolean
+  tags?: boolean
   description?: boolean
   coverUrl?: boolean
   subscriberCount?: boolean
   createdAt?: boolean
 }
 
-export type FansiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "description" | "coverUrl" | "subscriberCount" | "createdAt", ExtArgs["result"]["fansite"]>
+export type FansiteOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "name" | "displayName" | "headline" | "bio" | "mainPhotoUrl" | "packageSize" | "city" | "availableNow" | "plusBadge" | "photos" | "interests" | "tags" | "description" | "coverUrl" | "subscriberCount" | "createdAt", ExtArgs["result"]["fansite"]>
 export type FansiteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -605,6 +950,17 @@ export type $FansitePayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     id: string
     userId: string
     name: string
+    displayName: string | null
+    headline: string | null
+    bio: string | null
+    mainPhotoUrl: string | null
+    packageSize: string | null
+    city: string | null
+    availableNow: boolean
+    plusBadge: boolean
+    photos: runtime.JsonValue
+    interests: runtime.JsonValue
+    tags: runtime.JsonValue
     description: string | null
     coverUrl: string | null
     subscriberCount: number
@@ -1036,6 +1392,17 @@ export interface FansiteFieldRefs {
   readonly id: Prisma.FieldRef<"Fansite", 'String'>
   readonly userId: Prisma.FieldRef<"Fansite", 'String'>
   readonly name: Prisma.FieldRef<"Fansite", 'String'>
+  readonly displayName: Prisma.FieldRef<"Fansite", 'String'>
+  readonly headline: Prisma.FieldRef<"Fansite", 'String'>
+  readonly bio: Prisma.FieldRef<"Fansite", 'String'>
+  readonly mainPhotoUrl: Prisma.FieldRef<"Fansite", 'String'>
+  readonly packageSize: Prisma.FieldRef<"Fansite", 'String'>
+  readonly city: Prisma.FieldRef<"Fansite", 'String'>
+  readonly availableNow: Prisma.FieldRef<"Fansite", 'Boolean'>
+  readonly plusBadge: Prisma.FieldRef<"Fansite", 'Boolean'>
+  readonly photos: Prisma.FieldRef<"Fansite", 'Json'>
+  readonly interests: Prisma.FieldRef<"Fansite", 'Json'>
+  readonly tags: Prisma.FieldRef<"Fansite", 'Json'>
   readonly description: Prisma.FieldRef<"Fansite", 'String'>
   readonly coverUrl: Prisma.FieldRef<"Fansite", 'String'>
   readonly subscriberCount: Prisma.FieldRef<"Fansite", 'Int'>

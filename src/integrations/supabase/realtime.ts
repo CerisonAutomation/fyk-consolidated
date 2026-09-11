@@ -24,7 +24,9 @@ export class SupabaseRealtime {
     if (!this.client) {
       const supabase = getSupabase();
       if (!supabase) throw new Error("Supabase not configured");
-      this.client = supabase.realtime;
+      const rt = supabase.realtime;
+      if (!rt) throw new Error("Realtime client not available");
+      this.client = rt as unknown as RealtimeClient;
     }
     return this.client;
   }
@@ -45,10 +47,16 @@ export class SupabaseRealtime {
           event: (filter?.event as any) || "*",
           schema: filter?.schema || "public",
           table,
-        }, (payload) => {
+        }, (payload: { eventType: string; new: Record<string, unknown>; old: Record<string, unknown>; schema: string; table: string }) => {
           const listeners = this.listeners.get(channelName);
           if (listeners) {
-            listeners.forEach((cb) => cb(payload as RealtimeEvent));
+            listeners.forEach((cb) => cb({
+              event: payload.eventType as RealtimeEvent["event"],
+              schema: payload.schema,
+              table: payload.table,
+              new: payload.new,
+              old: payload.old,
+            }));
           }
         })
         .subscribe();

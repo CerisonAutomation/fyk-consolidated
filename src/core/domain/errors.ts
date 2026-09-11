@@ -57,3 +57,11 @@ export class ValidationError extends Error {
     this.details = details;
   }
 }
+
+/** Payment error — for insufficient balance, invalid cost, etc. */
+export class PaymentError extends DomainErrorClass {
+  constructor(message: string, details?: Record<string, unknown>) {
+    super("PAYMENT_ERROR", message, details);
+    this.name = "PaymentError";
+  }
+}

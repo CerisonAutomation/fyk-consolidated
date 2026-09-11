@@ -15,6 +15,7 @@ function toDomainPet(row: any): PetState {
     experience: row.experience,
     level: row.level,
     streak: 0,
+    happiness: row.happiness ?? 75,
     wardrobe: (row.costume && row.costume !== "none" ? [row.costume] : []),
     equipped: (row.equipped as string[]) ?? [],
     adventures: (row.adventures as string[]) ?? [],

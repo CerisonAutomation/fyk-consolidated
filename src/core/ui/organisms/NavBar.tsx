@@ -86,7 +86,7 @@ interface NavItem {
 const MOBILE_TABS: NavItem[] = [
 	{ href: "/grid", label: "Discover", icon: Compass },
 	{ href: "/chat", label: "Chat", icon: MessageCircle, badge: "chat" },
-	{ href: "/interest", label: "Feed", icon: Rss },
+	{ href: "/interest/taps", label: "Feed", icon: Rss },
 	{ href: "/events", label: "Events", icon: CalendarHeart },
 	{ href: "/profile", label: "Me", icon: User, matchPattern: "^/profile" },
 ];

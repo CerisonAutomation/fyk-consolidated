@@ -190,7 +190,7 @@ export function FootprintPicker({
   onClose: () => void;
 }) {
   const { leaveFootprint, footprints } = useStore();
-  const current = footprints[personId];
+  const current = (footprints as any)[personId];
 
   return (
     <div className="anim-pop rounded-xl border border-line bg-surface-2 p-3.5">
@@ -206,7 +206,7 @@ export function FootprintPicker({
             key={f.id}
             type="button"
             onClick={() => {
-              leaveFootprint(personId, f.id, name);
+              leaveFootprint({ personId, footprintId: f.id, name });
               onClose();
             }}
             className={cn(

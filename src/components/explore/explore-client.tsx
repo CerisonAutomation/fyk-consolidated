@@ -1,13 +1,10 @@
 "use client";
 
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import {
  MapPin, Shield, MessageCircle, Home, Zap, Lock, ChevronDown,
 } from "lucide-react";
-import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
-import { Skeleton } from "@/components/ui/primitives";
 import { EmptyState } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +50,6 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 export function ExploreClient() {
  const pushToast = useAppStore((s) => s.pushToast);
- const user = useAppStore((s) => s.user);
 
  const [selectedCity, setSelectedCity] = useState("valletta");
  const [travelMode, setTravelMode] = useState(false);
@@ -61,34 +57,37 @@ export function ExploreClient() {
  const [sort, setSort] = useState<SortKey>("distance");
  const [layout, setLayout] = useState<"grid" | "list">("grid");
 
- const { data: cities, isLoading: citiesLoading } = useQuery({
-   queryKey: ["explore-cities"],
-   queryFn: () => api<{ cities: City[] }>("/api/explore/cities").then((r) => r.cities),
- });
+ // Demo data — static cities and profiles
+ const citiesList: City[] = [
+   { id: "valletta", name: "Valletta", country: "Malta", flag: "🇲🇹", onlineCount: 248, photo: "https://images.unsplash.com/photo-1584448062887-2a6e6d7f5b07?w=600&q=80" },
+   { id: "london", name: "London", country: "United Kingdom", flag: "🇬🇧", onlineCount: 12840, photo: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&q=80" },
+   { id: "berlin", name: "Berlin", country: "Germany", flag: "🇩🇪", onlineCount: 9310, photo: "https://images.unsplash.com/photo-1560969184-10fe8719e047?w=600&q=80" },
+   { id: "madrid", name: "Madrid", country: "Spain", flag: "🇪🇸", onlineCount: 7420, photo: "https://images.unsplash.com/photo-1543783207-ec64e4d95325?w=600&q=80" },
+   { id: "amsterdam", name: "Amsterdam", country: "Netherlands", flag: "🇳🇱", onlineCount: 5100, photo: "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=600&q=80" },
+ ];
 
- const { data: profiles, isLoading: profilesLoading } = useQuery({
-   queryKey: ["explore", selectedCity, Array.from(activeFilters).join(","), sort],
-   queryFn: () =>
-     api<{ profiles: ExploreProfile[] }>(
-       `/api/explore/${selectedCity}?filters=${Array.from(activeFilters).join(",")}&sort=${sort}`
-     ).then((r) => r.profiles),
- });
+ const DEMO_PROFILES: ExploreProfile[] = [
+   { id: "1", name: "Marcus", age: 29, photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80", distance: 0.4, status: "online", verified: false, hosting: false, lookingFor: ["Dating"], tags: ["Gym", "Travel"], activity: "Dog walk" },
+   { id: "2", name: "Diego", age: 34, photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80", distance: 1.1, status: "active", verified: true, hosting: false, lookingFor: ["Chat", "Dating"], tags: ["Coffee", "Music"] },
+   { id: "3", name: "Theo", age: 34, photo: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&q=80", distance: 2.0, status: "online", verified: false, hosting: false, lookingFor: ["Chat"], tags: ["Hiking", "Foodie"] },
+   { id: "4", name: "Kai", age: 28, photo: "https://images.unsplash.com/photo-1463453091185-61582044d556?w=400&q=80", distance: 0.9, status: "active", verified: false, hosting: true, lookingFor: ["Chat", "Friends"], tags: ["Hosting", "Dining"] },
+   { id: "5", name: "Noah", age: 27, photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&q=80", distance: 1.2, status: "online", verified: false, hosting: false, lookingFor: ["Dating"], tags: ["Photography", "Beach"] },
+   { id: "6", name: "Rafael", age: 33, photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80", distance: 2.6, status: "online", verified: false, hosting: false, lookingFor: ["Chat", "Dating"], tags: ["Art", "Travel"] },
+   { id: "7", name: "Dario", age: 31, photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&q=80", distance: 0.7, status: "online", verified: true, hosting: false, lookingFor: ["Dating"], tags: ["Hosting", "Community"] },
+   { id: "8", name: "Mateo", age: 29, photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&q=80", distance: 3.8, status: "active", verified: false, hosting: false, lookingFor: ["Chat"], tags: ["Music", "Dancing"] },
+ ];
 
- const toggleTravelMode = useMutation({
-   mutationFn: () =>
-     api("/api/explore/travel", {
-       method: "POST",
-       body: { city: selectedCity, enabled: !travelMode },
-     }),
-   onSuccess: () => {
-     setTravelMode((t) => !t);
-     pushToast(
-       travelMode
-         ? "Travel mode off — back to your location"
-         : `Traveling · visible in ${selectedCity} shortly`
-     );
-   },
- });
+ const profilesList = DEMO_PROFILES;
+ const selectedCityData = citiesList.find((c) => c.id === selectedCity);
+
+ const toggleTravelMode = () => {
+   setTravelMode((t) => !t);
+   pushToast(
+     travelMode
+       ? "Travel mode off — back to your location"
+       : `Traveling · visible in ${selectedCityData?.name ?? selectedCity} shortly`
+   );
+ };
 
  const toggleFilter = (filterId: string) => {
    setActiveFilters((prev) => {
@@ -102,10 +101,6 @@ export function ExploreClient() {
    });
  };
 
- const citiesList = cities ?? [];
- const profilesList = profiles ?? [];
- const selectedCityData = citiesList.find((c) => c.id === selectedCity);
-
  return (
    <div className="mx-auto max-w-6xl px-4 py-6">
      {/* Header */}
@@ -117,14 +112,7 @@ export function ExploreClient() {
      </div>
 
      {/* City Cards */}
-     {citiesLoading ? (
-       <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
-         {Array.from({ length: 5 }).map((_, i) => (
-           <Skeleton key={i} className="h-32 w-48 shrink-0 rounded-2xl" />
-         ))}
-       </div>
-     ) : (
-       <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
+     <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
          {citiesList.map((city) => (
            <button
              key={city.id}
@@ -153,7 +141,6 @@ export function ExploreClient() {
            </button>
          ))}
        </div>
-     )}
 
      {/* Travel Mode Banner */}
      <div className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -167,12 +154,11 @@ export function ExploreClient() {
            </p>
            <p className="text-xs text-white/60">
              You appear in {selectedCityData?.name ?? selectedCity} from{" "}
-             {user?.tier !== "free" ? "14 days" : "3 days"} before arrival. Approximate location only.
+             3 days before arrival. Approximate location only.
            </p>
          </div>
          <button
-           onClick={() => toggleTravelMode.mutate()}
-           disabled={toggleTravelMode.isPending}
+           onClick={toggleTravelMode}
            className={cn(
              "rounded-xl px-4 py-2 text-sm font-semibold transition-colors",
              travelMode
@@ -255,18 +241,7 @@ export function ExploreClient() {
      </div>
 
      {/* Profiles Grid */}
-     {profilesLoading ? (
-       <div className={cn(
-         "gap-4",
-         layout === "grid"
-           ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-           : "flex flex-col"
-       )}>
-         {Array.from({ length: 10 }).map((_, i) => (
-           <Skeleton key={i} className={cn("rounded-2xl", layout === "grid" ? "h-72" : "h-20")} />
-         ))}
-       </div>
-     ) : profilesList.length === 0 ? (
+     {profilesList.length === 0 ? (
        <EmptyState
          title={`No one in ${selectedCityData?.name ?? selectedCity} matches your search`}
          description="Try clearing your filters — new kings land every day."

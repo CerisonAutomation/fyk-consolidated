@@ -86,11 +86,11 @@ export function MeetNowClient() {
             return (
               <div key={p.id} className="rounded-2xl border border-line bg-surface p-4">
                 <div className="flex items-start gap-3">
-                  <Avatar name={p.user.pseudo} photoUrl={p.user.photos?.[0]} size={44} online={p.user.online} />
+                  <Avatar name={p.user?.pseudo ?? ""} photoUrl={p.user?.photos?.[0]} size={44} online={p.user?.online} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold text-white">{p.user.pseudo}</p>
-                      {p.user.verified && <span className="text-xs text-gold">✓</span>}
+                      <p className="truncate text-sm font-semibold text-white">{p.user?.pseudo ?? ""}</p>
+                      {p.user?.verified && <span className="text-xs text-gold">✓</span>}
                       <span className="ml-auto shrink-0 text-[11px] text-muted">{timeAgo(p.created_at)}</span>
                     </div>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">

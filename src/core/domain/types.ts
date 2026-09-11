@@ -339,6 +339,7 @@ export interface PetState {
   experience: number;
   level: number;
   streak: number;
+  happiness: number;
   wardrobe: string[];
   equipped: string[];
   adventures: string[];

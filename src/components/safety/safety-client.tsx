@@ -154,8 +154,8 @@ export function SafetyClient() {
           <EmptyState icon="👀" title="No profile views yet" description="As people discover you, views show up here (Gold feature)." />
         ) : (
           <div className="space-y-2">
-            {footprints.map((f, i) => {
-              const meta = PRESET_META[f.preset] ?? PRESET_META.visited;
+            {footprints.filter((f): f is Footprint & { user: ProfileUser } => !!f.user).map((f, i) => {
+              const meta = PRESET_META[f.preset ?? "visited"] ?? PRESET_META.visited;
               const Icon = meta.icon;
               return (
                 <button
@@ -170,7 +170,7 @@ export function SafetyClient() {
                       <Icon className="h-3 w-3" /> {meta.label}
                     </p>
                   </div>
-                  <span className="shrink-0 text-[11px] text-muted">{timeAgo(f.visited_at)}</span>
+                  <span className="shrink-0 text-[11px] text-muted">{timeAgo(f.created_at)}</span>
                 </button>
               );
             })}
@@ -207,7 +207,7 @@ export function SafetyClient() {
         <EmptyState icon="📝" title="No private notes" description="Jot down reminders about people you meet — only you ever see these." />
       ) : (
         <div className="space-y-2">
-          {notes.map((n) => (
+          {notes.filter((n): n is NoteItem & { target: ProfileUser } => !!n.target).map((n) => (
             <div key={n.id} className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-3">
               <Avatar name={n.target.pseudo} photoUrl={n.target.photos?.[0]} size={44} />
               <div className="min-w-0 flex-1">

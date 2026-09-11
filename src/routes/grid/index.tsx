@@ -490,7 +490,7 @@ const GridCell = memo(function GridCell({
 	);
 });
 
-function LazyGridCell({ profileId }: { profileId: number }) {
+function LazyGridCell({ profileId }: { profileId: string }) {
 	useEffect(() => {
 		void useGridStore.getState().resolveProfile(profileId);
 	}, [profileId]);

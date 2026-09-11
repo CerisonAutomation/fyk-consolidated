@@ -201,17 +201,17 @@ export function UserProfileClient({ userId }: { userId: string }) {
 
       {/* details */}
       <div className="mt-4 grid grid-cols-2 gap-2">
-        {u.body_type && <Detail icon={<Weight className="h-4 w-4" />} label={u.body_type} />}
+        {u.bodyType && <Detail icon={<Weight className="h-4 w-4" />} label={u.bodyType} />}
         {u.occupation && <Detail icon={<Briefcase className="h-4 w-4" />} label={u.occupation} />}
         {u.languages.length > 0 && <Detail icon={<Languages className="h-4 w-4" />} label={u.languages.join(", ")} />}
-        <Detail icon={<Crown className="h-4 w-4" />} label={`Trust ${u.trust_score}/100`} />
+        <Detail icon={<Crown className="h-4 w-4" />} label={`Trust ${u.trustScore}/100`} />
       </div>
 
       {u.tribes.length > 0 && <Tags title="Tribes" items={u.tribes} color="purple" />}
       {u.interests.length > 0 && <Tags title="Interests" items={u.interests} />}
-      {u.looking_for.length > 0 && <Tags title="Looking for" items={u.looking_for} gold />}
+      {u.lookingFor.length > 0 && <Tags title="Looking for" items={u.lookingFor} gold />}
       {u.position.length > 0 && <Tags title="Position" items={u.position} color="blue" />}
-      {u.tag_codes.length > 0 && <Tags title="Tags" items={u.tag_codes} />}
+      {u.tagCodes.length > 0 && <Tags title="Tags" items={u.tagCodes} />}
 
       {/* compatibility */}
       <div className="mt-4 rounded-2xl border border-line bg-surface p-4">
@@ -219,7 +219,7 @@ export function UserProfileClient({ userId }: { userId: string }) {
           <Crown className="h-4 w-4 text-gold" /> Compatibility breakdown
         </h3>
         <div className="space-y-2.5">
-          {Object.entries(u.dimensions).map(([k, v]) => (
+          {Object.entries(u.dimensions ?? {}).map(([k, v]) => (
             <div key={k}>
               <div className="mb-1 flex justify-between text-[11px] capitalize">
                 <span className="text-muted">{k.replace(/([A-Z])/g, " $1")}</span>
@@ -271,7 +271,7 @@ export function UserProfileClient({ userId }: { userId: string }) {
         <div className="mt-4">
           <h3 className="mb-2 text-sm font-semibold text-white">Public photos</h3>
           <div className="grid grid-cols-3 gap-2">
-            {(albums ?? []).filter((a) => a.type === "public").flatMap((a) => a.photos).map((p) => (
+            {(albums ?? []).filter((a) => a.type === "public").flatMap((a) => a.photos ?? []).map((p) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img key={p.id} src={p.photo_url} alt="" className="aspect-square w-full rounded-xl object-cover" />
             ))}

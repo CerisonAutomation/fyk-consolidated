@@ -20,14 +20,31 @@ export type MeetNowPostModel = runtime.Types.Result.DefaultSelection<Prisma.$Mee
 
 export type AggregateMeetNowPost = {
   _count: MeetNowPostCountAggregateOutputType | null
+  _avg: MeetNowPostAvgAggregateOutputType | null
+  _sum: MeetNowPostSumAggregateOutputType | null
   _min: MeetNowPostMinAggregateOutputType | null
   _max: MeetNowPostMaxAggregateOutputType | null
+}
+
+export type MeetNowPostAvgAggregateOutputType = {
+  lat: number | null
+  lng: number | null
+}
+
+export type MeetNowPostSumAggregateOutputType = {
+  lat: number | null
+  lng: number | null
 }
 
 export type MeetNowPostMinAggregateOutputType = {
   id: string | null
   userId: string | null
   category: string | null
+  place: string | null
+  type: string | null
+  lat: number | null
+  lng: number | null
+  status: string | null
   note: string | null
   location: string | null
   expiresAt: Date | null
@@ -39,6 +56,11 @@ export type MeetNowPostMaxAggregateOutputType = {
   id: string | null
   userId: string | null
   category: string | null
+  place: string | null
+  type: string | null
+  lat: number | null
+  lng: number | null
+  status: string | null
   note: string | null
   location: string | null
   expiresAt: Date | null
@@ -50,6 +72,12 @@ export type MeetNowPostCountAggregateOutputType = {
   id: number
   userId: number
   category: number
+  place: number
+  type: number
+  tags: number
+  lat: number
+  lng: number
+  status: number
   note: number
   location: number
   expiresAt: number
@@ -59,10 +87,25 @@ export type MeetNowPostCountAggregateOutputType = {
 }
 
 
+export type MeetNowPostAvgAggregateInputType = {
+  lat?: true
+  lng?: true
+}
+
+export type MeetNowPostSumAggregateInputType = {
+  lat?: true
+  lng?: true
+}
+
 export type MeetNowPostMinAggregateInputType = {
   id?: true
   userId?: true
   category?: true
+  place?: true
+  type?: true
+  lat?: true
+  lng?: true
+  status?: true
   note?: true
   location?: true
   expiresAt?: true
@@ -74,6 +117,11 @@ export type MeetNowPostMaxAggregateInputType = {
   id?: true
   userId?: true
   category?: true
+  place?: true
+  type?: true
+  lat?: true
+  lng?: true
+  status?: true
   note?: true
   location?: true
   expiresAt?: true
@@ -85,6 +133,12 @@ export type MeetNowPostCountAggregateInputType = {
   id?: true
   userId?: true
   category?: true
+  place?: true
+  type?: true
+  tags?: true
+  lat?: true
+  lng?: true
+  status?: true
   note?: true
   location?: true
   expiresAt?: true
@@ -131,6 +185,18 @@ export type MeetNowPostAggregateArgs<ExtArgs extends runtime.Types.Extensions.In
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: MeetNowPostAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: MeetNowPostSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: MeetNowPostMinAggregateInputType
@@ -161,6 +227,8 @@ export type MeetNowPostGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   _count?: MeetNowPostCountAggregateInputType | true
+  _avg?: MeetNowPostAvgAggregateInputType
+  _sum?: MeetNowPostSumAggregateInputType
   _min?: MeetNowPostMinAggregateInputType
   _max?: MeetNowPostMaxAggregateInputType
 }
@@ -169,12 +237,20 @@ export type MeetNowPostGroupByOutputType = {
   id: string
   userId: string
   category: string
+  place: string | null
+  type: string | null
+  tags: runtime.JsonValue
+  lat: number | null
+  lng: number | null
+  status: string
   note: string | null
   location: string | null
   expiresAt: Date
   active: boolean
   createdAt: Date
   _count: MeetNowPostCountAggregateOutputType | null
+  _avg: MeetNowPostAvgAggregateOutputType | null
+  _sum: MeetNowPostSumAggregateOutputType | null
   _min: MeetNowPostMinAggregateOutputType | null
   _max: MeetNowPostMaxAggregateOutputType | null
 }
@@ -201,6 +277,12 @@ export type MeetNowPostWhereInput = {
   id?: Prisma.UuidFilter<"MeetNowPost"> | string
   userId?: Prisma.UuidFilter<"MeetNowPost"> | string
   category?: Prisma.StringFilter<"MeetNowPost"> | string
+  place?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
+  type?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
+  tags?: Prisma.JsonFilter<"MeetNowPost">
+  lat?: Prisma.FloatNullableFilter<"MeetNowPost"> | number | null
+  lng?: Prisma.FloatNullableFilter<"MeetNowPost"> | number | null
+  status?: Prisma.StringFilter<"MeetNowPost"> | string
   note?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
   location?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"MeetNowPost"> | Date | string
@@ -213,6 +295,12 @@ export type MeetNowPostOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  place?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrderInput | Prisma.SortOrder
+  tags?: Prisma.SortOrder
+  lat?: Prisma.SortOrderInput | Prisma.SortOrder
+  lng?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   location?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
@@ -228,6 +316,12 @@ export type MeetNowPostWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.MeetNowPostWhereInput | Prisma.MeetNowPostWhereInput[]
   userId?: Prisma.UuidFilter<"MeetNowPost"> | string
   category?: Prisma.StringFilter<"MeetNowPost"> | string
+  place?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
+  type?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
+  tags?: Prisma.JsonFilter<"MeetNowPost">
+  lat?: Prisma.FloatNullableFilter<"MeetNowPost"> | number | null
+  lng?: Prisma.FloatNullableFilter<"MeetNowPost"> | number | null
+  status?: Prisma.StringFilter<"MeetNowPost"> | string
   note?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
   location?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"MeetNowPost"> | Date | string
@@ -240,14 +334,22 @@ export type MeetNowPostOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  place?: Prisma.SortOrderInput | Prisma.SortOrder
+  type?: Prisma.SortOrderInput | Prisma.SortOrder
+  tags?: Prisma.SortOrder
+  lat?: Prisma.SortOrderInput | Prisma.SortOrder
+  lng?: Prisma.SortOrderInput | Prisma.SortOrder
+  status?: Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   location?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.MeetNowPostCountOrderByAggregateInput
+  _avg?: Prisma.MeetNowPostAvgOrderByAggregateInput
   _max?: Prisma.MeetNowPostMaxOrderByAggregateInput
   _min?: Prisma.MeetNowPostMinOrderByAggregateInput
+  _sum?: Prisma.MeetNowPostSumOrderByAggregateInput
 }
 
 export type MeetNowPostScalarWhereWithAggregatesInput = {
@@ -257,6 +359,12 @@ export type MeetNowPostScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"MeetNowPost"> | string
   userId?: Prisma.UuidWithAggregatesFilter<"MeetNowPost"> | string
   category?: Prisma.StringWithAggregatesFilter<"MeetNowPost"> | string
+  place?: Prisma.StringNullableWithAggregatesFilter<"MeetNowPost"> | string | null
+  type?: Prisma.StringNullableWithAggregatesFilter<"MeetNowPost"> | string | null
+  tags?: Prisma.JsonWithAggregatesFilter<"MeetNowPost">
+  lat?: Prisma.FloatNullableWithAggregatesFilter<"MeetNowPost"> | number | null
+  lng?: Prisma.FloatNullableWithAggregatesFilter<"MeetNowPost"> | number | null
+  status?: Prisma.StringWithAggregatesFilter<"MeetNowPost"> | string
   note?: Prisma.StringNullableWithAggregatesFilter<"MeetNowPost"> | string | null
   location?: Prisma.StringNullableWithAggregatesFilter<"MeetNowPost"> | string | null
   expiresAt?: Prisma.DateTimeWithAggregatesFilter<"MeetNowPost"> | Date | string
@@ -267,6 +375,12 @@ export type MeetNowPostScalarWhereWithAggregatesInput = {
 export type MeetNowPostCreateInput = {
   id?: string
   category: string
+  place?: string | null
+  type?: string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: number | null
+  lng?: number | null
+  status?: string
   note?: string | null
   location?: string | null
   expiresAt: Date | string
@@ -279,6 +393,12 @@ export type MeetNowPostUncheckedCreateInput = {
   id?: string
   userId: string
   category: string
+  place?: string | null
+  type?: string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: number | null
+  lng?: number | null
+  status?: string
   note?: string | null
   location?: string | null
   expiresAt: Date | string
@@ -289,6 +409,12 @@ export type MeetNowPostUncheckedCreateInput = {
 export type MeetNowPostUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
+  place?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -301,6 +427,12 @@ export type MeetNowPostUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
+  place?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -312,6 +444,12 @@ export type MeetNowPostCreateManyInput = {
   id?: string
   userId: string
   category: string
+  place?: string | null
+  type?: string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: number | null
+  lng?: number | null
+  status?: string
   note?: string | null
   location?: string | null
   expiresAt: Date | string
@@ -322,6 +460,12 @@ export type MeetNowPostCreateManyInput = {
 export type MeetNowPostUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
+  place?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -333,6 +477,12 @@ export type MeetNowPostUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
+  place?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -354,6 +504,12 @@ export type MeetNowPostCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  place?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  tags?: Prisma.SortOrder
+  lat?: Prisma.SortOrder
+  lng?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   note?: Prisma.SortOrder
   location?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
@@ -361,10 +517,20 @@ export type MeetNowPostCountOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
 }
 
+export type MeetNowPostAvgOrderByAggregateInput = {
+  lat?: Prisma.SortOrder
+  lng?: Prisma.SortOrder
+}
+
 export type MeetNowPostMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  place?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  lat?: Prisma.SortOrder
+  lng?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   note?: Prisma.SortOrder
   location?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
@@ -376,11 +542,21 @@ export type MeetNowPostMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   userId?: Prisma.SortOrder
   category?: Prisma.SortOrder
+  place?: Prisma.SortOrder
+  type?: Prisma.SortOrder
+  lat?: Prisma.SortOrder
+  lng?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   note?: Prisma.SortOrder
   location?: Prisma.SortOrder
   expiresAt?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+}
+
+export type MeetNowPostSumOrderByAggregateInput = {
+  lat?: Prisma.SortOrder
+  lng?: Prisma.SortOrder
 }
 
 export type MeetNowPostCreateNestedManyWithoutUserInput = {
@@ -428,6 +604,12 @@ export type MeetNowPostUncheckedUpdateManyWithoutUserNestedInput = {
 export type MeetNowPostCreateWithoutUserInput = {
   id?: string
   category: string
+  place?: string | null
+  type?: string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: number | null
+  lng?: number | null
+  status?: string
   note?: string | null
   location?: string | null
   expiresAt: Date | string
@@ -438,6 +620,12 @@ export type MeetNowPostCreateWithoutUserInput = {
 export type MeetNowPostUncheckedCreateWithoutUserInput = {
   id?: string
   category: string
+  place?: string | null
+  type?: string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: number | null
+  lng?: number | null
+  status?: string
   note?: string | null
   location?: string | null
   expiresAt: Date | string
@@ -478,6 +666,12 @@ export type MeetNowPostScalarWhereInput = {
   id?: Prisma.UuidFilter<"MeetNowPost"> | string
   userId?: Prisma.UuidFilter<"MeetNowPost"> | string
   category?: Prisma.StringFilter<"MeetNowPost"> | string
+  place?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
+  type?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
+  tags?: Prisma.JsonFilter<"MeetNowPost">
+  lat?: Prisma.FloatNullableFilter<"MeetNowPost"> | number | null
+  lng?: Prisma.FloatNullableFilter<"MeetNowPost"> | number | null
+  status?: Prisma.StringFilter<"MeetNowPost"> | string
   note?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
   location?: Prisma.StringNullableFilter<"MeetNowPost"> | string | null
   expiresAt?: Prisma.DateTimeFilter<"MeetNowPost"> | Date | string
@@ -488,6 +682,12 @@ export type MeetNowPostScalarWhereInput = {
 export type MeetNowPostCreateManyUserInput = {
   id?: string
   category: string
+  place?: string | null
+  type?: string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: number | null
+  lng?: number | null
+  status?: string
   note?: string | null
   location?: string | null
   expiresAt: Date | string
@@ -498,6 +698,12 @@ export type MeetNowPostCreateManyUserInput = {
 export type MeetNowPostUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
+  place?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -508,6 +714,12 @@ export type MeetNowPostUpdateWithoutUserInput = {
 export type MeetNowPostUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
+  place?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -518,6 +730,12 @@ export type MeetNowPostUncheckedUpdateWithoutUserInput = {
 export type MeetNowPostUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   category?: Prisma.StringFieldUpdateOperationsInput | string
+  place?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tags?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  lat?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  lng?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   location?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -531,6 +749,12 @@ export type MeetNowPostSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   id?: boolean
   userId?: boolean
   category?: boolean
+  place?: boolean
+  type?: boolean
+  tags?: boolean
+  lat?: boolean
+  lng?: boolean
+  status?: boolean
   note?: boolean
   location?: boolean
   expiresAt?: boolean
@@ -543,6 +767,12 @@ export type MeetNowPostSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   userId?: boolean
   category?: boolean
+  place?: boolean
+  type?: boolean
+  tags?: boolean
+  lat?: boolean
+  lng?: boolean
+  status?: boolean
   note?: boolean
   location?: boolean
   expiresAt?: boolean
@@ -555,6 +785,12 @@ export type MeetNowPostSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   id?: boolean
   userId?: boolean
   category?: boolean
+  place?: boolean
+  type?: boolean
+  tags?: boolean
+  lat?: boolean
+  lng?: boolean
+  status?: boolean
   note?: boolean
   location?: boolean
   expiresAt?: boolean
@@ -567,6 +803,12 @@ export type MeetNowPostSelectScalar = {
   id?: boolean
   userId?: boolean
   category?: boolean
+  place?: boolean
+  type?: boolean
+  tags?: boolean
+  lat?: boolean
+  lng?: boolean
+  status?: boolean
   note?: boolean
   location?: boolean
   expiresAt?: boolean
@@ -574,7 +816,7 @@ export type MeetNowPostSelectScalar = {
   createdAt?: boolean
 }
 
-export type MeetNowPostOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "category" | "note" | "location" | "expiresAt" | "active" | "createdAt", ExtArgs["result"]["meetNowPost"]>
+export type MeetNowPostOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "category" | "place" | "type" | "tags" | "lat" | "lng" | "status" | "note" | "location" | "expiresAt" | "active" | "createdAt", ExtArgs["result"]["meetNowPost"]>
 export type MeetNowPostInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
@@ -594,6 +836,12 @@ export type $MeetNowPostPayload<ExtArgs extends runtime.Types.Extensions.Interna
     id: string
     userId: string
     category: string
+    place: string | null
+    type: string | null
+    tags: runtime.JsonValue
+    lat: number | null
+    lng: number | null
+    status: string
     note: string | null
     location: string | null
     expiresAt: Date
@@ -1026,6 +1274,12 @@ export interface MeetNowPostFieldRefs {
   readonly id: Prisma.FieldRef<"MeetNowPost", 'String'>
   readonly userId: Prisma.FieldRef<"MeetNowPost", 'String'>
   readonly category: Prisma.FieldRef<"MeetNowPost", 'String'>
+  readonly place: Prisma.FieldRef<"MeetNowPost", 'String'>
+  readonly type: Prisma.FieldRef<"MeetNowPost", 'String'>
+  readonly tags: Prisma.FieldRef<"MeetNowPost", 'Json'>
+  readonly lat: Prisma.FieldRef<"MeetNowPost", 'Float'>
+  readonly lng: Prisma.FieldRef<"MeetNowPost", 'Float'>
+  readonly status: Prisma.FieldRef<"MeetNowPost", 'String'>
   readonly note: Prisma.FieldRef<"MeetNowPost", 'String'>
   readonly location: Prisma.FieldRef<"MeetNowPost", 'String'>
   readonly expiresAt: Prisma.FieldRef<"MeetNowPost", 'DateTime'>
