@@ -8,8 +8,8 @@
  * Uses ResizeObserver and scroll events to track viewport changes.
  */
 
-import { useCallback, useRef, useState } from 'react';
-import { gridWindow, type GridMetrics } from '../lib/grid-window';
+import { useCallback, useRef, useState } from "react";
+import { gridWindow, type GridMetrics } from "../lib/grid-window";
 
 const OVERSCAN_PX = 600;
 
@@ -20,10 +20,10 @@ function nearestScrollableAncestor(el: HTMLElement): HTMLElement | null {
 		const overflowY = style.overflowY;
 		const overflowX = style.overflowX;
 		if (
-			overflowY === 'auto' ||
-			overflowY === 'scroll' ||
-			overflowX === 'auto' ||
-			overflowX === 'scroll'
+			overflowY === "auto" ||
+			overflowY === "scroll" ||
+			overflowX === "auto" ||
+			overflowX === "scroll"
 		) {
 			return node;
 		}
@@ -65,7 +65,7 @@ export function useVirtualGrid({ count }: UseVirtualGridOptions) {
 		const tracks = style.gridTemplateColumns.trim().split(/\s+/);
 		setMetrics({
 			columns: tracks.length,
-			cellPx: Number.parseFloat(tracks[0] ?? '') || 0,
+			cellPx: Number.parseFloat(tracks[0] ?? "") || 0,
 			gapPx: Number.parseFloat(style.rowGap) || 0,
 		});
 	}, []);
@@ -84,7 +84,7 @@ export function useVirtualGrid({ count }: UseVirtualGridOptions) {
 			// Cleanup previous observers
 			const prevScroller = scrollerRef.current;
 			if (prevScroller) {
-				prevScroller.removeEventListener('scroll', sample);
+				prevScroller.removeEventListener("scroll", sample);
 			}
 
 			gridRef.current = node;
@@ -109,15 +109,16 @@ export function useVirtualGrid({ count }: UseVirtualGridOptions) {
 				resize.observe(scroller);
 			}
 
-			scroller?.addEventListener('scroll', sample, { passive: true });
+			scroller?.addEventListener("scroll", sample, { passive: true });
 
 			// Store cleanup
 			const cleanup = () => {
 				resize.disconnect();
-				scroller?.removeEventListener('scroll', sample);
+				scroller?.removeEventListener("scroll", sample);
 			};
-			(node as HTMLElement & { __virtualGridCleanup?: () => void }).__virtualGridCleanup =
-				cleanup;
+			(
+				node as HTMLElement & { _virtualGridCleanup?: () => void }
+			)._virtualGridCleanup = cleanup;
 		},
 		[measure, sample],
 	);

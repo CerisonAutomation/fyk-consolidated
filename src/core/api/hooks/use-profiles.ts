@@ -67,9 +67,7 @@ export function useProfiles(profileIds: number[]) {
 				start < profileIds.length;
 				start += GET_PROFILES_MAX_IDS
 			) {
-				batches.push(
-					profileIds.slice(start, start + GET_PROFILES_MAX_IDS),
-				);
+				batches.push(profileIds.slice(start, start + GET_PROFILES_MAX_IDS));
 			}
 			const results = await Promise.all(
 				batches.map(async (ids) => {

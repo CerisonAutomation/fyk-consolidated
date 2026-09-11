@@ -19,12 +19,19 @@ interface TestItem {
 	name: string;
 }
 
-class TestReconcilingList extends ReconcilingListState<TestItem, TestItem[], number> {
+class TestReconcilingList extends ReconcilingListState<
+	TestItem,
+	TestItem[],
+	number
+> {
 	private _items: TestItem[] = [];
 	private _fetchResult: TestItem[] = [];
 
 	constructor(opts: { pageSize: number }) {
-		super({ pageSize: opts.pageSize, refreshErrorLabel: "test refresh failed" });
+		super({
+			pageSize: opts.pageSize,
+			refreshErrorLabel: "test refresh failed",
+		});
 	}
 
 	setFetchResult(items: TestItem[]): void {
@@ -43,7 +50,9 @@ class TestReconcilingList extends ReconcilingListState<TestItem, TestItem[], num
 		return this._fetchResult;
 	}
 
-	protected applySnapshotReturningCoveredKeys(snapshot: TestItem[]): Set<number> {
+	protected applySnapshotReturningCoveredKeys(
+		snapshot: TestItem[],
+	): Set<number> {
 		this._items = [...snapshot];
 		return new Set(snapshot.map((item) => item.id));
 	}

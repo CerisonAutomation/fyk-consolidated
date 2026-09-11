@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { supabase } from "#/integrations/supabase/client";
+import { requireSupabase } from "#/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback/")({
 	component: AuthCallback,
@@ -12,7 +12,9 @@ function AuthCallback() {
 	useEffect(() => {
 		// Handle the URL hash for email confirmation / magic link
 		const handleAuth = async () => {
-			const { data: { session } } = await supabase.auth.getSession();
+			const {
+				data: { session },
+			} = await requireSupabase().auth.getSession();
 
 			if (session) {
 				navigate({ to: "/grid", replace: true });
@@ -22,7 +24,7 @@ function AuthCallback() {
 			// Listen for auth state changes
 			const {
 				data: { subscription },
-			} = supabase.auth.onAuthStateChange((event, newSession) => {
+			} = requireSupabase().auth.onAuthStateChange((event, newSession) => {
 				if (event === "PASSWORD_RECOVERY") {
 					navigate({ to: "/auth/sign-in", replace: true });
 				} else if (newSession) {

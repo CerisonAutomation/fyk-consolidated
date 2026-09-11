@@ -1,0 +1,59 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# FYK Consolidated — CI Pipeline
+# ═══════════════════════════════════════════════════════════════════════════════
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Type Check / Lint / Test / Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t fyk:${{ github.sha }} .
+
+      - name: Verify health check endpoint exists in image
+        run: |
+          docker create --name fyk-verify fyk:${{ github.sha }}
+          docker inspect --format='{{.Config.Healthcheck}}' fyk-verify
+          docker rm fyk-verify

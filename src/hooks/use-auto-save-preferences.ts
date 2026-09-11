@@ -86,10 +86,8 @@ export function useSaveToSupabase() {
 
 			saveTimerRef.current = setTimeout(async () => {
 				try {
-					const { supabase } = await import(
-						"#/integrations/supabase/client"
-					);
-					await supabase.auth.updateUser({
+					const { requireSupabase } = await import("#/integrations/supabase/client");
+					await requireSupabase().auth.updateUser({
 						data: {
 							[METADATA_KEY]: prefs,
 						},

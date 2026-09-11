@@ -30,10 +30,8 @@ const myAlbumsResponseSchema = z.object({
 export const albumKeys = {
 	all: ["albums"] as const,
 	myAlbums: () => [...albumKeys.all, "myAlbums"] as const,
-	content: (albumId: number) =>
-		[...albumKeys.all, "content", albumId] as const,
-	shares: (albumId: number) =>
-		[...albumKeys.all, "shares", albumId] as const,
+	content: (albumId: number) => [...albumKeys.all, "content", albumId] as const,
+	shares: (albumId: number) => [...albumKeys.all, "shares", albumId] as const,
 };
 
 // -- Hooks --

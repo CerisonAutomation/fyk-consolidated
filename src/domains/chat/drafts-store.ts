@@ -9,7 +9,7 @@ export class Drafts {
 	#destroyed = false;
 
 	get(conversationId: string): string {
-		return this.#texts.get(conversationId) ?? '';
+		return this.#texts.get(conversationId) ?? "";
 	}
 
 	open(conversationId: string): string {
@@ -24,21 +24,19 @@ export class Drafts {
 		conversationId: string;
 		text: string;
 	}): void {
-		if (this.#editing?.conversationId === conversationId)
-			this.#stopAutosave();
+		if (this.#editing?.conversationId === conversationId) this.#stopAutosave();
 		if (this.#destroyed || this.#forgotten.has(conversationId)) return;
-		if (text.trim() === '') this.#texts.delete(conversationId);
+		if (text.trim() === "") this.#texts.delete(conversationId);
 		else this.#texts.set(conversationId, text);
 	}
 
 	discard(conversationId: string): void {
-		this.save({ conversationId, text: '' });
+		this.save({ conversationId, text: "" });
 		this.clearReplyTo(conversationId);
 	}
 
 	forget(conversationId: string): void {
-		if (this.#editing?.conversationId === conversationId)
-			this.#stopAutosave();
+		if (this.#editing?.conversationId === conversationId) this.#stopAutosave();
 		this.#forgotten.add(conversationId);
 		this.#texts.delete(conversationId);
 		this.#replyTargets.delete(conversationId);

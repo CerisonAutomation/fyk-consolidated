@@ -5,10 +5,7 @@ import {
 	mediaHashPublicSchema,
 	mediaUrlSchema,
 } from "./media";
-import {
-	albumExpirationSchema,
-	albumPreviewSchema,
-} from "./albums";
+import { albumExpirationSchema, albumPreviewSchema } from "./albums";
 import { unixTimestampMsSchema, unmodeledSchema } from "./types";
 
 const messageBaseSchema = z.object({ type: z.string(), body: z.unknown() });
@@ -30,7 +27,7 @@ const messageOverlayBaseSchema = z.object({
 	replyPreview: unmodeledSchema,
 });
 
-export const albumMessageSchema = messageBaseSchema.safeExtend({
+const albumMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("Album"),
 	body: z.object({
 		...albumPreviewSchema.shape,
@@ -46,14 +43,14 @@ export const albumMessageSchema = messageBaseSchema.safeExtend({
 
 export type AlbumMessage = z.infer<typeof albumMessageSchema>;
 
-export const expiringAlbumMessageSchema = albumMessageSchema.extend({
+const expiringAlbumMessageSchema = albumMessageSchema.extend({
 	type: z.literal("ExpiringAlbum"),
 	body: z.object({ ...albumMessageSchema.shape.body.shape }),
 });
 
 export type ExpiringAlbumMessage = z.infer<typeof expiringAlbumMessageSchema>;
 
-export const expiringAlbumV2MessageSchema = albumMessageSchema.extend({
+const expiringAlbumV2MessageSchema = albumMessageSchema.extend({
 	type: z.literal("ExpiringAlbumV2"),
 	body: z.object({ ...albumMessageSchema.shape.body.shape }),
 });
@@ -62,7 +59,7 @@ export type ExpiringAlbumV2Message = z.infer<
 	typeof expiringAlbumV2MessageSchema
 >;
 
-export const albumContentReactionMessageSchema = messageBaseSchema.safeExtend({
+const albumContentReactionMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("AlbumContentReaction"),
 	body: z.object({
 		albumId: z.int().nonnegative(),
@@ -78,7 +75,7 @@ export type AlbumContentReactionMessage = z.infer<
 	typeof albumContentReactionMessageSchema
 >;
 
-export const albumContentReplyMessageSchema = messageBaseSchema.safeExtend({
+const albumContentReplyMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("AlbumContentReply"),
 	body: z.object({
 		...albumContentReactionMessageSchema.shape.body.shape,
@@ -121,7 +118,7 @@ export const videoMessageSchema = messageBaseSchema.safeExtend({
 
 export type VideoMessage = z.infer<typeof videoMessageSchema>;
 
-export const nonExpiringVideoMessageSchema = messageBaseSchema.safeExtend({
+const nonExpiringVideoMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("NonExpiringVideo"),
 	body: z.unknown(),
 });
@@ -137,7 +134,7 @@ export const gaymojiMessageSchema = messageBaseSchema.safeExtend({
 
 export type GaymojiMessage = z.infer<typeof gaymojiMessageSchema>;
 
-export const generativeMessageSchema = messageBaseSchema.safeExtend({
+const generativeMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("Generative"),
 	body: z.unknown(),
 });
@@ -201,7 +198,7 @@ export const locationMessageSchema = messageBaseSchema.safeExtend({
 
 export type LocationMessage = z.infer<typeof locationMessageSchema>;
 
-export const privateVideoMessageSchema = messageBaseSchema.safeExtend({
+const privateVideoMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("PrivateVideo"),
 	body: z.object({
 		...videoMessageSchema.shape.body.shape,
@@ -211,14 +208,14 @@ export const privateVideoMessageSchema = messageBaseSchema.safeExtend({
 
 export type PrivateVideoMessage = z.infer<typeof privateVideoMessageSchema>;
 
-export const profileLinkMessageSchema = messageBaseSchema.safeExtend({
+const profileLinkMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("ProfileLink"),
 	body: z.unknown(),
 });
 
 export type ProfileLinkMessage = z.infer<typeof profileLinkMessageSchema>;
 
-export const profilePhotoReplyMessageSchema = messageBaseSchema.safeExtend({
+const profilePhotoReplyMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("ProfilePhotoReply"),
 	body: z.object({ imageHash: z.string(), photoContentReply: z.string() }),
 });
@@ -234,12 +231,12 @@ export const retractMessageSchema = messageBaseSchema.safeExtend({
 
 export type RetractMessage = z.infer<typeof retractMessageSchema>;
 
-export const rightNowRequestMediaSchema = z.object({
+const rightNowRequestMediaSchema = z.object({
 	mediaHash: z.string(),
 	isNsfw: z.boolean(),
 });
 
-export const rightNowRequestMessageSchema = messageBaseSchema.safeExtend({
+const rightNowRequestMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("RightNowRequest"),
 	body: z.object({
 		requestId: z.int().nonnegative(),
@@ -262,14 +259,14 @@ export const textMessageSchema = messageBaseSchema.safeExtend({
 
 export type TextMessage = z.infer<typeof textMessageSchema>;
 
-export const unknownMessageSchema = messageBaseSchema.safeExtend({
+const unknownMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("Unknown"),
 	body: z.unknown(),
 });
 
 export type UnknownMessage = z.infer<typeof unknownMessageSchema>;
 
-export const videoCallMessageSchema = messageBaseSchema.safeExtend({
+const videoCallMessageSchema = messageBaseSchema.safeExtend({
 	type: z.literal("VideoCall"),
 	body: z.unknown(),
 });
@@ -362,7 +359,7 @@ const quotedMessageOverlaySchema = messageOverlayBaseSchema
 	})
 	.safeExtend({ replyToMessage: unmodeledSchema });
 
-export const quotedMessageSchema = messageBranchesWithOverlay({
+const quotedMessageSchema = messageBranchesWithOverlay({
 	overlay: quotedMessageOverlaySchema,
 }).all;
 
@@ -370,33 +367,31 @@ export type QuotedMessage = z.infer<typeof quotedMessageSchema>;
 
 let unmodelableQuoteReported = false;
 
-export const apiResponseMessageOverlaySchema =
-	messageOverlayBaseSchema.safeExtend({
-		// A quote we cannot model must never cost us the message carrying it.
-		replyToMessage: quotedMessageSchema.nullish().catch(({ error }) => {
-			if (!unmodelableQuoteReported) {
-				unmodelableQuoteReported = true;
-				console.warn(
-					"[messages] a quoted reply did not match the modeled shape and was dropped",
-					error,
-				);
-			}
-			return null;
-		}),
-	});
+const apiResponseMessageOverlaySchema = messageOverlayBaseSchema.safeExtend({
+	// A quote we cannot model must never cost us the message carrying it.
+	replyToMessage: quotedMessageSchema.nullish().catch(({ error }) => {
+		if (!unmodelableQuoteReported) {
+			unmodelableQuoteReported = true;
+			console.warn(
+				"[messages] a quoted reply did not match the modeled shape and was dropped",
+				error,
+			);
+		}
+		return null;
+	}),
+});
 
 const apiResponseMessageBranches = messageBranchesWithOverlay({
 	overlay: apiResponseMessageOverlaySchema,
 });
 
-export const unsentMessageSchema = apiResponseMessageBranches.unsent;
+const unsentMessageSchema = apiResponseMessageBranches.unsent;
 export type UnsentMessage = z.infer<typeof unsentMessageSchema>;
 
-export const unrecognizedMessageSchema =
-	apiResponseMessageBranches.unrecognized;
+const unrecognizedMessageSchema = apiResponseMessageBranches.unrecognized;
 export type UnrecognizedMessage = z.infer<typeof unrecognizedMessageSchema>;
 
-export const apiResponseMessageSchema = apiResponseMessageBranches.all;
+const apiResponseMessageSchema = apiResponseMessageBranches.all;
 
 export type Message = z.infer<typeof messageSchema>;
 export type ApiResponseMessage = z.infer<typeof apiResponseMessageSchema>;

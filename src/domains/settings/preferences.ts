@@ -31,7 +31,7 @@ function writeLocal({
 	localStorage.setItem(key(path), btoa(binary));
 }
 
-function removeLocal(path: string): void {
+export function removeLocal(path: string): void {
 	if (!isBrowser()) return;
 	localStorage.removeItem(key(path));
 }
@@ -201,4 +201,3 @@ export async function clearAccountPreferences(): Promise<void> {
 }
 
 // removeLocal is exported for account data cleanup flows
-export { removeLocal };

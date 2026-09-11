@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MessageCircle, Pin, Star, VolumeX } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { MessageCircle, Pin, Star, VolumeX, PenSquare } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useConversations } from "#/core/api/hooks/use-conversations";
 import { ChatListSkeleton, EmptyState } from "#/core/ui/fyk-primitives";
 import { type Conversation, useConversationsStore } from "#/domains/chat/store";
+import { cn } from "#/utils/cn";
 
 export const Route = createFileRoute("/chat/")({
 	component: ChatListPage,
@@ -13,10 +14,20 @@ export const Route = createFileRoute("/chat/")({
 /*  FYK Premium Chat List                                              */
 /* ================================================================== */
 
+type TabId = "all" | "unread" | "matches" | "groups";
+
+const TABS: { id: TabId; label: string; count?: number }[] = [
+ { id: "all", label: "All" },
+ { id: "unread", label: "Unread" },
+ { id: "matches", label: "Matches" },
+ { id: "groups", label: "Groups" },
+];
+
 function ChatListPage() {
 	const { entries, loading, error, setEntries, setLoading, setError } =
 		useConversationsStore();
 	const conversations = useConversations();
+	const [activeTab, setActiveTab] = useState<TabId>("all");
 
 	useEffect(() => {
 		setLoading(conversations.isLoading);
@@ -50,20 +61,63 @@ function ChatListPage() {
 		});
 	}, [entries]);
 
+	const filteredEntries = useMemo(() => {
+		if (activeTab === "unread") return sortedEntries.filter((e) => e.data.unreadCount > 0);
+		if (activeTab === "matches") return sortedEntries.filter((e) => e.type === "match");
+		if (activeTab === "groups") return sortedEntries.filter((e) => e.type === "group");
+		return sortedEntries;
+	}, [sortedEntries, activeTab]);
+
+	const unreadCount = useMemo(() => entries.filter((e) => e.data.unreadCount > 0).length, [entries]);
+	const matchesCount = useMemo(() => entries.filter((e) => e.type === "match").length, [entries]);
+	const groupsCount = useMemo(() => entries.filter((e) => e.type === "group").length, [entries]);
+
 	return (
 		<main className="screen-nav-host">
 			{/* ── Header ── */}
 			<div className="flex items-center justify-between px-4 py-3">
 				<div className="flex items-center gap-3">
 					<h1 className="text-xl font-display text-foreground tracking-wide">
-						Messages
+						Chats
 					</h1>
-					{entries.length > 0 && (
-						<span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-wider">
-							{entries.length} {entries.length === 1 ? "thread" : "threads"}
-						</span>
-					)}
+					<button className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-white/5 hover:text-white">
+						<PenSquare className="h-4 w-4" />
+					</button>
 				</div>
+			</div>
+
+			{/* ── Tabs ── */}
+			<div className="flex gap-1 border-b border-line px-4">
+				{TABS.map((tab) => {
+					const count = tab.id === "all" ? entries.length
+						: tab.id === "unread" ? unreadCount
+						: tab.id === "matches" ? matchesCount
+						: groupsCount;
+					return (
+						<button
+							key={tab.id}
+							onClick={() => setActiveTab(tab.id)}
+							className={cn(
+								"flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+								activeTab === tab.id
+									? "border-gold text-gold"
+									: "border-transparent text-muted-foreground hover:text-foreground"
+							)}
+						>
+							{tab.label}
+							{count > 0 && (
+								<span className={cn(
+									"rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+									activeTab === tab.id
+										? "bg-gold/20 text-gold"
+										: "bg-white/10 text-muted-foreground"
+								)}>
+									{count}
+								</span>
+							)}
+						</button>
+					);
+				})}
 			</div>
 
 			{/* ── Content ── */}
@@ -80,15 +134,31 @@ function ChatListPage() {
 						</p>
 					</div>
 				</div>
-			) : sortedEntries.length === 0 ? (
+			) : filteredEntries.length === 0 ? (
 				<EmptyState
 					icon={MessageCircle}
-					title="No conversations yet"
-					description="Start a conversation by tapping Message on someone's profile."
+					title={
+						activeTab === "unread"
+							? "No unread messages"
+							: activeTab === "matches"
+								? "No match conversations"
+								: activeTab === "groups"
+									? "No group chats"
+									: "No conversations yet"
+					}
+					description={
+						activeTab === "unread"
+							? "You're all caught up!"
+							: activeTab === "matches"
+								? "Match with someone to start chatting."
+								: activeTab === "groups"
+									? "Join a group to start chatting."
+									: "Start a conversation by tapping Message on someone's profile."
+					}
 				/>
 			) : (
 				<div className="px-2">
-					{sortedEntries.map((entry, idx) => (
+					{filteredEntries.map((entry, idx) => (
 						<ChatRow
 							key={entry.data.conversationId}
 							entry={entry}

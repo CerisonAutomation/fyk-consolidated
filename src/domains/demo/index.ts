@@ -1,4 +1,7 @@
-export { demoEnabled, demoMeProfileId } from './config';
-export { demoBaseAvatarUrl, demoMediaUrl } from './mock/avatars';
-export { demoSentMessage, demoUploadChatMedia } from './mock/conversations';
-export { demoCallMethod, demoRoute } from './router';
+export { demoEnabled, demoMeProfileId } from "./config";
+export { demoMediaUrl } from "./mock/avatars";
+export {
+	conversationIdFor,
+	demoSentMessage,
+	demoUploadChatMedia,
+} from "./mock/conversations";

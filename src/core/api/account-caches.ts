@@ -41,7 +41,7 @@ export function clearAccountCaches(): void {
 		try {
 			reset();
 		} catch (error) {
-			console.error('Account cache reset failed', error);
+			console.error("Account cache reset failed", error);
 		}
 	}
 }

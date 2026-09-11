@@ -15,7 +15,6 @@ export function distanceMeters({
 }): number {
 	const meanLat = ((from.lat + to.lat) / 2) * RADIANS_PER_DEGREE;
 	const deltaLat = (to.lat - from.lat) * RADIANS_PER_DEGREE;
-	const deltaLon =
-		(to.lon - from.lon) * RADIANS_PER_DEGREE * Math.cos(meanLat);
+	const deltaLon = (to.lon - from.lon) * RADIANS_PER_DEGREE * Math.cos(meanLat);
 	return Math.hypot(deltaLat, deltaLon) * EARTH_RADIUS_METERS;
 }

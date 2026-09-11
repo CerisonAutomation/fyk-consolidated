@@ -97,10 +97,9 @@ export function useDeleteConversation() {
 
 	return useMutation<void, ApiError, { conversationId: string }>({
 		mutationFn: async ({ conversationId }) => {
-			const res = await fetchRest(
-				`/v4/chat/conversation/${conversationId}`,
-				{ method: "DELETE" },
-			);
+			const res = await fetchRest(`/v4/chat/conversation/${conversationId}`, {
+				method: "DELETE",
+			});
 			res.assertOk();
 		},
 		onSuccess: () => {

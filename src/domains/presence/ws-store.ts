@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import z from 'zod';
+import { create } from "zustand";
+import z from "zod";
 
 // Event schemas (ported from open-grind)
-export const notificationEventSchema = z.object({
+const notificationEventSchema = z.object({
 	type: z.string(),
 	notificationId: z.string().nullish(),
 	ref: z.string().nullish(),
@@ -14,19 +14,19 @@ export const commandResponseEventSchema = notificationEventSchema.safeExtend({
 });
 
 export const chatV1MessageSentEventSchema = notificationEventSchema.safeExtend({
-	type: z.literal('chat.v1.message_sent'),
+	type: z.literal("chat.v1.message_sent"),
 	payload: z.unknown(),
 });
 
 export const chatV1ConversationDeleteEventSchema =
 	notificationEventSchema.safeExtend({
-		type: z.literal('chat.v1.conversation.delete'),
+		type: z.literal("chat.v1.conversation.delete"),
 		payload: z.object({ conversationIds: z.array(z.string()) }),
 	});
 
 export const chatV1ConversationReadEventSchema =
 	notificationEventSchema.safeExtend({
-		type: z.literal('chat.v1.conversation_read'),
+		type: z.literal("chat.v1.conversation_read"),
 		payload: z.object({
 			conversationId: z.string(),
 			profileId: z.coerce.number(),
@@ -35,7 +35,7 @@ export const chatV1ConversationReadEventSchema =
 	});
 
 export const tapV1TapSentEventSchema = notificationEventSchema.safeExtend({
-	type: z.literal('tap.v1.tap_sent'),
+	type: z.literal("tap.v1.tap_sent"),
 	payload: z.object({
 		timestamp: z.number(),
 		senderId: z.number(),
@@ -49,7 +49,7 @@ export const tapV1TapSentEventSchema = notificationEventSchema.safeExtend({
 
 export const viewedMeV1NewViewReceivedEventSchema =
 	notificationEventSchema.safeExtend({
-		type: z.literal('viewed_me.v1.new_view_received'),
+		type: z.literal("viewed_me.v1.new_view_received"),
 		payload: z.object({
 			viewedCount: z.int().nullable(),
 			mostRecent: z
@@ -62,7 +62,7 @@ export const viewedMeV1NewViewReceivedEventSchema =
 		}),
 	});
 
-export type WsStatus = 'disconnected' | 'connected';
+export type WsStatus = "disconnected" | "connected";
 
 type EventHandler = (payload: unknown) => void;
 
@@ -80,7 +80,7 @@ interface WsState {
 }
 
 export const useWsStore = create<WsState>((set, get) => ({
-	status: 'disconnected',
+	status: "disconnected",
 	ws: null,
 	eventHandlers: new Map(),
 	reconnectTimer: null,
@@ -94,15 +94,15 @@ export const useWsStore = create<WsState>((set, get) => ({
 		const socket = new WebSocket(`${url}?token=${encodeURIComponent(token)}`);
 
 		socket.onopen = () => {
-			set({ status: 'connected', ws: socket });
+			set({ status: "connected", ws: socket });
 		};
 
 		socket.onclose = () => {
-			set({ status: 'disconnected', ws: null });
+			set({ status: "disconnected", ws: null });
 			// Auto-reconnect after 3 seconds
 			const timer = setTimeout(() => {
 				const { status } = get();
-				if (status === 'disconnected') {
+				if (status === "disconnected") {
 					get().connect(url, token);
 				}
 			}, 3000);
@@ -127,12 +127,12 @@ export const useWsStore = create<WsState>((set, get) => ({
 					}
 				}
 			} catch (error) {
-				console.error('[ws] message parse error:', error);
+				console.error("[ws] message parse error:", error);
 			}
 		};
 
 		socket.onerror = (error) => {
-			console.error('[ws] error:', error);
+			console.error("[ws] error:", error);
 		};
 
 		set({ ws: socket });
@@ -142,13 +142,13 @@ export const useWsStore = create<WsState>((set, get) => ({
 		const { ws, reconnectTimer } = get();
 		if (reconnectTimer) clearTimeout(reconnectTimer);
 		if (ws) ws.close();
-		set({ status: 'disconnected', ws: null, reconnectTimer: null });
+		set({ status: "disconnected", ws: null, reconnectTimer: null });
 	},
 
 	send(type, payload) {
 		const { ws } = get();
 		if (!ws || ws.readyState !== WebSocket.OPEN) {
-			console.error('[ws] send failed: not connected');
+			console.error("[ws] send failed: not connected");
 			return;
 		}
 		ws.send(JSON.stringify({ type, ref_id: crypto.randomUUID(), payload }));

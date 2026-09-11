@@ -92,7 +92,8 @@ export function StatItem({
 			<div
 				className="w-9 h-9 rounded-xl flex items-center justify-center"
 				style={{
-					background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+					background:
+						"color-mix(in srgb, var(--accent-primary) 12%, transparent)",
 				}}
 			>
 				<Icon className="w-4 h-4 text-gold" />
@@ -138,11 +139,15 @@ export function SettingsRow({
 			</div>
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-2">
-					<span className="text-sm font-medium text-foreground/90">{label}</span>
+					<span className="text-sm font-medium text-foreground/90">
+						{label}
+					</span>
 					{badge}
 				</div>
 				{description && (
-					<p className="text-xs text-muted-foreground/60 mt-0.5">{description}</p>
+					<p className="text-xs text-muted-foreground/60 mt-0.5">
+						{description}
+					</p>
 				)}
 			</div>
 			<svg
@@ -250,7 +255,8 @@ export function EmptyState({
 			<div
 				className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
 				style={{
-					background: "color-mix(in srgb, var(--accent-primary) 8%, transparent)",
+					background:
+						"color-mix(in srgb, var(--accent-primary) 8%, transparent)",
 				}}
 			>
 				<Icon className="w-8 h-8 text-gold/40" />
@@ -316,14 +322,16 @@ export function GoldDivider({ className }: { className?: string }) {
 			<div
 				className="flex-1 h-px"
 				style={{
-					background: "linear-gradient(90deg, transparent, rgba(234,179,8,0.2), transparent)",
+					background:
+						"linear-gradient(90deg, transparent, rgba(234,179,8,0.2), transparent)",
 				}}
 			/>
 			<div className="w-1.5 h-1.5 rounded-full bg-gold/30" />
 			<div
 				className="flex-1 h-px"
 				style={{
-					background: "linear-gradient(90deg, transparent, rgba(234,179,8,0.2), transparent)",
+					background:
+						"linear-gradient(90deg, transparent, rgba(234,179,8,0.2), transparent)",
 				}}
 			/>
 		</div>

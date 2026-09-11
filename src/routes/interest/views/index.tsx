@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useViews } from "#/core/api/hooks/use-views";
 import { Eye, Heart, Lock } from "lucide-react";
+import { demoMediaUrl } from "#/domains/demo";
 
 export const Route = createFileRoute("/interest/views/")({
 	component: ViewsPage,
@@ -15,14 +16,21 @@ interface ViewerItem {
 	lastViewed: number | null;
 }
 
+const VIEW_SKELETON_IDS = ["one", "two", "three", "four", "five", "six"];
+
 function ViewsPage() {
 	const { data, isLoading } = useViews();
 	const profiles = (data?.profiles ?? []) as unknown as ViewerItem[];
 	const previews = (data?.previews ?? []) as unknown as ViewerItem[];
 
-	const allViewers = [...profiles, ...previews];
+	const allViewers = [...profiles, ...previews].map((viewer, index) => ({
+		...viewer,
+		// Secret-admirer previews intentionally omit a public profile ID. Give
+		// each card a stable, local-only identity so React can reconcile it.
+		profileId: viewer.profileId ?? -(index + 1),
+	}));
 	const uniqueViewers = allViewers.reduce<ViewerItem[]>((acc, viewer) => {
-		const id = viewer.profileId ?? 0;
+		const id = viewer.profileId;
 		if (!acc.some((v) => v.profileId === id)) {
 			acc.push(viewer);
 		}
@@ -50,9 +58,9 @@ function ViewsPage() {
 					{/* Content */}
 					{isLoading ? (
 						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-							{Array.from({ length: 6 }).map((_, i) => (
+							{VIEW_SKELETON_IDS.map((id, i) => (
 								<div
-									key={i}
+									key={id}
 									className="aspect-[3/4] animate-pulse rounded-xl bg-white/5"
 									style={{ animationDelay: `${i * 60}ms` }}
 								/>
@@ -63,7 +71,8 @@ function ViewsPage() {
 							<div
 								className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl"
 								style={{
-									background: "color-mix(in srgb, var(--accent-primary) 8%, transparent)",
+									background:
+										"color-mix(in srgb, var(--accent-primary) 8%, transparent)",
 								}}
 							>
 								<Eye className="h-10 w-10 text-amber-400/30" />
@@ -72,7 +81,8 @@ function ViewsPage() {
 								No one has viewed you yet
 							</h3>
 							<p className="mt-1 max-w-xs text-center text-sm text-white/30">
-								When someone views your profile, they'll appear here. Keep exploring!
+								When someone views your profile, they'll appear here. Keep
+								exploring!
 							</p>
 						</div>
 					) : (
@@ -95,7 +105,8 @@ function ViewCard({ viewer }: { viewer: ViewerItem }) {
 				<div
 					className="flex h-full items-center justify-center"
 					style={{
-						background: "linear-gradient(135deg, rgba(236,72,153,0.15), rgba(168,85,247,0.15))",
+						background:
+							"linear-gradient(135deg, rgba(236,72,153,0.15), rgba(168,85,247,0.15))",
 						border: "1px solid rgba(236,72,153,0.15)",
 					}}
 				>
@@ -124,7 +135,7 @@ function ViewCard({ viewer }: { viewer: ViewerItem }) {
 	}
 
 	const isOnline =
-		viewer.onlineUntil !== null && viewer.onlineUntil > Date.now() / 1000;
+		viewer.onlineUntil !== null && viewer.onlineUntil > Date.now();
 
 	return (
 		<Link
@@ -133,15 +144,17 @@ function ViewCard({ viewer }: { viewer: ViewerItem }) {
 			className="group relative aspect-[3/4] overflow-hidden rounded-xl"
 			style={{ border: "1px solid rgba(255,255,255,0.06)" }}
 		>
-			<div
-				className="flex h-full items-center justify-center text-3xl font-bold"
-				style={{
-					background: "linear-gradient(135deg, rgba(234,179,8,0.12), rgba(168,85,247,0.08))",
-					color: "#EAAB08",
-				}}
-			>
-				{viewer.displayName?.charAt(0) ?? "?"}
-			</div>
+			{viewer.profileImageMediaHash ? (
+				<img
+					src={demoMediaUrl(viewer.profileImageMediaHash)}
+					alt={viewer.displayName ?? "Profile viewer"}
+					className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]"
+				/>
+			) : (
+				<div className="flex h-full items-center justify-center bg-gold/10 text-3xl font-bold text-gold">
+					{viewer.displayName?.charAt(0) ?? "?"}
+				</div>
+			)}
 			<div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2.5 pt-6">
 				<p className="text-sm font-medium text-white drop-shadow-md">
 					{viewer.displayName ?? "Someone"}

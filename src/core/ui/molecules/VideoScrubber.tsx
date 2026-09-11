@@ -4,148 +4,143 @@ import { cn } from "../cn";
 const STEP_SECONDS = 5;
 
 interface VideoScrubberProps {
-  currentTime: number;
-  duration: number;
-  buffered: Array<{ start: number; end: number }>;
-  onSeek: (time: number) => void;
-  className?: string;
+	currentTime: number;
+	duration: number;
+	buffered: Array<{ start: number; end: number }>;
+	onSeek: (time: number) => void;
+	className?: string;
 }
 
 function formatMediaDuration(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
+	const mins = Math.floor(seconds / 60);
+	const secs = Math.floor(seconds % 60);
+	return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 export function VideoScrubber({
-  currentTime,
-  duration,
-  buffered,
-  onSeek,
-  className,
+	currentTime,
+	duration,
+	buffered,
+	onSeek,
+	className,
 }: VideoScrubberProps): ReactNode {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const thumbRef = useRef<HTMLDivElement>(null);
-  const [scrubbing, setScrubbing] = useState(false);
+	const trackRef = useRef<HTMLDivElement>(null);
+	const thumbRef = useRef<HTMLDivElement>(null);
+	const [scrubbing, setScrubbing] = useState(false);
 
-  const played = useMemo(
-    () => (duration > 0 ? Math.min(currentTime / duration, 1) : 0),
-    [currentTime, duration],
-  );
+	const played = useMemo(
+		() => (duration > 0 ? Math.min(currentTime / duration, 1) : 0),
+		[currentTime, duration],
+	);
 
-  const loaded = useMemo(() => {
-    if (duration <= 0) return 0;
-    const reached = buffered.find(
-      ({ start, end }) => start <= currentTime && currentTime <= end,
-    );
-    return reached === undefined ? 0 : reached.end / duration;
-  }, [currentTime, duration, buffered]);
+	const loaded = useMemo(() => {
+		if (duration <= 0) return 0;
+		const reached = buffered.find(
+			({ start, end }) => start <= currentTime && currentTime <= end,
+		);
+		return reached === undefined ? 0 : reached.end / duration;
+	}, [currentTime, duration, buffered]);
 
-  const playhead = useMemo(
-    () =>
-      `calc(${played} * (100% - var(--thumb-width)) + var(--thumb-width) / 2)`,
-    [played],
-  );
+	const playhead = useMemo(
+		() =>
+			`calc(${played} * (100% - var(--thumb-width)) + var(--thumb-width) / 2)`,
+		[played],
+	);
 
-  const seekTo = useCallback(
-    (time: number) => {
-      onSeek(Math.min(duration, Math.max(0, time)));
-    },
-    [duration, onSeek],
-  );
+	const seekTo = useCallback(
+		(time: number) => {
+			onSeek(Math.min(duration, Math.max(0, time)));
+		},
+		[duration, onSeek],
+	);
 
-  const seekToPointer = useCallback(
-    (event: React.PointerEvent | PointerEvent) => {
-      const track = trackRef.current;
-      if (!track || duration <= 0) return;
-      const { left, width } = track.getBoundingClientRect();
-      const inset = (thumbRef.current?.offsetWidth ?? 0) / 2;
-      const travel = width - inset * 2;
-      if (travel <= 0) return;
-      seekTo(
-        (((event as PointerEvent).clientX - left - inset) / travel) * duration,
-      );
-    },
-    [duration, seekTo],
-  );
+	const seekToPointer = useCallback(
+		(event: React.PointerEvent | PointerEvent) => {
+			const track = trackRef.current;
+			if (!track || duration <= 0) return;
+			const { left, width } = track.getBoundingClientRect();
+			const inset = (thumbRef.current?.offsetWidth ?? 0) / 2;
+			const travel = width - inset * 2;
+			if (travel <= 0) return;
+			seekTo(
+				(((event as PointerEvent).clientX - left - inset) / travel) * duration,
+			);
+		},
+		[duration, seekTo],
+	);
 
-  const grab = useCallback(
-    (event: React.PointerEvent) => {
-      setScrubbing(true);
-      trackRef.current?.setPointerCapture(event.pointerId);
-      seekToPointer(event);
-    },
-    [seekToPointer],
-  );
+	const grab = useCallback(
+		(event: React.PointerEvent) => {
+			setScrubbing(true);
+			trackRef.current?.setPointerCapture(event.pointerId);
+			seekToPointer(event);
+		},
+		[seekToPointer],
+	);
 
-  const release = useCallback(
-    (event: React.PointerEvent) => {
-      setScrubbing(false);
-      trackRef.current?.releasePointerCapture(event.pointerId);
-    },
-    [],
-  );
+	const release = useCallback((event: React.PointerEvent) => {
+		setScrubbing(false);
+		trackRef.current?.releasePointerCapture(event.pointerId);
+	}, []);
 
-  const seekByKey = useCallback(
-    (event: React.KeyboardEvent) => {
-      if (event.key === "ArrowLeft") seekTo(currentTime - STEP_SECONDS);
-      else if (event.key === "ArrowRight") seekTo(currentTime + STEP_SECONDS);
-      else if (event.key === "Home") seekTo(0);
-      else if (event.key === "End") seekTo(duration);
-      else return;
-      event.preventDefault();
-    },
-    [currentTime, duration, seekTo],
-  );
+	const seekByKey = useCallback(
+		(event: React.KeyboardEvent) => {
+			if (event.key === "ArrowLeft") seekTo(currentTime - STEP_SECONDS);
+			else if (event.key === "ArrowRight") seekTo(currentTime + STEP_SECONDS);
+			else if (event.key === "Home") seekTo(0);
+			else if (event.key === "End") seekTo(duration);
+			else return;
+			event.preventDefault();
+		},
+		[currentTime, duration, seekTo],
+	);
 
-  return (
-    <div
-      ref={trackRef}
-      role="slider"
-      tabIndex={0}
-      aria-label="Seek"
-      aria-valuemin={0}
-      aria-valuemax={duration}
-      aria-valuenow={currentTime}
-      aria-valuetext={formatMediaDuration(currentTime)}
-      className={cn(
-        "relative flex h-8 grow cursor-pointer touch-none items-center outline-hidden [--thumb-width:1.5rem]",
-        className,
-      )}
-      onPointerDown={grab}
-      onPointerMove={(e) => {
-        if (scrubbing) seekToPointer(e);
-      }}
-      onPointerUp={release}
-      onPointerCancel={release}
-      onKeyDown={seekByKey}
-    >
-      <div className="relative h-1.75 w-full overflow-hidden rounded-full bg-white/25">
-        <div
-          data-slot="scrubber-buffered"
-          className="absolute inset-y-0 left-0 bg-white/40"
-          style={{ width: `${loaded * 100}%` }}
-        />
-        <div
-          data-slot="scrubber-played"
-          className="absolute inset-y-0 left-0 bg-white"
-          style={{ width: playhead }}
-        />
-      </div>
-      <div
-        ref={thumbRef}
-        data-slot="scrubber-thumb"
-        className={cn(
-          "pointer-events-none absolute h-4.5 w-(--thumb-width) -translate-x-1/2 rounded-full transition-[background-color,scale]",
-          scrubbing
-            ? "scale-150 bg-transparent"
-            : "scale-100 bg-white",
-        )}
-        style={{
-          left: playhead,
-          transformOrigin: `${played * 100}% center`,
-        }}
-      />
-    </div>
-  );
+	return (
+		<div
+			ref={trackRef}
+			role="slider"
+			tabIndex={0}
+			aria-label="Seek"
+			aria-valuemin={0}
+			aria-valuemax={duration}
+			aria-valuenow={currentTime}
+			aria-valuetext={formatMediaDuration(currentTime)}
+			className={cn(
+				"relative flex h-8 grow cursor-pointer touch-none items-center outline-hidden [--thumb-width:1.5rem]",
+				className,
+			)}
+			onPointerDown={grab}
+			onPointerMove={(e) => {
+				if (scrubbing) seekToPointer(e);
+			}}
+			onPointerUp={release}
+			onPointerCancel={release}
+			onKeyDown={seekByKey}
+		>
+			<div className="relative h-1.75 w-full overflow-hidden rounded-full bg-white/25">
+				<div
+					data-slot="scrubber-buffered"
+					className="absolute inset-y-0 left-0 bg-white/40"
+					style={{ width: `${loaded * 100}%` }}
+				/>
+				<div
+					data-slot="scrubber-played"
+					className="absolute inset-y-0 left-0 bg-white"
+					style={{ width: playhead }}
+				/>
+			</div>
+			<div
+				ref={thumbRef}
+				data-slot="scrubber-thumb"
+				className={cn(
+					"pointer-events-none absolute h-4.5 w-(--thumb-width) -translate-x-1/2 rounded-full transition-[background-color,scale]",
+					scrubbing ? "scale-150 bg-transparent" : "scale-100 bg-white",
+				)}
+				style={{
+					left: playhead,
+					transformOrigin: `${played * 100}% center`,
+				}}
+			/>
+		</div>
+	);
 }

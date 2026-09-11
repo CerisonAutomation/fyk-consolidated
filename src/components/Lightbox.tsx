@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 // Self-contained pinch-zoom + pan + swipe-to-dismiss fullscreen image lightbox.
 // Port of open-grind's PhotoSwipe integration (src/lib/util/photoswipe.ts +
@@ -21,10 +21,10 @@
 // when zoomed), per-slide `loaded`/`broken` sets, and the visible index (which
 // is owned by the parent via the controlled `index` prop).
 
-import { useCallback, useEffect, useRef, useState, type JSX } from 'react';
-import { ChevronLeft, ChevronRight, ImageOff, X } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
+import { useCallback, useEffect, useRef, useState, type JSX } from "react";
+import { ChevronLeft, ChevronRight, ImageOff, X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 export type LightboxImage = { src: string; alt?: string };
 
@@ -42,9 +42,9 @@ const SNAP_BACK_SLIDE_MS = 320;
 type Point = { x: number; y: number };
 
 type Gesture =
-	| { kind: 'idle' }
+	| { kind: "idle" }
 	| {
-			kind: 'pan';
+			kind: "pan";
 			startScale: number;
 			startTx: number;
 			startTy: number;
@@ -53,13 +53,13 @@ type Gesture =
 			moved: boolean;
 	  }
 	| {
-			kind: 'swipe';
+			kind: "swipe";
 			startX: number;
 			startY: number;
 			moved: boolean;
 	  }
 	| {
-			kind: 'pinch';
+			kind: "pinch";
 			startScale: number;
 			startTx: number;
 			startTy: number;
@@ -119,7 +119,7 @@ export function Lightbox({
 
 	// Gesture bookkeeping
 	const pointersRef = useRef<Map<number, Point>>(new Map());
-	const gestureRef = useRef<Gesture>({ kind: 'idle' });
+	const gestureRef = useRef<Gesture>({ kind: "idle" });
 	const lastTapRef = useRef<{ t: number; x: number; y: number } | null>(null);
 	const pendingDoubleTapRef = useRef(false);
 	const singleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,7 +182,7 @@ export function Lightbox({
 		// Force a reflow so the transition fires when we change the transform.
 		void wrap.offsetWidth;
 		snapBackTimerRef.current = setTimeout(() => {
-			if (wrapRef.current) wrapRef.current.style.transition = '';
+			if (wrapRef.current) wrapRef.current.style.transition = "";
 			snapBackTimerRef.current = null;
 		}, SNAP_BACK_MS + 16);
 	}, [clearSnapBack]);
@@ -194,7 +194,7 @@ export function Lightbox({
 		track.style.transition = `transform ${SNAP_BACK_SLIDE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`;
 		void track.offsetWidth;
 		snapBackTimerRef.current = setTimeout(() => {
-			if (trackRef.current) trackRef.current.style.transition = '';
+			if (trackRef.current) trackRef.current.style.transition = "";
 			snapBackTimerRef.current = null;
 		}, SNAP_BACK_SLIDE_MS + 16);
 	}, [clearSnapBack]);
@@ -207,16 +207,16 @@ export function Lightbox({
 		clearSnapBack();
 		const wrap = wrapRef.current;
 		if (wrap) {
-			wrap.style.transition = '';
-			wrap.style.transform = '';
+			wrap.style.transition = "";
+			wrap.style.transform = "";
 		}
 		const track = trackRef.current;
 		if (track) {
-			track.style.transition = '';
+			track.style.transition = "";
 			track.style.transform = `translate3d(${-index * 100}%, 0, 0)`;
 		}
 		const backdrop = backdropRef.current;
-		if (backdrop) backdrop.style.opacity = '';
+		if (backdrop) backdrop.style.opacity = "";
 		// Defer the setState to a microtask so it doesn't run synchronously inside
 		// the effect body (avoids the react-hooks/set-state-in-effect lint rule).
 		queueMicrotask(() => setScale(1));
@@ -227,7 +227,7 @@ export function Lightbox({
 		}
 		lastTapRef.current = null;
 		pendingDoubleTapRef.current = false;
-		gestureRef.current = { kind: 'idle' };
+		gestureRef.current = { kind: "idle" };
 		pointersRef.current.clear();
 	}, [index, clearSnapBack]);
 
@@ -240,18 +240,18 @@ export function Lightbox({
 			containerRectRef.current = { w: r.width, h: r.height };
 		};
 		measure();
-		window.addEventListener('resize', measure);
-		window.addEventListener('orientationchange', measure);
+		window.addEventListener("resize", measure);
+		window.addEventListener("orientationchange", measure);
 		return () => {
-			window.removeEventListener('resize', measure);
-			window.removeEventListener('orientationchange', measure);
+			window.removeEventListener("resize", measure);
+			window.removeEventListener("orientationchange", measure);
 		};
 	}, []);
 
 	// Lock body scroll while the lightbox is mounted.
 	useEffect(() => {
 		const prev = document.body.style.overflow;
-		document.body.style.overflow = 'hidden';
+		document.body.style.overflow = "hidden";
 		return () => {
 			document.body.style.overflow = prev;
 		};
@@ -263,7 +263,7 @@ export function Lightbox({
 	// container size to derive the contained (object-contain) image rect, then
 	// returns ±((scaled_image - container) / 2) clamped at 0.
 	const maxPanFor = useCallback(
-		(axis: 'x' | 'y', liveScale: number): number => {
+		(axis: "x" | "y", liveScale: number): number => {
 			const img = wrapRef.current;
 			const container = containerRectRef.current;
 			if (!img || !container.w || !container.h) return 0;
@@ -271,15 +271,15 @@ export function Lightbox({
 			const nh = img.naturalHeight || 0;
 			if (!nw || !nh) return 0;
 			const rect = containedSize(nw, nh, container.w, container.h);
-			const imgSize = axis === 'x' ? rect.w : rect.h;
-			const boxSize = axis === 'x' ? container.w : container.h;
+			const imgSize = axis === "x" ? rect.w : rect.h;
+			const boxSize = axis === "x" ? container.w : container.h;
 			return Math.max(0, (imgSize * liveScale - boxSize) / 2);
 		},
 		[],
 	);
 
 	const clampPan = useCallback(
-		(value: number, liveScale: number, axis: 'x' | 'y'): number => {
+		(value: number, liveScale: number, axis: "x" | "y"): number => {
 			if (liveScale <= 1) return 0;
 			const max = maxPanFor(axis, liveScale);
 			return clamp(value, -max, max);
@@ -291,26 +291,26 @@ export function Lightbox({
 	useEffect(() => {
 		const onKey = (e: KeyboardEvent) => {
 			switch (e.key) {
-				case 'Escape':
+				case "Escape":
 					e.preventDefault();
 					e.stopPropagation();
 					onClose();
 					break;
-				case 'ArrowLeft':
+				case "ArrowLeft":
 					if (index > 0) {
 						e.preventDefault();
 						onIndexChange(index - 1);
 					}
 					break;
-				case 'ArrowRight':
+				case "ArrowRight":
 					if (index < total - 1) {
 						e.preventDefault();
 						onIndexChange(index + 1);
 					}
 					break;
-				case '+':
-				case '=':
-				case 'ArrowUp': {
+				case "+":
+				case "=":
+				case "ArrowUp": {
 					e.preventDefault();
 					const next = clamp(
 						transformRef.current.scale * 1.4,
@@ -322,20 +322,20 @@ export function Lightbox({
 					transformRef.current.tx = clampPan(
 						transformRef.current.tx,
 						next,
-						'x',
+						"x",
 					);
 					transformRef.current.ty = clampPan(
 						transformRef.current.ty,
 						next,
-						'y',
+						"y",
 					);
 					setScale(next);
 					applyTransform();
 					break;
 				}
-				case '-':
-				case '_':
-				case 'ArrowDown': {
+				case "-":
+				case "_":
+				case "ArrowDown": {
 					e.preventDefault();
 					const next = clamp(
 						transformRef.current.scale / 1.4,
@@ -351,19 +351,19 @@ export function Lightbox({
 						transformRef.current.tx = clampPan(
 							transformRef.current.tx,
 							next,
-							'x',
+							"x",
 						);
 						transformRef.current.ty = clampPan(
 							transformRef.current.ty,
 							next,
-							'y',
+							"y",
 						);
 					}
 					setScale(next);
 					applyTransform();
 					break;
 				}
-				case '0':
+				case "0":
 					e.preventDefault();
 					transformRef.current.scale = 1;
 					transformRef.current.tx = 0;
@@ -374,8 +374,8 @@ export function Lightbox({
 					break;
 			}
 		};
-		window.addEventListener('keydown', onKey, true);
-		return () => window.removeEventListener('keydown', onKey, true);
+		window.addEventListener("keydown", onKey, true);
+		return () => window.removeEventListener("keydown", onKey, true);
 	}, [
 		index,
 		total,
@@ -408,14 +408,14 @@ export function Lightbox({
 			setScale(next);
 			applyTransform();
 		};
-		el.addEventListener('wheel', handler, { passive: false });
-		return () => el.removeEventListener('wheel', handler);
+		el.addEventListener("wheel", handler, { passive: false });
+		return () => el.removeEventListener("wheel", handler);
 	}, [applyTransform]);
 
 	// ---- pointer handlers ----
 	const onPointerDown = (e: React.PointerEvent) => {
 		// Only react to primary mouse button / touch / pen
-		if (e.button !== 0 && e.pointerType === 'mouse') return;
+		if (e.button !== 0 && e.pointerType === "mouse") return;
 		const el = containerRef.current;
 		if (el) {
 			try {
@@ -428,8 +428,8 @@ export function Lightbox({
 		pointersRef.current.set(e.pointerId, p);
 		clearSnapBack();
 		// Clear any in-flight CSS transition on the wrap so the gesture tracks 1:1.
-		if (wrapRef.current) wrapRef.current.style.transition = '';
-		if (trackRef.current) trackRef.current.style.transition = '';
+		if (wrapRef.current) wrapRef.current.style.transition = "";
+		if (trackRef.current) trackRef.current.style.transition = "";
 
 		// Double-tap detection (only meaningful for single-pointer taps)
 		if (pointersRef.current.size === 1) {
@@ -454,7 +454,7 @@ export function Lightbox({
 			const p1 = vals[0]!;
 			const p2 = vals[1]!;
 			gestureRef.current = {
-				kind: 'pinch',
+				kind: "pinch",
 				startScale: transformRef.current.scale,
 				startTx: transformRef.current.tx,
 				startTy: transformRef.current.ty,
@@ -465,7 +465,7 @@ export function Lightbox({
 		} else if (pointersRef.current.size === 1) {
 			if (transformRef.current.scale > 1) {
 				gestureRef.current = {
-					kind: 'pan',
+					kind: "pan",
 					startScale: transformRef.current.scale,
 					startTx: transformRef.current.tx,
 					startTy: transformRef.current.ty,
@@ -475,7 +475,7 @@ export function Lightbox({
 				};
 			} else {
 				gestureRef.current = {
-					kind: 'swipe',
+					kind: "swipe",
 					startX: p.x,
 					startY: p.y,
 					moved: false,
@@ -491,7 +491,7 @@ export function Lightbox({
 
 		const g = gestureRef.current;
 
-		if (g.kind === 'pinch' && pointersRef.current.size >= 2) {
+		if (g.kind === "pinch" && pointersRef.current.size >= 2) {
 			const vals = [...pointersRef.current.values()];
 			const p1 = vals[0]!;
 			const p2 = vals[1]!;
@@ -505,25 +505,25 @@ export function Lightbox({
 			const dx = midX - g.startMidX;
 			const dy = midY - g.startMidY;
 			transformRef.current.scale = newScale;
-			transformRef.current.tx = clampPan(g.startTx + dx, newScale, 'x');
-			transformRef.current.ty = clampPan(g.startTy + dy, newScale, 'y');
+			transformRef.current.tx = clampPan(g.startTx + dx, newScale, "x");
+			transformRef.current.ty = clampPan(g.startTy + dy, newScale, "y");
 			applyTransform();
 			return;
 		}
 
-		if (g.kind === 'pan' && pointersRef.current.size === 1) {
+		if (g.kind === "pan" && pointersRef.current.size === 1) {
 			const dx = p.x - g.startX;
 			const dy = p.y - g.startY;
 			if (Math.abs(dx) > TAP_MAX_MOVE_PX || Math.abs(dy) > TAP_MAX_MOVE_PX) {
 				g.moved = true;
 			}
-			transformRef.current.tx = clampPan(g.startTx + dx, g.startScale, 'x');
-			transformRef.current.ty = clampPan(g.startTy + dy, g.startScale, 'y');
+			transformRef.current.tx = clampPan(g.startTx + dx, g.startScale, "x");
+			transformRef.current.ty = clampPan(g.startTy + dy, g.startScale, "y");
 			applyTransform();
 			return;
 		}
 
-		if (g.kind === 'swipe' && pointersRef.current.size === 1) {
+		if (g.kind === "swipe" && pointersRef.current.size === 1) {
 			const dx = p.x - g.startX;
 			const dy = p.y - g.startY;
 			if (Math.abs(dx) > TAP_MAX_MOVE_PX || Math.abs(dy) > TAP_MAX_MOVE_PX) {
@@ -554,7 +554,7 @@ export function Lightbox({
 		}
 	};
 
-	const finishSwipe = (_g: Extract<Gesture, { kind: 'swipe' }>) => {
+	const finishSwipe = (_g: Extract<Gesture, { kind: "swipe" }>) => {
 		const t = transformRef.current;
 		// Dismiss takes priority over slide-nav.
 		if (t.trackY > SWIPE_DISMISS_PX) {
@@ -571,7 +571,7 @@ export function Lightbox({
 			}
 			// After the off-screen animation, close.
 			setTimeout(() => onClose(), SNAP_BACK_SLIDE_MS);
-			gestureRef.current = { kind: 'idle' };
+			gestureRef.current = { kind: "idle" };
 			return;
 		}
 		if (t.trackX > SWIPE_NEXT_PX && canPrev) {
@@ -579,14 +579,14 @@ export function Lightbox({
 			// effect will snap the track to the new -index*100% position.
 			t.trackX = 0;
 			t.trackY = 0;
-			gestureRef.current = { kind: 'idle' };
+			gestureRef.current = { kind: "idle" };
 			onIndexChange(index - 1);
 			return;
 		}
 		if (t.trackX < -SWIPE_NEXT_PX && canNext) {
 			t.trackX = 0;
 			t.trackY = 0;
-			gestureRef.current = { kind: 'idle' };
+			gestureRef.current = { kind: "idle" };
 			onIndexChange(index + 1);
 			return;
 		}
@@ -595,7 +595,7 @@ export function Lightbox({
 		t.trackY = 0;
 		animateTrackSnapBack();
 		applyTransform();
-		gestureRef.current = { kind: 'idle' };
+		gestureRef.current = { kind: "idle" };
 	};
 
 	const onPointerUp = (e: React.PointerEvent) => {
@@ -613,7 +613,7 @@ export function Lightbox({
 		const g = gestureRef.current;
 
 		// ---- pinch end (or pinch dropping to a single finger) ----
-		if (g.kind === 'pinch') {
+		if (g.kind === "pinch") {
 			if (pointersRef.current.size >= 1) {
 				// One finger lifted during a pinch — transition to pan with the
 				// remaining pointer so the user can pan the zoomed image without
@@ -621,7 +621,7 @@ export function Lightbox({
 				const remaining = [...pointersRef.current.values()][0];
 				if (remaining) {
 					gestureRef.current = {
-						kind: 'pan',
+						kind: "pan",
 						startScale: transformRef.current.scale,
 						startTx: transformRef.current.tx,
 						startTy: transformRef.current.ty,
@@ -630,7 +630,7 @@ export function Lightbox({
 						moved: true,
 					};
 				} else {
-					gestureRef.current = { kind: 'idle' };
+					gestureRef.current = { kind: "idle" };
 				}
 				queueMicrotask(() => setScale(transformRef.current.scale));
 				return;
@@ -644,24 +644,23 @@ export function Lightbox({
 			}
 			queueMicrotask(() => setScale(transformRef.current.scale));
 			applyTransform();
-			gestureRef.current = { kind: 'idle' };
+			gestureRef.current = { kind: "idle" };
 			return;
 		}
 
-		if (g.kind === 'pan') {
+		if (g.kind === "pan") {
 			if (pointersRef.current.size > 0) {
 				// Still have pointers (e.g. multi-touch pan) — just continue.
 				return;
 			}
 			queueMicrotask(() => setScale(transformRef.current.scale));
-			gestureRef.current = { kind: 'idle' };
+			gestureRef.current = { kind: "idle" };
 			return;
 		}
 
-		if (g.kind === 'swipe') {
+		if (g.kind === "swipe") {
 			// Tap = pointer down + up with no movement and no remaining pointers
-			const isTap =
-				!g.moved && pointersRef.current.size === 0 && hadPointer;
+			const isTap = !g.moved && pointersRef.current.size === 0 && hadPointer;
 			if (isTap && pendingDoubleTapRef.current) {
 				// Double-tap: toggle zoom
 				if (singleTapTimerRef.current !== null) {
@@ -680,7 +679,7 @@ export function Lightbox({
 				lastTapRef.current = null;
 				queueMicrotask(() => setScale(newScale));
 				applyTransform();
-				gestureRef.current = { kind: 'idle' };
+				gestureRef.current = { kind: "idle" };
 				return;
 			}
 			if (isTap) {
@@ -702,7 +701,7 @@ export function Lightbox({
 						onClose();
 					}
 				}, DOUBLE_TAP_MS);
-				gestureRef.current = { kind: 'idle' };
+				gestureRef.current = { kind: "idle" };
 				return;
 			}
 			// Not a tap — finalize the swipe gesture
@@ -710,12 +709,12 @@ export function Lightbox({
 			return;
 		}
 
-		gestureRef.current = { kind: 'idle' };
+		gestureRef.current = { kind: "idle" };
 	};
 
 	const onPointerCancel = (e: React.PointerEvent) => {
 		pointersRef.current.delete(e.pointerId);
-		gestureRef.current = { kind: 'idle' };
+		gestureRef.current = { kind: "idle" };
 		transformRef.current.trackX = 0;
 		transformRef.current.trackY = 0;
 		applyTransform();
@@ -767,7 +766,7 @@ export function Lightbox({
 
 	if (!images.length) return <></>;
 
-	const current = images[index] ?? { src: '', alt: '' };
+	const current = images[index] ?? { src: "", alt: "" };
 	const showSkeleton = !loaded.has(index) && !broken.has(index);
 
 	return (
@@ -781,7 +780,7 @@ export function Lightbox({
 			onPointerUp={onPointerUp}
 			onPointerCancel={onPointerCancel}
 			className="lightbox-enter fixed inset-0 z-[200] flex touch-none select-none flex-col"
-			style={{ cursor: scale > 1 ? 'zoom-in' : 'default' }}
+			style={{ cursor: scale > 1 ? "zoom-in" : "default" }}
 		>
 			{/* Backdrop (opacity is mutated live by applyTransform during swipe-to-dismiss) */}
 			<div
@@ -799,7 +798,7 @@ export function Lightbox({
 			>
 				{images.map((img, i) => {
 					const isActive = i === index;
-						const isBroken = broken.has(i);
+					const isBroken = broken.has(i);
 					return (
 						<div
 							key={`${i}-${img.src}`}
@@ -823,20 +822,20 @@ export function Lightbox({
 								<img
 									ref={isActive ? wrapRef : undefined}
 									src={img.src}
-									alt={img.alt ?? ''}
+									alt={img.alt ?? ""}
 									draggable={false}
 									decoding="async"
 									onLoad={handleImgLoad(i)}
 									onError={handleImgError(i)}
 									className={cn(
-										'size-full select-none object-contain will-change-transform',
-										isActive ? 'pointer-events-none' : 'opacity-100',
+										"size-full select-none object-contain will-change-transform",
+										isActive ? "pointer-events-none" : "opacity-100",
 									)}
 									style={
 										isActive
 											? {
-													transformOrigin: 'center center',
-													transform: 'translate3d(0, 0, 0) scale(1)',
+													transformOrigin: "center center",
+													transform: "translate3d(0, 0, 0) scale(1)",
 												}
 											: undefined
 									}
@@ -884,8 +883,8 @@ export function Lightbox({
 						disabled={!canPrev}
 						aria-label="Previous image"
 						className={cn(
-							'absolute top-1/2 left-[max(0.5rem,env(safe-area-inset-left))] z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors hover:bg-black/60',
-							!canPrev && 'pointer-events-none opacity-30',
+							"absolute top-1/2 left-[max(0.5rem,env(safe-area-inset-left))] z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors hover:bg-black/60",
+							!canPrev && "pointer-events-none opacity-30",
 						)}
 					>
 						<ChevronLeft className="size-6" />
@@ -899,8 +898,8 @@ export function Lightbox({
 						disabled={!canNext}
 						aria-label="Next image"
 						className={cn(
-							'absolute top-1/2 right-[max(0.5rem,env(safe-area-inset-right))] z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors hover:bg-black/60',
-							!canNext && 'pointer-events-none opacity-30',
+							"absolute top-1/2 right-[max(0.5rem,env(safe-area-inset-right))] z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition-colors hover:bg-black/60",
+							!canNext && "pointer-events-none opacity-30",
 						)}
 					>
 						<ChevronRight className="size-6" />
@@ -911,7 +910,7 @@ export function Lightbox({
 			{/* Screen-reader-only description of the current image */}
 			<span className="sr-only">
 				Image {index + 1} of {total}
-				{current.alt ? `: ${current.alt}` : ''}
+				{current.alt ? `: ${current.alt}` : ""}
 			</span>
 		</div>
 	);

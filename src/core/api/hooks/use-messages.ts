@@ -9,7 +9,7 @@ import { ApiError } from "../client/api-error";
 export const apiResponseMessageSchema = z.record(z.string(), z.unknown());
 export type ApiResponseMessage = z.infer<typeof apiResponseMessageSchema>;
 
-export const outboundMessageSchema = z.object({
+const outboundMessageSchema = z.object({
 	type: z.number(),
 	body: z.string(),
 });

@@ -1,0 +1,72 @@
+import { useState, useCallback, type ReactNode } from "react";
+import { cn } from "../cn";
+import { BrokenMedia } from "../atoms/BrokenMedia";
+
+interface MediaImageProps {
+  src: string | null;
+  alt?: string;
+  className?: string;
+  imgClassName?: string;
+  aspectRatio?: string;
+  fallbackAspectRatio?: string;
+  tone?: "muted" | "photo";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
+  loading?: "eager" | "lazy";
+  onLoad?: (image: HTMLImageElement) => void;
+}
+
+function MediaImage({
+  src,
+  alt = "",
+  className,
+  imgClassName,
+  aspectRatio,
+  fallbackAspectRatio = "3 / 4",
+  tone = "muted",
+  size = "sm",
+  loading,
+  onLoad,
+}: MediaImageProps): ReactNode {
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+
+  const handleError = useCallback(() => {
+    if (src) setFailedSrc(src);
+  }, [src]);
+
+  const handleLoad = useCallback(
+    (event: React.SyntheticEvent<HTMLImageElement>) => {
+      const image = event.currentTarget;
+      if (image.naturalWidth === 0) {
+        if (src) setFailedSrc(src);
+      } else {
+        onLoad?.(image);
+      }
+    },
+    [src, onLoad],
+  );
+
+  if (src !== null && failedSrc !== src) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        loading={loading}
+        draggable={false}
+        className={cn("object-cover", className, imgClassName)}
+        style={aspectRatio ? { aspectRatio } : undefined}
+        onError={handleError}
+        onLoad={handleLoad}
+      />
+    );
+  }
+
+  return (
+    <BrokenMedia
+      tone={tone}
+      size={size}
+      className={className}
+      aspectRatio={aspectRatio ?? fallbackAspectRatio}
+      label={alt === "" ? undefined : alt}
+    />
+  );
+}

@@ -1,4 +1,4 @@
-import { useWsStore } from './ws-store';
+import { useWsStore } from "./ws-store";
 
 const THROTTLE_MS = 2000;
 
@@ -12,29 +12,29 @@ class Reconciler {
 	#firstConnect = true;
 
 	constructor() {
-	// Listen for WebSocket connection events
-	useWsStore.subscribe((state, prevState) => {
-		if (state.status === 'connected' && prevState.status !== 'connected') {
-			if (this.#firstConnect) {
-				this.#firstConnect = false;
-				return;
+		// Listen for WebSocket connection events
+		useWsStore.subscribe((state, prevState) => {
+			if (state.status === "connected" && prevState.status !== "connected") {
+				if (this.#firstConnect) {
+					this.#firstConnect = false;
+					return;
+				}
+				this.#scheduleResync();
 			}
-			this.#scheduleResync();
-		}
-	});
-
-	if (typeof document !== 'undefined') {
-		document.addEventListener('visibilitychange', () => {
-			if (document.visibilityState === 'hidden') {
-				this.#wasHidden = true;
-				return;
-			}
-			if (!this.#wasHidden) return;
-			this.#wasHidden = false;
-			this.#scheduleResync();
 		});
+
+		if (typeof document !== "undefined") {
+			document.addEventListener("visibilitychange", () => {
+				if (document.visibilityState === "hidden") {
+					this.#wasHidden = true;
+					return;
+				}
+				if (!this.#wasHidden) return;
+				this.#wasHidden = false;
+				this.#scheduleResync();
+			});
+		}
 	}
-}
 
 	subscribe(handler: ReconcileHandler): () => void {
 		this.#handlers.add(handler);
@@ -63,7 +63,7 @@ class Reconciler {
 				try {
 					await handler();
 				} catch (error) {
-					console.error('Reconcile handler failed', error);
+					console.error("Reconcile handler failed", error);
 				}
 			}),
 		);

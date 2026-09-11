@@ -112,9 +112,7 @@ export function UserDropdown() {
 								</p>
 								<div className="flex items-center gap-1">
 									<Mail className="w-3 h-3 text-white/30" />
-									<p className="text-[11px] text-white/40 truncate">
-										{email}
-									</p>
+									<p className="text-[11px] text-white/40 truncate">{email}</p>
 								</div>
 							</div>
 						</div>
@@ -123,15 +121,15 @@ export function UserDropdown() {
 					{/* Menu items */}
 					<div className="py-1.5">
 						<Link
-								to="/"
-								onClick={() => setOpen(false)}
-								className="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors no-underline"
-								role="menuitem"
-							>
-								<User className="w-4 h-4 text-white/40" />
-								<span className="flex-1">My Profile</span>
-								<ChevronRight className="w-3 h-3 text-white/20" />
-							</Link>
+							to="/"
+							onClick={() => setOpen(false)}
+							className="flex items-center gap-3 px-4 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors no-underline"
+							role="menuitem"
+						>
+							<User className="w-4 h-4 text-white/40" />
+							<span className="flex-1">My Profile</span>
+							<ChevronRight className="w-3 h-3 text-white/20" />
+						</Link>
 						<Link
 							to="/settings"
 							onClick={() => setOpen(false)}

@@ -1,4 +1,4 @@
-import { supabase } from "#/integrations/supabase/client";
+import { getSupabase } from "#/integrations/supabase/client";
 import { signOut } from "./sign-out";
 
 let pending: Promise<void> | null = null;
@@ -20,10 +20,13 @@ async function confirmSessionLost(): Promise<void> {
 		window.location.pathname.startsWith("/settings");
 	if (!insideTheApp) return;
 
+	const client = getSupabase();
+	if (!client) return;
+
 	// Check if session is still valid via Supabase
 	const {
 		data: { session },
-	} = await supabase.auth.getSession();
+	} = await client.auth.getSession();
 	if (session) return;
 
 	await signOut();

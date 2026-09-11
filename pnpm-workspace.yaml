@@ -376,6 +376,7 @@ allowBuilds:
   prisma: true
   '@google/genai': true
   protobufjs: true
+  '@sentry/cli': true
 
 packages:
   - .

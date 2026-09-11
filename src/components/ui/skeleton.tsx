@@ -1,7 +1,10 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "#/lib/utils";
 
-function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+export function Skeleton({
+	className,
+	...props
+}: HTMLAttributes<HTMLDivElement>) {
 	return (
 		<div
 			data-slot="skeleton"
@@ -10,5 +13,3 @@ function Skeleton({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 		/>
 	);
 }
-
-export { Skeleton };

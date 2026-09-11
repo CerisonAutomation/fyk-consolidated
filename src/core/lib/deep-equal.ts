@@ -5,12 +5,12 @@
  */
 export function deepEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
-	if (typeof a === 'number' && typeof b === 'number') {
+	if (typeof a === "number" && typeof b === "number") {
 		return Number.isNaN(a) && Number.isNaN(b);
 	}
 	if (
-		typeof a !== 'object' ||
-		typeof b !== 'object' ||
+		typeof a !== "object" ||
+		typeof b !== "object" ||
 		a === null ||
 		b === null
 	) {

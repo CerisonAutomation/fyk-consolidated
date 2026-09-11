@@ -39,9 +39,7 @@ export function usePlaces(query: string | null | undefined) {
 		queryKey: placeKeys.search(query ?? ""),
 		queryFn: async () => {
 			const params = new URLSearchParams({ placeName: query! });
-			const res = await fetchRest(
-				`/v3/places/search?${params.toString()}`,
-			);
+			const res = await fetchRest(`/v3/places/search?${params.toString()}`);
 			return res.jsonParsed(placesResponseSchema);
 		},
 		enabled: query !== null && query !== undefined && query.length > 0,

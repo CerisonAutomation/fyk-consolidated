@@ -90,23 +90,21 @@ export function useFavoriteNote(profileId: number | null | undefined) {
 export function usePutFavoriteNote() {
 	const queryClient = useQueryClient();
 
-	return useMutation<
-		void,
-		ApiError,
-		{ profileId: number; note: FavoriteNote }
-	>({
-		mutationFn: async ({ profileId, note }) => {
-			const res = await fetchRest(`/v1/favorites/notes/${profileId}`, {
-				method: "PUT",
-				body: note,
-			});
-			res.assertOk();
+	return useMutation<void, ApiError, { profileId: number; note: FavoriteNote }>(
+		{
+			mutationFn: async ({ profileId, note }) => {
+				const res = await fetchRest(`/v1/favorites/notes/${profileId}`, {
+					method: "PUT",
+					body: note,
+				});
+				res.assertOk();
+			},
+			onSuccess: (_data, { profileId, note }) => {
+				queryClient.setQueryData<FavoriteNote>(
+					favoriteKeys.note(profileId),
+					note,
+				);
+			},
 		},
-		onSuccess: (_data, { profileId, note }) => {
-			queryClient.setQueryData<FavoriteNote>(
-				favoriteKeys.note(profileId),
-				note,
-			);
-		},
-	});
+	);
 }

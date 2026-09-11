@@ -1,5 +1,5 @@
-import { demoMeProfileId, DAY, HOUR, MINUTE, NOW } from '../config';
-import { registerPhoto } from './avatars';
+import { DAY, demoMeProfileId, HOUR, MINUTE, NOW } from "../config";
+import { registerPhoto } from "./avatars";
 
 export type DemoSeed = {
 	id: number;
@@ -25,30 +25,129 @@ export type DemoSeed = {
 };
 
 const FIRST_NAMES = [
-	'James', 'Liam', 'Noah', 'Oliver', 'Elijah', 'Lucas', 'Mason', 'Logan',
-	'Ethan', 'Jacob', 'Henry', 'Sebastian', 'Jack', 'Owen', 'Theo', 'Leo',
-	'Daniel', 'Caleb', 'Ryan', 'Nathan', 'Adam', 'Isaac', 'Aaron', 'Marcus',
-	'Connor', 'Eli', 'Aiden', 'Gabriel', 'Julian', 'Hunter', 'Cameron', 'Tyler',
-	'Brandon', 'Cole', 'Dylan', 'Evan', 'Felix', 'George', 'Harrison', 'Ian',
-	'Jasper', 'Kyle', 'Levi', 'Miles', 'Nolan', 'Oscar', 'Parker', 'Quinn',
-	'Reed', 'Simon', 'Tobias', 'Victor', 'Wesley', 'Xavier', 'Zane', 'Adrian',
-	'Blake', 'Chris', 'Derek', 'Emmett', 'Finn', 'Grant', 'Hugo', 'Ivan',
-	'Jonah', 'Kevin', 'Max', 'Nash', 'Otto', 'Pablo', 'Rhys',
+	"James",
+	"Liam",
+	"Noah",
+	"Oliver",
+	"Elijah",
+	"Lucas",
+	"Mason",
+	"Logan",
+	"Ethan",
+	"Jacob",
+	"Henry",
+	"Sebastian",
+	"Jack",
+	"Owen",
+	"Theo",
+	"Leo",
+	"Daniel",
+	"Caleb",
+	"Ryan",
+	"Nathan",
+	"Adam",
+	"Isaac",
+	"Aaron",
+	"Marcus",
+	"Connor",
+	"Eli",
+	"Aiden",
+	"Gabriel",
+	"Julian",
+	"Hunter",
+	"Cameron",
+	"Tyler",
+	"Brandon",
+	"Cole",
+	"Dylan",
+	"Evan",
+	"Felix",
+	"George",
+	"Harrison",
+	"Ian",
+	"Jasper",
+	"Kyle",
+	"Levi",
+	"Miles",
+	"Nolan",
+	"Oscar",
+	"Parker",
+	"Quinn",
+	"Reed",
+	"Simon",
+	"Tobias",
+	"Victor",
+	"Wesley",
+	"Xavier",
+	"Zane",
+	"Adrian",
+	"Blake",
+	"Chris",
+	"Derek",
+	"Emmett",
+	"Finn",
+	"Grant",
+	"Hugo",
+	"Ivan",
+	"Jonah",
+	"Kevin",
+	"Max",
+	"Nash",
+	"Otto",
+	"Pablo",
+	"Rhys",
 ];
 
-const NAME_EMOJIS = ['🐻', '🦊', '😎', '🔥', '🌊', '🌵', '🦅', '🐺', '💪', '🎧', '🍑', '🍆', '💦', '👀', '🌈', '⚡', '🥃', '🌙', '🏖️', '🎬', '🍀', '🦴'];
+const NAME_EMOJIS = [
+	"🐻",
+	"🦊",
+	"😎",
+	"🔥",
+	"🌊",
+	"🌵",
+	"🦅",
+	"🐺",
+	"💪",
+	"🎧",
+	"🍑",
+	"🍆",
+	"💦",
+	"👀",
+	"🌈",
+	"⚡",
+	"🥃",
+	"🌙",
+	"🏖️",
+	"🎬",
+	"🍀",
+	"🦴",
+];
 
-const LOREM = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.';
-const LOREM_LONG = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.';
-const LONG_WORD = 'Pneumonoultramicroscopicsilicovolcanoconiosisantidisestablishmentarianismfloccinaucinihilipilification';
-const LONG_WORD_2 = 'Loremipsumdolorsitametconsecteturadipiscingelitseddoeiusmodtemporincididuntutlaboreetdoloremagnaaliqua';
-
-const LOREM_BIOS = [LOREM, LOREM_LONG, 'lorem ipsum dolor sit amet', 'Ut enim ad minim veniam.', 'Duis aute irure dolor.', 'Demo', '[ placeholder ]', 'consectetur adipiscing elit'];
-const EMOJI_BIOS = ['🔥🔥🔥', '👀💬🍑', '😎🌊', '🍆🍑💦', '🌈⚡🥃', '👀'];
+const PROFILE_BIOS = [
+	"New in town. Show me your favourite coffee spot and I will bring the conversation.",
+	"Gym after work, beach on weekends, and always up for a spontaneous dinner.",
+	"Product designer, terrible dancer, excellent brunch companion.",
+	"Looking for dates with intention. Kindness and curiosity go a long way.",
+	"Usually planning my next trip or attempting a recipe that needs fewer pans.",
+	"Live music, independent films, long walks and people who can laugh at themselves.",
+	"Here for good conversation first. If the chemistry is there, let us see where it goes.",
+	"Dog person, morning swimmer and unapologetic dessert enthusiast.",
+	"Quiet confidence over loud entrances. Say hello if you enjoy thoughtful conversation.",
+	"Architecture, photography and finding the best hidden restaurants in the city.",
+	"Open to friends, dates and something real. Not interested in endless texting.",
+	"Sunny disposition with a dry sense of humour. Coffee this week?",
+];
+const EMOJI_BIOS = [
+	"Coffee? ☕",
+	"Beach, music, repeat 🌊",
+	"Gym and good food 💪",
+	"Say hello 👋",
+];
 
 function mulberry32(seed: number): () => number {
 	return () => {
-		let t = (seed += 0x6d2b79f5);
+		seed += 0x6d2b79f5;
+		let t = seed;
 		t = Math.imul(t ^ (t >>> 15), t | 1);
 		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
 		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -64,7 +163,13 @@ function hashString(str: string): number {
 	return hash;
 }
 
-function chance({ rng, probability }: { rng: () => number; probability: number }): boolean {
+function chance({
+	rng,
+	probability,
+}: {
+	rng: () => number;
+	probability: number;
+}): boolean {
 	return rng() < probability;
 }
 
@@ -72,7 +177,15 @@ function pick<T>({ rng, items }: { rng: () => number; items: T[] }): T {
 	return items[Math.floor(rng() * items.length)];
 }
 
-function subset<T>({ rng, items, max }: { rng: () => number; items: T[]; max: number }): T[] {
+function subset<T>({
+	rng,
+	items,
+	max,
+}: {
+	rng: () => number;
+	items: T[];
+	max: number;
+}): T[] {
 	const count = 1 + Math.floor(rng() * max);
 	const shuffled = [...items].sort(() => rng() - 0.5);
 	return shuffled.slice(0, count);
@@ -85,7 +198,7 @@ function generatedName(rng: () => number): string | null {
 		const count = 1 + Math.floor(rng() * 3);
 		return Array.from({ length: count }, () =>
 			pick({ rng, items: NAME_EMOJIS }),
-		).join('');
+		).join("");
 	}
 	const base = pick({ rng, items: FIRST_NAMES });
 	const variant = rng();
@@ -99,15 +212,13 @@ function generatedName(rng: () => number): string | null {
 function generatedBio(rng: () => number): string | null {
 	const style = rng();
 	if (style < 0.18) return null;
-	if (style < 0.28) return '';
+	if (style < 0.28) return "";
 	if (style < 0.4) return pick({ rng, items: EMOJI_BIOS });
-	if (style < 0.48) return pick({ rng, items: [LONG_WORD, LONG_WORD_2] });
-	return pick({ rng, items: LOREM_BIOS });
+	return pick({ rng, items: PROFILE_BIOS });
 }
 
 function generatedPhotoCount(rng: () => number): number {
 	const r = rng();
-	if (r < 0.12) return 0;
 	if (r < 0.45) return 1;
 	if (r < 0.72) return 2;
 	if (r < 0.88) return 3;
@@ -116,54 +227,176 @@ function generatedPhotoCount(rng: () => number): number {
 }
 
 const featuredOverrides = new Map<number, Partial<DemoSeed>>([
-	[100001, { name: 'James', photos: 3, bio: LOREM, distanceM: 1, favorite: true, unread: 2 }],
-	[100002, { name: '🐻', age: 45, photos: 1, bio: '', distanceM: 2 }],
-	[100003, { name: null, age: null, showAge: false, photos: 0, bio: null, distanceM: 3, position: null }],
-	[100004, { name: 'Noah', photos: 4, bio: LONG_WORD, distanceM: 4 }],
-	[100005, { name: 'MARCUS', photos: 2, bio: 'lorem ipsum dolor sit amet', distanceM: 5 }],
-	[100006, { name: 'theo 🌊', photos: 1, bio: '👀 just here to chat', distanceM: 6, unread: 5 }],
-	[100007, { name: 'Benjamin', age: 39, showAge: false, photos: 2, bio: LOREM_LONG, distanceM: 7 }],
-	[100008, { name: '🦊', age: 19, photos: 1, bio: '👀💬🍑', distanceM: 8 }],
-	[100009, { name: 'Henry', age: 52, photos: 3, bio: LOREM_LONG, distanceM: 9, unread: 1 }],
-	[100010, { name: null, age: 40, photos: 0, bio: null, distanceM: 10 }],
-	[100011, { name: 'Lucas90', photos: 2, bio: LONG_WORD_2, distanceM: 11 }],
-	[100012, { name: '😎🔥💯', age: 29, photos: 1, bio: '', distanceM: 12 }],
-	[100013, { name: 'Alexander', photos: 5, bio: LOREM, distanceM: 13, favorite: true }],
-	[100014, { name: 'Daniel', position: null, photos: 2, bio: '[ placeholder ]', distanceM: 14 }],
-	[100015, { name: 'Leo', age: 21, photos: 0, bio: '🍆🍑💦', distanceM: 15 }],
-	[100016, { name: 'liam', photos: 3, bio: LOREM, distanceM: 16 }],
+	[
+		100001,
+		{
+			name: "James",
+			photos: 3,
+			bio: "Coffee, coastal walks and conversations that do not feel like interviews.",
+			distanceM: 1,
+			favorite: true,
+			unread: 2,
+		},
+	],
+	[100002, { name: "🐻", age: 45, photos: 1, bio: "", distanceM: 2 }],
+	[
+		100003,
+		{
+			name: "Milo",
+			age: null,
+			showAge: false,
+			photos: 1,
+			bio: "New here. Open to a walk, a drink or a good local recommendation.",
+			distanceM: 3,
+			position: null,
+		},
+	],
+	[
+		100004,
+		{
+			name: "Noah",
+			photos: 4,
+			bio: "Landscape architect. Looking for someone curious, grounded and ready for a real date.",
+			distanceM: 4,
+		},
+	],
+	[
+		100005,
+		{
+			name: "MARCUS",
+			photos: 2,
+			bio: "Finishing a workout, then finding somewhere good for dinner.",
+			distanceM: 5,
+		},
+	],
+	[
+		100006,
+		{
+			name: "theo 🌊",
+			photos: 1,
+			bio: "👀 just here to chat",
+			distanceM: 6,
+			unread: 5,
+		},
+	],
+	[
+		100007,
+		{
+			name: "Benjamin",
+			age: 39,
+			showAge: false,
+			photos: 2,
+			bio: "Museum Sundays, live jazz and an ambitious reading list.",
+			distanceM: 7,
+		},
+	],
+	[100008, { name: "🦊", age: 19, photos: 1, bio: "👀💬🍑", distanceM: 8 }],
+	[
+		100009,
+		{
+			name: "Henry",
+			age: 52,
+			photos: 3,
+			bio: "Chef, traveller and loyal friend. Looking for warmth, humour and consistency.",
+			distanceM: 9,
+			unread: 1,
+		},
+	],
+	[
+		100010,
+		{
+			name: "Sam",
+			age: 40,
+			photos: 1,
+			bio: "Calm, creative and looking for genuine connection.",
+			distanceM: 10,
+		},
+	],
+	[
+		100011,
+		{
+			name: "Lucas",
+			photos: 2,
+			bio: "Easygoing, active and always ready to try a new restaurant.",
+			distanceM: 11,
+		},
+	],
+	[100012, { name: "😎🔥💯", age: 29, photos: 1, bio: "", distanceM: 12 }],
+	[
+		100013,
+		{
+			name: "Alexander",
+			photos: 5,
+			bio: "Creative director with a weakness for old cinemas and strong espresso.",
+			distanceM: 13,
+			favorite: true,
+		},
+	],
+	[
+		100014,
+		{
+			name: "Daniel",
+			position: null,
+			photos: 2,
+			bio: "Recently moved nearby. Friends, dates and local recommendations welcome.",
+			distanceM: 14,
+		},
+	],
+	[
+		100015,
+		{
+			name: "Leo",
+			age: 21,
+			photos: 1,
+			bio: "Student, cyclist and always up for gelato.",
+			distanceM: 15,
+		},
+	],
+	[
+		100016,
+		{
+			name: "Liam",
+			photos: 3,
+			bio: "Runner, plant dad and weekend baker. Looking for someone genuine.",
+			distanceM: 16,
+		},
+	],
 	[100250, { favorite: false }],
 	[100777, { favorite: false }],
 ]);
 
 export function distanceForId(id: number): number {
 	const override = featuredOverrides.get(id);
-	if (override && override.distanceM !== null && override.distanceM !== undefined)
+	if (
+		override &&
+		override.distanceM !== null &&
+		override.distanceM !== undefined
+	)
 		return override.distanceM;
 	return Math.floor(mulberry32(hashString(`dist:${id}`))() * 40000);
 }
 
-export const meSeed: DemoSeed = {
+const meSeed: DemoSeed = {
 	id: demoMeProfileId,
-	name: 'Me',
+	name: "Me",
 	age: 30,
 	showAge: true,
-	position: 'Versatile',
+	position: "Versatile",
 	photos: 2,
-	bio: 'Lorem ipsum — this is you.',
-	tribes: ['Geek'],
-	lookingFor: ['Chat', 'Friends'],
-	body: 'Average',
+	bio: "Ready to meet thoughtful people nearby. Edit this profile to make it yours.",
+	tribes: ["Geek"],
+	lookingFor: ["Chat", "Friends"],
+	body: "Average",
 	ethnicity: null,
-	relationship: 'Single',
-	hiv: 'NegativeOnPrep',
+	relationship: "Single",
+	hiv: "NegativeOnPrep",
 	heightCm: 178,
 	weightG: 75_000,
 	distanceM: null,
 	online: true,
 	favorite: false,
 	unread: 0,
-	instagram: 'demo.user',
+	instagram: "demo.user",
 };
 
 const seedCache = new Map<number, DemoSeed>();
@@ -179,13 +412,49 @@ export function profileSeed(id: number): DemoSeed {
 function buildSeed(id: number): DemoSeed {
 	const rng = mulberry32(hashString(`profile:${id}`));
 	const hasAge = chance({ rng, probability: 0.92 });
-	const positions = [null, 'Top', 'Bottom', 'Versatile', 'VersBottom', 'VersTop', 'Side'];
-	const tribes = ['Bear', 'Twink', 'Geek', 'Daddy', 'Jock', 'Otter', 'Wolf', 'Poz', 'Trans'];
-	const lookingFor = ['Chat', 'Friends', 'Dates', 'Right Now', 'Networking'];
-	const bodies = ['Slim', 'Athletic', 'Muscular', 'Average', 'Large', 'Stocky'];
-	const ethnicities = ['Asian', 'Black', 'Hispanic', 'Middle Eastern', 'Mixed', 'White'];
-	const relationships = ['Single', 'Taken', 'Married', 'Open Relationship', 'Divorced'];
-	const hiv = ['Negative', 'NegativeOnPrep', 'Positive', 'PositiveUndetectable'];
+	const positions = [
+		null,
+		"Top",
+		"Bottom",
+		"Versatile",
+		"VersBottom",
+		"VersTop",
+		"Side",
+	];
+	const tribes = [
+		"Bear",
+		"Twink",
+		"Geek",
+		"Daddy",
+		"Jock",
+		"Otter",
+		"Wolf",
+		"Poz",
+		"Trans",
+	];
+	const lookingFor = ["Chat", "Friends", "Dates", "Right Now", "Networking"];
+	const bodies = ["Slim", "Athletic", "Muscular", "Average", "Large", "Stocky"];
+	const ethnicities = [
+		"Asian",
+		"Black",
+		"Hispanic",
+		"Middle Eastern",
+		"Mixed",
+		"White",
+	];
+	const relationships = [
+		"Single",
+		"Taken",
+		"Married",
+		"Open Relationship",
+		"Divorced",
+	];
+	const hiv = [
+		"Negative",
+		"NegativeOnPrep",
+		"Positive",
+		"PositiveUndetectable",
+	];
 
 	const base: DemoSeed = {
 		id,
@@ -197,12 +466,22 @@ function buildSeed(id: number): DemoSeed {
 		bio: generatedBio(rng),
 		tribes: subset({ rng, items: tribes, max: 3 }),
 		lookingFor: subset({ rng, items: lookingFor, max: 3 }),
-		body: chance({ rng, probability: 0.7 }) ? pick({ rng, items: bodies }) : null,
-		ethnicity: chance({ rng, probability: 0.6 }) ? pick({ rng, items: ethnicities }) : null,
-		relationship: chance({ rng, probability: 0.4 }) ? pick({ rng, items: relationships }) : null,
+		body: chance({ rng, probability: 0.7 })
+			? pick({ rng, items: bodies })
+			: null,
+		ethnicity: chance({ rng, probability: 0.6 })
+			? pick({ rng, items: ethnicities })
+			: null,
+		relationship: chance({ rng, probability: 0.4 })
+			? pick({ rng, items: relationships })
+			: null,
 		hiv: chance({ rng, probability: 0.45 }) ? pick({ rng, items: hiv }) : null,
-		heightCm: chance({ rng, probability: 0.6 }) ? 160 + Math.floor(rng() * 40) : null,
-		weightG: chance({ rng, probability: 0.5 }) ? (60 + Math.floor(rng() * 45)) * 1000 : null,
+		heightCm: chance({ rng, probability: 0.6 })
+			? 160 + Math.floor(rng() * 40)
+			: null,
+		weightG: chance({ rng, probability: 0.5 })
+			? (60 + Math.floor(rng() * 45)) * 1000
+			: null,
 		distanceM: distanceForId(id),
 		online: chance({ rng, probability: 0.45 }),
 		favorite: chance({ rng, probability: 0.12 }),

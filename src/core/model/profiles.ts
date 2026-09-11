@@ -3,10 +3,7 @@ import z from "zod";
 import { tapTypeOrNoneSchema } from "./taps";
 import { viewSourceEnumSchema } from "./views-source";
 import { mediaHashPublicSchema } from "./media";
-import {
-	rightNowShareLocationSchema,
-	rightNowStatusSchema,
-} from "./right-now";
+import { rightNowShareLocationSchema, rightNowStatusSchema } from "./right-now";
 
 export const SexualPosition = {
 	Top: 1,
@@ -48,7 +45,7 @@ export const lookingFor = {
 	[LookingFor.Hookups]: "Hookups",
 } as const;
 
-export const lookingForSchema = z.enum(LookingFor);
+const lookingForSchema = z.enum(LookingFor);
 
 export type LookingForId = z.infer<typeof lookingForSchema>;
 
@@ -64,7 +61,7 @@ export const acceptNSFWPics = {
 	[AcceptNSFWPics.YesPlease]: "Yes Please",
 } as const;
 
-export const acceptNSFWPicsSchema = z.enum(AcceptNSFWPics);
+const acceptNSFWPicsSchema = z.enum(AcceptNSFWPics);
 
 export type AcceptNSFWPicsId = z.infer<typeof acceptNSFWPicsSchema>;
 
@@ -90,7 +87,7 @@ export const relationshipStatuses = {
 	[RelationshipStatus.OpenRelationship]: "Open Relationship",
 } as const;
 
-export const relationshipStatusSchema = z.enum(RelationshipStatus);
+const relationshipStatusSchema = z.enum(RelationshipStatus);
 
 export type RelationshipStatusId = z.infer<typeof relationshipStatusSchema>;
 
@@ -148,7 +145,7 @@ export const tribes = {
 	[Tribe.Twink]: "Twink",
 } as const;
 
-export const tribeSchema = z.enum(Tribe);
+const tribeSchema = z.enum(Tribe);
 
 export type TribeId = z.infer<typeof tribeSchema>;
 
@@ -168,11 +165,11 @@ export const meetAt = {
 	[MeetAt.Restaurant]: "Restaurant",
 } as const;
 
-export const meetAtSchema = z.enum(MeetAt);
+const meetAtSchema = z.enum(MeetAt);
 
 export type MeetAtId = z.infer<typeof meetAtSchema>;
 
-export const Ethnicity = {
+const Ethnicity = {
 	Asian: 1,
 	Black: 2,
 	Latino: 3,
@@ -196,11 +193,11 @@ export const ethnicities = {
 	[Ethnicity.SouthAsian]: "South Asian",
 } as const;
 
-export const ethnicitySchema = z.enum(Ethnicity);
+const ethnicitySchema = z.enum(Ethnicity);
 
 export type EthnicityId = z.infer<typeof ethnicitySchema>;
 
-export const HivStatus = {
+const HivStatus = {
 	Negative: 1,
 	NegativeOnPrep: 2,
 	Positive: 3,
@@ -214,7 +211,7 @@ export const hivStatuses = {
 	[HivStatus.PositiveUndetectable]: "Positive, undetectable",
 } as const;
 
-export const hivStatusSchema = z.enum(HivStatus);
+const hivStatusSchema = z.enum(HivStatus);
 
 export type HivStatusId = z.infer<typeof hivStatusSchema>;
 
@@ -234,11 +231,11 @@ export const healthPractices = {
 	[HealthPractice.PreferToDiscuss]: "Prefer to discuss",
 } as const;
 
-export const healthPracticesSchema = z.enum(HealthPractice);
+const healthPracticesSchema = z.enum(HealthPractice);
 
 export type HealthPracticeId = z.infer<typeof healthPracticesSchema>;
 
-export const Vaccine = { COVID19: 1, Monkeypox: 2, Meningitis: 3 } as const;
+const Vaccine = { COVID19: 1, Monkeypox: 2, Meningitis: 3 } as const;
 
 export const vaccines = {
 	[Vaccine.COVID19]: "COVID-19",
@@ -246,11 +243,11 @@ export const vaccines = {
 	[Vaccine.Meningitis]: "Meningitis",
 } as const;
 
-export const vaccinesSchema = z.enum(Vaccine);
+const vaccinesSchema = z.enum(Vaccine);
 
 export type VaccineId = z.infer<typeof vaccinesSchema>;
 
-export const socialNetworksSchema = z.object({
+const socialNetworksSchema = z.object({
 	twitter: z.object({ userId: z.string().nullable() }).optional(),
 	facebook: z.object({ userId: z.string().nullable() }).optional(),
 	instagram: z.object({ userId: z.string().nullable() }).optional(),
@@ -258,7 +255,7 @@ export const socialNetworksSchema = z.object({
 
 export type SocialNetworks = z.infer<typeof socialNetworksSchema>;
 
-export const rightNowMediaSchema = z.object({
+const rightNowMediaSchema = z.object({
 	mediaId: z.int(),
 	thumbnailUrl: z.string(),
 	fullImageUrl: z.string(),
@@ -268,7 +265,7 @@ export const rightNowMediaSchema = z.object({
 
 export type RightNowMedia = z.infer<typeof rightNowMediaSchema>;
 
-export const travelPlanSchema = z.object({
+const travelPlanSchema = z.object({
 	endDate: z.number().nullable(),
 	geohash: z.string(),
 	travelPlanId: z.int().nullable(),
@@ -299,7 +296,7 @@ export const profileMinSchema = z.object({
 	onlineUntil: z.number().nullable().optional(),
 });
 
-export const profileShortSchema = profileMaskedSchema
+const profileShortSchema = profileMaskedSchema
 	.extend(profileMinSchema.shape)
 	.extend({
 		age: z.int().nonnegative().nullable(),
@@ -321,14 +318,14 @@ export const profileShortSchema = profileMaskedSchema
 		),
 	});
 
-export const profileFieldsSchema = z.object({
+const profileFieldsSchema = z.object({
 	meetAt: z.array(meetAtSchema).optional(),
 	vaccines: z.array(vaccinesSchema).optional(),
 	genders: z.array(z.int().nonnegative()).nullable().optional(),
 	pronouns: z.array(z.int().nonnegative()).nullable().optional(),
 });
 
-export const profileRightNowSchema = z.object({
+const profileRightNowSchema = z.object({
 	rightNowText: z.string().nullable(),
 	rightNowPosted: z.number().nullable(),
 	rightNowDistance: z.number().nullable(),
@@ -336,7 +333,7 @@ export const profileRightNowSchema = z.object({
 	rightNowFullImageUrl: z.string().nullable(),
 });
 
-export const profileExtraFields = z.object({
+const profileExtraFields = z.object({
 	nsfw: acceptNSFWPicsSchema.nullable(),
 	verifiedInstagramId: z.string().nullable(),
 	isBlockable: z.boolean().nullable(),
@@ -344,7 +341,7 @@ export const profileExtraFields = z.object({
 	showPosition: z.boolean(),
 });
 
-export const profileSchema = profileShortSchema
+const profileSchema = profileShortSchema
 	.extend(profileFieldsSchema.shape)
 	.extend(profileRightNowSchema.shape)
 	.extend(profileExtraFields.shape)

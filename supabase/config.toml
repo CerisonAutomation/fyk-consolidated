@@ -1,0 +1,61 @@
+[project]
+id = "fyk-consolidated"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+
+[auth.external.google]
+enabled = false
+client_id = ""
+secret = ""
+redirect_uri = "http://localhost:54321/auth/v1/callback"
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[realtime]
+enabled = true
+bind = "0.0.0.0"
+port = 54324
+ip_version = "IPv4"
+
+[extensions]
+pgvector = { enabled = true, schema = "extensions" }
+pgcrypto = { enabled = true, schema = "extensions" }
+uuid-ossp = { enabled = true, schema = "extensions" }
+pg_trgm = { enabled = true, schema = "extensions" }
+pg_stat_statements = { enabled = true, schema = "extensions" }

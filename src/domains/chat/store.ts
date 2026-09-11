@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export interface ConversationParticipant {
 	profileId: number;
@@ -31,7 +31,7 @@ export interface Conversation {
 	data: ConversationData;
 }
 
-export type ConversationFilterKey = 'all' | 'unread' | 'favorites';
+export type ConversationFilterKey = "all" | "unread" | "favorites";
 
 interface ConversationsState {
 	entries: Conversation[];

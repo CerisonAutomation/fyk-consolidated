@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import {
 	type GridProfile,
 	getGrid as fetchGrid,
@@ -6,15 +6,15 @@ import {
 	setCachedProfile,
 	patchCachedProfile,
 	resolveLazyProfile as resolveLazy,
-} from './service';
-import { useGridSearchFiltersStore } from './filters-store';
+} from "./service";
+import { useGridSearchFiltersStore } from "./filters-store";
 import {
 	getPreferencesSnapshot,
 	setPreferences,
-} from '#/domains/settings/preferences';
-import { autoLocation } from '#/domains/location/auto-location';
-import { registerAccountCache } from '#/core/api/account-caches';
-import { WEIGHT_KG_MAX, WEIGHT_KG_MIN } from '#/core/model/browse/grid/filters';
+} from "#/domains/settings/preferences";
+import { autoLocation } from "#/domains/location/auto-location";
+import { registerAccountCache } from "#/core/api/account-caches";
+import { WEIGHT_KG_MAX, WEIGHT_KG_MIN } from "#/core/model/browse/grid/filters";
 
 interface GridState {
 	items: GridProfile[];
@@ -28,7 +28,7 @@ interface GridState {
 	viewActive: boolean;
 
 	errorMessage: string | null;
-	load: (geohash: string) => void;
+	load: (geohash: string) => Promise<void>;
 	loadMore: () => Promise<void>;
 	refresh: (opts?: { background?: boolean }) => Promise<void>;
 	retry: () => void;
@@ -36,8 +36,15 @@ interface GridState {
 	setFavorite: (args: { profileId: number; isFavorite: boolean }) => void;
 	removeProfile: (profileId: number) => void;
 	resolveProfile: (id: number) => Promise<void>;
-	_withLiveLocation: (currentGeohash: string, token: number, background: boolean) => Promise<string>;
-	_fetchProfiles: (currentGeohash: string, opts?: { silent?: boolean; background?: boolean; sampleLocation?: boolean }) => Promise<void>;
+	_withLiveLocation: (
+		currentGeohash: string,
+		token: number,
+		background: boolean,
+	) => Promise<string>;
+	_fetchProfiles: (
+		currentGeohash: string,
+		opts?: { silent?: boolean; background?: boolean; sampleLocation?: boolean },
+	) => Promise<void>;
 	_reset: () => void;
 }
 
@@ -66,7 +73,7 @@ export const useGridStore = create<GridState>((set, get) => ({
 		const { items } = get();
 		const index = items.findIndex((item) => item.id === profileId);
 		const item = items[index];
-		if (!item || item.type !== 'rendered') return;
+		if (!item || item.type !== "rendered") return;
 		const newItems = [...items];
 		newItems[index] = { ...item, isFavorite };
 		set({ items: newItems });
@@ -81,13 +88,13 @@ export const useGridStore = create<GridState>((set, get) => ({
 		set({ items: newItems });
 	},
 
-	load(newGeohash: string) {
+	async load(newGeohash: string) {
 		if (retargeted === newGeohash) return;
 		if (geohash === newGeohash && get().items.length > 0) return;
 		geohash = newGeohash;
 		get()._reset();
 		set({ scrollY: 0 });
-		void get()._fetchProfiles(newGeohash);
+		await get()._fetchProfiles(newGeohash);
 	},
 
 	retry() {
@@ -143,7 +150,7 @@ export const useGridStore = create<GridState>((set, get) => ({
 		try {
 			const { items } = get();
 			const item = items.find((i) => i.id === id);
-			if (!item || item.type !== 'lazy') return;
+			if (!item || item.type !== "lazy") return;
 
 			const cached = getCachedProfile(id);
 			if (cached) {
@@ -185,7 +192,8 @@ export const useGridStore = create<GridState>((set, get) => ({
 		const resolved = await autoLocation.resolveGeohash(currentGeohash, {
 			background,
 		});
-		if (token !== fetchToken || resolved === currentGeohash) return currentGeohash;
+		if (token !== fetchToken || resolved === currentGeohash)
+			return currentGeohash;
 		geohash = resolved;
 		retargeted = resolved;
 		setPreferences({ geohash: resolved }).catch((error: unknown) =>
@@ -228,15 +236,15 @@ export const useGridStore = create<GridState>((set, get) => ({
 					sexualPositions: filters?.positions,
 				}),
 				...(filters?.photosEnabled &&
-					filters?.photos.includes('has-photos') && {
+					filters?.photos.includes("has-photos") && {
 						photoOnly: true,
 					}),
 				...(filters?.photosEnabled &&
-					filters?.photos.includes('has-albums') && {
+					filters?.photos.includes("has-albums") && {
 						hasAlbum: true,
 					}),
 				...(filters?.photosEnabled &&
-					filters?.photos.includes('has-face-pics') && {
+					filters?.photos.includes("has-face-pics") && {
 						faceOnly: true,
 					}),
 				...(filters?.tribesEnabled && { tribes: filters?.tribes }),
@@ -248,10 +256,8 @@ export const useGridStore = create<GridState>((set, get) => ({
 					heightCmMax: filters?.height[1],
 				}),
 				...(filters?.weightEnabled && {
-					weightGramsMin:
-						(filters?.weight[0] ?? WEIGHT_KG_MIN) * 1000,
-					weightGramsMax:
-						(filters?.weight[1] ?? WEIGHT_KG_MAX) * 1000,
+					weightGramsMin: (filters?.weight[0] ?? WEIGHT_KG_MIN) * 1000,
+					weightGramsMax: (filters?.weight[1] ?? WEIGHT_KG_MAX) * 1000,
 				}),
 				...(filters?.relationshipStatusesEnabled && {
 					relationshipStatuses: filters?.relationshipStatuses,
@@ -264,13 +270,11 @@ export const useGridStore = create<GridState>((set, get) => ({
 					lookingFor: filters?.lookingFor,
 				}),
 				...(filters?.meetAtEnabled && { meetAt: filters?.meetAt }),
-				notRecentlyChatted:
-					filters?.haventChattedTodayEnabled || undefined,
+				notRecentlyChatted: filters?.haventChattedTodayEnabled || undefined,
 				...(filters?.healthPracticesEnabled && {
 					sexualHealth: filters?.healthPractices,
 				}),
-				...(filters?.tagsEnabled &&
-					filters?.tags && { tags: filters?.tags }),
+				...(filters?.tagsEnabled && filters?.tags && { tags: filters?.tags }),
 				fresh: filters?.isFresh || undefined,
 			};
 			const result = await fetchGrid(query as Parameters<typeof fetchGrid>[0]);
@@ -295,7 +299,7 @@ export const useGridStore = create<GridState>((set, get) => ({
 				error:
 					err instanceof Error
 						? err
-						: new Error('Failed to fetch profiles', { cause: err }),
+						: new Error("Failed to fetch profiles", { cause: err }),
 			});
 		}
 	},

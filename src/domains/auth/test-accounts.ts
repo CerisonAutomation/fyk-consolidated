@@ -3,7 +3,7 @@
  * Each account is pre-seeded in Supabase Auth with auto-confirmed email.
  * Password for all test accounts: TestPass123!
  */
-import { supabase } from "#/integrations/supabase/client";
+import { getSupabase } from "#/integrations/supabase/client";
 
 export interface TestAccount {
 	email: string;
@@ -51,7 +51,10 @@ export async function seedTestAccount(
 	account: TestAccount,
 ): Promise<{ ok: boolean; error?: string }> {
 	try {
-		const { error } = await supabase.auth.signUp({
+		const client = getSupabase();
+		if (!client) return { ok: false, error: "Supabase not configured" };
+
+		const { error } = await client.auth.signUp({
 			email: account.email,
 			password: account.password,
 			options: {

@@ -1,6 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback } from "react";
-import { ChevronLeft, Settings, Shield, Globe, Smartphone, Ruler } from "lucide-react";
+import {
+	ChevronLeft,
+	Settings,
+	Shield,
+	Globe,
+	Smartphone,
+	Ruler,
+} from "lucide-react";
 import {
 	getPreferencesSnapshot,
 	setPreferences,
@@ -10,7 +17,9 @@ import {
 export const Route = createFileRoute("/settings/app/")({
 	component: AppSettingsPage,
 	loader: async () => {
-		const { hydratePreferences } = await import("#/domains/settings/preferences");
+		const { hydratePreferences } = await import(
+			"#/domains/settings/preferences"
+		);
 		hydratePreferences();
 	},
 });
@@ -54,7 +63,8 @@ function AppSettingsPage() {
 				<div
 					className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
 					style={{
-						background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+						background:
+							"color-mix(in srgb, var(--accent-primary) 12%, transparent)",
 					}}
 				>
 					<Icon className="h-5 w-5 text-amber-400" />
@@ -68,7 +78,9 @@ function AppSettingsPage() {
 					onClick={() => update(field, !value)}
 					className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
 					style={{
-						background: value ? "rgba(234,179,8,0.3)" : "rgba(255,255,255,0.08)",
+						background: value
+							? "rgba(234,179,8,0.3)"
+							: "rgba(255,255,255,0.08)",
 					}}
 				>
 					<div
@@ -144,7 +156,7 @@ function AppSettingsPage() {
 
 						<div className="pt-3">
 							<p className="font-mono text-[10px] uppercase tracking-[0.25em] text-amber-400/70">
-							,LOCATION
+								,LOCATION
 							</p>
 						</div>
 						<Toggle
@@ -163,7 +175,8 @@ function AppSettingsPage() {
 							<div
 								className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
 								style={{
-									background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+									background:
+										"color-mix(in srgb, var(--accent-primary) 12%, transparent)",
 								}}
 							>
 								<Ruler className="h-5 w-5 text-amber-400" />

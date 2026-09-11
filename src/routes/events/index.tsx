@@ -133,17 +133,14 @@ function Pill({
 }
 
 /* ── Progress component ──────────────────────────────────────────────── */
-function Progress({
-	value,
-	max,
-}: {
-	value: number;
-	max: number;
-}) {
+function Progress({ value, max }: { value: number; max: number }) {
 	const pct = Math.round((value / max) * 100);
 	return (
 		<div className="progress-track w-full h-1.5">
-			<div className="progress-fill h-full" style={{ width: `${Math.min(pct, 100)}%` }} />
+			<div
+				className="progress-fill h-full"
+				style={{ width: `${Math.min(pct, 100)}%` }}
+			/>
 		</div>
 	);
 }
@@ -388,7 +385,9 @@ function RsvpButtons({
 					borderColor: interested
 						? "oklch(0.77 0.16 200 / 0.30)"
 						: "var(--color-border)",
-					color: interested ? "var(--color-cyan)" : "var(--color-muted-foreground)",
+					color: interested
+						? "var(--color-cyan)"
+						: "var(--color-muted-foreground)",
 					background: interested
 						? "oklch(0.77 0.16 200 / 0.10)"
 						: "transparent",
@@ -566,10 +565,7 @@ function CalendarView({
 					type="button"
 					onClick={() =>
 						setCurrentMonth(
-							new Date(
-								currentMonth.getFullYear(),
-								currentMonth.getMonth() - 1,
-							),
+							new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1),
 						)
 					}
 					className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center hover:border-gold/30 transition"
@@ -586,10 +582,7 @@ function CalendarView({
 					type="button"
 					onClick={() =>
 						setCurrentMonth(
-							new Date(
-								currentMonth.getFullYear(),
-								currentMonth.getMonth() + 1,
-							),
+							new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1),
 						)
 					}
 					className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center hover:border-gold/30 transition"
@@ -813,10 +806,8 @@ function EventsPage() {
 										}
 									: active
 										? {
-												background:
-													"oklch(0.80 0.17 85 / 0.10)",
-												borderColor:
-													"oklch(0.80 0.17 85 / 0.50)",
+												background: "oklch(0.80 0.17 85 / 0.10)",
+												borderColor: "oklch(0.80 0.17 85 / 0.50)",
 												color: "var(--color-gold)",
 											}
 										: {

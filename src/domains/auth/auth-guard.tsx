@@ -1,7 +1,8 @@
-import { useEffect, type ReactNode } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useSupabaseSession } from '#/integrations/supabase/session-provider';
-import { useAuthStore } from '#/domains/auth/store';
+"use client";
+import { useEffect, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useSupabaseSession } from "#/integrations/supabase/session-provider";
+import { useAuthStore } from "#/domains/auth/store";
 
 interface AuthGuardProps {
 	children: ReactNode;
@@ -30,7 +31,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
 	useEffect(() => {
 		if (!loading && !session) {
-			navigate({ to: '/auth/sign-in', replace: true });
+			navigate({ to: "/auth/sign-in", replace: true });
 		}
 	}, [loading, session, navigate]);
 

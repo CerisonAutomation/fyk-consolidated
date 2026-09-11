@@ -1,4 +1,4 @@
-import { supabase } from "#/integrations/supabase/client";
+import { requireSupabase } from "#/integrations/supabase/client";
 
 /**
  * Supabase auth client helper.
@@ -22,7 +22,7 @@ import { supabase } from "#/integrations/supabase/client";
 export const authClient = {
 	signIn: {
 		email: async ({ email, password }: { email: string; password: string }) => {
-			const { data, error } = await supabase.auth.signInWithPassword({
+			const { data, error } = await requireSupabase().auth.signInWithPassword({
 				email,
 				password,
 			});
@@ -35,8 +35,12 @@ export const authClient = {
 			email,
 			password,
 			name,
-		}: { email: string; password: string; name?: string }) => {
-			const { data, error } = await supabase.auth.signUp({
+		}: {
+			email: string;
+			password: string;
+			name?: string;
+		}) => {
+			const { data, error } = await requireSupabase().auth.signUp({
 				email,
 				password,
 				options: name ? { data: { name } } : undefined,
@@ -46,9 +50,9 @@ export const authClient = {
 		},
 	},
 	signOut: async () => {
-		const { error } = await supabase.auth.signOut();
+		const { error } = await requireSupabase().auth.signOut();
 		if (error) throw error;
 	},
-	getSession: () => supabase.auth.getSession(),
-	getUser: () => supabase.auth.getUser(),
+	getSession: () => requireSupabase().auth.getSession(),
+	getUser: () => requireSupabase().auth.getUser(),
 };

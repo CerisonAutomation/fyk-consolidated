@@ -1,8 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useCallback } from "react";
-import { ChevronLeft, Camera, Save, Crown } from "lucide-react";
+import { Camera, ChevronLeft, Crown, Save } from "lucide-react";
+import {
+	type ChangeEvent,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { useAuthStore } from "#/domains/auth/store";
-import { supabase } from "#/integrations/supabase/client";
+import { demoEnabled } from "#/domains/demo";
+import { requireSupabase } from "#/integrations/supabase/client";
 
 export const Route = createFileRoute("/settings/profile/")({
 	component: ProfileEditPage,
@@ -55,28 +62,50 @@ const RELATIONSHIP_STATUS_OPTIONS = [
 ];
 
 const INITIAL_FORM: ProfileForm = {
-	first_name: "",
+	first_name: "Alex",
 	last_name: "",
-	about: "",
-	age: "",
-	height: "",
-	weight: "",
-	position: "",
-	relationship_status: "",
-	looking_for: [],
-	body_type: "",
+	about: "Ready to meet thoughtful people nearby.",
+	age: "30",
+	height: "178",
+	weight: "75",
+	position: "Versatile",
+	relationship_status: "Single",
+	looking_for: ["Chat", "Friends", "Relationship"],
+	body_type: "Average",
 	ethnicity: "",
-	hiv_status: "",
+	hiv_status: "prefer-not-to-say",
 	last_tested: "",
-	pronouns: "",
+	pronouns: "he/him",
 };
+
+const PROFILE_FORM_STORAGE_KEY = "fyk:profile:form";
+const PROFILE_PHOTO_STORAGE_KEY = "fyk:profile:photo";
+
+function loadProfileForm(): ProfileForm {
+	if (typeof window === "undefined") return INITIAL_FORM;
+	try {
+		const stored = window.localStorage.getItem(PROFILE_FORM_STORAGE_KEY);
+		return stored
+			? { ...INITIAL_FORM, ...(JSON.parse(stored) as Partial<ProfileForm>) }
+			: INITIAL_FORM;
+	} catch {
+		return INITIAL_FORM;
+	}
+}
 
 function ProfileEditPage() {
 	const { auth } = useAuthStore();
 	const [form, setForm] = useState<ProfileForm>(INITIAL_FORM);
+	const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+	const photoInputRef = useRef<HTMLInputElement>(null);
 	const [saving, setSaving] = useState(false);
 	const [saved, setSaved] = useState(false);
 	const [activeSection, setActiveSection] = useState<string | null>(null);
+
+	useEffect(() => {
+		setForm(loadProfileForm());
+		setPhotoPreview(window.localStorage.getItem(PROFILE_PHOTO_STORAGE_KEY));
+	}, []);
 
 	const updateField = useCallback(
 		<K extends keyof ProfileForm>(field: K, value: ProfileForm[K]) => {
@@ -100,8 +129,14 @@ function ProfileEditPage() {
 	const handleSave = useCallback(async () => {
 		setSaving(true);
 		try {
+			if (demoEnabled) {
+				window.localStorage.setItem(
+					PROFILE_FORM_STORAGE_KEY,
+					JSON.stringify(form),
+				);
+			}
 			if (auth?.user) {
-				await supabase.auth.updateUser({
+				await requireSupabase().auth.updateUser({
 					data: {
 						first_name: form.first_name,
 						last_name: form.last_name,
@@ -128,6 +163,25 @@ function ProfileEditPage() {
 			setSaving(false);
 		}
 	}, [auth, form]);
+
+	const handlePhotoSelected = useCallback(
+		(event: ChangeEvent<HTMLInputElement>) => {
+			const file = event.target.files?.[0];
+			if (!file) return;
+			const reader = new FileReader();
+			reader.addEventListener("load", () => {
+				if (typeof reader.result !== "string") return;
+				setPhotoPreview(reader.result);
+				if (demoEnabled) {
+					window.localStorage.setItem(PROFILE_PHOTO_STORAGE_KEY, reader.result);
+				}
+				setSaved(false);
+			});
+			reader.readAsDataURL(file);
+			event.target.value = "";
+		},
+		[],
+	);
 
 	const sections = [
 		{
@@ -217,7 +271,9 @@ function ProfileEditPage() {
 								<button
 									key={opt}
 									type="button"
-									onClick={() => updateField("body_type", form.body_type === opt ? "" : opt)}
+									onClick={() =>
+										updateField("body_type", form.body_type === opt ? "" : opt)
+									}
 									className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
 										form.body_type === opt
 											? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40"
@@ -252,7 +308,9 @@ function ProfileEditPage() {
 								<button
 									key={opt}
 									type="button"
-									onClick={() => updateField("position", form.position === opt ? "" : opt)}
+									onClick={() =>
+										updateField("position", form.position === opt ? "" : opt)
+									}
 									className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
 										form.position === opt
 											? "bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/40"
@@ -285,7 +343,9 @@ function ProfileEditPage() {
 					<FormField label="Relationship Status">
 						<select
 							value={form.relationship_status}
-							onChange={(e) => updateField("relationship_status", e.target.value)}
+							onChange={(e) =>
+								updateField("relationship_status", e.target.value)
+							}
 							className="field-input"
 						>
 							<option value="">Select</option>
@@ -350,9 +410,22 @@ function ProfileEditPage() {
 
 					{/* Avatar */}
 					<div className="mb-8 flex flex-col items-center gap-3">
+						<input
+							ref={photoInputRef}
+							type="file"
+							accept="image/*"
+							onChange={handlePhotoSelected}
+							hidden
+						/>
 						<div className="relative">
-							<div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-amber-500/20 to-purple-500/20 ring-2 ring-amber-500/30">
-								{form.first_name ? (
+							<div className="flex size-24 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-amber-500/20 to-purple-500/20 ring-2 ring-amber-500/30">
+								{photoPreview ? (
+									<img
+										src={photoPreview}
+										alt="Your selected profile"
+										className="size-full object-cover"
+									/>
+								) : form.first_name ? (
 									<span className="text-3xl font-bold text-amber-400">
 										{form.first_name.charAt(0).toUpperCase()}
 									</span>
@@ -362,6 +435,8 @@ function ProfileEditPage() {
 							</div>
 							<button
 								type="button"
+								onClick={() => photoInputRef.current?.click()}
+								aria-label="Change profile photo"
 								className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-black transition hover:bg-amber-400"
 							>
 								<Camera className="h-4 w-4" />
@@ -369,6 +444,7 @@ function ProfileEditPage() {
 						</div>
 						<button
 							type="button"
+							onClick={() => photoInputRef.current?.click()}
 							className="text-xs font-medium text-amber-400/70 transition hover:text-amber-400"
 						>
 							Change photo
@@ -382,7 +458,9 @@ function ProfileEditPage() {
 								<button
 									type="button"
 									onClick={() =>
-										setActiveSection(activeSection === section.id ? null : section.id)
+										setActiveSection(
+											activeSection === section.id ? null : section.id,
+										)
 									}
 									className="mb-3 flex w-full items-center justify-between"
 								>
@@ -390,6 +468,7 @@ function ProfileEditPage() {
 										{section.title}
 									</p>
 									<svg
+										aria-hidden="true"
 										className={`h-4 w-4 text-white/30 transition-transform ${activeSection === section.id ? "rotate-90" : ""}`}
 										viewBox="0 0 24 24"
 										fill="none"
@@ -481,11 +560,11 @@ function FormField({
 	children: React.ReactNode;
 }) {
 	return (
-		<div>
-			<label className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-white/50">
+		<fieldset className="block min-w-0">
+			<legend className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-white/50">
 				{label}
-			</label>
+			</legend>
 			{children}
-		</div>
+		</fieldset>
 	);
 }

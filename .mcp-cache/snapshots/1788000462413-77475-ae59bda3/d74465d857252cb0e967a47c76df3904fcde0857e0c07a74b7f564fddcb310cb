@@ -1,0 +1,264 @@
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import type { QueryClient } from "@tanstack/react-query";
+import {
+	createRootRouteWithContext,
+	HeadContent,
+	Scripts,
+	useRouterState,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { useEffect } from "react";
+import { NavBar } from "../core/ui/organisms/NavBar";
+import { useAuthStore } from "../domains/auth/store";
+import { demoEnabled } from "../domains/demo";
+import { useAutoSavePreferences } from "../hooks/use-auto-save-preferences";
+import {
+	SupabaseSessionProvider,
+	useSupabaseSession,
+} from "../integrations/supabase/session-provider";
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import StoreDevtools from "../lib/demo-store-devtools";
+import appCss from "../styles.css?url";
+
+interface MyRouterContext {
+	queryClient: QueryClient;
+}
+
+const showDevtools =
+	import.meta.env.DEV && import.meta.env.VITE_SHOW_DEVTOOLS === "true";
+
+/** Routes that are public — no auth required, no NavBar */
+const PUBLIC_ROUTES = [
+	"/",
+	"/about",
+	"/auth/sign-in",
+	"/auth/sign-up",
+	"/auth/callback",
+	"/onboarding",
+];
+
+function isPublicRoute(pathname: string): boolean {
+	return PUBLIC_ROUTES.some(
+		(route) => pathname === route || pathname.startsWith(`${route}/`),
+	);
+}
+
+/**
+ * Layout wrapper: shows NavBar ONLY for authenticated users on protected pages.
+ * Public pages (landing, about, auth, onboarding) render without NavBar.
+ */
+function AppLayout({ children }: { children: React.ReactNode }) {
+	const { session, loading, user } = useSupabaseSession();
+	const setAuth = useAuthStore((s) => s.setAuth);
+
+	const pathname = useRouterState({
+		select: (state) => state.location.pathname,
+	});
+
+	useAutoSavePreferences();
+
+	// Keep Zustand auth store in sync with Supabase session
+	useEffect(() => {
+		if (user) {
+			setAuth({ userId: user.id, user });
+		} else if (!loading && !session) {
+			setAuth(null);
+		}
+	}, [user, session, loading, setAuth]);
+
+	// Public routes: no NavBar, full-screen content
+	if (isPublicRoute(pathname)) {
+		return <>{children}</>;
+	}
+
+	// Live deployments require Supabase auth. The bundled local demo is a
+	// complete interactive product preview and must retain its navigation shell.
+	if (!demoEnabled && !loading && !session) {
+		return <>{children}</>;
+	}
+
+	// Protected routes while authenticated: show NavBar
+	return (
+		<>
+			<NavBar />
+			<div className="pb-16 lg:pt-14 lg:pb-0 lg:pl-[240px] min-h-screen">
+				{children}
+			</div>
+		</>
+	);
+}
+
+function NotFoundComponent() {
+	return (
+		<div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 text-center px-4">
+			<h1 className="text-2xl font-bold text-[var(--foreground)]">
+				Page Not Found
+			</h1>
+			<p className="text-[var(--muted-foreground)]">
+				The page you are looking for does not exist.
+			</p>
+			<a href="/" className="text-[var(--primary)] hover:underline font-medium">
+				Go Home
+			</a>
+		</div>
+	);
+}
+
+export const Route = createRootRouteWithContext<MyRouterContext>()({
+	head: () => ({
+		meta: [
+			{
+				charSet: "utf-8",
+			},
+			{
+				name: "viewport",
+				content:
+					"width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover",
+			},
+			{
+				title: "FIND YOUR KING — Premium Geosocial Discovery",
+			},
+			{
+				name: "description",
+				content:
+					"The premium dating platform for men who demand excellence. AI-powered matching, real-time chat, voice control, Right Now radar, and curated IRL events.",
+			},
+			{
+				name: "keywords",
+				content:
+					"dating,geosocial,find your king,FYK,right now,AI matching,premium dating,men dating men",
+			},
+			{
+				name: "theme-color",
+				content: "#d4af37",
+			},
+			{
+				name: "mobile-web-app-capable",
+				content: "yes",
+			},
+			{
+				name: "apple-mobile-web-app-status-bar-style",
+				content: "black-translucent",
+			},
+			{
+				name: "apple-mobile-web-app-capable",
+				content: "yes",
+			},
+			{
+				name: "apple-mobile-web-app-title",
+				content: "FYKING",
+			},
+			{
+				name: "mobile-web-app-capable",
+				content: "yes",
+			},
+			{
+				name: "application-name",
+				content: "FYKING",
+			},
+			{
+				property: "og:title",
+				content: "FIND YOUR KING — Premium Geosocial Discovery",
+			},
+			{
+				property: "og:description",
+				content:
+					"The premium dating platform with Right Now radar, AI logistics, and Zero-Knowledge Vault. Find your king.",
+			},
+			{
+				property: "og:site_name",
+				content: "FYK",
+			},
+			{
+				property: "og:type",
+				content: "website",
+			},
+			{
+				property: "og:locale",
+				content: "en_US",
+			},
+			{
+				name: "twitter:card",
+				content: "summary_large_image",
+			},
+			{
+				name: "twitter:title",
+				content: "FIND YOUR KING — Premium Geosocial Discovery",
+			},
+			{
+				name: "twitter:description",
+				content: "The premium dating platform for men who demand excellence.",
+			},
+		],
+		links: [
+			{
+				rel: "stylesheet",
+				href: appCss,
+			},
+			{
+				rel: "preconnect",
+				href: "https://fonts.googleapis.com",
+			},
+			{
+				rel: "preconnect",
+				href: "https://fonts.gstatic.com",
+				crossOrigin: "anonymous",
+			},
+			{
+				rel: "stylesheet",
+				href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;600;700&display=swap",
+			},
+			{
+				rel: "apple-touch-icon",
+				href: "/logo-square.svg",
+				sizes: "any",
+			},
+			{
+				rel: "icon",
+				type: "image/svg+xml",
+				href: "/logo-square.svg",
+			},
+			{
+				rel: "manifest",
+				href: "/manifest.json",
+			},
+		],
+	}),
+	notFoundComponent: NotFoundComponent,
+	shellComponent: RootDocument,
+});
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+	return (
+		<html
+			lang="en"
+			className="dark"
+			suppressHydrationWarning
+			data-scroll-behavior="smooth"
+		>
+			<head>
+				<HeadContent />
+			</head>
+			<body className="antialiased bg-background text-foreground min-h-screen font-[family-name:var(--font-sans)] safe-area-top">
+				<script src="/theme-init.js" />
+				<SupabaseSessionProvider>
+					<AppLayout>{children}</AppLayout>
+					{showDevtools && (
+						<TanStackDevtools
+							config={{ position: "top-right", triggerHidden: true }}
+							plugins={[
+								{
+									name: "Tanstack Router",
+									render: <TanStackRouterDevtoolsPanel />,
+								},
+								TanStackQueryDevtools,
+								StoreDevtools,
+							]}
+						/>
+					)}
+				</SupabaseSessionProvider>
+				<Scripts />
+			</body>
+		</html>
+	);
+}

@@ -36,7 +36,8 @@ function About() {
 						<h1
 							className="text-4xl sm:text-5xl tracking-wider mb-3"
 							style={{
-								fontFamily: "'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif",
+								fontFamily:
+									"'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif",
 								color: "rgba(255,255,255,0.9)",
 							}}
 						>
@@ -57,8 +58,8 @@ function About() {
 							style={{ color: "rgba(255,255,255,0.5)" }}
 						>
 							The premium geosocial discovery platform for men who refuse to
-							settle. Built with obsessive attention to detail, powered by AI, and
-							designed for real connections.
+							settle. Built with obsessive attention to detail, powered by AI,
+							and designed for real connections.
 						</p>
 					</div>
 
@@ -73,7 +74,8 @@ function About() {
 						<h2
 							className="text-xl tracking-wide mb-3"
 							style={{
-								fontFamily: "'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif",
+								fontFamily:
+									"'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif",
 								color: "rgba(255,255,255,0.9)",
 							}}
 						>
@@ -83,11 +85,12 @@ function About() {
 							className="text-sm leading-relaxed"
 							style={{ color: "rgba(255,255,255,0.5)" }}
 						>
-							FYK was born from a simple belief: dating apps should work for you,
-							not against you. We built an AI-powered platform that understands
-							what you're looking for, connects you with compatible men in your
-							area, and gives you the tools to build genuine relationships —
-							whether that's a lifetime partner or a new best friend.
+							FYK was born from a simple belief: dating apps should work for
+							you, not against you. We built an AI-powered platform that
+							understands what you're looking for, connects you with compatible
+							men in your area, and gives you the tools to build genuine
+							relationships — whether that's a lifetime partner or a new best
+							friend.
 						</p>
 					</div>
 
@@ -159,7 +162,10 @@ function About() {
 							{ value: "12K+", label: "Matches Daily", color: "#22c55e" },
 							{ value: "4.9★", label: "App Rating", color: "#a855f7" },
 						].map((s) => (
-							<div key={s.label} className="glass-card rounded-xl p-4 text-center">
+							<div
+								key={s.label}
+								className="glass-card rounded-xl p-4 text-center"
+							>
 								<p
 									className="text-2xl mb-1"
 									style={{
@@ -220,7 +226,8 @@ function About() {
 							style={{
 								fontFamily:
 									"'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif",
-								background: "linear-gradient(135deg, #EAAB08, #F5D76E, #D4AF37)",
+								background:
+									"linear-gradient(135deg, #EAAB08, #F5D76E, #D4AF37)",
 								color: "#000",
 								boxShadow: "0 0 30px rgba(234,179,8,0.3)",
 							}}

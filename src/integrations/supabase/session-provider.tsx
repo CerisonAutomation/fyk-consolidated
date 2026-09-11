@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	createContext,
 	useContext,
@@ -8,7 +10,7 @@ import {
 	type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "#/integrations/supabase/client";
+import { getSupabase } from "#/integrations/supabase/client";
 
 interface SupabaseSessionContextValue {
 	session: Session | null;
@@ -38,8 +40,14 @@ export function SupabaseSessionProvider({ children }: SessionProviderProps) {
 
 	useEffect(() => {
 		let mounted = true;
+		const client = getSupabase();
 
-		supabase.auth.getSession().then(({ data: { session: current } }) => {
+		if (!client) {
+			setLoading(false);
+			return;
+		}
+
+		client.auth.getSession().then(({ data: { session: current } }) => {
 			if (mounted) {
 				setSession(current);
 				setLoading(false);
@@ -48,7 +56,7 @@ export function SupabaseSessionProvider({ children }: SessionProviderProps) {
 
 		const {
 			data: { subscription },
-		} = supabase.auth.onAuthStateChange((_event, current) => {
+		} = client.auth.onAuthStateChange((_event, current) => {
 			if (mounted) {
 				setSession(current);
 				setLoading(false);
@@ -62,7 +70,8 @@ export function SupabaseSessionProvider({ children }: SessionProviderProps) {
 	}, []);
 
 	const signOut = useCallback(async () => {
-		await supabase.auth.signOut();
+		const client = getSupabase();
+		if (client) await client.auth.signOut();
 		setSession(null);
 	}, []);
 

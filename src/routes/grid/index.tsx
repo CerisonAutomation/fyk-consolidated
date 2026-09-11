@@ -1,13 +1,34 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Compass, SlidersHorizontal } from "lucide-react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+	Compass,
+	Grid3X3,
+	MapPin,
+	RefreshCw,
+	ShieldCheck,
+	SlidersHorizontal,
+	Sparkles,
+	Wifi,
+	Zap,
+} from "lucide-react";
+import {
+	memo,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import type { GridSearchFilters } from "#/core/model/grid";
 import {
 	GridFilters,
 	type GridFiltersState,
 } from "#/core/ui/organisms/filters/GridFilters";
-import { useGridSearchFiltersStore } from "#/domains/grid/filters-store";
+import {
+	initGridSearchFilters,
+	useGridSearchFiltersStore,
+} from "#/domains/grid/filters-store";
 import { useGridStore } from "#/domains/grid/store";
+import { demoMediaUrl } from "#/domains/demo";
 import {
 	getPreferencesSnapshot,
 	hydratePreferences,
@@ -18,6 +39,7 @@ export const Route = createFileRoute("/grid/")({
 	component: GridPage,
 	loader: async () => {
 		hydratePreferences();
+		await initGridSearchFilters();
 		let geohash = getPreferencesSnapshot().geohash;
 		if (!geohash) {
 			geohash = "dr5ru";
@@ -46,8 +68,16 @@ const LOAD_MORE_SKELETON_IDS = [
 
 function GridPage() {
 	const gridContainer = useRef<HTMLDivElement>(null);
-	const { items, loading, loadingMore, error, refreshing, loadMore, retry } =
-		useGridStore();
+	const {
+		items,
+		loading,
+		loadingMore,
+		error,
+		refreshing,
+		loadMore,
+		refresh,
+		retry,
+	} = useGridStore();
 	const filters = useGridSearchFiltersStore((s) => s.value);
 	const setFilters = useGridSearchFiltersStore((s) => s.setFilters);
 
@@ -74,6 +104,15 @@ function GridPage() {
 	});
 	const geohash = geohashState;
 
+	// Zustand state is not serialized with TanStack Router's loader cache during
+	// hydration. Ensure the browser-owned store is populated on direct visits as
+	// well as client-side navigation.
+	useEffect(() => {
+		void initGridSearchFilters().then(() => {
+			if (geohash) void useGridStore.getState().load(geohash);
+		});
+	}, [geohash]);
+
 	const activeFilterCount = filters
 		? [
 				filters.ageEnabled,
@@ -93,6 +132,10 @@ function GridPage() {
 				filters.tagsEnabled,
 			].filter(Boolean).length
 		: 0;
+	const renderedProfiles = items.filter((item) => item.type === "rendered");
+	const onlineCount = renderedProfiles.filter(
+		(item) => item.onlineUntil !== null && item.onlineUntil > Date.now(),
+	).length;
 
 	if (geohash === null) {
 		return (
@@ -120,38 +163,68 @@ function GridPage() {
 
 	return (
 		<main className="screen-nav-host">
-			{/* ── Header ── */}
-			<div className="flex items-center justify-between px-4 py-3">
-				<div className="flex items-center gap-3">
-					<h1 className="text-xl font-display text-foreground tracking-wide">
-						Discover
-					</h1>
-					{refreshing && (
-						<span className="text-[10px] font-mono text-gold/60 uppercase tracking-wider animate-pulse">
-							Refreshing
-						</span>
-					)}
+			{/* ── Production Nearby header, mirrored from FYK Zenith ── */}
+			<header className="mx-3 mt-3 rounded-2xl border border-white/[0.08] bg-white/[0.035] p-3 shadow-[0_20px_60px_-42px_rgba(234,179,8,.55)] backdrop-blur-xl sm:mx-4 sm:p-4">
+				<div className="flex items-start justify-between gap-3">
+					<div className="min-w-0">
+						<div className="mb-1 flex items-center gap-2">
+							<span className="inline-flex size-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.8)]" />
+							<span className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/45">
+								{onlineCount} online near you
+							</span>
+						</div>
+						<h1 className="font-display text-2xl tracking-wide text-white sm:text-3xl">
+							Nearby
+						</h1>
+						<p className="mt-1 flex items-center gap-1.5 text-xs text-white/45">
+							<ShieldCheck className="size-3 text-emerald-400/80" />
+							Photo-first discovery. Exact locations stay private.
+						</p>
+					</div>
+					<div className="flex shrink-0 gap-2">
+						<button
+							type="button"
+							onClick={() => void refresh()}
+							className="flex size-10 items-center justify-center rounded-xl border border-white/[0.09] bg-black/25 text-white/55 transition hover:border-gold/40 hover:text-gold"
+							aria-label="Refresh nearby profiles"
+						>
+							<RefreshCw
+								className={`size-4 ${refreshing ? "animate-spin" : ""}`}
+							/>
+						</button>
+						<Link
+							to="/right-now"
+							className="flex size-10 items-center justify-center rounded-xl border border-white/[0.09] bg-black/25 text-white/55 transition hover:border-gold/40 hover:text-gold"
+							aria-label="Open Right Now radar"
+						>
+							<MapPin className="size-4" />
+						</Link>
+						<button
+							type="button"
+							onClick={() => setFiltersOpen(true)}
+							className="relative inline-flex h-10 items-center gap-1.5 rounded-xl border border-gold/35 bg-gold/10 px-3 text-xs font-medium text-gold transition hover:bg-gold/15"
+							aria-label="Open filters"
+						>
+							<SlidersHorizontal className="size-4" />
+							<span className="hidden sm:inline">Filters</span>
+							{activeFilterCount > 0 && (
+								<span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
+									{activeFilterCount}
+								</span>
+							)}
+						</button>
+					</div>
 				</div>
-				<button
-					type="button"
-					onClick={() => setFiltersOpen(true)}
-					className="relative inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] backdrop-blur px-3 py-2 text-xs font-mono uppercase tracking-wider text-muted-foreground hover:border-gold/30 hover:text-gold hover:bg-gold/[0.04] transition-all duration-200"
-					aria-label="Open filters"
-				>
-					<SlidersHorizontal className="size-3.5" />
-					<span className="hidden sm:inline">Filters</span>
-					{activeFilterCount > 0 && (
-						<span className="absolute -right-1.5 -top-1.5 flex size-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
-							{activeFilterCount}
-						</span>
-					)}
-				</button>
-			</div>
+			</header>
 
 			{/* ── Quick Filter Chips ── */}
-			<div className="flex gap-2 px-4 pb-3">
+			<div className="flex gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
+				<span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-gold/50 bg-gold px-3 py-2 text-xs font-semibold text-black">
+					<MapPin className="size-3.5" /> Nearby
+				</span>
 				<QuickToggleChip
 					label="Favorites"
+					icon={<Sparkles className="size-3.5" />}
 					active={filters?.isFavorite ?? false}
 					onClick={() => {
 						setFilters({ isFavorite: !(filters?.isFavorite ?? false) });
@@ -160,12 +233,26 @@ function GridPage() {
 				/>
 				<QuickToggleChip
 					label="Online"
+					icon={<Wifi className="size-3.5" />}
 					active={filters?.isOnline ?? false}
 					onClick={() => {
 						setFilters({ isOnline: !(filters?.isOnline ?? false) });
 						useGridStore.getState().retry();
 					}}
 				/>
+				<Link
+					to="/right-now"
+					className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-2 text-xs font-mono uppercase tracking-wider text-white/50 transition hover:border-gold/30 hover:text-gold"
+				>
+					<Zap className="size-3.5" /> Right Now
+				</Link>
+			</div>
+			<div className="flex items-center justify-between px-4 pb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-white/35">
+				<span className="flex items-center gap-1.5">
+					<Grid3X3 className="size-3.5 text-gold" /> {renderedProfiles.length}{" "}
+					profiles
+				</span>
+				<span>{loadingMore ? "Loading more" : "Nearest first"}</span>
 			</div>
 
 			{/* ── Refresh bar ── */}
@@ -185,7 +272,7 @@ function GridPage() {
 			>
 				<div className="@container/photo-grid flex min-h-[calc(100vh-4rem)] flex-col gap-4 px-4 pt-2 pb-24">
 					{loading && items.length === 0 ? (
-						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
 							{GRID_SKELETON_IDS.map((id) => (
 								<div
 									key={id}
@@ -232,7 +319,7 @@ function GridPage() {
 							</div>
 						</div>
 					) : (
-						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
 							{items.map((item) => (
 								<GridCell key={item.id} item={item} />
 							))}
@@ -269,10 +356,12 @@ function GridPage() {
 
 function QuickToggleChip({
 	label,
+	icon,
 	active,
 	onClick,
 }: {
 	label: string;
+	icon?: ReactNode;
 	active: boolean;
 	onClick: () => void;
 }) {
@@ -288,6 +377,7 @@ function QuickToggleChip({
 			].join(" ")}
 			aria-pressed={active}
 		>
+			{icon}
 			{label}
 		</button>
 	);
@@ -314,9 +404,9 @@ const GridCell = memo(function GridCell({
 		>
 			{item.profilePhotosHashes && item.profilePhotosHashes.length > 0 ? (
 				<img
-					src={`https://cdns.grindr.com/images/profile/480x480/${item.profilePhotosHashes[0]}`}
+					src={demoMediaUrl(item.profilePhotosHashes[0])}
 					alt={item.displayName ?? "Profile"}
-					className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+					className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
 					loading="lazy"
 				/>
 			) : (
@@ -328,32 +418,68 @@ const GridCell = memo(function GridCell({
 			{/* ── Profile overlay gradient ── */}
 			<div className="profile-card-overlay" />
 
-			{/* ── Bottom info ── */}
-			<div className="absolute inset-x-0 bottom-0 p-2.5 pt-8 z-10">
-				<div className="flex items-center gap-1">
-					{item.isFavorite && (
-						<span className="text-amber-400 drop-shadow-md text-xs">
-							&#9733;
+			{/* ── Production card signals ── */}
+			<div className="absolute inset-x-0 top-0 z-10 flex items-start justify-between p-2.5">
+				<div className="flex items-center gap-1.5">
+					{item.isNew && (
+						<span className="rounded-full border border-white/15 bg-black/55 px-2 py-1 font-mono text-[9px] uppercase tracking-wider text-white backdrop-blur">
+							New
 						</span>
 					)}
-					<span className="text-sm font-medium text-white drop-shadow-md">
-						{item.displayName ?? "Anonymous"}
+					{item.isFavorite && (
+						<span className="flex size-6 items-center justify-center rounded-full bg-gold text-xs text-black shadow-lg">
+							★
+						</span>
+					)}
+				</div>
+				<div
+					className="grid size-8 place-items-center rounded-full p-[2px] shadow-lg"
+					style={{
+						background: `conic-gradient(${item.compatibilityScore >= 80 ? "#34d399" : "#eab308"} ${item.compatibilityScore * 3.6}deg, rgba(255,255,255,.14) 0deg)`,
+					}}
+					title={`${item.compatibilityScore}% compatibility`}
+				>
+					<span className="grid size-full place-items-center rounded-full bg-black/80 font-mono text-[9px] font-bold text-white backdrop-blur">
+						{item.compatibilityScore}
 					</span>
 				</div>
-				<div className="flex items-center gap-1.5">
+			</div>
+
+			{/* ── Bottom info ── */}
+			<div className="absolute inset-x-0 bottom-0 z-10 p-3 pt-12">
+				<div className="flex items-end justify-between gap-2">
+					<span className="truncate text-base font-semibold text-white drop-shadow-md">
+						{item.displayName ?? "Anonymous"}
+						{item.age !== null && (
+							<span className="ml-1 font-normal text-white/75">{item.age}</span>
+						)}
+					</span>
+				</div>
+				<div className="mt-1 flex min-w-0 items-center gap-1.5 text-white/65">
 					{item.distance !== null && (
-						<span className="profile-card-distance text-[10px]">
+						<span className="inline-flex items-center gap-1 text-[10px]">
+							<MapPin className="size-2.5" />
 							{item.distance < 1000
 								? `${Math.round(item.distance)}m`
 								: `${(item.distance / 1000).toFixed(1)}km`}
 						</span>
 					)}
+					{item.position && (
+						<span className="rounded-full border border-white/10 bg-black/35 px-1.5 py-0.5 text-[9px] backdrop-blur">
+							{item.position}
+						</span>
+					)}
 					{item.unread !== null && item.unread > 0 && (
-						<span className="profile-card-stat-badge bg-gold text-black">
+						<span className="ml-auto rounded-full bg-gold px-1.5 py-0.5 text-[9px] font-bold text-black">
 							{item.unread > 99 ? "99+" : item.unread}
 						</span>
 					)}
 				</div>
+				{item.headline && (
+					<p className="mt-1 truncate text-[10px] leading-tight text-white/45">
+						{item.headline}
+					</p>
+				)}
 			</div>
 
 			{/* ── Online status ── */}

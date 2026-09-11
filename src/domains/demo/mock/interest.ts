@@ -1,6 +1,6 @@
-import { HOUR, MINUTE, NOW } from '../config';
-import { demoFavoriteOf } from './grid';
-import { lastOnlineOf, onlineUntilOf, photosOf, profileSeed } from './profiles';
+import { HOUR, MINUTE, NOW } from "../config";
+import { demoFavoriteOf } from "./grid";
+import { lastOnlineOf, onlineUntilOf, photosOf, profileSeed } from "./profiles";
 
 const TAP_TYPES = [0, 1, 2] as const;
 const tapSourceIds = [
@@ -29,7 +29,7 @@ export function demoReceivedTaps() {
 			lastOnline: lastOnlineOf(seed),
 			isBoosting: false,
 			isMutual: i % 4 === 0,
-			rightNowType: '',
+			rightNowType: "",
 			isViewable: true,
 		};
 	});

@@ -6,7 +6,7 @@
  * Supports both touch long-press and right-click context menu.
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef } from "react";
 
 const LONG_PRESS_DURATION_MS = 450;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
@@ -37,9 +37,9 @@ function onGlobalClickCapture(event: MouseEvent): void {
 
 function suppressNextClick(): void {
 	suppressClickUntil = Date.now() + CLICK_SUPPRESS_MS;
-	if (clickSuppressorAttached || typeof document === 'undefined') return;
+	if (clickSuppressorAttached || typeof document === "undefined") return;
 	clickSuppressorAttached = true;
-	document.addEventListener('click', onGlobalClickCapture, { capture: true });
+	document.addEventListener("click", onGlobalClickCapture, { capture: true });
 }
 
 export interface LongPressHandlers {
@@ -66,7 +66,7 @@ export function useLongPress(onLongPress: () => void): LongPressHandlers {
 		(event: React.PointerEvent) => {
 			pressConsumedRef.current = false;
 			cancel();
-			if (event.pointerType === 'mouse') return;
+			if (event.pointerType === "mouse") return;
 			originRef.current = { x: event.clientX, y: event.clientY };
 			timerRef.current = setTimeout(() => {
 				timerRef.current = null;
@@ -82,7 +82,10 @@ export function useLongPress(onLongPress: () => void): LongPressHandlers {
 			if (timerRef.current === null) return;
 			const dx = Math.abs(event.clientX - originRef.current.x);
 			const dy = Math.abs(event.clientY - originRef.current.y);
-			if (dx > LONG_PRESS_MOVE_TOLERANCE_PX || dy > LONG_PRESS_MOVE_TOLERANCE_PX) {
+			if (
+				dx > LONG_PRESS_MOVE_TOLERANCE_PX ||
+				dy > LONG_PRESS_MOVE_TOLERANCE_PX
+			) {
 				cancel();
 			}
 		},
@@ -92,7 +95,7 @@ export function useLongPress(onLongPress: () => void): LongPressHandlers {
 	const onPointerUp = useCallback(
 		(event: React.PointerEvent) => {
 			cancel();
-			if (pressConsumedRef.current && event.pointerType !== 'mouse') {
+			if (pressConsumedRef.current && event.pointerType !== "mouse") {
 				suppressNextClick();
 			}
 		},
@@ -115,5 +118,11 @@ export function useLongPress(onLongPress: () => void): LongPressHandlers {
 		[cancel, onLongPress],
 	);
 
-	return { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onContextMenu };
+	return {
+		onPointerDown,
+		onPointerMove,
+		onPointerUp,
+		onPointerCancel,
+		onContextMenu,
+	};
 }

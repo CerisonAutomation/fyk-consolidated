@@ -3,18 +3,18 @@ import { Check } from "lucide-react";
 import { cn } from "../cn";
 
 interface SelectionCheckProps {
-  className?: string;
+	className?: string;
 }
 
 export function SelectionCheck({ className }: SelectionCheckProps): ReactNode {
-  return (
-    <div
-      className={cn(
-        "flex size-8 items-center justify-center rounded-full bg-primary",
-        className,
-      )}
-    >
-      <Check className="size-5 text-white" strokeWidth="bold" />
-    </div>
-  );
+	return (
+		<div
+			className={cn(
+				"flex size-8 items-center justify-center rounded-full bg-primary",
+				className,
+			)}
+		>
+			<Check className="size-5 text-white" strokeWidth="bold" />
+		</div>
+	);
 }

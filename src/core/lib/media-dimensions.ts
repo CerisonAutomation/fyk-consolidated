@@ -10,7 +10,7 @@ export type MediaDimensions = { width: number; height: number };
  * Returns a promise that resolves with { width, height } or rejects on load failure.
  */
 export async function measureImage(url: string): Promise<MediaDimensions> {
-	const img = document.createElement('img');
+	const img = document.createElement("img");
 	img.src = url;
 	try {
 		await new Promise<void>((resolve, reject) => {
@@ -19,9 +19,9 @@ export async function measureImage(url: string): Promise<MediaDimensions> {
 				else reject(new Error(`Failed to load image: ${url}`));
 				return;
 			}
-			img.addEventListener('load', () => resolve(), { once: true });
+			img.addEventListener("load", () => resolve(), { once: true });
 			img.addEventListener(
-				'error',
+				"error",
 				({ error }) =>
 					reject(
 						new Error(`Failed to load image: ${url}`, {
@@ -42,17 +42,17 @@ export async function measureImage(url: string): Promise<MediaDimensions> {
  * Returns a promise that resolves with { width, height } or rejects on load failure.
  */
 export async function measureVideo(url: string): Promise<MediaDimensions> {
-	const video = document.createElement('video');
+	const video = document.createElement("video");
 	video.src = url;
 	video.load();
 	try {
 		await new Promise<void>((resolve, reject) => {
 			if (video.readyState >= HTMLMediaElement.HAVE_METADATA) resolve();
-			video.addEventListener('loadedmetadata', () => resolve(), {
+			video.addEventListener("loadedmetadata", () => resolve(), {
 				once: true,
 			});
 			video.addEventListener(
-				'error',
+				"error",
 				({ error }) =>
 					reject(
 						new Error(`Failed to load video: ${url}`, {

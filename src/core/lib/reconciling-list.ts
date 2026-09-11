@@ -1,5 +1,5 @@
-import { showErrorToast } from '#/core/lib/error-toast';
-import { reconciler } from '#/domains/presence/reconciler';
+import { showErrorToast } from "#/core/lib/error-toast";
+import { reconciler } from "#/domains/presence/reconciler";
 
 export abstract class ReconcilingListState<TItem, TSnapshot, TKey = number> {
 	loading = true;
@@ -88,8 +88,7 @@ export abstract class ReconcilingListState<TItem, TSnapshot, TKey = number> {
 		try {
 			await this.#replaceFromServer();
 		} catch (error) {
-			this.error =
-				error instanceof Error ? error : new Error(String(error));
+			this.error = error instanceof Error ? error : new Error(String(error));
 		} finally {
 			this.loading = false;
 			this.#runRequestedRefresh();

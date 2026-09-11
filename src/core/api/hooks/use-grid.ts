@@ -61,8 +61,7 @@ export const gridKeys = {
 	all: ["grid"] as const,
 	cascade: (query: CascadeV4Query) =>
 		[...gridKeys.all, "cascade", query] as const,
-	search: (query: SearchQuery) =>
-		[...gridKeys.all, "search", query] as const,
+	search: (query: SearchQuery) => [...gridKeys.all, "search", query] as const,
 };
 
 // -- Hooks --

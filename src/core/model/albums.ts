@@ -14,13 +14,13 @@ export const albumMinSchema = albumPreviewSchema.extend({
 	albumViewable: z.boolean(),
 });
 
-export const albumDetailsSchema = z.object({
+const albumDetailsSchema = z.object({
 	sharedCount: z.int(),
 	createdAt: z.iso.datetime({ local: true }),
 	updatedAt: z.iso.datetime({ local: true }),
 });
 
-export const AlbumExpiration = {
+const AlbumExpiration = {
 	INDEFINITE: 0,
 	ONCE: 1,
 	TEN_MINUTES: 2,
@@ -28,7 +28,7 @@ export const AlbumExpiration = {
 	ONE_DAY: 4,
 } as const;
 
-export const albumExpirationTypeSchema = z.enum(
+const albumExpirationTypeSchema = z.enum(
 	Object.keys(AlbumExpiration) as (keyof typeof AlbumExpiration)[],
 );
 
@@ -39,21 +39,21 @@ export const albumExpirationSchema = z.object({
 	expirationType: albumExpirationTypeSchema.optional().nullable(),
 });
 
-export const albumContentMin = z.object({
+const albumContentMin = z.object({
 	contentId: z.int(),
 	contentType: z.string(),
 	coverUrl: mediaUrlSchema.nullable(),
 	statusId: z.int(),
 });
 
-export const albumContentSchema = albumContentMin.extend({
+const albumContentSchema = albumContentMin.extend({
 	thumbUrl: mediaUrlSchema,
 	url: mediaUrlSchema.or(z.literal("")),
 	processing: z.boolean().nullable(),
 	rejectionId: z.unknown().nullable(),
 });
 
-export const myAlbumSchema = albumDetailsSchema.extend({
+const myAlbumSchema = albumDetailsSchema.extend({
 	albumId: z.int(),
 	albumName: z.string().nullable(),
 	profileId: z.int(),
@@ -68,7 +68,7 @@ export const myAlbumsResponseSchema = z.object({
 	albums: z.array(myAlbumSchema),
 });
 
-export const albumShareRequestSchema = z.object({
+const albumShareRequestSchema = z.object({
 	profiles: z.array(
 		z.object({
 			profileId: z.int(),
@@ -83,12 +83,12 @@ export const albumSharesResponseSchema = z.object({
 	profileIds: z.array(z.int()),
 });
 
-export const albumUnshareRequestProfileItemSchema = z.object({
+const albumUnshareRequestProfileItemSchema = z.object({
 	profileId: z.int(),
 	shareId: z.string(),
 });
 
-export const albumUnshareRequestSchema = z.object({
+const albumUnshareRequestSchema = z.object({
 	profiles: z.array(albumUnshareRequestProfileItemSchema),
 });
 

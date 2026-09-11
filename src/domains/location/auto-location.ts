@@ -1,15 +1,18 @@
-import { getPreferencesSnapshot, setPreferences } from '#/domains/settings/preferences';
-import { decodeGeohash, encodeGeohash } from '#/core/model/geohash';
-import { now } from '#/core/lib/clock';
-import { distanceMeters, type Coordinates } from './distance';
+import {
+	getPreferencesSnapshot,
+	setPreferences,
+} from "#/domains/settings/preferences";
+import { decodeGeohash, encodeGeohash } from "#/core/model/geohash";
+import { now } from "#/core/lib/clock";
+import { distanceMeters, type Coordinates } from "./distance";
 
-export const BACKGROUND_FIX_MAX_AGE_MS = 6 * 60 * 1000;
-export const INTERACTIVE_FIX_MAX_AGE_MS = 10_000;
-export const GPS_FIX_TIMEOUT_MS = 15_000;
+const BACKGROUND_FIX_MAX_AGE_MS = 6 * 60 * 1000;
+const INTERACTIVE_FIX_MAX_AGE_MS = 10_000;
+const GPS_FIX_TIMEOUT_MS = 15_000;
 const MIN_MOVE_METERS = 100;
 
 interface LocationOutcome {
-	status: 'ok' | 'denied' | 'error';
+	status: "ok" | "denied" | "error";
 	coords?: Coordinates;
 	error?: Error;
 }
@@ -40,9 +43,9 @@ class AutoLocation {
 		const prompt = this.#promptAllowed && !this.#suspended;
 		const outcome = await this.#timeboxedFix(prompt);
 		if (prompt) this.#promptAllowed = false;
-		if (outcome === 'timeout') return current;
+		if (outcome === "timeout") return current;
 		if (this.#suspended) return current;
-		if (outcome.status === 'ok' && outcome.coords) {
+		if (outcome.status === "ok" && outcome.coords) {
 			this.#failureReported = false;
 			this.#lastFixAt = now();
 			this.#lastCoords = outcome.coords;
@@ -53,16 +56,19 @@ class AutoLocation {
 				}) >= MIN_MOVE_METERS;
 			return moved ? encodeGeohash(outcome.coords) : current;
 		}
-		if (outcome.status === 'denied') {
-			setPreferences({ autoUpdateLocation: false }).catch(
-				(error: unknown) => console.error(error),
+		if (outcome.status === "denied") {
+			setPreferences({ autoUpdateLocation: false }).catch((error: unknown) =>
+				console.error(error),
 			);
 			return current;
 		}
-		if (outcome.status === 'error') {
+		if (outcome.status === "error") {
 			console.error(outcome.error);
 			this.#reportOnce(() => {
-				console.error('Failed to update your location automatically', outcome.error);
+				console.error(
+					"Failed to update your location automatically",
+					outcome.error,
+				);
 			});
 		}
 		return current;
@@ -70,23 +76,20 @@ class AutoLocation {
 
 	#canSample(): boolean {
 		if (!getPreferencesSnapshot().autoUpdateLocation) return false;
-		return !(typeof document !== 'undefined' && document.hidden);
+		return !(typeof document !== "undefined" && document.hidden);
 	}
 
 	#fixStale(maxAgeMs: number): boolean {
 		return this.#lastFixAt === null || now() - this.#lastFixAt >= maxAgeMs;
 	}
 
-	async #timeboxedFix(prompt: boolean): Promise<LocationOutcome | 'timeout'> {
+	async #timeboxedFix(prompt: boolean): Promise<LocationOutcome | "timeout"> {
 		const request = this.#requestLocation(prompt);
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		const outcome = await Promise.race([
 			request,
-			new Promise<'timeout'>((resolve) => {
-				timer = setTimeout(
-					() => resolve('timeout'),
-					GPS_FIX_TIMEOUT_MS,
-				);
+			new Promise<"timeout">((resolve) => {
+				timer = setTimeout(() => resolve("timeout"), GPS_FIX_TIMEOUT_MS);
 			}),
 		]);
 		clearTimeout(timer);
@@ -95,13 +98,16 @@ class AutoLocation {
 
 	#requestLocation(prompt: boolean): Promise<LocationOutcome> {
 		return new Promise((resolve) => {
-			if (typeof navigator === 'undefined' || !navigator.geolocation) {
-				resolve({ status: 'error', error: new Error('Geolocation not available') });
+			if (typeof navigator === "undefined" || !navigator.geolocation) {
+				resolve({
+					status: "error",
+					error: new Error("Geolocation not available"),
+				});
 				return;
 			}
 			const onSuccess = (position: GeolocationPosition) => {
 				resolve({
-					status: 'ok',
+					status: "ok",
 					coords: {
 						lat: position.coords.latitude,
 						lon: position.coords.longitude,
@@ -110,9 +116,9 @@ class AutoLocation {
 			};
 			const onError = (error: GeolocationPositionError) => {
 				if (error.code === GeolocationPositionError.PERMISSION_DENIED) {
-					resolve({ status: 'denied' });
+					resolve({ status: "denied" });
 				} else {
-					resolve({ status: 'error', error: new Error(error.message) });
+					resolve({ status: "error", error: new Error(error.message) });
 				}
 			};
 			if (prompt) {

@@ -1,5 +1,5 @@
-import { proseKeys, verbatimKeys } from './policy';
-import { capText, documentTitle, scrubText } from './text';
+import { proseKeys, verbatimKeys } from "./policy";
+import { capText, documentTitle, scrubText } from "./text";
 
 const maxDepth = 6;
 const maxArrayItems = 10;
@@ -15,7 +15,7 @@ export function parseJson(
 		return {
 			ok: true,
 			value: JSON.parse(text, (key: string, value: unknown) =>
-				key === '__proto__' ? undefined : value,
+				key === "_proto__" ? undefined : value,
 			),
 		};
 	} catch {
@@ -24,8 +24,8 @@ export function parseJson(
 }
 
 export type NonJsonSummary =
-	| { nonJson: 'html'; length: number; title?: string }
-	| { nonJson: 'text'; length: number };
+	| { nonJson: "html"; length: number; title?: string }
+	| { nonJson: "text"; length: number };
 
 export function redactResponseBody(text: string): unknown {
 	const parsed = parseJson(text);
@@ -40,11 +40,11 @@ export function readResponseBody(text: string): unknown {
 export function summariseNonJson(text: string): NonJsonSummary {
 	const head = text.slice(0, maxParseChars);
 	if (!looksLikeMarkup(head)) {
-		return { nonJson: 'text', length: text.length };
+		return { nonJson: "text", length: text.length };
 	}
 	const title = documentTitle(head);
 	return {
-		nonJson: 'html',
+		nonJson: "html",
 		length: text.length,
 		...(title !== undefined && {
 			title: scrubText(capText(title, maxTitleChars)),
@@ -54,9 +54,9 @@ export function summariseNonJson(text: string): NonJsonSummary {
 
 function looksLikeMarkup(text: string): boolean {
 	const trimmed = text.trimStart();
-	if (trimmed.startsWith('<')) return true;
+	if (trimmed.startsWith("<")) return true;
 	const lowered = trimmed.toLowerCase();
-	return lowered.includes('<html') || lowered.includes('<!doctype');
+	return lowered.includes("<html") || lowered.includes("<!doctype");
 }
 
 export function redactValue(value: unknown): unknown {
@@ -73,15 +73,15 @@ function walk({
 	seen: WeakSet<object>;
 }): unknown {
 	if (value === null || value === undefined) return value;
-	if (typeof value !== 'object') return maskLeaf(value);
-	if (seen.has(value)) return '<circular>';
-	if (depth >= maxDepth) return '<nested>';
+	if (typeof value !== "object") return maskLeaf(value);
+	if (seen.has(value)) return "<circular>";
+	if (depth >= maxDepth) return "<nested>";
 
 	seen.add(value);
 	try {
 		if (Array.isArray(value)) return walkArray({ value, depth, seen });
 		if (!isPlainObject(value))
-			return `<${value.constructor?.name ?? 'object'}>`;
+			return `<${value.constructor?.name ?? "object"}>`;
 		return Object.fromEntries(
 			Object.entries(value).map(([key, item]) => [
 				key,
@@ -122,17 +122,17 @@ function walkEntry({
 	depth: number;
 	seen: WeakSet<object>;
 }): unknown {
-	if (typeof value === 'string') {
+	if (typeof value === "string") {
 		if (verbatimKeys.has(key)) return capText(value, maxKeptChars);
 		if (proseKeys.has(key)) return scrubText(capText(value, maxKeptChars));
-	} else if (verbatimKeys.has(key) && typeof value !== 'object') {
+	} else if (verbatimKeys.has(key) && typeof value !== "object") {
 		return value;
 	}
 	return walk({ value, depth: depth + 1, seen });
 }
 
 function maskLeaf(value: unknown): string {
-	if (typeof value === 'string') return `<string:${value.length}>`;
+	if (typeof value === "string") return `<string:${value.length}>`;
 	return `<${typeof value}>`;
 }
 

@@ -3,7 +3,7 @@
  * Extracted from open-grind and converted for React/TypeScript.
  */
 
-export type UnitSystem = 'metric' | 'imperial';
+export type UnitSystem = "metric" | "imperial";
 
 const FEET_PER_METRE = 3.28084;
 const METRES_PER_MILE = 1609.344;
@@ -19,7 +19,7 @@ export function formatDistance(
 	distanceMetres: number,
 	units: UnitSystem,
 ): string {
-	if (units === 'imperial') {
+	if (units === "imperial") {
 		if (distanceMetres < METRES_PER_MILE) {
 			return `${Math.round(distanceMetres * FEET_PER_METRE)} ft`;
 		}
@@ -38,7 +38,7 @@ export function formatDistance(
  * Imperial: "5'11\""
  */
 export function formatHeight(heightCm: number, units: UnitSystem): string {
-	if (units === 'imperial') {
+	if (units === "imperial") {
 		const totalInches = Math.round(heightCm * INCHES_PER_CM);
 		const feet = Math.floor(totalInches / 12);
 		const inches = totalInches % 12;
@@ -54,7 +54,7 @@ export function formatHeight(heightCm: number, units: UnitSystem): string {
  * Imperial: "176 lb"
  */
 export function formatWeightKg(weightKg: number, units: UnitSystem): string {
-	if (units === 'imperial') {
+	if (units === "imperial") {
 		return `${Math.round(weightKg * POUNDS_PER_KG)} lb`;
 	}
 

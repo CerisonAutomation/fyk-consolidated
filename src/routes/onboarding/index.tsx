@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Crown, MapPin, Camera, Sparkles } from "lucide-react";
+import {
+	ChevronLeft,
+	ChevronRight,
+	Crown,
+	MapPin,
+	Camera,
+	Sparkles,
+} from "lucide-react";
 import { setPreferences } from "#/domains/settings/preferences";
 
 export const Route = createFileRoute("/onboarding/")({
@@ -11,7 +18,14 @@ type Step = "welcome" | "name" | "location" | "photo" | "ready";
 
 const STEPS: Step[] = ["welcome", "name", "location", "photo", "ready"];
 
-const LOOKING_FOR_OPTIONS = ["Chat", "Friends", "Networking", "Right Now", "Relationship", "Hookup"];
+const LOOKING_FOR_OPTIONS = [
+	"Chat",
+	"Friends",
+	"Networking",
+	"Right Now",
+	"Relationship",
+	"Hookup",
+];
 
 function OnboardingPage() {
 	const [stepIndex, setStepIndex] = useState(0);
@@ -57,14 +71,16 @@ function OnboardingPage() {
 		<div
 			className="relative flex min-h-dvh flex-col overflow-hidden"
 			style={{
-				background: "linear-gradient(160deg, #0a0014 0%, #110022 25%, #000 50%, #0a0a0a 70%, #110808 100%)",
+				background:
+					"linear-gradient(160deg, #0a0014 0%, #110022 25%, #000 50%, #0a0a0a 70%, #110808 100%)",
 			}}
 		>
 			{/* Gradient overlays */}
 			<div
 				className="pointer-events-none absolute inset-0"
 				style={{
-					background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(234,179,8,0.06) 0%, transparent 60%)",
+					background:
+						"radial-gradient(ellipse 80% 50% at 50% 0%, rgba(234,179,8,0.06) 0%, transparent 60%)",
 				}}
 			/>
 
@@ -91,7 +107,8 @@ function OnboardingPage() {
 						<div
 							className="flex h-28 w-28 items-center justify-center rounded-2xl"
 							style={{
-								background: "linear-gradient(135deg, rgba(234,179,8,0.15), rgba(234,179,8,0.05))",
+								background:
+									"linear-gradient(135deg, rgba(234,179,8,0.15), rgba(234,179,8,0.05))",
 								border: "1px solid rgba(234,179,8,0.25)",
 								boxShadow: "0 0 60px rgba(234,179,8,0.1)",
 							}}
@@ -105,8 +122,8 @@ function OnboardingPage() {
 							<p className="mt-1 text-lg text-white/50">Find Your King</p>
 						</div>
 						<p className="max-w-xs text-sm leading-relaxed text-white/40">
-							A premium dating experience with privacy at its core. Let's set up your
-							profile.
+							A premium dating experience with privacy at its core. Let's set up
+							your profile.
 						</p>
 					</div>
 				)}
@@ -139,7 +156,8 @@ function OnboardingPage() {
 						<div
 							className="flex h-16 w-16 items-center justify-center rounded-2xl"
 							style={{
-								background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+								background:
+									"color-mix(in srgb, var(--accent-primary) 12%, transparent)",
 							}}
 						>
 							<MapPin className="h-8 w-8 text-amber-400" />
@@ -182,7 +200,8 @@ function OnboardingPage() {
 						<div
 							className="flex h-16 w-16 items-center justify-center rounded-2xl"
 							style={{
-								background: "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+								background:
+									"color-mix(in srgb, var(--accent-primary) 12%, transparent)",
 							}}
 						>
 							<Camera className="h-8 w-8 text-amber-400" />

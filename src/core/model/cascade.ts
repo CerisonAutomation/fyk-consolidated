@@ -17,7 +17,7 @@ import {
 
 // --- Cascade query ---
 
-export const cascadeQuerySchema = z.object({
+const cascadeQuerySchema = z.object({
 	nearbyGeoHash: z.string(),
 	exploreGeoHash: z.string().optional(),
 	photoOnly: z.boolean().optional(),
@@ -68,12 +68,12 @@ export const cascadeResponseProfileSchema = z.object({
 
 // --- Cascade response item types ---
 
-export const cascadeResponseFullProfileV1Schema = z.object({
+const cascadeResponseFullProfileV1Schema = z.object({
 	type: z.literal("full_profile_v1"),
 	data: z.object({ ...cascadeResponseProfileSchema.shape }),
 });
 
-export const cascadeResponsePartialProfileV1Schema = z.object({
+const cascadeResponsePartialProfileV1Schema = z.object({
 	type: z.literal("partial_profile_v1"),
 	data: z.object({
 		...cascadeResponseProfileSchema.shape,
@@ -81,22 +81,22 @@ export const cascadeResponsePartialProfileV1Schema = z.object({
 	}),
 });
 
-export const cascadeResponseBoostUpsellV1Schema = z.object({
+const cascadeResponseBoostUpsellV1Schema = z.object({
 	type: z.literal("boost_upsell_v1"),
 	data: z.object({}),
 });
 
-export const cascadeResponseUnlimitedMpuV1Schema = z.object({
+const cascadeResponseUnlimitedMpuV1Schema = z.object({
 	type: z.literal("unlimited_mpu_v1"),
 	data: z.object({}),
 });
 
-export const cascadeResponseXtraMpuV1Schema = z.object({
+const cascadeResponseXtraMpuV1Schema = z.object({
 	type: z.literal("xtra_mpu_v1"),
 	data: z.object({}),
 });
 
-export const cascadeExploreAggregationLocationItemSchema = z.object({
+const cascadeExploreAggregationLocationItemSchema = z.object({
 	"@type": z.literal("ExploreAggregationItem$Location"),
 	data: z.object({
 		onlineCount: z.int().nonnegative(),
@@ -112,11 +112,11 @@ export const cascadeExploreAggregationLocationItemSchema = z.object({
 	}),
 });
 
-export const cascadeExploreAggregationCtaItemSchema = z.object({
+const cascadeExploreAggregationCtaItemSchema = z.object({
 	"@type": z.literal("ExploreAggregationItem$Cta"),
 });
 
-export const cascadeResponseExploreAggregationV1Schema = z.object({
+const cascadeResponseExploreAggregationV1Schema = z.object({
 	type: z.literal("explore_aggregation_v1"),
 	data: z.object({
 		uuid: z.string(),
@@ -131,7 +131,7 @@ export const cascadeResponseExploreAggregationV1Schema = z.object({
 	}),
 });
 
-export const cascadeResponseFavHeaderV1Schema = z.object({
+const cascadeResponseFavHeaderV1Schema = z.object({
 	type: z.literal("favs_header_v1"),
 	data: z.object({
 		available: z.int().nonnegative(),
@@ -140,12 +140,12 @@ export const cascadeResponseFavHeaderV1Schema = z.object({
 	}),
 });
 
-export const cascadeResponseAdvertV1Schema = z.object({
+const cascadeResponseAdvertV1Schema = z.object({
 	type: z.literal("advert_v1"),
 	data: z.object({ cascadePlacementName: z.string() }),
 });
 
-export const cascadeResponseTopPicksV1Schema = z.object({
+const cascadeResponseTopPicksV1Schema = z.object({
 	type: z.literal("top_picks_v1"),
 	data: z.object({}),
 });
@@ -160,7 +160,7 @@ export const cascadeResponseSmartBoostProfileV1Schema = z.object({
 	type: z.literal("smart_boost_profile_v1"),
 });
 
-export const cascadeResponseSponsoredProfileV1Schema = z.object({
+const cascadeResponseSponsoredProfileV1Schema = z.object({
 	type: z.literal("sponsored_profile_v1"),
 	data: z.object({
 		cascadePlacementName: z.string(),
@@ -168,7 +168,7 @@ export const cascadeResponseSponsoredProfileV1Schema = z.object({
 	}),
 });
 
-export const cascadeResponseBrazeEventProfileV1Schema = z.object({
+const cascadeResponseBrazeEventProfileV1Schema = z.object({
 	type: z.literal("braze_event_profile_v1"),
 	data: z.object({
 		profileId: z.int().nonnegative(),
@@ -179,32 +179,32 @@ export const cascadeResponseBrazeEventProfileV1Schema = z.object({
 	}),
 });
 
-export const cascadeResponseFavsXtraUpsellV1Schema = z.object({
+const cascadeResponseFavsXtraUpsellV1Schema = z.object({
 	type: z.literal("favs_xtra_upsell_v1"),
 	data: z.object({ available: z.int().nonnegative() }),
 });
 
-export const cascadeResponseFavsUnlimitedUpsellV1Schema = z.object({
+const cascadeResponseFavsUnlimitedUpsellV1Schema = z.object({
 	type: z.literal("favs_unlimited_upsell_v1"),
 	data: z.object({}),
 });
 
-export const cascadeResponseFavoritesHeaderNoFreeResultsV1Schema = z.object({
+const cascadeResponseFavoritesHeaderNoFreeResultsV1Schema = z.object({
 	type: z.literal("favorites_header_no_free_results_v1"),
 	data: z.object({}),
 });
 
-export const cascadeResponseFavoritesHeaderNoXtraResultsV1Schema = z.object({
+const cascadeResponseFavoritesHeaderNoXtraResultsV1Schema = z.object({
 	type: z.literal("favorites_header_no_xtra_results_v1"),
 	data: z.object({}),
 });
 
-export const cascadeResponseProfileHideStatusSchema = z.object({
+const cascadeResponseProfileHideStatusSchema = z.object({
 	type: z.literal("profile_hide_status"),
 	count: z.int().nonnegative(),
 });
 
-export const cascadeResponseSchema = z.object({
+const cascadeResponseSchema = z.object({
 	items: z.array(z.unknown()),
 	nextPage: z.int().nonnegative().nullable(),
 	shuffled: z.boolean(),
@@ -236,11 +236,11 @@ export const cascadeV4ResponseFullProfileV1Schema = z.object({
 	}),
 });
 
-export const cascadeV4ResponseAdvertV1Schema = z.object({
+const cascadeV4ResponseAdvertV1Schema = z.object({
 	...cascadeResponseAdvertV1Schema.shape,
 });
 
-export const cascadeV4ResponseTopPicksV1Schema = z.object({
+const cascadeV4ResponseTopPicksV1Schema = z.object({
 	...cascadeResponseTopPicksV1Schema.shape,
 });
 
@@ -252,37 +252,37 @@ export const cascadeV4ResponsePartialProfileV1Schema = z.object({
 	}),
 });
 
-export const cascadeV4ResponseExploreAggregationV1Schema = z.object({
+const cascadeV4ResponseExploreAggregationV1Schema = z.object({
 	...cascadeResponseExploreAggregationV1Schema.shape,
 });
 
-export const cascadeV4ResponseBoostUpsellV1Schema = z.object({
+const cascadeV4ResponseBoostUpsellV1Schema = z.object({
 	...cascadeResponseBoostUpsellV1Schema.shape,
 });
 
-export const cascadeV4ResponseUnlimitedMpuV1Schema = z.object({
+const cascadeV4ResponseUnlimitedMpuV1Schema = z.object({
 	...cascadeResponseUnlimitedMpuV1Schema.shape,
 });
 
-export const cascadeV4ResponseXtraMpuV1Schema = z.object({
+const cascadeV4ResponseXtraMpuV1Schema = z.object({
 	...cascadeResponseXtraMpuV1Schema.shape,
 });
 
-export const cascadeV4ResponseFavHeaderV1Schema = z.object({
+const cascadeV4ResponseFavHeaderV1Schema = z.object({
 	...cascadeResponseFavHeaderV1Schema.shape,
 });
 
-export const cascadeV4ResponseHiddenProfileV1Schema = z.object({
+const cascadeV4ResponseHiddenProfileV1Schema = z.object({
 	...cascadeV4ResponseFullProfileV1Schema.shape,
 	type: z.literal("hidden_profile_v1"),
 });
 
-export const cascadeV4ResponseSmartBoostProfileV1Schema = z.object({
+const cascadeV4ResponseSmartBoostProfileV1Schema = z.object({
 	...cascadeV4ResponseFullProfileV1Schema.shape,
 	type: z.literal("smart_boost_profile_v1"),
 });
 
-export const cascadeV4ResponseSponsoredProfileV1Schema = z.object({
+const cascadeV4ResponseSponsoredProfileV1Schema = z.object({
 	...cascadeResponseSponsoredProfileV1Schema.shape,
 	data: z.object({
 		...cascadeResponseSponsoredProfileV1Schema.shape.data.shape,
@@ -290,27 +290,27 @@ export const cascadeV4ResponseSponsoredProfileV1Schema = z.object({
 	}),
 });
 
-export const cascadeV4ResponseBrazeEventProfileV1Schema = z.object({
+const cascadeV4ResponseBrazeEventProfileV1Schema = z.object({
 	...cascadeResponseBrazeEventProfileV1Schema.shape,
 });
 
-export const cascadeV4ResponseFavsXtraUpsellV1Schema = z.object({
+const cascadeV4ResponseFavsXtraUpsellV1Schema = z.object({
 	...cascadeResponseFavsXtraUpsellV1Schema.shape,
 });
 
-export const cascadeV4ResponseFavsUnlimitedUpsellV1Schema = z.object({
+const cascadeV4ResponseFavsUnlimitedUpsellV1Schema = z.object({
 	...cascadeResponseFavsUnlimitedUpsellV1Schema.shape,
 });
 
-export const cascadeV4ResponseFavoritesHeaderNoFreeResultsV1Schema = z.object({
+const cascadeV4ResponseFavoritesHeaderNoFreeResultsV1Schema = z.object({
 	...cascadeResponseFavoritesHeaderNoFreeResultsV1Schema.shape,
 });
 
-export const cascadeV4ResponseFavoritesHeaderNoXtraResultsV1Schema = z.object({
+const cascadeV4ResponseFavoritesHeaderNoXtraResultsV1Schema = z.object({
 	...cascadeResponseFavoritesHeaderNoXtraResultsV1Schema.shape,
 });
 
-export const cascadeV4ResponseProfileHideStatusSchema = z.object({
+const cascadeV4ResponseProfileHideStatusSchema = z.object({
 	...cascadeResponseProfileHideStatusSchema.shape,
 });
 

@@ -42,7 +42,10 @@ export { GendersFilter } from "./organisms/filters/GendersFilter";
 export { AgeFilter } from "./organisms/filters/AgeFilter";
 export { HeightFilter } from "./organisms/filters/HeightFilter";
 export { WeightFilter } from "./organisms/filters/WeightFilter";
-export { PositionFilter, FilterPosition } from "./organisms/filters/PositionFilter";
+export {
+	PositionFilter,
+	FilterPosition,
+} from "./organisms/filters/PositionFilter";
 export type { FilterPositionValue } from "./organisms/filters/PositionFilter";
 export { PhotosFilter } from "./organisms/filters/PhotosFilter";
 export type { PhotoFilterValue } from "./organisms/filters/PhotosFilter";

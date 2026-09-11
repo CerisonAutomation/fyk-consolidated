@@ -19,8 +19,6 @@ export type { CascadeV4Query, SearchQuery } from "./hooks/use-grid";
 export {
 	useProfile,
 	useProfiles,
-	usePatchProfile,
-	useUpdateProfile,
 	profileKeys,
 	profileSchema,
 } from "./hooks/use-profiles";
@@ -29,21 +27,21 @@ export type { Profile } from "./hooks/use-profiles";
 // Hooks - Conversations
 export {
 	useConversations,
-	useMarkRead,
 	useDeleteConversation,
 	usePinConversation,
 	useMuteConversation,
 	conversationKeys,
 	fullConversationSchema,
 } from "./hooks/use-conversations";
-export type { Conversation, InboxFilterRequest } from "./hooks/use-conversations";
+export type {
+	Conversation,
+	InboxFilterRequest,
+} from "./hooks/use-conversations";
 
 // Hooks - Messages
 export {
 	useConversationMessages,
 	useSendMessage,
-	useReactToMessage,
-	useDeleteMessage,
 	messageKeys,
 	apiResponseMessageSchema,
 } from "./hooks/use-messages";
@@ -53,8 +51,6 @@ export type { ApiResponseMessage, OutboundMessage } from "./hooks/use-messages";
 export {
 	useAddFavorite,
 	useRemoveFavorite,
-	useFavoriteNote,
-	usePutFavoriteNote,
 	favoriteKeys,
 	favoriteNoteSchema,
 } from "./hooks/use-favorites";
@@ -89,7 +85,6 @@ export type { TapProfile, TapType } from "./hooks/use-taps";
 export {
 	useViews,
 	useRecordView,
-	viewKeys,
 } from "./hooks/use-views";
 
 // Hooks - Settings
@@ -98,7 +93,10 @@ export {
 	useSetAccountPreferences,
 	settingsKeys,
 } from "./hooks/use-settings";
-export type { AccountPreferences, AccountPreferencesPatch } from "./hooks/use-settings";
+export type {
+	AccountPreferences,
+	AccountPreferencesPatch,
+} from "./hooks/use-settings";
 
 // Hooks - Albums
 export {
@@ -108,7 +106,10 @@ export {
 	useUnshareAlbum,
 	albumKeys,
 } from "./hooks/use-albums";
-export type { AlbumContentResponse, AlbumExpirationType } from "./hooks/use-albums";
+export type {
+	AlbumContentResponse,
+	AlbumExpirationType,
+} from "./hooks/use-albums";
 
 // Hooks - Places
 export {

@@ -1,97 +1,381 @@
-# AI_RULES.md
+# AI_RULES.md — FYK Consolidated Project
+
+## Project Overview
+
+FYK (Find Your King) is an LGBTQ+ dating and social platform built with TanStack Start. This document defines the authoritative rules for AI coding assistants working on this codebase.
+
+---
 
 ## Tech Stack
 
-- **React 19** with TypeScript (strict mode enabled). Use modern React patterns — no class components.
-- **TanStack Start** (full-stack React framework built on TanStack Router). This is NOT Next.js — it uses file-based routing via `@tanstack/react-router` with SSR support through `@tanstack/react-start`.
-- **TanStack Router** for routing. Routes live in `src/routes/` and are defined with `createFileRoute()` or `createRootRouteWithContext()`. The route tree is auto-generated via `tsr generate` — never manually edit `src/routeTree.gen.ts`.
-- **TanStack Query** (`@tanstack/react-query`) for server-state management, data fetching, and caching. Client is provided in `src/integrations/tanstack-query/root-provider.tsx`. Use `useQuery` / `useMutation` for any data fetching.
-- **TanStack Store** (`@tanstack/store` + `@tanstack/react-store`) for lightweight client-only global state. NOT Redux, NOT Zustand — use `Store` from `@tanstack/store`.
-- **TanStack Table** (`@tanstack/react-table`) for data tables with sorting, filtering, and pagination.
-- **TanStack AI** (`@tanstack/ai`, `@tanstack/ai-react`, `@tanstack/ai-client`) for AI/chat features. Multi-provider support (Anthropic, OpenAI, Gemini, Ollama). Server-side chat handlers are API routes in `src/routes/demo/api.ai.*.ts`. Client-side chat hook is built with `createChatClientOptions` + `useChat`.
-- **Tailwind CSS v4** with `@tailwindcss/vite` plugin. Style tokens are CSS custom properties defined in `src/styles.css` — use `var(--token-name)` or the Tailwind `color-*` references. Dark mode uses `.dark` class variant.
-- **shadcn/ui** (new-york style, zinc base) for UI primitives. Components live in `src/components/ui/`. Alias `#/components/ui` in `components.json`. All shadcn/ui components are already installed — never run `npx shadcn@latest add`.
-- **Prisma** with `@prisma/adapter-pg` (Neon/PostgreSQL driver adapter) for the database layer. Client singleton in `src/db.ts`. Schema in `prisma/schema.prisma`. Use `prisma db push` for prototyping, `prisma migrate dev` for migrations.
-- **better-auth** for authentication with `tanstack-start` cookie integration. Config in `src/lib/auth.ts`, client in `src/lib/auth-client.ts`.
-- **Vite 8** as the build tool with `@vitejs/plugin-react` and `@tanstack/devtools-vite`.
-- **Biome** for formatting (tabs, double quotes) and linting. NOT Prettier, NOT ESLint — run `pnpm check` or `pnpm format`/`pnpm lint`.
-- **Zod** for runtime schema validation and type inference.
-- **Faker.js** (`@faker-js/faker`) for generating mock/demo data.
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| Framework | TanStack Start | 1.168.x | Full-stack React framework with SSR |
+| UI Library | React | 19.x | Component rendering |
+| Language | TypeScript | 6.x | Type safety (strict mode) |
+| Build Tool | Vite | 8.x | Dev server and bundler |
+| Database ORM | Prisma | 7.x | Type-safe database access |
+| Database | PostgreSQL (Supabase) | 15+ | Primary data store |
+| Auth | better-auth | 1.5.x | Authentication with TanStack Start cookies |
+| Styling | Tailwind CSS | 4.x | Utility-first CSS via `@tailwindcss/vite` |
+| UI Components | shadcn/ui (new-york, zinc) | latest | Radix-based primitives |
+| Linting/Formatting | Biome | 2.x | NOT Prettier, NOT ESLint |
+| Testing | Vitest | 3.x | Unit and integration tests |
+| E2E Testing | Playwright | 1.62.x | End-to-end browser tests |
+| State (server) | TanStack Query | 5.x | Server-state management |
+| State (client) | TanStack Store | 0.11.x | Lightweight client-only global state |
+| AI Integration | TanStack AI | 0.48.x | Multi-provider AI (Anthropic, OpenAI, Gemini, Ollama) |
+| Maps | MapLibre GL / Leaflet | 6.x / 1.9.x | Map rendering |
+| Real-time | Socket.IO | 4.x | WebSocket communication |
+| Payments | Stripe | 9.x | Billing and subscriptions |
+| Email | Resend | 6.x | Transactional email |
+| Rate Limiting | Upstash Redis | 1.x | Rate limits and caching |
+| Observability | Sentry | 10.x | Error tracking |
+| Analytics | PostHog | 1.x | Product analytics |
+| Validation | Zod | 4.x | Runtime schema validation |
+| Forms | react-hook-form + @hookform/resolvers | 7.x / 5.x | Form state and validation |
+| Animations | Framer Motion | 13.x | Declarative animations |
+| Icons | Lucide React | 0.577.x | Icon library |
 
-## Library Rules
+---
 
-### Routing & Navigation
-- Use `createFileRoute('/path')` for page components in `src/routes/`.
-- Use `createRootRouteWithContext()` only in `__root.tsx` for the app shell with typed context.
-- All routes MUST be in `src/routes/`. File-based routing maps files to URL paths.
-- API route handlers use `server: { handlers: { POST/GET: ... } }` export on the route definition.
-- Use `Link` from `@tanstack/react-router` for navigation (enables preloading).
-- After adding routes, run `pnpm generate-routes` to update the route tree.
+## Library Usage Rules
 
-### Data Fetching & Server State
-- Use `useQuery` / `useMutation` from `@tanstack/react-query` for all async data.
-- Use `useSuspenseQuery` when the component tree is wrapped in `<Suspense>`.
-- Never fetch data in `useEffect` — use React Query's `queryFn`.
+### USE These Libraries
 
-### Client State
-- Use `Store` from `@tanstack/store` for simple global state (not React Context).
-- Use `useStore` from `@tanstack/react-store` to subscribe components to store changes.
-- Keep stores small and focused — one concern per store.
+| Task | Library | Import Pattern |
+|------|---------|---------------|
+| Routing | `@tanstack/react-router` | `createFileRoute`, `Link` |
+| Data Fetching | `@tanstack/react-query` | `useQuery`, `useMutation`, `useSuspenseQuery` |
+| Client State | `@tanstack/store` | `Store`, `useStore` |
+| Forms | `react-hook-form` + `zod` | `useForm`, `zodResolver` |
+| UI Components | `src/components/ui/*` (shadcn/ui) | Direct imports |
+| Icons | `lucide-react` | `import { Icon } from 'lucide-react'` |
+| Styling | Tailwind CSS 4 | Utility classes, `var(--token)` |
+| Validation | `zod` | `z.object({...})`, `z.infer<typeof schema>` |
+| Database | Prisma | `import { prisma } from '#/db'` |
+| Auth (client) | better-auth | `import { authClient } from '#/lib/auth-client'` |
+| Auth (server) | better-auth | `import { auth } from '#/lib/auth'` |
+| AI (server) | `@tanstack/ai` | `chat`, `toServerSentEventsResponse` |
+| AI (client) | `@tanstack/ai-react` | `createChatClientOptions`, `useChat` |
+| AI Providers | `@tanstack/ai-anthropic`, `@tanstack/ai-openai`, `@tanstack/ai-gemini`, `@tanstack/ai-ollama` | Adapter imports |
+| Tables | `@tanstack/react-table` | `useReactTable`, `getCoreRowModel` |
+| Maps | `maplibre-gl`, `leaflet` | Dynamic imports |
+| Tooltips | `@radix-ui/react-tooltip` | Via shadcn/ui Tooltip |
+| Dialogs | `@radix-ui/react-dialog` | Via shadcn/ui Dialog |
+| Toasts | `sonner` | `toast()` from `sonner` |
+| Utilities | `tailwind-merge`, `clsx`, `cva` | `cn()` from `#/lib/utils` |
+| Rate Limiting | `@upstash/ratelimit` + `@upstash/redis` | Server-side only |
+| Payments | `@stripe/stripe-js`, `stripe` (server) | Server + client |
+| Email | `resend` | Server-side only |
+| Image Processing | `sharp` | Server-side only |
+| Sanitization | `dompurify` | Client-side HTML sanitization |
+| Search | `fuse.js` | Client-side fuzzy search |
+| Logger | `pino` | `import { logger } from '#/lib/logger'` |
+| Geospatial | `h3-js` | Client-side hex indexing |
 
-### AI Features
-- Server-side: Import `chat`, `toServerSentEventsResponse` from `@tanstack/ai`. Define adapter using `anthropicText`, `openaiText`, `geminiText`, or `ollamaText`.
-- Client-side: Use `createChatClientOptions` + `useChat` from `@tanstack/ai-react`.
-- Tools are split into server tools (have `execute`) and client tools (have `client()` definition).
-- Multi-provider pattern: check env vars for API keys, fall through to Ollama as local fallback.
+### DO NOT Use These Libraries
 
-### Styling
-- Use Tailwind utility classes as the primary styling mechanism.
-- Reference design tokens via CSS custom properties: `text-[var(--sea-ink)]`, `bg-[var(--chip-bg)]`, etc.
-- For shadcn/ui components, use the semantic color classes: `text-foreground`, `bg-card`, `border-border`, etc.
-- Use `class-variance-authority` (cva) for component variant definitions.
-- Use `tailwind-merge` (via `cn()` from `#/lib/utils`) to merge Tailwind classes.
-- Never use inline `style` for layout — use Tailwind utilities.
-- Global custom classes (`.island-shell`, `.feature-card`, `.page-wrap`, `.display-title`, `.island-kicker`) are defined in `src/styles.css` and provide the app's visual identity.
+| Never Use | Why | Use Instead |
+|-----------|-----|-------------|
+| `next` / `@next/*` | This is NOT a Next.js project | TanStack Start |
+| `@tanstack/router-devtools` (in prod) | Dev-only, strip from builds | Conditional import |
+| `zustand` | Conflicts with TanStack Store | `@tanstack/store` |
+| `redux` / `react-redux` | Overkill, wrong paradigm | `@tanstack/store` |
+| `@emotion/*` | Conflicts with Tailwind | Tailwind utility classes |
+| `styled-components` | Conflicts with Tailwind | Tailwind utility classes |
+| `moment` / `dayjs` | Use native `Intl.DateTimeFormat` | Native Date APIs |
+| `axios` | Unnecessary, use `fetch` | Native `fetch` |
+| `lodash` | Bundle bloat | Native JS methods or targeted imports |
+| `formik` | Use react-hook-form | `react-hook-form` |
+| `@mui/*` | Conflicts with shadcn/ui | shadcn/ui components |
+| `react-bootstrap` / `bootstrap` | Conflicts with Tailwind | Tailwind CSS |
+| `eslint` (new config) | Biome handles linting | `pnpm check` |
+| `prettier` | Biome handles formatting | `pnpm format` |
+| `console.log` in production | Information leak, noise | `pino` logger |
+| `any` type | Defeats TypeScript | Specific types or `unknown` |
+| `@ts-ignore` / `@ts-expect-error` | Hides real errors | Fix the root cause |
+| `require()` | ESM project | `import` syntax |
+| `react-query` (v3) | Deprecated | `@tanstack/react-query` v5 |
 
-### Database
-- Import `prisma` from `#/db` (singleton, never create new PrismaClient instances).
-- Prisma schema is the source of truth in `prisma/schema.prisma`.
-- Run `pnpm db:generate` after schema changes to regenerate the Prisma client.
-- The generated client lives in `src/generated/prisma/` — import from `#/generated/prisma/client.js`.
+---
 
-### Auth
-- Use `authClient` from `#/lib/auth-client` for client-side auth operations (sign in, sign up, session).
-- Use `auth` from `#/lib/auth` for server-side auth configuration and verification.
-- Auth is configured via `better-auth` with email/password and TanStack Start cookie plugin.
+## Code Style Rules
 
-### Icons
-- Use `lucide-react` for all icons. Import as `import { IconName } from 'lucide-react'`.
-- Never create custom SVG icons when a Lucide equivalent exists.
+### TypeScript
 
-### Forms & Validation
-- Use `zod` for validation schemas. Infer TypeScript types with `z.infer<typeof schema>`.
-- For server-side validation, validate request bodies with Zod before processing.
+```typescript
+// GOOD: Explicit types, no any
+interface UserProfile {
+  id: string;
+  displayName: string;
+  age: number;
+}
 
-### Data Tables
-- Use `@tanstack/react-table` with `@tanstack/match-sorter-utils` for fuzzy filtering.
-- Always provide `getCoreRowModel()` — other models are optional based on features needed.
+function getProfile(id: string): Promise<UserProfile> {
+  return prisma.profile.findUniqueOrThrow({ where: { id } });
+}
 
-### Code Quality
-- Biome formatter: tabs for indentation, double quotes for strings.
-- Biome linter: recommended rules only — no custom overrides.
-- TypeScript strict mode: no `any`, no `@ts-ignore`, no non-null assertions where avoidable.
-- Use path aliases: `#/` maps to `src/` (preferred), `@/` also works.
-- Export types alongside their implementations. Use `export type` for type-only exports.
-- Never modify generated files: `routeTree.gen.ts`, `src/generated/prisma/`.
+// BAD: Using any
+function getProfile(id: any): any {
+  return prisma.profile.findUnique({ where: { id } });
+}
+```
 
-### File Organization
-- Routes: `src/routes/`
-- Shared components: `src/components/`
-- UI primitives (shadcn/ui): `src/components/ui/`
-- Core business logic & models: `src/core/`
-- Custom hooks: `src/hooks/`
-- Domain logic: `src/domains/`
-- Integration wiring: `src/integrations/`
-- Lib utilities: `src/lib/`
-- Data files: `src/data/`
-- API/client code: `src/core/api/`
+- **No `any`** — use `unknown` and narrow with type guards
+- **No `@ts-ignore`** — fix the actual type issue
+- **No non-null assertions (`!`)** — use `??`, optional chaining, or explicit checks
+- **Export types alongside implementations** — use `export type` for type-only exports
+- **Use path aliases** — `#/` maps to `src/` (preferred), `@/` also works
+
+### Formatting (Biome)
+
+- **Indentation**: Tabs (not spaces)
+- **Quotes**: Double quotes (not single)
+- **Semicolons**: Always
+- **Trailing commas**: Always
+- Run `pnpm check` before committing
+
+### Naming Conventions
+
+| Element | Convention | Example |
+|---------|-----------|---------|
+| Files (components) | PascalCase | `UserProfile.tsx` |
+| Files (hooks) | camelCase with `use` prefix | `useProfile.ts` |
+| Files (utils) | camelCase | `formatDate.ts` |
+| Files (types) | camelCase with `.types.ts` | `profile.types.ts` |
+| Files (routes) | kebab-case matching URL | `profile.$id.tsx` |
+| React components | PascalCase | `function UserProfile() {}` |
+| React hooks | camelCase with `use` prefix | `function useProfile() {}` |
+| TypeScript interfaces | PascalCase, no `I` prefix | `interface UserProfile {}` |
+| TypeScript types | PascalCase | `type ProfileId = string` |
+| Constants | UPPER_SNAKE_CASE | `const MAX_PHOTO_SIZE = 5_000_000` |
+| Database tables | snake_case | `profile_photos` |
+| Database columns | snake_case | `created_at` |
+| CSS classes | Tailwind utilities | `className="flex items-center"` |
+| CSS custom properties | kebab-case with prefix | `--sea-ink`, `--chip-bg` |
+
+### Imports
+
+```typescript
+// 1. External packages
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+
+// 2. Internal aliases (preferred: #/)
+import { prisma } from "#/db";
+import { authClient } from "#/lib/auth-client";
+import { Button } from "#/components/ui/button";
+import { cn } from "#/lib/utils";
+
+// 3. Relative imports (only for same-directory)
+import { formatDate } from "./format-date";
+```
+
+---
+
+## Architecture Patterns
+
+### Domain-Driven Structure
+
+```
+src/
+  routes/          # File-based routing (TanStack Router)
+  components/      # Shared React components
+    ui/            # shadcn/ui primitives (NEVER modify directly)
+    layout/        # App shell, nav, sidebar
+    features/      # Feature-specific compound components
+  domains/         # Domain modules (self-contained business logic)
+    profile/       # Profile domain
+      profile.types.ts
+      profile.queries.ts    # TanStack Query hooks
+      profile.mutations.ts  # TanStack Query mutations
+      profile.utils.ts      # Domain-specific utilities
+    matching/      # Matching/likes domain
+    messaging/     # Chat/messaging domain
+    events/        # Events domain
+    board/         # Community board domain
+    auth/          # Authentication domain
+  core/            # Core infrastructure
+    api/           # API client and types
+    db.ts          # Prisma client singleton
+    auth.ts        # better-auth server config
+    auth-client.ts # better-auth client config
+  hooks/           # Shared custom hooks
+  lib/             # Utility functions
+    utils.ts       # cn() and other helpers
+    logger.ts      # Pino logger
+    redis.ts       # Upstash Redis client
+    stripe.ts      # Stripe client
+    resend.ts      # Resend email client
+    posthog.ts     # PostHog analytics
+  integrations/    # External service wiring
+    supabase/      # Supabase client config
+    tanstack-query/ # Query client provider
+  data/            # Static data and constants
+  styles.css       # Global styles and CSS custom properties
+```
+
+### Query Hooks Pattern
+
+```typescript
+// domains/profile/profile.queries.ts
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { prisma } from "#/db";
+
+export function profileKeys() {
+  return {
+    all: ["profiles"] as const,
+    detail: (id: string) => ["profiles", id] as const,
+    byHandle: (handle: string) => ["profiles", "handle", handle] as const,
+  };
+}
+
+export function useProfile(id: string) {
+  return useQuery({
+    queryKey: profileKeys.detail(id),
+    queryFn: () => fetchProfile(id),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateProfile,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: profileKeys.detail(variables.id) });
+    },
+  });
+}
+```
+
+### Server Functions Pattern
+
+```typescript
+// Use createServerFn for server-side operations
+import { createServerFn } from "@tanstack/react-start";
+
+export const getProfile = createServerFn({ method: "GET" })
+  .validator((id: string) => id)
+  .handler(async ({ data: id }) => {
+    return prisma.profile.findUniqueOrThrow({ where: { id } });
+  });
+```
+
+### Route Definition Pattern
+
+```typescript
+// src/routes/profile.$id.tsx
+import { createFileRoute } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/profile/$id")({
+  loader: async ({ params }) => {
+    return getProfile({ data: params.id });
+  },
+  component: ProfilePage,
+});
+
+function ProfilePage() {
+  const { id } = Route.useParams();
+  const { data: profile } = Route.useLoaderData();
+  // ...
+}
+```
+
+### Middleware Composition
+
+```typescript
+// Middleware is applied at the route level
+export const Route = createFileRoute("/dashboard")({
+  beforeLoad: [requireAuth, requireOnboarding],
+  component: DashboardPage,
+});
+```
+
+---
+
+## File Organization Rules
+
+1. **Routes** go in `src/routes/` — file-based routing, never manual route tree edits
+2. **UI primitives** go in `src/components/ui/` — managed by shadcn/ui, never hand-edit
+3. **Feature components** go in `src/components/features/` — compound component patterns
+4. **Domain logic** goes in `src/domains/` — each domain is self-contained
+5. **Shared hooks** go in `src/hooks/` — reusable across domains
+6. **Utility functions** go in `src/lib/` — no business logic, pure utilities
+7. **Generated files** are NEVER edited: `routeTree.gen.ts`, `src/generated/`
+8. **Demo files** (prefixed `demo`) can be safely deleted
+
+---
+
+## Database Rules
+
+### Prisma
+
+- Import the singleton: `import { prisma } from "#/db"` — never create `new PrismaClient()`
+- Run `pnpm db:generate` after schema changes
+- Use `prisma db push` for prototyping, `prisma migrate dev` for migrations
+- Schema is the source of truth in `prisma/schema.prisma`
+- Generated client lives in `src/generated/prisma/`
+
+### Supabase
+
+- Use Supabase for auth and storage, Prisma for data queries
+- RLS policies enforce row-level security — do NOT bypass with service role in client code
+- Storage buckets: `avatars-public`, `photos-public`, `albums-private`, `chat-media-private`, `event-media-public`
+- Private data uses signed URLs, never raw file access
+
+---
+
+## Auth Rules
+
+- Use `authClient` from `#/lib/auth-client` for client-side operations
+- Use `auth` from `#/lib/auth` for server-side verification
+- Auth is configured via better-auth with TanStack Start cookie integration
+- Never store tokens in localStorage — use httpOnly cookies
+- Age verification is enforced at the database level (18+ constraint)
+
+---
+
+## Security Rules
+
+1. **Never expose `SUPABASE_SERVICE_ROLE_KEY`** to client code
+2. **Never store API keys in client-side code** — use server functions
+3. **Validate all inputs** with Zod before processing
+4. **Use RLS** — do not bypass with service role in client components
+5. **Sanitize user HTML** with DOMPurify before rendering
+6. **Rate limit** sensitive endpoints with Upstash Redis
+7. **Log security events** to audit_events table (service-role only)
+8. **Never self-grant premium** — entitlements table has no client write policy
+
+---
+
+## Testing Rules
+
+- **Unit tests**: Vitest — test domain logic, utilities, hooks
+- **E2E tests**: Playwright — test critical user flows
+- **Test file location**: `*.test.ts` or `*.spec.ts` alongside source files
+- **Run tests**: `pnpm test`
+- **Verify all**: `pnpm verify` (typecheck + test + build)
+
+---
+
+## Performance Rules
+
+1. **Lazy load** heavy components (maps, editors) with `React.lazy`
+2. **Use `useSuspenseQuery`** for data that blocks rendering
+3. **Preload routes** with `<Link preload>` for navigation
+4. **Image optimization**: Use `sharp` server-side, serve WebP/AVIF
+5. **Code splitting**: Vite handles this automatically — do NOT manually split
+6. **Bundle analysis**: Check bundle size before adding new dependencies
+
+---
+
+## Git Rules
+
+- Commit messages: imperative mood, lowercase, max 72 chars
+  - `feat: add profile photo upload`
+  - `fix: resolve match notification race condition`
+  - `refactor: extract messaging domain logic`
+- Branch naming: `feat/feature-name`, `fix/bug-description`
+- Never commit: `.env.local`, `node_modules`, `dist/`, `*.tsbuildinfo`

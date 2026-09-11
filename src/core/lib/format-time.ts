@@ -6,9 +6,9 @@ export function formatMediaDuration(seconds: number): string {
 	const total =
 		Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
 	const minutes = Math.floor(total / 60);
-	const paddedSeconds = String(total % 60).padStart(2, '0');
+	const paddedSeconds = String(total % 60).padStart(2, "0");
 	if (minutes < 60) return `${minutes}:${paddedSeconds}`;
-	const paddedMinutes = String(minutes % 60).padStart(2, '0');
+	const paddedMinutes = String(minutes % 60).padStart(2, "0");
 	return `${Math.floor(minutes / 60)}:${paddedMinutes}:${paddedSeconds}`;
 }
 
@@ -17,28 +17,28 @@ export function formatMediaDuration(seconds: number): string {
  * Shows "Just now", "X mins", "X hrs", "Yesterday", weekday name, or "MMM d".
  */
 export function formatTimeRelative(date: number): string {
-	if (date < 0) return '';
+	if (date < 0) return "";
 	const diff = Date.now() - date;
 	const MINUTE = 60 * 1000;
 	const HOUR = 60 * MINUTE;
 	const DAY = 24 * HOUR;
 
-	if (diff < MINUTE) return 'Just now';
+	if (diff < MINUTE) return "Just now";
 	if (diff < HOUR) {
 		const mins = Math.floor(diff / MINUTE);
-		return `${mins} min${mins > 1 ? 's' : ''}`;
+		return `${mins} min${mins > 1 ? "s" : ""}`;
 	}
 	if (diff < DAY) {
 		const hrs = Math.floor(diff / HOUR);
-		return `${hrs} hr${hrs > 1 ? 's' : ''}`;
+		return `${hrs} hr${hrs > 1 ? "s" : ""}`;
 	}
-	if (diff < 2 * DAY) return 'Yesterday';
+	if (diff < 2 * DAY) return "Yesterday";
 	if (diff < 7 * DAY) {
-		return new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+		return new Date(date).toLocaleDateString("en-US", { weekday: "long" });
 	}
-	return new Date(date).toLocaleDateString('en-US', {
-		month: 'short',
-		day: 'numeric',
+	return new Date(date).toLocaleDateString("en-US", {
+		month: "short",
+		day: "numeric",
 	});
 }
 
@@ -49,8 +49,8 @@ export function formatTimeRelative(date: number): string {
 export function formatMessageTime(timestamp: number): string {
 	const date = new Date(timestamp);
 	const now = new Date();
-	const hours = date.getHours().toString().padStart(2, '0');
-	const minutes = date.getMinutes().toString().padStart(2, '0');
+	const hours = date.getHours().toString().padStart(2, "0");
+	const minutes = date.getMinutes().toString().padStart(2, "0");
 	const time = `${hours}:${minutes}`;
 
 	const isToday =
@@ -70,10 +70,10 @@ export function formatMessageTime(timestamp: number): string {
 	if (isYesterday) return `Yesterday ${time}`;
 
 	if (date.getFullYear() === now.getFullYear()) {
-		return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${time}`;
+		return `${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} ${time}`;
 	}
 
-	return `${date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })} ${time}`;
+	return `${date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" })} ${time}`;
 }
 
 /**
