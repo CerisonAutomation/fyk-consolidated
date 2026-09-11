@@ -201,6 +201,146 @@ export const taps = pgTable(
 	(table) => [unique("taps_tapper_id_tapped_id_key").on(table.tapperId, table.tappedId)],
 );
 
+/* ------------------------- social graph (0010 + 0000) ----------------------- */
+
+/** Saved profiles ("favourites"). `UNIQUE(user_id, target_id)` is the toggle key. */
+export const favorites = pgTable(
+	"favorites",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		targetId: uuid("target_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+	},
+	(table) => [unique("favorites_user_id_target_id_key").on(table.userId, table.targetId)],
+);
+
+/** "Who viewed me". Written by the profile view beacon, read by /api/interest/visitors. */
+export const footprints = pgTable("footprints", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	visitorId: uuid("visitor_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	visitedId: uuid("visited_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	preset: text("preset"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+});
+
+/** A private note the caller keeps about another user (never shown to them). */
+export const userNotes = pgTable(
+	"user_notes",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		noteOwnerId: uuid("note_owner_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		targetUserId: uuid("target_user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		content: text("content").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).defaultNow(),
+	},
+	(table) => [unique("user_notes_note_owner_id_target_user_id_key").on(table.noteOwnerId, table.targetUserId)],
+);
+
+/**
+ * Matches are `profiles`-keyed in `0000_profiles.sql` with a canonical
+ * `user_a < user_b` ordering. Because `users.id` is the same uuid as the auth
+ * (and therefore the profile) id, the API reads them directly; see AUDIT.md §3.2
+ * for the reconciliation that must replace this bridge.
+ */
+export const matches = pgTable("matches", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userA: uuid("user_a").notNull(),
+	userB: uuid("user_b").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+	unmatchedAt: timestamp("unmatched_at", { withTimezone: true, precision: 6 }),
+});
+
+export const blocks = pgTable("blocks", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	blockerId: uuid("blocker_id").notNull(),
+	blockedId: uuid("blocked_id").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+});
+
+/* ---------------------------------- chat ----------------------------------- */
+
+export const conversations = pgTable("conversations", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	matchId: uuid("match_id"),
+	/** Sorted `profile_id` pair joined by `-`; the dedupe key (0016). */
+	memberKey: text("member_key"),
+	lastMessageAt: timestamp("last_message_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+});
+
+/** Membership is the authorisation check for every conversation read. */
+export const conversationMembers = pgTable(
+	"conversation_members",
+	{
+		conversationId: uuid("conversation_id")
+			.notNull()
+			.references(() => conversations.id, { onDelete: "cascade" }),
+		profileId: uuid("profile_id").notNull(),
+		lastReadAt: timestamp("last_read_at", { withTimezone: true, precision: 6 }),
+		archivedAt: timestamp("archived_at", { withTimezone: true, precision: 6 }),
+	},
+	(table) => [primaryKey({ columns: [table.conversationId, table.profileId] })],
+);
+
+/**
+ * `body`, not `content`, and `unsent_at`/`expires_at` are the recall and
+ * disappearing-media lifecycle — both must be filtered on read or a recalled
+ * message keeps rendering for the other participant.
+ */
+export const messages = pgTable("messages", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	conversationId: uuid("conversation_id")
+		.notNull()
+		.references(() => conversations.id, { onDelete: "cascade" }),
+	senderId: uuid("sender_id").notNull(),
+	type: text("type").notNull().default("text"),
+	body: text("body"),
+	storagePath: text("storage_path"),
+	replyToId: uuid("reply_to_id"),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }),
+	unsentAt: timestamp("unsent_at", { withTimezone: true, precision: 6 }),
+	editedAt: timestamp("edited_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+});
+
+/* ---------------------------------- albums ---------------------------------- */
+
+export const privateAlbums = pgTable("private_albums", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	ownerId: uuid("owner_id").notNull(),
+	name: text("name").notNull().default("Private album"),
+	defaultAccessPolicy: text("default_access_policy").notNull().default("standard"),
+	defaultDurationSeconds: integer("default_duration_seconds"),
+	defaultMaxOpens: integer("default_max_opens"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).defaultNow(),
+});
+
+export const privateAlbumItems = pgTable("private_album_items", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	ownerId: uuid("owner_id").notNull(),
+	storagePath: text("storage_path").notNull(),
+	position: integer("position").notNull().default(0),
+	albumId: uuid("album_id"),
+	mediaKind: text("media_kind").notNull().default("image"),
+	caption: text("caption"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+});
+
 /* --------------------------------- meet now --------------------------------- */
 
 /**

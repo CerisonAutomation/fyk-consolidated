@@ -1,0 +1,242 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { and, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { db } from "#/db";
+import { cleanText, readJson, requireCaller, z } from "#/lib/api-helpers";
+import { json, jsonError, withSecurity } from "#/middleware";
+import { conversationMembers, conversations, messages, users } from "#/schema";
+
+/**
+ * `GET /api/conversations` and `POST /api/conversations` — the chat inbox.
+ *
+ * The chat screens fetched this and got a `404`, so "open a conversation" from
+ * a profile could never land anywhere. Two rules matter more than the SQL:
+ *
+ *   - **Membership is the authorisation check.** Every read joins
+ *     `conversation_members` on the caller; there is no "list of all
+ *     conversations" path, and a message body is only ever returned for a
+ *     conversation the caller is a member of.
+ *   - **Creating must be idempotent.** Two clients (or a double-tap) opening a
+ *     DM with the same person must not mint two threads, so the pair is stored
+ *     as a canonical `member_key` (sorted ids joined) with a unique index —
+ *     see `0016_server_graph.sql` — and the insert uses
+ *     `onConflictDoNothing` followed by a re-select.
+ */
+const LIST_LIMIT = 50;
+
+const createSchema = z.object({
+	targetId: z.uuid(),
+	firstMessage: z.string().trim().max(4000).optional(),
+});
+
+/** Canonical, order-independent key for a pair. */
+function pairKey(a: string, b: string): string {
+	return [a, b].sort().join("-");
+}
+
+export const Route = createFileRoute("/api/conversations/")({
+	server: {
+		handlers: {
+			GET: withSecurity(
+				async ({ caller }) => {
+					const user = requireCaller(caller);
+
+					const mine = await db
+						.select({
+							conversationId: conversations.id,
+							lastMessageAt: conversations.lastMessageAt,
+							lastReadAt: conversationMembers.lastReadAt,
+							archivedAt: conversationMembers.archivedAt,
+						})
+						.from(conversationMembers)
+						.innerJoin(
+							conversations,
+							eq(conversations.id, conversationMembers.conversationId),
+						)
+						.where(eq(conversationMembers.profileId, user.id))
+						.orderBy(desc(conversations.lastMessageAt))
+						.limit(LIST_LIMIT);
+
+					if (mine.length === 0)
+						return json({ conversations: [] }, { cache: "private" });
+					const ids = mine.map((row) => row.conversationId);
+
+					const [peers, lastMessages, unreadCounts] = await Promise.all([
+						db
+							.select({
+								conversationId: conversationMembers.conversationId,
+								profileId: conversationMembers.profileId,
+							})
+							.from(conversationMembers)
+							.where(inArray(conversationMembers.conversationId, ids)),
+						db
+							.select({
+								id: messages.id,
+								conversationId: messages.conversationId,
+								senderId: messages.senderId,
+								body: messages.body,
+								type: messages.type,
+								createdAt: messages.createdAt,
+							})
+							.from(messages)
+							.where(
+								and(
+									inArray(messages.conversationId, ids),
+									isNull(messages.unsentAt),
+								),
+							)
+							.orderBy(desc(messages.createdAt))
+							.limit(LIST_LIMIT * 4),
+						db
+							.select({
+								conversationId: messages.conversationId,
+								total: count(),
+							})
+							.from(messages)
+							.where(
+								and(
+									inArray(messages.conversationId, ids),
+									ne(messages.senderId, user.id),
+									isNull(messages.unsentAt),
+								),
+							)
+							.groupBy(messages.conversationId),
+					]);
+
+					const peerByConversation = new Map<string, string>();
+					for (const row of peers) {
+						if (row.profileId !== user.id)
+							peerByConversation.set(row.conversationId, row.profileId);
+					}
+					const peerIds = [...new Set([...peerByConversation.values()])];
+					const peerRows = peerIds.length
+						? await db
+								.select({
+									id: users.id,
+									displayName: users.displayName,
+									handle: users.handle,
+									avatar: users.avatar,
+									online: users.online,
+								})
+								.from(users)
+								.where(inArray(users.id, peerIds))
+						: [];
+					const peerProfiles = new Map(
+						peerRows.map((peer) => [
+							peer.id,
+							{
+								id: peer.id,
+								name:
+									cleanText(peer.displayName, 64) || peer.handle || "Someone",
+								nick: peer.handle ?? "",
+								avatar: peer.avatar ?? null,
+								online: peer.online ?? false,
+							},
+						]),
+					);
+
+					const lastByConversation = new Map<
+						string,
+						(typeof lastMessages)[number]
+					>();
+					for (const message of lastMessages) {
+						if (!lastByConversation.has(message.conversationId)) {
+							lastByConversation.set(message.conversationId, message);
+						}
+					}
+					const unread = new Map(
+						unreadCounts.map((row) => [row.conversationId, Number(row.total)]),
+					);
+
+					return json(
+						{
+							conversations: mine
+								.filter((row) => row.archivedAt === null)
+								.map((row) => {
+									const peerId = peerByConversation.get(row.conversationId);
+									const last = lastByConversation.get(row.conversationId);
+									return {
+										id: row.conversationId,
+										participant: peerId ? peerProfiles.get(peerId) : undefined,
+										last_message: last?.body
+											? cleanText(last.body, 160)
+											: last?.type === "image"
+												? "Photo"
+												: "",
+										last_message_at:
+											(last?.createdAt ?? row.lastMessageAt)?.toISOString() ??
+											null,
+										unread_count: unread.get(row.conversationId) ?? 0,
+									};
+								}),
+						},
+						{ cache: "private" },
+					);
+				},
+				{
+					rateLimit: {
+						limit: 120,
+						key: ({ caller }) => `conversations:GET:${caller?.id ?? "anon"}`,
+					},
+				},
+			),
+
+			POST: withSecurity(
+				async ({ request, caller }) => {
+					const user = requireCaller(caller);
+					const body = await readJson(request, createSchema, 16 * 1024);
+					if (body.targetId === user.id)
+						return jsonError("Cannot start a chat with yourself", 400);
+
+					const [target] = await db
+						.select({ id: users.id })
+						.from(users)
+						.where(eq(users.id, body.targetId))
+						.limit(1);
+					if (!target) return jsonError("Profile not found", 404);
+
+					const key = pairKey(user.id, target.id);
+
+					const conversationId = await db.transaction(async (tx) => {
+						const [existing] = await tx
+							.select({ id: conversations.id })
+							.from(conversations)
+							.where(eq(conversations.memberKey, key))
+							.limit(1);
+						if (existing) return existing.id;
+
+						const [created] = await tx
+							.insert(conversations)
+							.values({ memberKey: key })
+							.returning({ id: conversations.id });
+						await tx.insert(conversationMembers).values([
+							{ conversationId: created.id, profileId: user.id },
+							{ conversationId: created.id, profileId: target.id },
+						]);
+						if (body.firstMessage) {
+							await tx.insert(messages).values({
+								conversationId: created.id,
+								senderId: user.id,
+								type: "text",
+								body: cleanText(body.firstMessage, 4000),
+							});
+							await tx
+								.update(conversations)
+								.set({ lastMessageAt: new Date() })
+								.where(eq(conversations.id, created.id));
+						}
+						return created.id;
+					});
+
+					return json({ ok: true, conversationId }, { status: 201 });
+				},
+				{
+					maxBodySize: 16 * 1024,
+					rateLimit: {
+						limit: 20,
+						key: ({ caller }) => `conversations:POST:${caller?.id ?? "anon"}`,
+					},
+				},
+			),
+		},
+	},
+});

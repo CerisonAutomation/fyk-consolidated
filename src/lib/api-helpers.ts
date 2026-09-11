@@ -210,3 +210,91 @@ export function asStringArray(value: unknown): string[] {
 	}
 	return [];
 }
+
+/* ----------------------------- profile cards ------------------------------- */
+
+/**
+ * The columns `GET /api/discover` and `GET /api/interest/*` may return about
+ * another person. Same rule as `publicProfileSelection`: never `select *`, never
+ * `email`/`phone`/`password_hash`, never a precise fix.
+ */
+export const cardSelection = {
+	...publicProfileSelection,
+	age: users.age,
+	status: users.status,
+	verification: users.verification,
+	hideDistance: users.hideDistance,
+	hideOnline: users.hideOnline,
+	latCoarse: users.latCoarse,
+	lngCoarse: users.lngCoarse,
+	lastSeen: users.lastSeen,
+};
+
+export type CardRow = Pick<UserRow, keyof typeof cardSelection>;
+
+/** `last_active_at` older than this means "offline", whatever `online` says. */
+export const PRESENCE_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * Map a row to the shape `InterestProfile` / `Candidate` expect.
+ *
+ * `distance` is in km and only ever computed from the *coarsened* coordinates
+ * (both sides) — a precise distance would leak a home address through a
+ * discovery list, which is why the columns are `lat_coarse`/`lng_coarse`.
+ * `hide_distance` and `hide_online` are honoured instead of being invented.
+ */
+export function toProfileCard(
+	row: CardRow,
+	viewer?: { lat: number; lng: number } | null,
+) {
+	const shown =
+		row.online === true &&
+		Date.now() - (row.lastActiveAt?.getTime() ?? 0) < PRESENCE_WINDOW_MS;
+	const status: "online" | "active" | "offline" = row.hideOnline
+		? "offline"
+		: shown
+			? "online"
+			: Date.now() - (row.lastActiveAt?.getTime() ?? 0) < 48 * 60 * 60 * 1000
+				? "active"
+				: "offline";
+	return {
+		id: row.id,
+		name: cleanText(row.displayName, 64) || row.handle || "Someone",
+		nick: row.handle ?? "",
+		age: row.age ?? 0,
+		photo: row.avatar ?? "",
+		photos: row.avatar ? [row.avatar] : [],
+		city: row.city ?? undefined,
+		area: row.area ?? undefined,
+		distance:
+			row.hideDistance ||
+			!viewer ||
+			row.latCoarse == null ||
+			row.lngCoarse == null
+				? null
+				: Math.round(
+						haversineKm(viewer.lat, viewer.lng, row.latCoarse, row.lngCoarse) *
+							10,
+					) / 10,
+		status,
+		online: shown && !row.hideOnline,
+		verified: (row.verification ?? 0) >= 2,
+		lastSeen: row.lastSeen?.toISOString(),
+	};
+}
+
+/** Standard great-circle distance; `lat_coarse`/`lng_coarse` are ~250 m apart. */
+export function haversineKm(
+	lat1: number,
+	lng1: number,
+	lat2: number,
+	lng2: number,
+): number {
+	const toRad = (deg: number) => (deg * Math.PI) / 180;
+	const dLat = toRad(lat2 - lat1);
+	const dLng = toRad(lng2 - lng1);
+	const a =
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+	return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}

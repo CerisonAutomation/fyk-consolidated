@@ -17,7 +17,7 @@ import {
   type SafetyProfile,
 } from "#/integrations/supabase/safety";
 import { EmptyState, Skeleton, Button } from "@/components/ui/primitives";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/Avatar";
 import { cn, timeAgo } from "@/lib/utils";
 
 // ─── Constants ─────────────────────────────────────────────────────────────

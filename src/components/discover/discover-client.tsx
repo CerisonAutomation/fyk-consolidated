@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { Compass, Sparkles, SlidersHorizontal, LayoutGrid, Map as MapIcon, RotateCcw, X } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
@@ -28,7 +28,7 @@ const DEFAULTS: Filters = {
 
 export function DiscoverClient() {
   const qc = useQueryClient();
-  const router = useRouter();
+  const navigate = useNavigate();
   const me = useAppStore((s) => s.user);
   const pushToast = useAppStore((s) => s.pushToast);
   const [filters, setFilters] = useState<Filters>(DEFAULTS);
@@ -241,7 +241,8 @@ export function DiscoverClient() {
             const r = await api<{ conversationId: string }>("/api/conversations", {
               method: "POST", body: { targetId: selected.id },
             });
-            router.push(`/messages?c=${r.conversationId}`);
+            // `/messages` is not a route; the chat screen is keyed by conversation.
+            navigate({ to: "/chat/$conversationId", params: { conversationId: r.conversationId } });
           }}
           isTapped={tapped.includes(selected.id)}
         />

@@ -211,22 +211,61 @@ rate limit → handler, with sanitised JSON on every failure path.
 
 ---
 
+### 2.7 Second pass: the missing endpoints (P1 → implemented)
+
+`main` moved during this work (`7a0b2fd`, "fix: MVP audit") and was merged in;
+their functional fixes were kept (grid/board on `profiles`, catch-all realtime
+subscription, emoji reaction mapping, WS exponential backoff, safety check-ins,
+`0014_security_rls.sql`, the theme tokens, the Zustand auth-store sync) and this
+branch's architecture was kept (Supabase-only identity, Drizzle, `withSecurity`,
+no Next layer). Where both sides fixed the same thing, the duplicate was dropped
+rather than stacked: `main` added `AbortSignal.timeout(30_000)` to the old
+token-persisting API client (this branch's `#/lib/client` has its own
+`AbortController` and never persists a token), and `main`'s rate-limit
+expired-entry sweep was already implemented here as `pruneExpired`.
+
+`main` deleted `src/routes/onboarding/index.tsx` (407 lines) while
+`#/components/auth-gate` still redirects a signed-in user with no profile row to
+`/onboarding`; that segment would have hit a 404 page. The route is restored as a
+wrapper over the existing `OnboardingFlow` component.
+
+Then the endpoints the UI already called were implemented on Drizzle, so eight
+failing screens became working ones:
+
+| Endpoint | Backed by | Notes |
+| --- | --- | --- |
+| `GET/POST /api/discover` | `users`, `taps`, `matches`, `notifications` | only `visible AND NOT hidden AND NOT is_suspended`, never the caller, already-tapped excluded, `age > 17` enforced in SQL, distance from `lat_coarse`/`lng_coarse` only, `hide_distance`/`hide_online` honoured, mutual tap writes one canonical `matches` row + one notification each |
+| `GET /api/interest/stats` | `taps`, `favorites`, `footprints`, `matches` | one source for the counters *and* the lists, so "3 likes" can no longer sit above an empty tab |
+| `GET /api/interest/{likes,matches,visitors,favourites,notes}` | same | one route, validated tab, `cardSelection` only (no email/phone/precise fix/`password_hash`), relation order preserved |
+| `POST /api/interest/like`, `POST /api/interest/favourite` | `taps`, `favorites` | idempotent per the unique constraints; notification only on a genuinely new like |
+| `GET/POST /api/social` | `favorites`, `private_albums`, `private_album_items` | toggle derived from delete-then-insert (the client sends no intent) with `UNIQUE(user_id,target_id)` making it race-safe; `?view=albums` returns real album rows with item counts |
+| `POST/DELETE /api/notes` | `user_notes` | one row per pair via `onConflictDoUpdate`; the subject of a note can never read it |
+| `GET/POST /api/conversations` | `conversations`, `conversation_members`, `messages`, `users` | membership joins every read; `member_key` + a unique partial index (`0016`) stop two clients minting two threads for the same pair |
+| `GET/POST /api/conversations/{id}/messages` | `messages`, `conversations` | the send path `chat-view` already called (its optimistic UI made failures look delivered); membership-gated, `unsent_at` and expired `expires_at` rows filtered, `char_length(body) <= 4000` mirrored, `ephemeral` turned into `expires_at` server-side, reply text run through the local `moderateContent` so `verdict === "ambiguous"` works |
+| `POST /api/ai` | `users`, `conversation_members`, `messages` | dispatches the eight actions the UI sends to `#/domains/ai/heuristic` — deterministic, offline, no provider key, no prompt-injection surface, nothing persisted; `chatHealth`/`summary` verify membership first |
+
+Verified live (production build, DB unreachable, forged HS256 token): anon →
+`401`; authenticated reads → `500 {"error":"Something went wrong…"}` and never a
+`404`; `bioWriter`/`photoRanker`/`datePlanner`/`replies` → `200` with real
+heuristic output; bad action/tab → `400`/`404` with the expected-value message;
+`/onboarding` → `200` SSR.
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
 These need a product or schema decision. Inventing an implementation is how a
 second, worse truth gets committed, so each entry says what to decide instead.
 
-1. **Reachable UI calls API endpoints that do not exist.** After this work the
-   API is `GET /api/health`, `GET /api/auth/me`, `/api/events`, `/api/meetnow`,
-   `/api/notifications`, `POST /api/push/subscribe`. Live screens still call
-   `/api/ai`, `/api/ai/warmup`, `/api/boost`, `/api/social`, `/api/wallet`,
-   `/api/pet`, `/api/users` and `/api/interest/{stats,like,favourite,<tab>}` —
-   every one of those is a `404` rendered as a failed mutation. (Dead-only
-   extras: `/api/discover`, `/api/conversations`, `/api/messages/*`, `/api/notes`,
-   `/api/safety/reports`, `/api/profile`.) Decide per endpoint: implement on
-   Drizzle, or delete the caller and let the browser talk to Supabase under RLS.
-   This is the biggest functional gap left in the app.
-2. **Two user tables, no bridge.** `0000_profiles.sql` creates
+1. **Still-missing endpoints** (each is a `404` in a reachable screen):
+   `/api/boost` (`#/lib/store.ts` fires it on a timer and swallows the error, so
+   "boost" currently does nothing), `/api/ai/warmup` (same fire-and-forget),
+   `/api/users` and `/api/profile` (onboarding's profile save posts to
+   `/api/profile`, which is why finishing onboarding cannot work end-to-end
+   today), `/api/safety/reports` (the report button in the deck modal),
+   `/api/messages/*` and `/api/discover` variants the dead demo screens call.
+   `wallet` and `pet` are *not* gaps: `#/integrations/supabase/{wallet,king-pet}.ts`
+   replaced those calls with direct Supabase reads, so the endpoints should stay
+   deleted and the old comments in those modules are the accurate record.
+   2. **Two user tables, no bridge.** `0000_profiles.sql` creates
    `public.profiles` (`pseudo`→`display_name`, RLS enabled, `age between 18 and
    120` DB check, `lat_coarse/lng_coarse` only) while `0010_remaining_tables.sql`
    creates `public.users` (`pseudo`/`nick`, `lat`/`lng` precise, no RLS) and

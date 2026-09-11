@@ -120,7 +120,7 @@ export const useWsStore = create<WsState>((set, get) => ({
 			set({ status: "connected", ws: socket, retries: 0 });
 		};
 
-		socket.onclose = (event) => {
+		socket.onclose = () => {
 			set({ status: "disconnected", ws: null, reconnectTimer: null });
 
 			// Never reconnect after intentional disconnect or if retries exhausted

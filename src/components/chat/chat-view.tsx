@@ -9,7 +9,7 @@ import {
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
 import { useRealtimeChat } from "@/hooks/use-realtime-chat";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/Avatar";
 import { Skeleton, Spinner } from "@/components/ui/primitives";
 import { cn, timeAgo } from "@/lib/utils";
 import { MESSAGE_EMOJIS, EMOJI_TO_REACTION, REACTION_TO_EMOJI } from "@/lib/constants";

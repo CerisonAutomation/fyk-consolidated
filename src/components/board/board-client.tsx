@@ -99,7 +99,7 @@ export function BoardClient() {
 			const [authorsResult, joinsResult] = await Promise.all([
 				sb
 					.from("profiles")
-					.select("id, display_name, handle, age, photos, city, area")
+					.select("id, display_name, handle, age, avatar_url, city, area")
 					.in("id", authorIds),
 				sb
 					.from("post_joins" as any)
@@ -121,7 +121,9 @@ export function BoardClient() {
 			return rawPosts.map((post: any) => {
 				const author = authorMap.get(post.author_id);
 				const activity = ACTIVITIES.find((a) => a.id === post.activity_id);
-				const photo = author?.photos?.[0] ?? "";
+				// `profiles` stores one `avatar_url`; the photo grid lives in
+				// `profile_photos`, which the board list does not need.
+				const photo = author?.avatar_url ?? "";
 				const tags: string[] = [];
 				if (post.kind === "invite") tags.push("Open Invite");
 				if (post.kind === "offer") tags.push("Offering");

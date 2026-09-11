@@ -7,7 +7,7 @@ import { MessageCircle, Sparkles, Zap, Users, Search } from "lucide-react";
 import { api } from "@/lib/client";
 import type { ConversationWithMeta } from "@/lib/types";
 import { Skeleton, EmptyState, Badge, Button } from "@/components/ui/primitives";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar } from "@/components/ui/Avatar";
 import { timeAgo, cn } from "@/lib/utils";
 import { ChatView } from "@/components/chat/chat-view";
 
