@@ -12,6 +12,8 @@ pnpm install
 cp .env.example .env.local
 # Edit .env.local: SUPABASE_URL / SUPABASE_ANON_KEY (browser), and
 # DATABASE_URL (the *API's* connection, via the transaction pooler, `prepare: false`).
+# SUPABASE_JWT_SECRET is optional but it is what lets a page render decide who is
+# asking (see Deployment notes below); without it, verification calls GoTrue.
 supabase db push                                  # applies supabase/migrations/*.sql
 pnpm db:migrate:sql                               # or: psql "$DATABASE_URL" -f each file
 pnpm db:generate                                  # Drizzle diff from drizzle/schema.ts, if you changed it
@@ -86,3 +88,25 @@ reads: `drizzle-kit push` would `drop` what this schema does not model, so
 - Vite 8
 - Vitest + Playwright
 - Docker + GitHub Actions CI/CD
+
+## Deployment notes
+
+Four things a reviewer asks about, answered where they will be read:
+
+- **Sessions are cookies.** `@supabase/ssr`'s browser client persists
+  `sb-<ref>-auth-token`, which is what allows `GET /settings` to be answered with a
+  redirect instead of the settings screen (AUDIT §2.16). They are *not* `HttpOnly` —
+  the browser client has to read them — so cross-site *use* is refused by
+  `assertSameOrigin` on every `/api/*` method, and the remaining XSS exposure is
+  tracked in §3.4/§3.19. A browser that was signed in before this change signs in once
+  more; the old `localStorage` key is not read.
+- **`supabase db push` applies `supabase/migrations/*.sql` in version order, each file in
+  one transaction, and stops at the first error.** That is why `0009` contains only what is
+  valid at its point in the sequence and `0023` carries the rest (§2.15): a file that opens
+  with `ALTER SYSTEM` aborts every migration after it, quietly.
+- **`SUPABASE_JWT_SECRET` is the offline verification switch**, and the reason the API and
+  the HTML document can share one session check.
+- **Push is opt-in at the database.** `0023`'s `enqueue_push_notification()` fires only
+  when `fyk.push_notify_url` is set *and* `pg_net` exists; `cron-cleanup` is scheduled only
+  when `pg_cron` is installed. Deploying `supabase/functions/notify` and `cron-cleanup`
+  without those means the code is present and inert, which is the state to avoid.

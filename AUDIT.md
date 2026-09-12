@@ -41,6 +41,14 @@ product/schema decision and are documented instead of guessed at.
 | `POST /api/events` with `Content-Type: text/plain` | `415 {"error":"Content-Type must be application/json"}` |
 | `GET /`, `GET /discover` (production build, SSR) | `200 text/html` with CSP, HSTS, `X-Frame-Options`, `Permissions-Policy` and `private, no-store` |
 | `GET /does-not-exist` | `404` + the router's not-found document (not a redirect, not a 500) |
+| `tsc --noEmit` / `vitest run` / `vite build`, §2.15–§2.17 pass | 0 errors · **191 passed (15 files)** · build success. `pnpm verify` cannot be run as one command in this sandbox (`pnpm` is absent from `PATH` inside the corepack shim's child env), so the four steps were run directly |
+| `src/lib/migration-invariants.test.ts` (new) | 14 pass; two rules found real defects on their first run (the 0009 abort, the `meetnow` CHECK violation) and each was then proved non-vacuous by planting the violation |
+| `biome check` on every file this pass edited | clean. The repo-wide scripts are **not** clean and never were: `biome lint` exits 1 with 369 errors / 130 warnings, `pnpm check:changed` with 28 / 36 — all in files outside this pass, recorded as §3.17 rather than "fixed" by a formatting sweep |
+| `pnpm install --frozen-lockfile` | passes after §2.17's lockfile regeneration; it *failed* on every commit since the Prisma removal, which is what `Dockerfile:27` and `ci.yml:31` run |
+| `GET /settings`, `GET /safety` with `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_JWT_SECRET` set to a non-existent project | `307 → /auth/sign-in` with no cookie; `200` with a valid session cookie *and* with the same session split across `sb-*-auth-token.0/.1`; `200` for an expired-but-signed token; `307` for a forged signature, for an anon-role token, and for a forged signature reassembled from chunks (full table in §2.16) |
+| the same routes with the env removed | `200` — `unconfigured` is fail-open for a document and the preview is unaffected |
+| `POST /api/safety/check-in` with a valid session **cookie** and no / cross-site `Origin` | `403` both — the same-origin gate is what makes the new cookie credential safe |
+| `curl` sweep at `2cb75ad` (pre-§2.17) | pages `200`; `/api/health` `200` JSON; `/api/nope` `404` JSON; `/api/safety/contacts` `401`; `DELETE /api/safety/check-in` `405` + `allow: GET, POST`; `PUT /api/wallet` `405` |
 
 Every row above was captured from a running container-equivalent (`vite preview` over the built
 `dist/`), not asserted from source. Runtime smoke was run against `vite preview` (the production command) with
@@ -800,11 +808,165 @@ is the intended default rather than a bug), the six `VITE_ENABLE_*` flags
 (`scripts/seed.mjs` refuses to run without a database URL and seeds nine accounts under
 one shared password), and `PORT`.
 
+### 2.15 The migration sequence aborted at file 0009, so 0009–0022 had never been applied (P0)
+
+Found by reading `supabase/migrations/` as the ordered program it is — one file per
+transaction, in version order, aborting the run on the first error — rather than as
+twenty-five independent files.
+
+`0009_optimizations.sql` opened with five `ALTER SYSTEM SET` statements. The SQL role a
+Supabase project hands an application is not a superuser, so the first one raises
+`must be superuser to execute ALTER SYSTEM`; on every project that followed the
+documented path, **the migration run died on line 1 of file 0009 and nothing after it was
+ever applied.** The same file then created 15 indexes and the materialised view
+`public.user_stats` against tables that `0010_remaining_tables.sql` creates one migration
+*later*, and joined `matches.user1_id`/`matches.user2_id` — columns no migration defines
+(`0000` names them `user_a`/`user_b`).
+
+The consequence was live rather than theoretical: `refresh_user_stats()` is what
+`supabase/functions/cron-cleanup/index.ts` calls on its daily schedule, and the migration
+that defined it sat behind a file that refuses to apply. So the app's own scheduled job
+called a function that had never existed, in the one place a reviewer would expect a
+`404 PGRST202` to have shown up — except that nothing calls `cron-cleanup` either (§3.15,
+now closed by the same commit).
+
+Split, with no behaviour invented:
+
+| File | Now contains |
+| --- | --- |
+| `0009` (edited in place) | the six indexes valid at its point — messages, events, conversations — and a header saying what used to be here and why it left. Editing a pushed migration is normally forbidden; it is correct here because the file could never have applied, so a project that got past it has, by definition, not run it. |
+| `0023_optimizations_reordered.sql` | the moved objects in an order that works: the 12 `users` column indexes, the `story_views`/`notifications`/`taps` keys, then `user_stats` + `user_stats_id_idx` built on the real `matches` columns, `refresh_user_stats()` (security definer, `refresh concurrently` with the documented plain-refresh fallback for a first load), `sweep_checkins_overdue()`, `enqueue_push_notification()` and a guarded `cron.schedule` block. No `create extension`: extensions belong to `0001`, and creating one in the transaction that is about to use it is a known way to abort a push. |
+| `0024_notification_types_complete.sql` | `meetnow` in `notifications_type_check`. `src/routes/api/meetnow/index.ts` writes that type in the same transaction as the tap it announces, so every MeetNow join answered a 500 with SQLSTATE 23514 and rolled the tap back with it. The new list is a strict superset of both lists that preceded it (0013's eight and the four 0019 added), so `add constraint` can validate the rows it finds on any project. |
+
+`enqueue_push_notification()` is a trigger on `notifications` insert that posts to
+`functions/notify` through `pg_net`, gated on `current_setting('fyk.push_notify_url')`
+being set *and* on the `net` namespace existing: where `pg_net` is not installed the
+trigger is inert rather than fatal, which is the difference between a migration that can
+be applied everywhere and one that can be applied where the author's project is.
+
+**`src/lib/migration-invariants.test.ts`** (14 tests) is the machine-checked version of
+every defect class this file set has produced, and it is the part of the pass that pays:
+it needs no database. It pins that every `.rpc()` name is `create function`ed somewhere;
+that every bucket a `storage.from()` call or bucket constant names is in an
+`insert into storage.buckets` row list; that a trigger body reading `old.`/`new.`
+branches on `tg_op` for the events it fires on; that every `create policy` in a
+post-baseline file is preceded by `drop policy if exists`; that no file uses
+`alter type … add value`; that every `type` literal written into the five constrained
+tables is inside that table's CHECK — for both the Drizzle row objects and the SQL
+`insert … values`, matched positionally via the column list; that grants name only roles
+Supabase creates; that no file references a table a later migration creates; that no
+file touches server configuration; and that every function the migration set calls at
+run time is defined by the set.
+
+Two of its rules found a real defect on their first run: the 0009 abort above, and the
+`meetnow` type. Each rule was then proved non-vacuous by planting the violation (a typo'd
+type in the route, a bogus literal in 0023's SQL insert) and watching it fail — which is
+the only reason a static test over DDL deserves to exist. Comments are stripped from both
+the SQL and the TS before scanning, so prose *about* a defect cannot satisfy a rule about
+it, and test files are excluded from the app scan: a guard that read its own documentation
+would have to stop describing the bugs it prevents.
+
+### 2.16 A document can be authorised before it renders (P0, closes §3.3)
+
+`supabase-js` persisted the session in `localStorage["fyk.auth"]`, which a document
+request does not carry. Nothing on the server could tell a signed-in browser from a
+stranger, so `GET /settings` answered `200 text/html` with the account screen — the
+sign-out row, the delete-my-data row — and `GET /safety` answered `200` with a live
+"arm a check-in" form whose submit then 401s. Three changes, in the order they depend on
+each other:
+
+1. **`#/integrations/supabase/client`** persists through `@supabase/ssr`'s browser client,
+   i.e. `sb-<ref>-auth-token` cookies, so the credential is on the request.
+   `bearerToken()` grew the reader that format needs: a session above 3180 bytes is split
+   into `<name>.0`, `<name>.1`, …, which is the *normal* case for an access token plus a
+   refresh token plus the user object, and the chunks are now grouped and joined in order
+   while the look-alikes (`*-auth-code-verifier`) are refused.
+2. **`#/lib/supabase-auth.server`** gained `verifyRequest()`, returning
+   `authenticated | expired | anonymous | rejected | unreachable | unconfigured`;
+   `getCaller()` is that narrowed to its old caller-or-null shape, so none of the ~30 API
+   handlers changed. One verification path, two callers — that is the property, and it is
+   why this did not become a second session implementation that trusts a cookie's name.
+3. **`#/lib/document-auth.server`** (through `#/lib/document-auth`) is `beforeLoad` on the
+   nine routes whose screen belongs to somebody: `/settings`×7, `/notifications`,
+   `/safety`. The façade exists because Start's import protection refuses to build a
+   client module that reaches a `.server.ts` file, even through `import()` — measured:
+   the build failed with that error and named `createIsomorphicFn`, which is now the
+   shape (a no-op client branch, the redirect on the server).
+
+Deliberate limits, because each is a place a reviewer will otherwise look for a bug: the
+server **never refreshes and never writes a cookie** (rotating a token during a render is
+how a cached response gets somebody else's `Set-Cookie`; renewal stays with the browser
+client, which writes the cookie itself, so no document response here can be poisoned);
+`expired` **renders** rather than bouncing (a validly-signed token whose `exp` passed is a
+browser about to refresh, and the document's data all comes from `/api/*`, which 401s
+until it does); and `unconfigured`, `unreachable` and demo mode **render** — the sandbox
+preview, a `vite dev` with no `.env.local`, and a GoTrue outage must not read as "everyone
+is signed out", while the API stays fail-closed, which is where the data is. `/discover`
+and `/grid` are deliberately unguarded: they are the first-run surface, and their private
+data is already behind a verified endpoint.
+
+Probed against a dev server whose `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_JWT_SECRET`
+point at a non-existent project, so the local HMAC path answers and no network call can
+excuse a wrong verdict:
+
+| Request | Result |
+| --- | --- |
+| `GET /settings`, no cookie | `307` → `/auth/sign-in` |
+| `GET /settings`, valid session cookie | `200` |
+| `GET /settings`, valid session in two chunks | `200` (the reader reassembles) |
+| `GET /settings`, expired-but-signed token | `200` (deliberate) |
+| `GET /settings`, forged signature, and anon-role token | `307` |
+| `GET /settings`, forged signature split across chunks | `307` (joining does not launder) |
+| `GET /discover`, no cookie | `200` (not a private screen) |
+| `POST /api/safety/check-in`, valid cookie, no / cross-site `Origin` | `403` (the same-origin gate is what makes a cookie credential safe) |
+| `POST /api/notes`, valid bearer / forged bearer | `400` (reached validation) / `401` |
+| every page, with the env removed | `200` — the preview and `vite dev` still work unsigned |
+
+Two consequences worth naming. A browser holding an old `localStorage` session is not read
+by the new client, so it signs in once more — no data moves, and this app has never been
+deployed to a real project, which is the only situation where that would have been a
+migration. And the session cookie is **not** `HttpOnly`, because the browser client has to
+read it: the exposure is the same kind the old `localStorage` key had, not a new hole and
+not a closed one. What changed is that the server can now tell who is asking.
+
+`src/components/auth-gate.tsx` is deleted. It was a component named for this job,
+imported by nothing, and described by three comments in this repository as the thing that
+redirects a new account to `/onboarding` — which it never did, because it never ran. The
+comments now say what is true (`EntryShell` renders its own inline onboarding step and
+does not redirect).
+
+### 2.17 Every verb a route does not implement, and a lockfile that lets CI install
+
+`methodNotAllowed(...)` went from the six routes that touch money, privilege or another
+user's rows to **all 25 remaining files** under `src/routes/api/**`: an undeclared verb on
+a declared path is now `405 application/json` with `Allow`, and with `src/routes/api/$.tsx`
+answering unknown paths with `404 application/json`, no `/api/**` request can return the
+SPA document. §3.10 closes on that.
+
+`biome.json` turns on `linter.rules.security.noDangerouslySetInnerHtml`, which converts
+§3.5's hand-verified invariant ("the map markup is static, keep it that way") into a rule.
+Proved to fire by planting a sink in a throwaway file and watching Biome reject it, then
+deleting the probe; the repository is at zero violations.
+
+`pnpm-lock.yaml` is regenerated. That is not cosmetic: `package.json` dropped
+`@prisma/client`, `@prisma/adapter-pg`, `bcryptjs` and `dotenv-cli` earlier in this audit
+without resyncing the lockfile, and `Dockerfile:27` and `.github/workflows/ci.yml:31` both
+run `pnpm install --frozen-lockfile`, which fails on that mismatch. CI and the image build
+have therefore been red for every commit since the Prisma removal; `pnpm install
+--frozen-lockfile` passes here now. What §3.16 was about — `@prisma/*` still appearing —
+is unchanged and remains a packaging decision, not a security one.
+
+---
 
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
-These need a product or schema decision. Inventing an implementation is how a
-second, worse truth gets committed, so each entry says what to decide instead.
+Nineteen entries, and the split is the point: **§3.1, 3.2, 3.3, 3.8, 3.10, 3.15 are closed**
+with the reasoning kept, because a closed finding that does not say *why* it is closed
+becomes a re-audit; **§3.5, 3.6, 3.9, 3.11, 3.13, 3.16 are each one deliberate half** whose
+other half is a mechanism (a lint rule, a trigger, an apply) rather than more code; and
+**§3.4, 3.7, 3.12, 3.14, 3.17, 3.18, 3.19 need a product or schema decision** — for those,
+inventing an implementation is how a second, worse truth gets committed, so each entry says
+what to decide instead of deciding it here.
 
 1. **~~Still-missing endpoints~~ — closed by §2.8**, except by decision: no
    `/api/auth/*` should ever exist (Supabase owns the session), and `/api/users`
@@ -825,16 +987,15 @@ second, worse truth gets committed, so each entry says what to decide instead.
    — `public.users` for writes, `public.profiles` as the read projection — and
    closed the browser's direct access to the row. Diffing against the migrations
    with `pnpm db:generate` is still the way to keep them aligned.
-3. **No SSR-level authorisation.** Auth is client-side (`AuthGate`, `auth-guard`)
-   on purpose for now, so `/grid`, `/profile`, `/chat` etc. are protected only
-   after hydration — the document and any `loader` data are reachable without a
-   session. It cannot be fixed in `withSecurity` alone because the *document* is
-   not an API route; it needs Supabase cookie sessions (`@supabase/ssr`
-   `createServerClient` with a `getAll/setAll` cookie bridge, `createServerClient`
-   in `server.middleware`/`createStart`, `await getUser()` in a route `beforeLoad`)
-   so the session exists while SSR is rendering. `bearerToken()` in
-   `#/lib/supabase-auth.server` already reads that cookie format for the API, so
-   this is the same session, one step further up.
+3. **~~No SSR-level authorisation.~~ Closed by §2.16**, with the limits stated in it
+   rather than hidden: the server verifies and never refreshes, an expired-but-signed
+   token renders, and an unconfigured or unreachable GoTrue renders (fail-open for the
+   document, fail-closed at the API, which is where the data is). The entry also
+   understated the defect while it was open — it said `/grid`, `/profile` and `/chat` were
+   "protected only after hydration" by `AuthGate`/`auth-guard`; nothing protected them at
+   any layer, because `src/components/auth-gate.tsx` was imported by no route. It is
+   deleted, the guard is `beforeLoad` on the nine routes whose screen belongs to somebody,
+   and `/discover`//`/grid` stay public on purpose.
 4. **`script-src 'unsafe-inline'` is still required** because TanStack Start
    inlines the hydration payload. Nonces + `'strict-dynamic'` (or a
    hashed-per-response payload) is the follow-up; until then a stored XSS in a
@@ -850,78 +1011,92 @@ second, worse truth gets committed, so each entry says what to decide instead.
    `src/components/map/MapPicker.tsx:87` "interpolate strings into `innerHTML`".
    Re-checked in full: one clears a node (`= ""`), the other two assign fixed
    markup (a pulse `<span>`, an inline SVG pin) with no substitution anywhere, and
-   `grep -rnE "innerHTML\s*=\s*[\'`"][^\'`"]*\$\{" src/` finds nothing, as does
-   `dangerouslySetInnerHTML`. So the invariant `src/integrations/supabase/client.ts`
-   asserts is currently true, and the work left is to keep it true — the map popup
-   markup should be built with `textContent`/elements so that a future contributor
-   cannot break it by pasting a template literal. DOMPurify remains a dependency
+   `grep -rnE "innerHTML\s*=\s*['`"][^'`"]*\$\{" src/` finds nothing, as does
+   `dangerouslySetInnerHTML`. "Keep it true" now has a mechanism rather than a promise:
+   `linter.rules.security.noDangerouslySetInnerHtml` is `error` in `biome.json` (§2.17),
+   so the template-literal-into-`dangerouslySetInnerHTML` change a future contributor might
+   paste stops at `pnpm lint` instead of at review. The remaining cosmetic half of this
+   item — building the map popup from `textContent`/elements instead of a fixed string —
+   is a design-file change and is left to the owner. DOMPurify remains a dependency
    imported by nothing.
-
 6. **Unowned modules — mostly resolved.** Deleted in §2.13: `src/routes/test.tsx`,
    `src/routes/platform/index.tsx`, `src/domains/auth/test-accounts.ts`,
-   `src/components/providers.tsx`. `src/lib/r2-upload.ts` and `src/lib/crypto.ts`,
-   named by an earlier pass, no longer exist. Still open: `src/utils/cn.ts`
-   duplicates `cn()` from `src/lib/utils.ts` and 26 files import the former, so
-   removing it is a 26-file mechanical change best done alone (nothing else in
-   `src/` should be in the same diff — and, re-read: it is not a duplicate
-   implementation at all, `src/utils/cn.ts` is a one-line re-export of `cn` from
-   `src/lib/utils.ts`, so there is nothing to merge and 26 files should be left alone.
-   `src/core/ui/organisms/*` is unreachable
-   from any route but is the design system's own surface, and needs an owner's
-   decision rather than mine.
-
-7. **~57% of `src/` is unreachable from any route** (212 of 370 files by import
-   graph, computed during the audit) and `pnpm-workspace.yaml` carries ~900 lines
-   of `allowBuilds` noise. Both make every review slower than the code deserves.
-   `src/domains/demo`, `src/core/**` (which *is* tested) and the `*-store.ts`
-   modules are the interesting parts of that set: prune with the tests as the
-   guide, not the graph alone.
+   `src/components/providers.tsx`; deleted in §2.16: `src/components/auth-gate.tsx`, which
+   no route rendered. `src/lib/r2-upload.ts` and `src/lib/crypto.ts`, named by an earlier
+   pass, no longer exist. Re-checked rather than assumed: `src/utils/cn.ts` is *not* a
+   duplicate `cn()` implementation — it is a one-line re-export of `cn` from
+   `src/lib/utils.ts` — so there is nothing to merge and the 26 files importing it should
+   be left alone. What is genuinely still open here is ownership, not code — and the
+   previous version of this entry overstated it: `src/core/ui/organisms/*` is **not** all
+   unreachable. `GridFilters.tsx` and the `organisms/filters/*` subtree render inside
+   `/grid` today; what has no importer outside `src/core/ui` is the flat set —
+   `CommandCenter`, `CommandCenterTrigger`, `NavBar`, `VideoPlayer`, `ProfileMiniCard`,
+   `LocationChooser`, `PlaceSearch`, `IncomingMessageToast`, `LocateMeButton`,
+   `ProgressiveBlur` (10 of the 26, `src/routes/grid/index.tsx` and
+   `src/routes/profile/$profileId/index.tsx` being the two route files that import from
+   that directory at all). Whether those ten are the design system's future or its past is
+   an owner's call, not a reviewer's; they are also the reason `src/lib/audio.ts` and
+   `src/lib/geocoding.ts` look orphaned when they are used by them.
+7. **~44% of `src/` is unreachable from any route**, re-measured after §2.13–§2.16
+   (it was 57%, 212 of 370, when the audit started; 162 of 367 non-test files now). The
+   graph is: every file under `src/routes/` plus everything `src/routeTree.gen.ts` names is
+   a root, `#/`/relative specifiers are followed transitively, tests are excluded. By area:
+   `src/core` 71, `src/components` 40, `src/lib` 21, `src/domains` 16, and single files in
+   `data`, `hooks`, `integrations`, `types`. Two entries in that set are *not* dead weight
+   and should not be pruned by a graph: `src/core/**` is tested (22 of its files have
+   passing specs) and `src/domains/demo` is what `VITE_ENABLE_DEMO` turns on at runtime, so
+   no static import reaches it from the routes that consult the flag. What the number is
+   actually telling you: `src/components/discover/discover-client.tsx` (476 lines) has no
+   importer at all since `/discover` was routed to `components/explore/explore-client.tsx`,
+   and `/onboarding` duplicates the inline `<Onboarding>` step `EntryShell` renders — two
+   screens, one flow, no navigation between them (§2.16's correction of the "auth-gate
+   redirects here" comment is the same finding from the other side). Prune with the tests as
+   the guide, one module per commit, and re-run the measurement rather than trusting this
+   number after the next deletion. `pnpm-workspace.yaml` still carries ~900 lines of
+   tool-managed `dyad-default-allow-builds` entries; they are the sandbox's, not the app's,
+   and hand-editing them has broken installs before.
 8. **~~Seeds write `password_hash` with bcryptjs~~ — closed by §2.10.**
    `scripts/seed.mjs` creates the login through `POST /auth/v1/admin/users`
    before it inserts the row, and refuses to run at all when the service key is
    missing. `public.users.password_hash` itself was dropped in 0018.
 9. **A user's tag bag can hold two vocabularies.** `users.tribes` gets tribe
-   **names** from `/tribes` and numeric **tag ids** from the profile editor, so a
-   user who used both ends up with `["hiking", 3]` and the compatibility score
-   counts one overlap where a person would see two. The columns are untyped jsonb
-   with no foreign key, so nothing is *wrong* at the database level; the fix is a
-   one-off normalisation (map every known name to its `tags`/`tribes` id, write the
-   array back) plus making `/tribes` send ids — not a check constraint added on top
-   of existing data. `0019` §7 removed the *other* half of this finding:
-   `tribes.member_count`, `groups.member_count`, `fansites.subscriber_count` and
-   `shouts.likes_count` are now derived by triggers, and a hand-written value on
-   any of them raises. The vocabulary itself is still two-vocabulary, and the
-   recount trigger has to match on both spellings (`t.name` or `t.id::text`)
-   because the data already disagrees.
-10. **An API path with an undeclared method returns the SPA document.**
-   `GET /api/taps` answers `200 text/html`, because TanStack Start matches
-   routes by pathname and this route declares `POST`/`DELETE` only. No caller
-   is affected (the taps hooks use `/api/interest/*` for lists), and the fix is
-   not a per-route `GET` stub: it is one catch-all under `/api/$` that answers
-   `405`/`404` as JSON, which needs a check that it cannot shadow a declared
-   route's own method. **Partly closed in §2.13**: the six routes that touch money,
-   privilege or another user's rows (`/api/wallet`, `/api/king-pet`,
-   `/api/fansites/subscribe`, `/api/safety/check-in`, plus `/api/boost` and the
-   others with a `methodNotAllowed()` verb list) answer 405 with an `Allow` header
-   — verified by `curl -X PUT /api/wallet` → `405 application/json, allow: GET, POST` —
-   and `src/routes/api/$.tsx` (§2.14) now answers every *unknown* `/api/**` path with
-   `404 application/json` instead of the SPA document, which was the half of this
-   finding a route can fix at all. What is left is a known path with an undeclared
-   verb on the ~50 routes that do not carry a verb list; the only global fix is a
-   `requestMiddleware` on the start instance, and this app has no `src/start.ts(x)` of
-   its own — creating one changes boot for everything to service a status code, so it
-   stays a decision rather than a diff.
-
+   **names** from `/tribes` and numeric **tag ids** from the profile editor, so a user who
+   used both ends up with `["hiking", 3]` and the compatibility score counts one overlap
+   where a person would see two. The columns are untyped jsonb with no foreign key, so
+   nothing is *wrong* at the database level. Half of this is now handled: `0022`
+   normalises on write through `normaliseTribeTokens` (`#/lib/tribes.server`), resolving a
+   token against `tribes.name` and keeping an unresolvable one verbatim — deliberately
+   *keep-what-you-cannot-resolve*, because there is no `tags` table for the numbers to
+   have ever pointed at, and emptying part of somebody's profile during a formatting fix is
+   not a change an audit should make on its own authority. What remains is the
+   **existing** rows: a one-off backfill of the same mapping, which needs the list of
+   legitimate numeric tag ids from whoever owns the vocabulary. `tribes.member_count`,
+   `groups.member_count`, `fansites.subscriber_count` and `shouts.likes_count` are derived
+   by triggers since `0019` §7, so a hand-written value on any of them raises.
+10. **~~An API path with an undeclared method returns the SPA document.~~ Closed by
+    §2.17.** All 25 remaining files under `src/routes/api/**` carry a `methodNotAllowed(...)`
+    verb list next to the six that had one, and `src/routes/api/$.tsx` answers unknown paths
+    with `404 application/json`; measured at the tip, `GET /api/nope` is a JSON 404 and
+    `DELETE /api/safety/check-in` is a JSON 405 with `allow: GET, POST`. The only thing that
+    would have made this one line instead of twenty-five is a `requestMiddleware` on the
+    start instance, and this app has no `src/start.ts(x)` of its own — creating one changes
+    boot for everything to service a status code, which the design review has already
+    rejected twice. So the fix is per-route and complete, and this record exists so nobody
+    re-litigates whether a global handler was overlooked: it was, and it is not.
 11. **A check-in can be overdue without anybody being paged.** §2.14 replaced the
     notification-shaped record with `safety_checkins` + `safety_contacts` (0021), so the
     timer survives a reload, the contact is the user's own chosen row rather than
-    themselves, and `missed` is materialised with exactly-once alerting. What is still
-    missing is the delivery half: the only channel this app has is a row in the
-    contact's `notifications`, so a contact who is not in the app learns nothing —
-    which is what `phone`/`email` on `safety_contacts` are *stored for* but not yet
-    used by. A sender (the `notify` edge function, an email job, SMS) has to exist
-    before this can be closed, and §3.15 is the reason it does not run today. The
-    screen says "off-platform" on such a contact rather than promising a notification.
+    themselves, and `missed` is materialised with exactly-once alerting. §2.15 then made the
+    overdue sweep reachable at all (`sweep_checkins_overdue()` lived in a migration that
+    aborted the push) and `0023` added the delivery plumbing around it:
+    `enqueue_push_notification()` posts a new `notifications` row to `functions/notify`
+    through `pg_net`. What is still missing is delivery to somebody **not in the app**: a
+    contact who does not open the app learns nothing from a row in their own inbox, and the
+    `phone`/`email` columns on `safety_contacts` exist for exactly that sender but have no
+    consumer. That needs a provider decision (email job, SMS) and a deployment that has
+    `pg_net` installed and `fyk.push_notify_url` set — the trigger is inert without them,
+    by design. Until then the screen says "off-platform" on such a contact rather than
+    promising a notification.
 12. **Premium is one enforced perk wide.** `plus` = unlimited taps, `gold`/`platinum`
     = boosts a month. That is what this codebase can actually grant, and everything
     else the tier cards used to advertise has been removed from `TIER_PERKS` rather
@@ -930,27 +1105,22 @@ second, worse truth gets committed, so each entry says what to decide instead.
     ranking) is a sequence of product decisions, each of which is small once the
     decision exists — see `#/lib/economy.ts` for where each one plugs in.
 13. **Nothing in this sandbox has ever run the SQL.** There is no Postgres in the
-    image (no `initdb`, no Docker, no root for `apt`), so `0019` and `0020` are
-    reviewed and cross-checked against the DDL of every table and constraint they
-    touch — column names, CHECK vocabularies, trigger ordering, the
-    `new`-in-`DELETE` trap in row-level triggers, and statement order around the
-    append-only guard — but they are not *executed*. Apply them in front of traffic
-    (`supabase db push`, or `pnpm db:migrate:sql` now that it loops the files) and
-    re-check `pg_policies` for the tables in §2.13 before shipping. `pnpm db:seed`
-    has likewise never been run here; §2.13's §9 seeding is what the product needs,
-    and it is in the migration where it belongs. The sandbox did change once mid-pass,
-    and the recovery is worth recording because it was not obvious: the workspace was
-    re-provisioned (a fresh clone whose `main` is a squashed Prisma-era snapshot with no
-    merge base, `node_modules` deleted, and this branch's `HEAD` sitting on the
-    *pre-work* commit while the working tree still held 20 turns of files). Everything
-    was recovered with `git fetch origin <branch>` + `git reset --mixed FETCH_HEAD`,
-    which moved the branch back onto the pushed tip and left the tree alone — after
-    which `git status` showed the true delta (three new files) instead of 309. That
-    reset, not a merge of `main`, is the right way to reconcile this branch: `main`'s
-    single commit predates the Drizzle/Supabase conversion entirely (`prisma/schema.prisma`
-    present, 5 API routes, no `drizzle/`, no `AUDIT.md`), so merging it would revert the
-    work rather than extend it.
-
+    image (no `initdb`, no Docker, no root for `apt`), so all 25 migration files are reviewed
+    and cross-checked against the DDL of every table and constraint they touch — column
+    names, CHECK vocabularies, trigger ordering, the `new`-in-`DELETE` trap in row-level
+    triggers, statement order around the append-only guard — but they are not *executed*.
+    That limit is what `src/lib/migration-invariants.test.ts` (§2.15) exists to push back on:
+    it is a test, not a database, and it is how the 0009 abort and the `meetnow` CHECK
+    violation were found without one. Apply `0009`, `0023` and `0024` in front of traffic
+    (`supabase db push`, or `pnpm db:migrate:sql`, which now loops the files with
+    `ON_ERROR_STOP=1`) and re-check `pg_policies` for the tables in §2.13 before shipping.
+    `pnpm db:seed` has likewise never been run here. One environment hazard is worth
+    recording because it bit twice: the sandbox can be re-provisioned mid-pass, leaving a
+    fresh clone whose `main` is a squashed pre-audit snapshot, `node_modules` gone, and this
+    branch's `HEAD` on the *pre-work* commit. `git fetch origin <branch>` + `git reset
+    --hard FETCH_HEAD` recovers it when the tree holds nothing unpushed, and
+    `--mixed` (tree untouched) when it does — the one thing not to do is merge `main`, whose
+    single commit predates the Drizzle/Supabase conversion and would revert the work.
 14. **35 live tables have no Drizzle model.** `drizzle/schema.ts` declares 34 of the
     69 tables the migrations create, and §4 of this file used to claim the schema was
     "the single schema … all describe the same columns" — that was measured wrong, and
@@ -963,29 +1133,81 @@ second, worse truth gets committed, so each entry says what to decide instead.
     Closing it is one table per commit against the DDL (`profiles` first: it is the
     projection 0018 exists to publish), *not* a bulk translation — inventing a column
     name is the exact defect class this file keeps finding.
-15. **Two edge functions that nothing invokes.** `supabase/functions/notify` (web-push
-    delivery, VAPID-signed) and `supabase/functions/cron-cleanup` (expired sessions,
-    stories, meetnow posts) are complete Deno files, and no migration, trigger,
-    schedule or client call reaches either: `grep -rn "functions/v1" src
-    supabase/migrations` finds only the comment in `api/push/subscribe.ts` that points
-    at the first one. Consequences that are visible in the product: a push subscription
-    is stored and never used (`notifications-client.tsx` asks for permission,
-    `push_subscriptions` accumulates rows, nobody sends), and expired stories/meetnow
-    posts are filtered at read time forever instead of being cleaned. Either wire them
-    (a `net.http_post` trigger on `notifications` insert for the first; the dashboard's
-    scheduler or a pg_cron job for the second — `cron-cleanup` calls
-    `cleanup_expired_sessions()`, which *is* defined, in 0007) or delete the functions
-    and say the scheduler is out of scope. Leaving them in the tree looking deployed is
-    the worst of the three, because a reviewer reads the directory as a feature.
-16. **`pnpm-lock.yaml` still resolves the Prisma-era optional peers.** `prisma` is gone
-    from `package.json`, but `drizzle-orm`'s optional peer graph in the lockfile keeps
-    `@prisma/client@7.10.0`/`prisma@7.10.0` installable, so `pnpm install` prints
-    "Ignored build scripts: … prisma" and materialises `node_modules/prisma`. Fixing it
-    means `pnpm install --lockfile-only`, which re-resolves every transitive
-    dependency in a 1300-line diff — deliberately not done as part of a security pass.
+15. **~~Two edge functions that nothing invokes.~~ Now invoked, with a deployment
+    condition attached.** `0023` adds `enqueue_push_notification()` (a trigger on
+    `notifications` insert → `functions/notify` over `pg_net`) and schedules
+    `cron-cleanup`'s work through a guarded `cron.schedule` block, which is what
+    `sweep_checkins_overdue()` and `refresh_user_stats()` were built for. Both additions
+    check for the extension they need before using it, so a project without `pg_net` or
+    `pg_cron` applies the file and simply does not get the behaviour — which is better than
+    failing the push, but is *not* the same as delivery. The remaining decision is the
+    deployment one: `supabase functions deploy notify cron-cleanup`, `VAPID_PRIVATE_KEY`
+    and `VAPID_SUBJECT` set in the function environment, `fyk.push_notify_url` as a role
+    setting, and `VITE_VAPID_PUBLIC_KEY` in the browser (`.env.example` documents all four).
+    Until that happens, a push subscription is stored and never used, and stale
+    stories/meetnow posts are filtered at read time forever instead of being cleaned.
+16. **`pnpm-lock.yaml` still resolves the Prisma-era optional peers, but CI installs
+    again.** The blocking half was real and is fixed (§2.17): the lockfile did not match
+    `package.json` after the Prisma removal, and `Dockerfile:27` and `.github/workflows/ci.yml:31`
+    both run `pnpm install --frozen-lockfile`, so every pipeline and image build since was
+    red on the first step. What is left is cosmetic: `prisma` is gone from the importers,
+    but `drizzle-orm`'s optional peer graph still records `@prisma/client@7.10.0`, so
+    `pnpm install` materialises `node_modules/prisma` and prints "Ignored build scripts:
+    … prisma". Silencing that means `pnpm.peerDependencyRules`/`overrides` in
+    `package.json` or a `--lockfile-only` re-resolve (~1300 lines touching every transitive
+    dependency) — a packaging decision, deliberately not folded into a security pass.
+17. **`pnpm lint` and `pnpm check:changed` fail on `main`, and CI has been running red
+    because of it.** Measured at this tip: `biome lint` exits 1 with 369 errors and 130
+    warnings repo-wide; `pnpm check:changed` (`biome check src/lib src/routes/api drizzle
+    src/db.ts src/schema.ts`) exits 1 with 28 errors and 36 warnings. **None of them are in
+    files this audit edited** — every file touched by §2.9 through §2.17 was brought to
+    clean and re-checked, which is also why the audit refuses to let Biome reformat files it
+    did not functionally change: a 369-error sweep across the design components would destroy
+    the ability to prove any later diff is wiring-only. The named diagnostics concentrate in
+    six files (`src/components/CommandPalette.tsx`, `CallOverlay.tsx`, `EntryShell.tsx`,
+    `ErrorBoundary.tsx`, `src/routes/right-now/index.tsx`, `src/routes/grid/index.tsx`) and
+    are mostly `useIterableCallbackReturn`, `useExhaustiveDependencies`,
+    `noExplicitAny`/`noNonNullAssertion` and `a11y/*` — real, individually small, and in
+    screens somebody should review while they are touching that screen anyway. `ci.yml`'s
+    `Lint` step therefore reports a failure for every PR, which is how a linter stops being a
+    signal: fix the six files and narrow the gate, or narrow the gate and say so.
+18. **`/api/auth/me` implements the shell's contract and nothing calls it.** It maps
+    `users` → `ProfileUser`, distinguishes "not signed in" (`200 {user: null}`) from
+    "signed in, no profile row" so the caller can choose sign-in versus onboarding, and is
+    covered by tests. `src/components/EntryShell.tsx`, which is the thing that needs those
+    facts, queries `profiles` through supabase-js instead — a second implementation of the
+    same decision, in the browser, on a table the revoke in §2.10 keeps read-only. Either
+    move `EntryShell` onto the endpoint (its loader gets one round trip and the server keeps
+    the mapping) or delete the endpoint and let `documentSession` (§2.16) be the only
+    answer. This pass leaves both in place and records it, because deleting a working
+    endpoint on the strength of a grep, in a tree where the *document* guard just moved,
+    would be the kind of change nobody can review the next day.
+19. **The session is a cookie now, and it is not `HttpOnly`.** Listed so it is not
+    rediscovered as an oversight: `@supabase/ssr`'s browser client has to read the session
+    it wrote, so `sb-<ref>-auth-token` is script-readable exactly as `localStorage` was.
+    What that is fine for: the same-origin gate in `#/middleware#withSecurity` covers every
+    method, so a cross-site form cannot *use* the cookie (verified: `POST
+    /api/safety/check-in` with a valid cookie and no `Origin`, and with `Origin:
+    https://evil.example`, both `403`). What it is not fine for: an XSS payload can still
+    exfiltrate a session — which is why §3.4's CSP still carrying `'unsafe-inline'` is the
+    finding that actually matters here, and why §2.17 turned the sink check into a lint rule.
+    `HttpOnly` would require the sign-in exchange to happen on the server (a
+    `createServerClient` in a `beforeLoad` that also *writes* the cookie, plus a refresh
+    path), which is the next step up from §2.16 and is not a change to make in passing.
 
 ## 4. Minimal assumptions
 
+- Sessions live in `sb-<ref>-auth-token` cookies written by `@supabase/ssr`'s browser
+  client, and the server *verifies* them without refreshing or writing one. That pairing is
+  what makes an SSR guard possible with one verification path; `HttpOnly` would need the
+  token exchange itself to move server-side (§3.19).
+- The document guard fails open when Supabase is not configured, because the sandbox
+  preview and `vite dev` without a `.env.local` are not deployments — the API stays
+  fail-closed, and that asymmetry is a deliberate decision, not an unfinished one (§2.16).
+- Migration files are validated by reading the DDL of everything each touches, because this
+  image has no Postgres, no Docker and no root for `apt`. `src/lib/migration-invariants.test.ts`
+  is the closest available substitute: 14 static rules over the migrations *and* the code
+  that calls them. Say so when reviewing a file; do not assume an apply happened (§3.13).
 - The deployment is `vite build` + the SSR/API handler serving `dist/client`
   (no separate Nitro/edge target is configured), so `vite preview` is a valid
   production command at this stage; `AUDIT.md` §3.3 and the Dockerfile comment
@@ -1011,25 +1233,22 @@ second, worse truth gets committed, so each entry says what to decide instead.
 
 ## 5. Suggested order for the next pass
 
-1. ~~Decide §3.1 endpoint-by-endpoint~~ (done, §2.7–2.8) and ~~decide §3.2~~
-   (done, §2.10). Regenerate `src/integrations/supabase/types.ts` with
-   `pnpm supabase gen types` against a migrated project so the browser types are
-   derived, not maintained by hand.
-3. Cookie sessions (§3.3) → then an SSR guard, then tighten `Cache-Control` on
-   documents that become personalised.
-4. CSP nonces (§3.4). §3.5 is re-checked and closed as a non-finding (the three
-   `innerHTML` sites are static); the follow-up there is a lint rule, not a fix.
-5. Prune §3.6 (one file at a time) and §3.7. `pnpm-workspace.yaml`'s 269-line
-   `allowBuilds` block is between `dyad-default-allow-builds begin/end` markers —
-   tool-managed, so it must be pruned by its generator, not by hand.
-6. ~~§3.11's storage half~~ (done, §2.14: `safety_contacts` + `safety_checkins`,
-   the picker, the lazy exactly-once overdue sweep). What is left of §3.11 is the
-   delivery half, which needs §3.15 wired.
-7. Apply §2.13's and §2.14's SQL against a real database (§3.13) before anything else:
-   `0022` §0 fixes a trigger that aborts every signup after `0019`, and that claim is
-   reading-derived until someone runs it. Then decide §3.12 (the Premium ladder) and
-   §3.15 (invoke or delete the two orphan edge functions), in that order: the migration
-   is what makes the rest of the surface honest.
+1. **§3.17** — six files, one `pnpm lint` gate that is green again. Cheap, and it restores
+   the only signal that catches the sink class §2.17 just pinned.
+2. **Apply the migrations for real** (`supabase db push` against a throwaway project, then
+   `pg_policies`, then `pnpm db:seed`). This is the last item whose answer cannot be
+   obtained by reading; everything static the audit could assert about the SQL, it now does.
+3. **§3.18** — `EntryShell` onto `/api/auth/me`, or the endpoint goes. Then the browser
+   stops deciding who is signed in.
+4. **§3.19** — `HttpOnly` + a server-side refresh path, which also retires the last
+   script-readable session storage in the app.
+5. **§3.12** — Premium is a product decision with a known plug-in point
+   (`#/lib/economy.ts`); §3.7 and §3.9 are the two sweeps that make the tree smaller and
+   the vocabulary single-valued, best done one table or one module per commit.
 
-Run `pnpm verify` (typecheck → tests → build → `biome check` on the API/lib
-surface) before and after each step; `pnpm test:e2e` now boots its own server.
+Closed since the first draft of this list: the wallet/entitlement ledger (§2.13), the inbox
+and social graph leaving the browser (§2.13), the safety record and its notifications (§2.14,
+§2.15), the migration sequence abort (§2.15), the 405/404 surface (§2.17), and cookie
+sessions → an SSR guard (§2.16) — which was step 3 of the previous version of this list and
+the last item in it that was an authorisation gap rather than a decision.
+
