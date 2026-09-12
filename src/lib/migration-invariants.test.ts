@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -585,5 +585,147 @@ describe("migration invariants", () => {
 			}
 		}
 		expect(offenders).toEqual([]);
+	});
+});
+
+/**
+ * Edge-function trust, and the tables a function's own caller owns.
+ *
+ * A Supabase Edge Function is an HTTP endpoint on a public hostname whose authentication is
+ * decided by configuration, not code — and this repository declared no `[functions.*]`
+ * section at all, so all five inherited the platform default `verify_jwt = true`. That
+ * default is correct for the two a signed-in browser calls with its access token, and fatal
+ * for the two whose caller cannot produce one: `notify` is invoked by `pg_net` from a trigger
+ * and `cron-cleanup` by an external scheduler, so both were 401-ing every attempt —
+ * "scheduled housekeeping" and "push delivery" were simultaneously true on paper and dead in
+ * production. The fix cannot be "turn the check off", because both of those functions hold
+ * the service role: one sends attacker-chosen text to another user's lock screen, the other
+ * deletes rows. So the invariant is the *pair* — an opened function must carry a shared
+ * secret — and this file is what keeps the pair from drifting apart again.
+ */
+describe("edge-function trust", () => {
+	const config = readFileSync(join(ROOT, "supabase", "config.toml"), "utf8");
+	const functionsDir = join(ROOT, "supabase", "functions");
+	const names = readdirSync(functionsDir, { withFileTypes: true })
+		.filter((d) => d.isDirectory())
+		.map((d) => d.name);
+	const functions = sources(functionsDir, [".ts"]).map((f) => ({
+		...f,
+		name: f.file.split(sep).slice(-2)[0] ?? "",
+	}));
+
+	/** The explicit `verify_jwt` for a function, or `null` when it declares nothing. */
+	function declaredVerify(name: string): boolean | null {
+		let inSection = false;
+		for (const raw of config.split("\n")) {
+			const line = raw.trim();
+			if (line.startsWith("[")) {
+				inSection = line === `[functions.${name}]`;
+				continue;
+			}
+			if (!inSection) continue;
+			const m = /^verify_jwt\s*=\s*(true|false)$/.exec(line);
+			if (m) return m[1] === "true";
+		}
+		return null;
+	}
+
+	it("declares a JWT posture for every function instead of inheriting one", () => {
+		const undeclared = names.filter((n) => declaredVerify(n) === null);
+		expect(undeclared).toEqual([]);
+	});
+
+	it("keeps the functions a browser calls behind the platform check", () => {
+		// `ai-chat` spends money and `moderate` spends a provider call, both keyed off the
+		// caller's identity; `verify_jwt = false` would leave the limiter with nothing
+		// anonymous to be limited by.
+		const mustVerify = ["ai-chat", "moderate"];
+		const offenders = mustVerify.filter((n) => declaredVerify(n) !== true);
+		expect(offenders).toEqual([]);
+	});
+
+	it("requires a shared secret of any unauthenticated function that holds privilege", () => {
+		const offenders: string[] = [];
+		for (const { name, src } of functions) {
+			if (declaredVerify(name) !== false) continue;
+			const privileged =
+				/SERVICE_ROLE_KEY/.test(src) ||
+				/\.from\(\s*"\w+"\s*\)\.(insert|update|delete)\(/.test(src) ||
+				/\.rpc\(\s*"\w+"/.test(src);
+			if (!privileged) continue;
+			const header = /headers\.get\(\s*"x-fyk-[a-z-]+-token"\s*\)/.test(src);
+			const secret = /Deno\.env\.get\(\s*"[A-Z0-9_]*TOKEN"\s*\)/.test(src);
+			// Refusing while unconfigured is the difference between "not yet deployed" and
+			// "open to the internet until somebody remembers".
+			const refuses =
+				/if\s*\(\s*![A-Za-z0-9_]*TOKEN\s*\)[\s\S]{0,260}?503/.test(src);
+			if (!header || !secret || !refuses) {
+				offenders.push(
+					`${name}: header=${header} secret=${secret} refusesUnset=${refuses}`,
+				);
+			}
+		}
+		expect(offenders).toEqual([]);
+	});
+
+	it("does not let a notification trigger call something that inserts notifications", () => {
+		// The self-amplification this prevents: 0023 §4 put an AFTER INSERT trigger on
+		// `public.notifications` that POSTs to `notify`, and `notify` wrote a row into
+		// `public.notifications`. Had the write been legal, every push would have re-fired
+		// the trigger that produced it. It was not legal — `push` is a transport, not a value
+		// in `notifications_type_check` — so the failure was *silent* instead: the function
+		// was rejected, and a user who enabled notifications received none, forever.
+		const stripped = ALL.map((m) => stripSql(m.src)).join("\n");
+		const notifyTriggers: { table: string; fn: string }[] = [];
+		for (const m of stripped.matchAll(
+			/create\s+trigger\b([\s\S]{0,420}?)execute\s+function\s+(?:public\.)?([a-z_0-9]+)\s*\(\s*\)/gi,
+		)) {
+			const table = /\bon\s+(?:public\.)?([a-z_0-9]+)/i.exec(m[1])?.[1];
+			if (!table) continue;
+			const body = new RegExp(
+				`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?${m[2]}\\b[\\s\\S]{0,400}?\\$fn\\$([\\s\\S]*?)\\$fn\\$`,
+				"i",
+			).exec(stripped);
+			if (body && /net\.http_post/i.test(body[1])) {
+				notifyTriggers.push({ table, fn: m[2] });
+			}
+		}
+		// A "found nothing" result and a "found no violation" result are the same number,
+		// so the set the rule walks has to be non-empty or the guard is vacuous: an earlier
+		// version of this test captured the function's *header* (lazy `\\$fn\\$` stops at the
+		// opening delimiter) and passed because it had silently seen nothing.
+		expect(notifyTriggers).toContainEqual({
+			table: "notifications",
+			fn: "enqueue_push_notification",
+		});
+		const offenders: string[] = [];
+		for (const { name, src } of functions) {
+			for (const m of src.matchAll(/\.from\(\s*"(\w+)"\s*\)\.insert\(/g)) {
+				const hit = notifyTriggers.find((t) => t.table === m[1]);
+				if (hit) {
+					offenders.push(
+						`functions/${name}: inserts into ${m[1]}, which fires ${hit.fn}()`,
+					);
+				}
+			}
+		}
+		expect(offenders).toEqual([]);
+	});
+
+	it("keeps the push payload and the service worker in step", () => {
+		// `public/sw.js` is a static file in a different language, build and runtime from
+		// its producer, so nothing else joins them: a renamed field would mean every
+		// notification renders `undefined`, and no type error anywhere.
+		const notify = functions.find((f) => f.name === "notify");
+		expect(notify).toBeDefined();
+		expect(
+			/JSON\.stringify\(\s*\{\s*title,\s*body,\s*href\s*\}\s*\)/.test(
+				notify?.src ?? "",
+			),
+		).toBe(true);
+		const sw = readFileSync(join(ROOT, "public", "sw.js"), "utf8");
+		for (const key of ["title", "body", "href"]) {
+			expect(new RegExp(`\\b${key}\\b`).test(sw)).toBe(true);
+		}
 	});
 });
