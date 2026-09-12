@@ -4,6 +4,7 @@ import { db } from "#/db";
 import {
 	cleanText,
 	isMissingProfileError,
+	methodNotAllowed,
 	publicProfile,
 	publicProfileSelection,
 	readJson,
@@ -108,6 +109,15 @@ function livePosts() {
 export const Route = createFileRoute("/api/meetnow/")({
 	server: {
 		handlers: {
+			/* Every verb this route does not implement is answered in JSON (405 +
+			 * Allow). Without a declaration TanStack Start treats the request as
+			 * unmatched-by-path-and-method and falls through to the document handler,
+			 * which answers `200 text/html` with the SPA bundle — a client parsing
+			 * JSON then blames the server instead of its own verb. AUDIT §3.10. */
+			PUT: methodNotAllowed("GET, POST"),
+			PATCH: methodNotAllowed("GET, POST"),
+			DELETE: methodNotAllowed("GET, POST"),
+
 			/** Requires a session: this is live location data about real users. */
 			GET: withSecurity(
 				async () => {

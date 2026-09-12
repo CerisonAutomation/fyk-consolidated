@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "#/db";
 import {
 	cleanText,
+	methodNotAllowed,
 	readJson,
 	requireCaller,
 	unexpected,
@@ -126,6 +127,15 @@ const EXPORT_COLUMNS = {
 export const Route = createFileRoute("/api/settings/")({
 	server: {
 		handlers: {
+			/* Every verb this route does not implement is answered in JSON (405 +
+			 * Allow). Without a declaration TanStack Start treats the request as
+			 * unmatched-by-path-and-method and falls through to the document handler,
+			 * which answers `200 text/html` with the SPA bundle — a client parsing
+			 * JSON then blames the server instead of its own verb. AUDIT §3.10. */
+			POST: methodNotAllowed("GET, PUT"),
+			PATCH: methodNotAllowed("GET, PUT"),
+			DELETE: methodNotAllowed("GET, PUT"),
+
 			GET: withSecurity(
 				async ({ request, caller }) => {
 					const user = requireCaller(caller);

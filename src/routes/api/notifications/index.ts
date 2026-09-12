@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { db } from "#/db";
 import {
 	cleanText,
+	methodNotAllowed,
 	publicProfile,
 	publicProfileSelection,
 	readJson,
@@ -63,6 +64,15 @@ function visibleTo(userId: string) {
 export const Route = createFileRoute("/api/notifications/")({
 	server: {
 		handlers: {
+			/* Every verb this route does not implement is answered in JSON (405 +
+			 * Allow). Without a declaration TanStack Start treats the request as
+			 * unmatched-by-path-and-method and falls through to the document handler,
+			 * which answers `200 text/html` with the SPA bundle — a client parsing
+			 * JSON then blames the server instead of its own verb. AUDIT §3.10. */
+			PUT: methodNotAllowed("GET, POST"),
+			PATCH: methodNotAllowed("GET, POST"),
+			DELETE: methodNotAllowed("GET, POST"),
+
 			GET: withSecurity(
 				async ({ caller, request }) => {
 					// The header bell polls this; an anonymous poll must not 401 in

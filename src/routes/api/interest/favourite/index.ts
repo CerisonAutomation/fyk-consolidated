@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
 import { db } from "#/db";
-import { readJson, requireCaller, z } from "#/lib/api-helpers";
+import {
+	methodNotAllowed,
+	readJson,
+	requireCaller,
+	z,
+} from "#/lib/api-helpers";
 import { json, jsonError, withSecurity } from "#/middleware";
 import { favorites } from "#/schema";
 
@@ -19,6 +24,16 @@ const bodySchema = z.object({
 export const Route = createFileRoute("/api/interest/favourite/")({
 	server: {
 		handlers: {
+			/* Every verb this route does not implement is answered in JSON (405 +
+			 * Allow). Without a declaration TanStack Start treats the request as
+			 * unmatched-by-path-and-method and falls through to the document handler,
+			 * which answers `200 text/html` with the SPA bundle — a client parsing
+			 * JSON then blames the server instead of its own verb. AUDIT §3.10. */
+			GET: methodNotAllowed("POST"),
+			PUT: methodNotAllowed("POST"),
+			PATCH: methodNotAllowed("POST"),
+			DELETE: methodNotAllowed("POST"),
+
 			POST: withSecurity(
 				async ({ request, caller }) => {
 					const user = requireCaller(caller);
