@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * 1:1 messaging.
  *
@@ -16,6 +15,7 @@ import {
 	type ProfileRow,
 	toPublicProfile,
 } from "../data/profiles";
+import { asRows } from "../data/typed-rows";
 import {
 	badRequest,
 	conflict,

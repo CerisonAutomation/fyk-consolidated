@@ -33,7 +33,8 @@ export interface PublicProfile {
 	openToMeet: boolean;
 	availableUntil: string | null;
 	presence: Presence;
-	lastActiveAt: string;
+	/** Null when the member hides their status; the timestamp is withheld too. */
+	lastActiveAt: string | null;
 	isSuspended: boolean;
 	sharedInterests: string[];
 	compatibility: number;

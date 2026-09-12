@@ -9,6 +9,7 @@ import {
 	formatDistance,
 	ONLINE_WINDOW_MINUTES,
 	presenceOf,
+	toPublicProfile,
 } from "./profiles";
 
 const minutesAgo = (minutes: number) =>
@@ -190,5 +191,48 @@ describe("affinity", () => {
 
 	it("starts from a floor, not zero, so a bare profile is not shown as 0%", () => {
 		expect(affinity([], { interests: [], looking_for: [] }).score).toBe(35);
+	});
+});
+
+describe("toPublicProfile — hiding status hides the data, not just the label", () => {
+	const profileRow = (patch: Record<string, unknown> = {}) =>
+		({
+			id: "u1",
+			handle: "someone",
+			display_name: "Someone",
+			headline: null,
+			bio: null,
+			age: 29,
+			city: "Sliema",
+			area: null,
+			lat_coarse: 35.91,
+			lng_coarse: 14.5,
+			exposure_level: "clean",
+			height_cm: null,
+			body_type: null,
+			position_role: null,
+			pronouns: null,
+			hide_distance: false,
+			hide_online: false,
+			open_to_meet: false,
+			available_until: null,
+			looking_for: [],
+			interests: [],
+			last_active_at: minutesAgo(1),
+			...patch,
+		}) as unknown as Parameters<typeof toPublicProfile>[0];
+	// `client` is only read while building photo URLs, and there are no photos here.
+	const options = { viewer: null, client: {} as never };
+
+	it("passes the timestamp through while status is public", () => {
+		const shown = toPublicProfile(profileRow(), options);
+		expect(shown.presence).toBe("online");
+		expect(shown.lastActiveAt).not.toBeNull();
+	});
+
+	it("withholds the timestamp along with the label", () => {
+		const hidden = toPublicProfile(profileRow({ hide_online: true }), options);
+		expect(hidden.presence).toBe("offline");
+		expect(hidden.lastActiveAt).toBeNull();
 	});
 });

@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * The Board: live "I'm around / want to do X" posts with an expiry.
  *
@@ -14,6 +13,7 @@ import {
 	type ProfileRow,
 	toPublicProfile,
 } from "../data/profiles";
+import { asRows } from "../data/typed-rows";
 import {
 	badRequest,
 	conflict,

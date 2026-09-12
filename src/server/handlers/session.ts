@@ -150,6 +150,14 @@ export async function getSession(ctx: RequestCtx): Promise<SessionResponse> {
 	if (error) throw badRequest("Your profile could not be loaded.");
 
 	const row = (data ?? null) as ProfileRow | null;
+
+	// Presence is stamped here, on the request every screen already makes at boot.
+	// Until now the only thing that moved `last_active_at` was posting to the Board,
+	// so a member who spent the evening reading and chatting looked offline to
+	// everyone else — which makes the "Online now" chip a lie about the people who
+	// use the app the most. Not awaited and never fatal: presence is cosmetic, and a
+	// failed stamp must not turn a boot into an error screen.
+	if (row) void stampPresence(client, caller.userId, row.last_active_at);
 	const profile = row
 		? toPublicProfile(row, { viewer: null, client, includeBio: true })
 		: null;
@@ -179,6 +187,40 @@ export async function getSession(ctx: RequestCtx): Promise<SessionResponse> {
 		},
 		schemaIssues,
 	};
+}
+
+/**
+ * How long a presence stamp is considered fresh. The session read already holds
+ * `last_active_at`, so the check costs nothing and the write is bounded to one per
+ * interval per member, however many tabs or devices they open.
+ */
+export const PRESENCE_STAMP_INTERVAL_MS = 120_000;
+
+export function shouldStampPresence(
+	lastActiveAt: string | null | undefined,
+	now = Date.now(),
+): boolean {
+	if (!lastActiveAt) return true;
+	const at = Date.parse(lastActiveAt);
+	// Unparseable or in the future: the stored value cannot be trusted, so replace it.
+	if (Number.isNaN(at) || at > now) return true;
+	return now - at >= PRESENCE_STAMP_INTERVAL_MS;
+}
+
+async function stampPresence(
+	client: ApiClient,
+	userId: string,
+	lastActiveAt: string | null | undefined,
+): Promise<void> {
+	if (!shouldStampPresence(lastActiveAt)) return;
+	try {
+		await client
+			.from("profiles")
+			.update({ last_active_at: new Date().toISOString() })
+			.eq("id", userId);
+	} catch {
+		// Deliberately silent: presence is derived, not depended on.
+	}
 }
 
 /**

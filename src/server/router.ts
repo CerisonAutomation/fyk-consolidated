@@ -271,13 +271,6 @@ const routes: Route[] = [
 		handler: (ctx) => settings.updatePrivacy(ctx),
 	},
 	{
-		method: "PATCH",
-		pattern: "settings/availability",
-		limit: "write",
-		auth: "required",
-		handler: (ctx) => settings.updateAvailability(ctx),
-	},
-	{
 		method: "POST",
 		pattern: "onboarding",
 		limit: "write",
@@ -334,13 +327,6 @@ const routes: Route[] = [
 		limit: "write",
 		auth: "required",
 		handler: (ctx) => media.uploadAvatar(ctx),
-	},
-	{
-		method: "POST",
-		pattern: "presence",
-		limit: "write",
-		auth: "required",
-		handler: (ctx) => media.touchPresence(ctx),
 	},
 
 	{

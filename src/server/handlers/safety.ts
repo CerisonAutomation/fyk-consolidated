@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * Report and block. Both are one-way doors that must behave identically no matter
  * which surface raises them, so there is exactly one implementation.
@@ -13,6 +12,7 @@ import { asRows } from "../data/typed-rows";
 
 import { z } from "zod";
 import { type RequestCtx, readJson } from "../context";
+import { asRows } from "../data/typed-rows";
 import { badRequest, conflict, dbFailure, notFound } from "../errors";
 
 export const REPORT_REASONS = [

@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * The moderation queue. Minimal, but real: it reads what reporters filed, it
  * triages in urgency order, and every decision is one RPC that writes the report
@@ -13,6 +12,7 @@ import { asRows } from "../data/typed-rows";
 
 import { z } from "zod";
 import { type RequestCtx, readJson } from "../context";
+import { asRows } from "../data/typed-rows";
 import { dbFailure, forbidden, notFound } from "../errors";
 
 const MODERATOR_ROLES = new Set(["moderator", "admin"]);

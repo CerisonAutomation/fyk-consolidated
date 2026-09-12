@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * Notifications. Read from the `notifications` table that server-side triggers
  * write (a match creates two rows inside the same transaction as the match).
@@ -11,6 +10,7 @@ import { asRows } from "../data/typed-rows";
 
 import { z } from "zod";
 import { type RequestCtx, readJson } from "../context";
+import { asRows } from "../data/typed-rows";
 import { badRequest, dbFailure } from "../errors";
 
 export async function list(ctx: RequestCtx) {

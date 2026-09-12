@@ -5,7 +5,9 @@
  *   - Distances are derived from the *coarsened* coordinates and then jittered
  *     per viewer/target pair, so the number shown is honest about the grid but
  *     cannot be used to triangulate someone.
- *   - "Online" is derived from `last_active_at`. There is no push channel
+ *   - "Online" is derived from `last_active_at`, which is stamped when the app
+ *     loads a session (see the session handler) and on profile/board/media writes —
+ *     never by a client beacon, because there is no route for one. There is no push channel
  *     pretending to be presence, so a stale dot cannot outlive a closed app.
  */
 
@@ -87,7 +89,8 @@ export type PublicProfile = {
 	openToMeet: boolean;
 	availableUntil: string | null;
 	presence: "online" | "active" | "offline";
-	lastActiveAt: string;
+	/** `null` when the member hides their status — see `toPublicProfile`. */
+	lastActiveAt: string | null;
 	isSuspended: boolean;
 	sharedInterests: string[];
 	compatibility: number;
@@ -294,7 +297,11 @@ export function toPublicProfile(
 		openToMeet: availableNow(row),
 		availableUntil: row.available_until,
 		presence: presenceOf(row),
-		lastActiveAt: row.last_active_at,
+		// "Hide my status" has to hide the timestamp as well as the label. A raw
+		// `last_active_at` in the payload lets any client recompute "active 3 minutes
+		// ago" itself, so shipping it next to a faked `presence` would only move the
+		// lie into the browser.
+		lastActiveAt: row.hide_online ? null : row.last_active_at,
 		isSuspended: Boolean(row.is_suspended),
 		sharedInterests: shared,
 		compatibility: score,

@@ -225,7 +225,7 @@ function ProfilePage() {
 									}
 								>
 									{PRESENCE_LABEL[profile.presence]}
-									{profile.presence === "offline"
+									{profile.presence === "offline" && profile.lastActiveAt
 										? ` · ${timeAgo(profile.lastActiveAt)}`
 										: ""}
 								</span>

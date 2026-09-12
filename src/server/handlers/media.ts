@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * Uploads go through the server so the storage path convention (which the bucket
  * policies read as the owner folder) cannot be forged, and so size/MIME limits are
@@ -7,7 +6,8 @@ import { asRows } from "../data/typed-rows";
 
 import { z } from "zod";
 import { type RequestCtx, readJson } from "../context";
-import { type ProfileRow, publicUrl } from "../data/profiles";
+import { publicUrl } from "../data/profiles";
+import { asRows } from "../data/typed-rows";
 import {
 	ApiFailure,
 	badRequest,
@@ -159,28 +159,6 @@ export async function uploadAvatar(ctx: RequestCtx) {
 		throw dbFailure(update.error, "That did not save. Please try again.");
 	return {
 		avatarUrl: (update.data as unknown as { avatar_url: string }).avatar_url,
-	};
-}
-
-export async function touchPresence(ctx: RequestCtx) {
-	const caller = await ctx.auth();
-	const client = ctx.db();
-	const { error } = await client
-		.from("profiles")
-		.update({ last_active_at: new Date().toISOString() })
-		.eq("id", caller.userId);
-	if (error) throw dbFailure(error, "That did not save. Please try again.");
-	const me = await client
-		.from("profiles")
-		.select("id,last_active_at,open_to_meet,available_until")
-		.eq("id", caller.userId)
-		.maybeSingle();
-	return {
-		at: new Date().toISOString(),
-		state: (me.data ?? null) as unknown as Pick<
-			ProfileRow,
-			"last_active_at"
-		> | null,
 	};
 }
 

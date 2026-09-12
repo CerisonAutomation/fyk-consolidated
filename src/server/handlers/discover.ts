@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * Nearby discovery, taps/favorites, and profile views.
  *
@@ -20,6 +19,7 @@ import {
 	photosByOwner,
 	toPublicProfile,
 } from "../data/profiles";
+import { asRows } from "../data/typed-rows";
 import {
 	badRequest,
 	conflict,
@@ -95,6 +95,10 @@ export async function listNearby(ctx: RequestCtx) {
 		.neq("id", caller.userId)
 		.not("onboarding_completed_at", "is", null)
 		.eq("exposure_level", query.exposure === "clean" ? "clean" : query.exposure)
+		// Recency, not a score: the newest-looking profiles first. `last_active_at` is
+		// stamped by the session boot and by profile/board/media writes, so "active"
+		// here means "in the app or posting", never "swiped at us" — and a member who
+		// hides their status still ranks by it, because ordering is not a disclosure.
 		.order("last_active_at", { ascending: false })
 		.range(query.page * PAGE_SIZE, query.page * PAGE_SIZE + PAGE_SIZE - 1);
 

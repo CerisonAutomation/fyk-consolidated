@@ -1,4 +1,3 @@
-import { asRows } from "../data/typed-rows";
 /**
  * Events: browse, detail, RSVP, host basics. Nothing more.
  *
@@ -15,6 +14,7 @@ import {
 	type ProfileRow,
 	toPublicProfile,
 } from "../data/profiles";
+import { asRows } from "../data/typed-rows";
 import { conflict, dbFailure, forbidden, notFound } from "../errors";
 
 const EVENT_COLUMNS =

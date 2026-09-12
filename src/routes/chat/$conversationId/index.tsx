@@ -478,11 +478,11 @@ function ConversationPage() {
 					</h1>
 					<p className="text-[11.5px] text-muted">
 						{otherProfile
-							? `${
-									otherProfile.presence === "online"
-										? "Online now"
-										: `Last seen ${timeAgo(otherProfile.lastActiveAt)}`
-								} · refreshed while open`
+							? otherProfile.presence === "online"
+								? "Online now"
+								: otherProfile.lastActiveAt
+									? `Last seen ${timeAgo(otherProfile.lastActiveAt)}`
+									: "Status hidden"
 							: "Membership only"}
 					</p>
 				</div>

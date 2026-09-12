@@ -192,34 +192,6 @@ export async function updatePrivacy(ctx: RequestCtx) {
 	};
 }
 
-/** "Right now" toggle — a window, not a live status, so it cannot lie about presence. */
-export async function updateAvailability(ctx: RequestCtx) {
-	const caller = await ctx.auth();
-	const body = await readJson(
-		ctx.request,
-		z.object({
-			openToMeet: z.boolean(),
-			minutes: z.number().int().min(30).max(720).default(120),
-		}),
-	);
-	const client = ctx.db();
-	const update = await client
-		.from("profiles")
-		.update({
-			open_to_meet: body.openToMeet,
-			available_until: body.openToMeet
-				? new Date(Date.now() + body.minutes * 60_000).toISOString()
-				: null,
-			last_active_at: new Date().toISOString(),
-		})
-		.eq("id", caller.userId)
-		.select("id,open_to_meet,available_until")
-		.single();
-	if (update.error)
-		throw dbFailure(update.error, "That did not save. Please try again.");
-	return update.data;
-}
-
 export const onboardingSubmitSchema = z.object({
 	displayName: z.string().trim().min(2).max(40),
 	handle: z

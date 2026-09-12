@@ -564,7 +564,9 @@ function NearbyCard({
 						? "Online"
 						: profile.presence === "active"
 							? "Active"
-							: timeAgo(profile.lastActiveAt)}
+							: profile.lastActiveAt
+								? timeAgo(profile.lastActiveAt)
+								: "Offline"}
 				</span>
 				<div className="ml-auto flex items-center gap-1">
 					<button
