@@ -729,3 +729,124 @@ describe("edge-function trust", () => {
 		}
 	});
 });
+
+describe("push delivery policy (0026)", () => {
+	/**
+	 * Every `$fn$`-delimited body of the delivery trigger, in the order the files apply.
+	 *
+	 * Collected across files rather than read from 0026 alone, because the trigger has
+	 * been redefined three times: what runs on a database is the *last* definition, and a
+	 * migration appended later that forgets the policy would silently delete it.
+	 */
+	function bodies(): { file: string; body: string }[] {
+		const out: { file: string; body: string }[] = [];
+		for (const m of ALL) {
+			const re =
+				/create or replace function public\.enqueue_push_notification\(\)[\s\S]*?\$fn\$([\s\S]*?)\$fn\$/g;
+			for (const match of m.src.matchAll(re)) {
+				out.push({ file: m.file, body: match[1] });
+			}
+		}
+		return out;
+	}
+
+	/** A missing file is a fact about the repository, so say it instead of `!`-ing past it. */
+	function orThrow<T>(value: T | undefined, label: string): T {
+		if (value === undefined) {
+			throw new Error(
+				`${label}: not found — the guard is reading a renamed file`,
+			);
+		}
+		return value;
+	}
+
+	it("ends with the definition that enforces the preferences", () => {
+		const found = bodies();
+		// 0023 introduced it, 0025 made it reachable, 0026 gave it a policy. Fewer
+		// than two definitions means this test is reading the wrong files.
+		expect(found.length).toBeGreaterThanOrEqual(2);
+		const last = found[found.length - 1];
+		expect(last.file).toBe("0026_privacy_controls.sql");
+		for (const key of [
+			"pushNotifications",
+			"matchNotifications",
+			"messageNotifications",
+			"eventNotifications",
+		]) {
+			expect(last.body, `notif_prefs.${key} is unread`).toContain(key);
+		}
+		expect(last.body).toContain("u.dnd_mode");
+		// A recipient with no row must not be invented into a suppression.
+		expect(last.body).toContain("if not found then");
+		// Absent means deliver: only an explicit JSON false may silence a type, so a
+		// user who never opened Settings keeps exactly the delivery they had before.
+		expect(last.body).toContain(
+			"lower(v_pref ->> 'pushNotifications') = 'false'",
+		);
+		expect(last.body).not.toMatch(/coalesce\(v_pref[^)]*'true'\)/);
+	});
+
+	it("decides, for every notification type, which switch may silence it", () => {
+		// `meetnow` is the precedent: 0019 widened the type list for two flows and left
+		// a third outside it, and the constraint turned "not wired up" into a rejected
+		// transaction. The same drift here would be worse, because the failure is that a
+		// push nobody decided anything about either always or never arrives.
+		const withCheck = orThrow(
+			[...ALL].reverse().find((m) => /notifications_type_check/.test(m.src)),
+			"a migration defining notifications_type_check",
+		);
+		const list = orThrow(
+			/add constraint notifications_type_check\s*\n?\s*check \(([^;]*)\)/i.exec(
+				withCheck.src.replace(/\s+/g, " "),
+			),
+			"the type list of the newest notifications_type_check",
+		);
+		const types = [
+			...(list[1].matchAll(/'([a-z_0-9]+)'/g) as Iterable<RegExpMatchArray>),
+		].map((m) => m[1]);
+		expect(types.length).toBeGreaterThanOrEqual(12);
+		const body = orThrow(bodies().at(-1), "the delivery trigger").body;
+		const exempt = /not in \(([^)]*)\)/.exec(body)?.[1] ?? "";
+		for (const type of types) {
+			const decided =
+				new RegExp(`when '${type}'\\s+then`).test(body) ||
+				exempt.includes(`'${type}'`);
+			expect(decided, `${type} is neither gated nor exempt`).toBe(true);
+		}
+	});
+
+	it("exempts the safety types from a mute, but not from an opt-out", () => {
+		const body = orThrow(bodies().at(-1), "the delivery trigger").body;
+		const exempt = /not in \(([^)]*)\)/.exec(body)?.[1] ?? "";
+		for (const type of ["check_in", "check_in_resolved", "check_in_overdue"]) {
+			expect(exempt, `${type} must be exempt from DND`).toContain(`'${type}'`);
+		}
+		// Ordering, which is the actual claim: the exemption sits on the DND gate, not
+		// on the master `pushNotifications` switch — a temporary mute may not swallow an
+		// alarm, while "no push on this device" is a decision about the transport.
+		const dnd = body.indexOf("v_dnd and new.type not in");
+		const master = body.indexOf("'pushNotifications'");
+		expect(dnd).toBeGreaterThan(-1);
+		expect(master).toBeGreaterThan(-1);
+		expect(body.slice(0, dnd)).toContain("pushNotifications");
+		expect(body.slice(0, master)).not.toContain("new.type not in");
+	});
+
+	it("adds the last-online column the privacy screen has always offered", () => {
+		const sql = ALL.map((m) => m.src).join("\n");
+		expect(sql).toMatch(
+			/alter table public\.users\s+add column if not exists hide_last_online boolean not null default false/,
+		);
+		// Three-way join, because the migration is only half of a switch: the schema
+		// needs the field, and a shaper that never selects it cannot honour it.
+		expect(readFileSync(join(ROOT, "drizzle/schema.ts"), "utf8")).toContain(
+			'hideLastOnline: boolean("hide_last_online")',
+		);
+		const helpers = readFileSync(
+			join(ROOT, "src/lib/api-helpers.ts"),
+			"utf8",
+		).replace(/\/\*[\s\S]*?\*\//g, "");
+		expect(helpers).toContain("hideLastOnline: users.hideLastOnline");
+		expect(helpers).toMatch(/lastSeen:\s*row\.hideLastOnline/);
+	});
+});

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { db } from "#/db";
 import {
 	asStringArray,
@@ -111,63 +111,80 @@ export const Route = createFileRoute("/api/profile/$profileId/")({
 					if (invisible && profileId !== user.id)
 						return jsonError("Profile not found", 404);
 
-					const [me, saved, myTap, theirTap, note, recorded] =
-						await Promise.all([
-							db
-								.select({ lat: users.latCoarse, lng: users.lngCoarse })
-								.from(users)
-								.where(eq(users.id, user.id))
-								.limit(1),
-							db
-								.select({ id: favorites.id })
-								.from(favorites)
-								.where(
-									and(
-										eq(favorites.userId, user.id),
-										eq(favorites.targetId, profileId),
-									),
-								)
-								.limit(1),
-							db
-								.select({ id: taps.id })
-								.from(taps)
-								.where(
-									and(eq(taps.tapperId, user.id), eq(taps.tappedId, profileId)),
-								)
-								.limit(1),
-							db
-								.select({ id: taps.id })
-								.from(taps)
-								.where(
-									and(eq(taps.tapperId, profileId), eq(taps.tappedId, user.id)),
-								)
-								.limit(1),
-							db
-								.select({ content: userNotes.content })
-								.from(userNotes)
-								.where(
-									and(
-										eq(userNotes.noteOwnerId, user.id),
-										eq(userNotes.targetUserId, profileId),
-									),
-								)
-								.limit(1),
-							// "Seen by" is a fact, so it is written here rather than by a second
-							// client call that a buggy screen could skip — never on yourself.
-							profileId === user.id
-								? Promise.resolve([] as { id: string }[])
-								: db
-										.insert(footprints)
-										.values({ visitorId: user.id, visitedId: profileId })
-										.returning({ id: footprints.id }),
-						]);
+					const [me, saved, myTap, theirTap, note] = await Promise.all([
+						db
+							.select({ lat: users.latCoarse, lng: users.lngCoarse })
+							.from(users)
+							.where(eq(users.id, user.id))
+							.limit(1),
+						db
+							.select({ id: favorites.id })
+							.from(favorites)
+							.where(
+								and(
+									eq(favorites.userId, user.id),
+									eq(favorites.targetId, profileId),
+								),
+							)
+							.limit(1),
+						db
+							.select({ id: taps.id })
+							.from(taps)
+							.where(
+								and(eq(taps.tapperId, user.id), eq(taps.tappedId, profileId)),
+							)
+							.limit(1),
+						db
+							.select({ id: taps.id })
+							.from(taps)
+							.where(
+								and(eq(taps.tapperId, profileId), eq(taps.tappedId, user.id)),
+							)
+							.limit(1),
+						db
+							.select({ content: userNotes.content })
+							.from(userNotes)
+							.where(
+								and(
+									eq(userNotes.noteOwnerId, user.id),
+									eq(userNotes.targetUserId, profileId),
+								),
+							)
+							.limit(1),
+						// "Seen by" is a fact, so it is written here rather than by a second client
+						// call that a buggy screen could skip — never on yourself, and never for a
+						// visitor in ghost mode.
+						//
+						// The `incognito` test lives *inside* the statement (`insert … select … where`)
+						// rather than being a read followed by a write, so toggling ghost mode while this
+						// request is in flight cannot smuggle a footprint through: the people listed as
+						// visitors are exactly the people who were not invisible at that instant.
+						// `is distinct from` instead of `= false` because the column is nullable — a row
+						// with no recorded preference must record its visit, not lose it.
+						profileId === user.id
+							? Promise.resolve(undefined)
+							: db.insert(footprints).select(
+									db
+										.select({
+											visitorId: users.id,
+											visitedId: sql`${profileId}::uuid`.as("visited_id"),
+										})
+										.from(users)
+										.where(
+											and(
+												eq(users.id, user.id),
+												sql`${users.incognito} is distinct from true`,
+											),
+										)
+										.limit(1),
+								),
+					]);
 
 					const point = me[0];
 					const viewer =
 						point?.lat != null && point.lng != null
 							? { lat: point.lat, lng: point.lng }
 							: null;
-					void recorded;
 
 					const photos = Array.isArray(row.photos) ? row.photos : [];
 					return json(

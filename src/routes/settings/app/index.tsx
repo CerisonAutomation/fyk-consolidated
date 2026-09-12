@@ -13,7 +13,9 @@ import {
 	setPreferences,
 	type Preferences,
 } from "#/domains/settings/preferences";
+import { useServerSettings } from "#/domains/settings/use-server-settings";
 import { requireDocumentSession } from "#/lib/document-auth";
+import { isServerPrivacyField, type ServerAppField } from "#/lib/settings-map";
 
 export const Route = createFileRoute("/settings/app/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no
@@ -37,21 +39,42 @@ function AppSettingsPage() {
 	const [local, setLocal] = useState<Preferences>(prefs);
 	const [, setSaving] = useState(false);
 	const [saved, setSaved] = useState(false);
+	// Two of the switches on this screen are privacy decisions rather than
+	// appearance, so they read and write the server (`users.incognito`,
+	// `notif_prefs.readReceipts`) exactly as `/settings/privacy` does — same query
+	// key, so no extra request. Everything else here stays on the device on
+	// purpose: units, background presence and GPS refresh are this device's
+	// business, and `src/lib/settings-map.ts` keeps that split explicit rather than
+	// tribal knowledge.
+	const {
+		value: serverValue,
+		toggle: serverToggle,
+		pending,
+		error,
+		ready: serverReady,
+		saved: serverSaved,
+	} = useServerSettings();
+
+	type AnyField = keyof Preferences | ServerAppField;
 
 	const update = useCallback(
-		async <K extends keyof Preferences>(field: K, value: Preferences[K]) => {
+		async (field: AnyField, value: boolean | "metric" | "imperial") => {
+			if (isServerPrivacyField(field)) {
+				await serverToggle(field);
+				return;
+			}
 			setLocal((prev) => ({ ...prev, [field]: value }));
 			setSaved(false);
 			setSaving(true);
 			try {
-				await setPreferences({ [field]: value });
+				await setPreferences({ [field]: value } as Partial<Preferences>);
 				setSaved(true);
 				setTimeout(() => setSaved(false), 2000);
 			} finally {
 				setSaving(false);
 			}
 		},
-		[],
+		[serverToggle],
 	);
 
 	const Toggle = ({
@@ -60,12 +83,14 @@ function AppSettingsPage() {
 		description,
 		icon: Icon,
 	}: {
-		field: keyof Preferences;
+		field: AnyField;
 		label: string;
 		description: string;
 		icon: React.FC<{ className?: string }>;
 	}) => {
-		const value = local[field] as boolean;
+		const value = isServerPrivacyField(field)
+			? serverValue(field)
+			: (local[field as keyof Preferences] as boolean);
 		return (
 			<div className="glass-card flex items-center gap-3 px-4 py-3">
 				<div
@@ -83,7 +108,11 @@ function AppSettingsPage() {
 				</div>
 				<button
 					type="button"
-					onClick={() => update(field, !value)}
+					onClick={() => void update(field, !value)}
+					aria-busy={pending === field}
+					disabled={
+						isServerPrivacyField(field) && (pending !== null || !serverReady)
+					}
 					className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
 					style={{
 						background: value
@@ -126,9 +155,14 @@ function AppSettingsPage() {
 					</div>
 
 					{/* Save indicator */}
-					{saved && (
+					{(saved || serverSaved) && (
 						<div className="mb-4 rounded-lg bg-green-500/10 px-3 py-2 text-center text-xs text-green-400">
 							Saved ✓
+						</div>
+					)}
+					{error && (
+						<div className="mb-4 rounded-lg bg-rose-500/10 px-3 py-2 text-center text-xs text-red-400">
+							{error}
 						</div>
 					)}
 
@@ -152,13 +186,13 @@ function AppSettingsPage() {
 						<Toggle
 							field="revealMessageRead"
 							label="Reveal Message Read"
-							description="Show when your messages have been read"
+							description="Let others see when you've read their messages"
 							icon={Shield}
 						/>
 						<Toggle
 							field="revealProfileViews"
 							label="Reveal Profile Views"
-							description="Show when others view your profile"
+							description="Let others see when you view their profile"
 							icon={Settings}
 						/>
 

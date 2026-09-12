@@ -85,20 +85,25 @@ export const defaultFilters: GridSearchFilters = gridSearchFiltersSchema.parse(
 	{},
 );
 
+/**
+ * Only what a *device* decides. The privacy keys that used to be here —
+ * `showDistance`, `showOnlineStatus`, `showLastOnline`, `incognitoMode`,
+ * `hideFromSearch`, `revealProfileViews`, `revealMessageRead` — are gone, because
+ * storing them here was the defect: `PUT /api/settings` writes the columns that
+ * `toProfileCard()` and `0026`'s delivery policy actually read, and a
+ * `localStorage` copy of the same decision is a second truth that only this
+ * browser ever consulted. The mapping lives in `#/lib/settings-map.ts`, and
+ * `src/lib/settings-map.test.ts` fails if a privacy switch comes back to this
+ * file. Old rows still parse: zod strips unknown keys, so a value left behind by
+ * an earlier build is ignored rather than resurrected.
+ */
 const preferencesSchema = z.object({
 	autoUpdateLocation: z.boolean().default(false),
 	geohash: geohashSchema.nullable().default(null),
 	onboardingComplete: z.boolean().default(false),
 	gridSearchFilters: gridSearchFiltersSchema.optional(),
-	revealMessageRead: z.boolean().default(false),
-	revealProfileViews: z.boolean().default(false),
 	stayOnline: z.boolean().default(true),
 	units: unitSystemSchema.default("metric"),
-	showDistance: z.boolean().default(true),
-	showOnlineStatus: z.boolean().default(true),
-	showLastOnline: z.boolean().default(true),
-	incognitoMode: z.boolean().default(false),
-	hideFromSearch: z.boolean().default(false),
 });
 
 export type Preferences = z.infer<typeof preferencesSchema>;

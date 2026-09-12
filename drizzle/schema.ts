@@ -111,6 +111,15 @@ export const users = pgTable("users", {
 	exposureLevel: text("exposure_level").default("clean"),
 	hideDistance: boolean("hide_distance").default(false),
 	hideOnline: boolean("hide_online").default(false),
+	/**
+	 * "Show my last online" in `/settings/privacy`. Added with its consumer by
+	 * `0026_privacy_controls.sql`, because the screen had been offering this switch for
+	 * as long as it offered `hide_online` while no table had a column for it: the
+	 * difference is that a user may be happy to show "online" and refuse "last seen
+	 * 4 minutes ago", which is a far more identifying fact. Honoured by
+	 * `toProfileCard()` and `publicProfile()`.
+	 */
+	hideLastOnline: boolean("hide_last_online").default(false),
 
 	theme: text("theme"),
 	accent: text("accent"),

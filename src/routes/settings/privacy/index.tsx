@@ -8,14 +8,9 @@ import {
 	MapPin,
 	Shield,
 } from "lucide-react";
-import { useCallback, useState } from "react";
-import {
-	getPreferencesSnapshot,
-	hydratePreferences,
-	type Preferences,
-	setPreferences,
-} from "#/domains/settings/preferences";
+import { useServerSettings } from "#/domains/settings/use-server-settings";
 import { requireDocumentSession } from "#/lib/document-auth";
+import type { PrivacyField } from "#/lib/settings-map";
 
 export const Route = createFileRoute("/settings/privacy/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no
@@ -26,32 +21,57 @@ export const Route = createFileRoute("/settings/privacy/")({
 		await requireDocumentSession();
 	},
 	component: PrivacySettingsPage,
-	loader: () => hydratePreferences(),
+	// No `loader` any more, and that is the fix: this screen used to hydrate from
+	// `localStorage`, which is what made every switch below a per-browser note to
+	// self. The values now come from `GET /api/settings` — the endpoint whose
+	// columns `toProfileCard()` and `0026`'s delivery policy actually read — through
+	// `useServerSettings`, and every tap is a `PUT` there.
 });
 
 function PrivacySettingsPage() {
-	const prefs = getPreferencesSnapshot();
-	const [local, setLocal] = useState(prefs);
-	const [saved, setSaved] = useState(false);
-
-	const handleToggle = useCallback(
-		async (
-			field:
-				| "showDistance"
-				| "showOnlineStatus"
-				| "showLastOnline"
-				| "incognitoMode"
-				| "hideFromSearch",
-		) => {
-			const value = !local[field];
-			setLocal((current) => ({ ...current, [field]: value }));
-			setSaved(false);
-			await setPreferences({ [field]: value } satisfies Partial<Preferences>);
-			setSaved(true);
-			setTimeout(() => setSaved(false), 2000);
+	const { value, toggle, pending, error, saved, isLoading } =
+		useServerSettings();
+	// The rows come from this list rather than being written inline, so a switch
+	// cannot reach the screen without a column to write: `PrivacyField` is derived
+	// from `PRIVACY_FIELDS` in the mapping table, and `settings-map.test.ts` fails
+	// if the two stop agreeing.
+	const rows: Array<{
+		field: PrivacyField;
+		icon: typeof Eye;
+		label: string;
+		description: string;
+	}> = [
+		{
+			icon: MapPin,
+			label: "Show Distance",
+			description: "Display your approximate distance to others",
+			field: "showDistance",
 		},
-		[local],
-	);
+		{
+			icon: Eye,
+			label: "Show Online Status",
+			description: "Let others see when you're online",
+			field: "showOnlineStatus",
+		},
+		{
+			icon: Globe,
+			label: "Show Last Online",
+			description: "Display when you were last active",
+			field: "showLastOnline",
+		},
+		{
+			icon: EyeOff,
+			label: "Incognito Mode",
+			description: "Browse without appearing in others' grids",
+			field: "incognitoMode",
+		},
+		{
+			icon: Lock,
+			label: "Hide from Search",
+			description: "Prevent your profile from appearing in search results",
+			field: "hideFromSearch",
+		},
+	];
 
 	return (
 		<main className="screen-nav-host">
@@ -74,53 +94,26 @@ function PrivacySettingsPage() {
 							Saved ✓
 						</div>
 					)}
+					{error && (
+						<div className="mb-4 rounded-lg bg-rose-500/10 px-3 py-2 text-center text-xs text-red-400">
+							{error}
+						</div>
+					)}
+					{isLoading && (
+						<p className="mb-4 text-center text-xs text-white/30">
+							Loading your privacy settings…
+						</p>
+					)}
 
 					<p className="mb-4 font-mono text-[10px] uppercase tracking-[0.25em] text-amber-400/70">
 						PROFILE VISIBILITY
 					</p>
 
 					<div className="space-y-3">
-						{[
-							{
-								icon: MapPin,
-								label: "Show Distance",
-								description: "Display your approximate distance to others",
-								field: "showDistance",
-							},
-							{
-								icon: Eye,
-								label: "Show Online Status",
-								description: "Let others see when you're online",
-								field: "showOnlineStatus",
-							},
-							{
-								icon: Globe,
-								label: "Show Last Online",
-								description: "Display when you were last active",
-								field: "showLastOnline",
-							},
-							{
-								icon: EyeOff,
-								label: "Incognito Mode",
-								description: "Browse without appearing in others' grids",
-								field: "incognitoMode",
-							},
-							{
-								icon: Lock,
-								label: "Hide from Search",
-								description:
-									"Prevent your profile from appearing in search results",
-								field: "hideFromSearch",
-							},
-						].map((item) => {
+						{rows.map((item) => {
 							const Icon = item.icon;
-							const field = item.field as
-								| "showDistance"
-								| "showOnlineStatus"
-								| "showLastOnline"
-								| "incognitoMode"
-								| "hideFromSearch";
-							const enabled = local[field];
+							const field = item.field;
+							const enabled = value(field);
 							return (
 								<div
 									key={item.field}
@@ -145,8 +138,10 @@ function PrivacySettingsPage() {
 									</div>
 									<button
 										type="button"
-										onClick={() => handleToggle(field)}
+										onClick={() => void toggle(field)}
 										aria-pressed={enabled}
+										aria-busy={pending === field}
+										disabled={pending !== null}
 										className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
 										style={{
 											background: enabled
