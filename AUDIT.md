@@ -250,22 +250,95 @@ Verified live (production build, DB unreachable, forged HS256 token): anon →
 heuristic output; bad action/tab → `400`/`404` with the expected-value message;
 `/onboarding` → `200` SSR.
 
+### 2.8 Third pass: every feature reachable, nothing stubbed
+
+The rule for this pass: no dead endpoint, no invented field, no success path that
+ignores its own failure. Method was mechanical, not impressionistic — every
+`/api/*` string literal in `src/**` (template segments normalised to `*`) was
+matched against the generated route tree, then every response mapper was read for
+constants that a row could already answer. Each hit below is either implemented,
+proven already correct, or deleted.
+
+Implemented (previously a `404` inside a `catch {}`, i.e. a button that looked
+like it worked):
+
+| Endpoint | Backed by | Notes |
+| --- | --- | --- |
+| `POST/DELETE /api/taps` | `taps`, `matches`, `notifications`, `blocks` | `discover-client.tsx` and `profile/user-profile-client.tsx` both post here and read `{ isMatch }`; the decision logic moved to `#/lib/tap.server` so `/api/discover` and `/api/taps` share one engine (the old copy in the deck route is gone), blocks in either direction now stop a tap becoming a match, `DELETE`/`action:"unswipe"` removes the row instead of resetting client state |
+| `POST/GET /api/boost` | `consumables_inventory`, `users.boost_expires_at` | a boost *costs* a booster (quantity decremented inside the transaction, `409` when the account has none) and *does* something: `/api/discover` ranks a live boost above recency, and `GET` reports the window; `BOOST_MINUTES` is server-side, so a client cannot ask for a permanent boost or a free one |
+| `POST/GET /api/safety/check-in/resolve` | `notifications` (`type = check_in`) | a check-in is a notification row whose JSON body carries `{ contact_id, place, due_at, status }` (that is what `#/integrations/supabase/safety.ts` writes — there is no separate table), so resolving one is an update plus an insert *for another user*, which browser code cannot do under RLS; the contact is taken from the stored body, never from the request, and the HUD's countdown is replayable through `GET` |
+| `GET/PUT /api/profile` | `users` | onboarding's `PUT` was posting to a route that did not exist; `profile_complete` is recomputed from the merged row server-side, `onboarding_done` is refused below 60, and `role`/`tier`/`verification`/precise location cannot be set from the body |
+| `POST/GET /api/safety/reports` | `public.reports` | self-report refused, target must exist, an open duplicate is folded into `details`, 5 per hour / 15-minute spacing; `GET` returns only the caller's own reports |
+| `PATCH /api/messages/{id}`, `POST /api/messages/{id}/react` | `messages`, `message_reactions` + `0017` | `pin`/`unpin`/`edit`/`recall` all reach real columns (`is_pinned`, `pinned_at`, `unsent_at`), membership is joined for every mutation and ownership is required for `edit`/`recall`; `react` toggles against the same five-emoji `CHECK` set `0000_profiles.sql` defines |
+
+Invented values removed (each one used to render something false):
+
+- `isFavourite: false` in `/api/discover` — now from `favorites`, so a saved
+  profile looks saved in the deck.
+- `matchScore` — the deck copy promises "ranked by 5-dimension compatibility" and
+  the client filters on `filters.minMatch`; the score is now computed from
+  tribes/interest/intent/distance/recency and used for ordering, so the slider
+  changes the deck. Missing coordinates or empty tags score 0 on that term rather
+  than receiving a flattering default.
+- `meta.online` / `meta.verified` / `meta.newCount` / `meta.vibes` — the client
+  typed them and they were never sent, which left the AI strip and the two filter
+  chips permanently blank. They are counted over the page that is actually shown,
+  and `hide_online` is honoured in the count.
+- `coverUrl: null` in `/api/social?view=albums` — now the lowest-positioned
+  `private_album_items` row; an empty album still has no cover, which is a
+  different fact from a made-up one.
+- `unread_count` in `/api/conversations` — counted every non-self message ever, so
+  every thread looked unread; now joined against `conversation_members.last_read_at`.
+- `media_url` in the message list — there is no public bucket, and
+  `media_access_policy` (`timed`/`view_once`/`open_count`) means any URL the server
+  hands out unsigned would break its own expiry rules; the response carries
+  `storage_path` and `#/integrations/supabase/chat.ts` signs it per viewer.
+- recalled messages — the list used to filter them out, which made a recall
+  invisible to the other side; rows now come back with `content: ""` and
+  `is_recalled: true`, which is what `chat-view.tsx` already renders.
+
+Deleted because it was pure noise: the `api("/api/ai/warmup").catch(() => {})` call
+in `#/lib/store.ts`. The palette command it served is labelled "Load the on-device
+AI model", so `warmUpAi` now actually loads it through
+`#/domains/ai/ml/bootstrap` `loadExtractor()` (WebGPU → WASM fallback, cached
+singleton) and reports both outcomes as a toast.
+
+Silent failures made visible in the same place: `boost()` and `resolveCheckIn()`
+used to discard everything; both now toast the server's answer, including
+"no boosts left" and "your emergency contact was not notified".
+
+Schema: `supabase/migrations/0017_message_actions.sql` adds
+`messages.is_pinned`/`pinned_at` (+ partial indexes), `users.boost_expires_at`
+(+ index), `message_reactions`/`message_reads` parity with `0000`, and drops the
+`NOT NULL` from `users.email` — a phone-only Supabase session could not create its
+own profile row at all, because `0010` declared `email text UNIQUE NOT NULL`.
+
+Verified live against a production build with an unreachable DB and no session:
+`/api/taps`, `/api/boost`, `/api/profile`, `/api/safety/reports`,
+`/api/safety/check-in/resolve`, `/api/messages/{id}` all answer `401` (reads) or
+`403` (writes, missing `sec-fetch-site`), while `/api/nonexistent-route` answers
+`404` — the routes exist and are gated, which is the distinction that was missing.
+`tsc` 0 errors, 163 tests pass, `vite build` OK, `biome check` unchanged on
+everything this pass touched.
+
+Still unreferenced, and needing a delete-or-keep decision (they are dead code, not
+stubs — nothing in the route tree imports them): `src/core/api/hooks/use-auth.ts`
+and `src/core/api/client/api-client.ts` call `/api/auth/{login,logout,state,session-health}`,
+which do not exist and must not be built (Supabase owns the session);
+`src/components/topbar.tsx` is an unreferenced duplicate of
+`src/components/layout/topbar.tsx`; `/api/users` is only mentioned by
+`src/core/domain/__tests__/errors.test.ts` as a fixture URL.
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
 These need a product or schema decision. Inventing an implementation is how a
 second, worse truth gets committed, so each entry says what to decide instead.
 
-1. **Still-missing endpoints** (each is a `404` in a reachable screen):
-   `/api/boost` (`#/lib/store.ts` fires it on a timer and swallows the error, so
-   "boost" currently does nothing), `/api/ai/warmup` (same fire-and-forget),
-   `/api/users` and `/api/profile` (onboarding's profile save posts to
-   `/api/profile`, which is why finishing onboarding cannot work end-to-end
-   today), `/api/safety/reports` (the report button in the deck modal),
-   `/api/messages/*` and `/api/discover` variants the dead demo screens call.
-   `wallet` and `pet` are *not* gaps: `#/integrations/supabase/{wallet,king-pet}.ts`
-   replaced those calls with direct Supabase reads, so the endpoints should stay
-   deleted and the old comments in those modules are the accurate record.
-   2. **Two user tables, no bridge.** `0000_profiles.sql` creates
+1. **~~Still-missing endpoints~~ — closed by §2.8**, except by decision: no
+   `/api/auth/*` should ever exist (Supabase owns the session), and `/api/users`
+   has no caller outside a test fixture. If `src/core/**` survives, its auth hooks
+   must be pointed at `supabase.auth` rather than at endpoints that will not come.
+2. **Two user tables, no bridge.** `0000_profiles.sql` creates
    `public.profiles` (`pseudo`→`display_name`, RLS enabled, `age between 18 and
    120` DB check, `lat_coarse/lng_coarse` only) while `0010_remaining_tables.sql`
    creates `public.users` (`pseudo`/`nick`, `lat`/`lng` precise, no RLS) and
