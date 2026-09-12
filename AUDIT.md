@@ -58,6 +58,9 @@ product/schema decision and are documented instead of guessed at.
 | the same routes with the env removed | `200` — `unconfigured` is fail-open for a document and the preview is unaffected |
 | `POST /api/safety/check-in` with a valid session **cookie** and no / cross-site `Origin` | `403` both — the same-origin gate is what makes the new cookie credential safe |
 | `curl` sweep at `2cb75ad` (pre-§2.17) | pages `200`; `/api/health` `200` JSON; `/api/nope` `404` JSON; `/api/safety/contacts` `401`; `DELETE /api/safety/check-in` `405` + `allow: GET, POST`; `PUT /api/wallet` `405` |
+| `npx tsc --noEmit`, §2.25–§2.28 pass | 0 errors — and the inbox payload is now *checked against the client's own type* (`satisfies ConversationWithMeta & Record<string, unknown>`), which is the only reason the §2.26 mismatch was fixable rather than merely visible |
+| `npx vitest run`, §2.25–§2.28 pass | **242 passed** (18 files; +25: `src/lib/settings-map.test.ts` 14, `src/lib/mobile-inputs.test.ts` 7, the 0026 block in `migration-invariants.test.ts` 4) |
+| `npx vite build`, `LINT_BASE=d45186a pnpm lint:changed` | build succeeds; the changed-file gate reports 0 new violations over the baseline (12 files touched this pass) |
 
 Every row above was captured from a running container-equivalent (`vite preview` over the built
 `dist/`), not asserted from source. Runtime smoke was run against `vite preview` (the production command) with
@@ -1198,9 +1201,108 @@ compiled with the app), `notificationclick` focuses an existing window and hands
 
 ---
 
+### 2.25 The privacy switches were notes to self (P0, and the reason "Saved ✓" is not evidence)
+
+`/settings/privacy` and two rows of `/settings/app` looked like the most finished screens in the
+app: five switches, optimistic state, a green "Saved ✓" that survived a relaunch. They wrote to
+`localStorage` (`fyk:app-data:preferences.data`), which nothing but that browser ever read.
+Meanwhile `GET|PUT /api/settings` already wrote the columns that decide the behaviour —
+`users.hide_online`, `hide_distance`, `incognito`, `visible` — and `toProfileCard()` already
+honoured them in discovery, chat and the profile sheet. So the app had **two vocabularies for the
+same five decisions, and the mobile one was the dead one**: turning off "Show online status" left
+the server broadcasting presence to everyone, on every other device, and after a browser-data
+clear. On an app whose users hide from partners, parents and stalkers, a control that renders as
+saved and does nothing is worse than a missing control, because it is trusted.
+
+| Surface | Was | Now |
+| --- | --- | --- |
+| `/settings/privacy`, `/settings/app`'s privacy rows | hydrated from `hydratePreferences()`, saved with `setPreferences()`, no network | `#/domains/settings/use-server-settings.ts` reads `GET /api/settings` and `PUT`s one key per tap, optimistically, rolling back and showing the server's message on failure; the switches are disabled until the row has arrived, so a tap can never write a default |
+| screen vocabulary → columns | five hand-written inversions in two `onChange`s | `#/lib/settings-map.ts` is the only place a name maps to a column, and `src/lib/settings-map.test.ts` checks the map against the schema, against `prefsSchema`/`notifSchema`'s allow-lists, and against the merge the endpoint performs (a wrong polarity fails the round-trip test) |
+| `showLastOnline` | a switch with no column, and `lastSeen` returned unconditionally *beside* a `status` that respected `hide_online` — "offline, last seen 4 minutes ago" | `0026` adds `users.hide_last_online`; `toProfileCard()` and `publicProfile()` drop `lastSeen` and collapse `active` to `offline` with it, because "active recently" is the same fact in a different field |
+| `incognitoMode` | stored locally; footprints recorded regardless | `GET /api/profile/{id}` records the `footprints` row with the preference test *inside the statement* (`insert … select … where users.incognito is distinct from true`), so toggling ghost mode mid-request cannot smuggle a visit through, and a `null` preference still records (absent ≠ suppressed) |
+| `revealMessageRead` | local only, and `notif_prefs.readReceipts` was read by nobody | the `readBy` list in `GET /api/conversations/{id}/messages` drops any reader whose `notif_prefs->>'readReceipts'` is `false`. Suppressed at read time, not at insert time: switching it back on restores the history instead of leaving a hole in it |
+| `revealProfileViews` | local only, and its description promised a report nobody sends | the reciprocal of `incognito` — one column, two labels, because two columns for one behaviour is how they drift. Its copy now says what the server does ("Let others see when you view their profile") |
+| `units`, `stayOnline`, `autoUpdateLocation`, `geohash`, `gridSearchFilters` | mixed in with the privacy keys | **still `localStorage`, deliberately**: they are this device's business (a GPS policy and a background-presence behaviour have no cross-device meaning), and `settings-map.test.ts` pins that the store's schema is exactly `DEVICE_LOCAL_FIELDS` + grid filters — so a privacy key cannot be reintroduced here without failing a test |
+| a failed read | rendered as "everything public" defaults | the caption says loading, the switches are inert, and a 500 shows the server's error instead of a plausible-looking lie |
+
+### 2.26 The chat inbox was fiction over a working API (P0)
+
+`/api/conversations` returned `{conversations: [{id, participant, last_message,
+last_message_at, unread_count}]}`. `messages-client.tsx` and `chat-view.tsx` — the design system's
+own inbox and thread header, and the screens `/chat` renders — are written against
+`ConversationWithMeta` (`{id, type, name, otherUser, lastMessage, unread, lastMessageAt}`),
+i.e. a legacy REST vocabulary this endpoint never sent. **The two payloads shared exactly one key:
+`id`.** TypeScript could not see it because the client asserted its own type through
+`api<ConversationWithMeta[]>` — a generic parameter is a wish, not a check — and the screens' `??`
+fallbacks turned the whole feature into placeholder copy: every row said "User" with a blank
+avatar, every preview said "Say hi 👋" (including the one with 40 messages in it), the unread
+badge never appeared, the "Unread" filter tab was always empty, and `unreadTotal` summed to `NaN`.
+Opening a thread worked, because `id` was the one field that matched — which is how this survived
+for as long as it did.
+
+| Fix | Detail |
+| --- | --- |
+| the payload | the endpoint now emits both vocabularies from one object: `participant` and the snake_case trio stay (other consumers read them), and `otherUser`/`lastMessage`/`unread`/`lastMessageAt` are added, so neither client is rewritten and the list stops lying |
+| the type | `src/lib/types.ts` gains `ChatPeer` — the card the list actually sends — and `ConversationWithMeta.otherUser` uses it instead of `ProfileUser`, which demanded `email`, `role`, `tier` and `trustScore` from a *list* payload. A type that requires fields no endpoint may return is an invitation to read them |
+| the join | the response is `list satisfies (ConversationWithMeta & Record<string, unknown>)[]`, so `tsc` fails if a field the screens read disappears again. That annotation is the whole point; the extra fields stay legal via the intersection |
+| presence leak | `peerProfiles` was hand-built from `users.online` with no `hide_online` test, so "Hide my online status" still lit the dot in the chat list. The peer rows now go through `cardSelection` + `toProfileCard()`, the same shaper discovery uses, so one switch means one thing on both surfaces |
+| `Active Invalid Date` | the list rendered `timeAgo(otherUser?.lastSeen ?? otherUser?.createdAt ?? "")` — and neither field existed, so *every* offline peer's row said "Active Invalid Date". It now says `Offline` when there is no timestamp, which is also what hiding last-online means |
+| group threads | `type: "direct"` and `memberCount: 2`, not a `"group"` label nothing backs: `conversations` has no `type`/`name` and `member_key` is a pair. Both screens' group branches stay unreachable rather than half-false (open as §3.24) |
+
+### 2.27 Push delivery ignored every notification preference (P0, one migration)
+
+`settings-client.tsx` has switches for push, matches, messages and events, plus Do Not Disturb, and
+they do write `notif_prefs`/`dnd_mode` through `PUT /api/settings`. Nothing on the server read
+either column: `0023`'s `enqueue_push_notification()` — made reachable by `0025` — fires on
+**every** `notifications` insert. So the lock screen buzzed through a "quiet" toggle, and the only
+switch that worked was the OS-level one, which is the definition of a control that exists to make
+the user feel they have chosen something.
+
+`0026_privacy_controls.sql` redefines the trigger to consult the recipient's row, with four
+decisions worth naming because each one is a way this class of bug usually gets "fixed" wrongly:
+
+- **Absent means deliver.** Only an explicit JSON `false` suppresses, so a user who never opened
+  Settings keeps exactly the delivery they had. `coalesce(v_pref->>'k','true') <> 'true'` would
+  have been the shorter line and a silent delivery outage for every row whose bag holds `"1"`;
+- **the preference read is inside the trigger**, as `select … into` with `if not found then return
+  new`, because `security definer` is what lets it read `users` at all (0018 revoked client select
+  on that table) and an unguarded join would turn "cannot read settings" into "no push for
+  anyone" — swallowed by the exception handler, invisible forever;
+- **the type→switch map is a `case` with every type named**, including the four that only the
+  master switch governs, so adding a type is a decision and `migration-invariants.test.ts` fails
+  if a type is neither gated nor exempt;
+- **Do Not Disturb does not mute the safety types.** `check_in`, `check_in_resolved` and
+  `check_in_overdue` are exempt from the DND gate: a mute for dinner is not consent to miss an
+  alarm. The master `pushNotifications` opt-out *does* cover them, because that one is a decision
+  about the transport, and the inbox row is written either way so the record and its audit trail
+  survive.
+
+### 2.28 Mobile keyboards: the part of "mobile first" that no screenshot shows
+
+Twelve auth inputs (sign-in, register, reset — nine in one file) had no `autocomplete`, no `name`,
+no `enterKeyHint` and no `inputMode`. On a phone that means: no password-manager fill on the one
+screen where it matters, a letters-and-symbols layout for an email address, autocorrect turning
+`xX_novax` into "Xx Nova x", a return key that submits instead of advancing, and no way for a
+manager to tell the sign-in password from the new-password field. Same on the safety contact form,
+where a phone number was typed into a text field, and on the chat composer, whose Enter key should
+say *Send*.
+
+Added across `src/routes/auth/{sign-in,sign-up}`, `profile-client`, `safety-client`, `chat-view` and
+`messages-client`: `autoComplete="email|username|current-password|new-password|name|tel|
+organization-title"`, matching `name` attributes (a `new-password` field a manager cannot label is a
+field it will not fill), `inputMode="email|tel|numeric"`, `enterKeyHint="next|go|send|search|done"`,
+and `autoCapitalize`/`autoCorrect` per field (`sentences` for prose, `off` for identifiers).
+
+`src/lib/mobile-inputs.test.ts` pins it — including a guard this pass *caught in the act*: a JSX tag
+with the same attribute twice. Injecting `inputMode` into the safety phone field produced exactly
+that, and only `tsc` (error TS17001) saw it, because the duplicate sat past the first `>` in the tag
+— which is also why the test scans to the next `/>` rather than the next `>`.
+
+---
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
-Twenty-two entries, and the split is the point: **§3.1, 3.2, 3.3, 3.8, 3.10, 3.15, 3.16, 3.17,
+Twenty-four entries, and the split is the point: **§3.1, 3.2, 3.3, 3.8, 3.10, 3.15, 3.16, 3.17,
 3.22 are closed** with the reasoning kept, because a closed finding that does not say *why* it is
 closed becomes a re-audit; **§3.5, 3.6, 3.7, 3.9, 3.11, 3.13, 3.18 are each one deliberate
 half** whose other half is a mechanism (a lint rule, a trigger, an apply, one shell's import)
@@ -1463,6 +1565,45 @@ lockfile honest, or a redirect real over the change that adds code nobody asked 
 
 ---
 
+### 3.23 `/api/profiles?ids=` overclaims, and a hidden profile is readable through it
+
+`src/routes/api/profiles/index.ts` documents itself as "filtered by the same visibility rules as a
+single profile read". It is not: the single read (`GET /api/profile/{id}`) answers `404` for
+`visible = false`, `hidden = true`, suspended rows and either direction of a block/hide edge, while
+the bulk read filters only `is_suspended` plus the caller's own block/hide edges. Two consequences,
+both real and both unfixed because the right rule is a product decision:
+
+1. `visible = false` ("Hide from Search") can be bypassed by anybody holding a uuid — from a chat,
+   a share link, a screenshot of a URL. Discovery honours it (`eq(users.visible, true)`), the bulk
+   read does not.
+2. The same `cut` set that removes *people the caller hid* also removes them from `/settings/hidden`,
+   which asks for those very ids to name the rows. That is why both `/settings/hidden` and
+   `/settings/blocked` have an `"Anonymous"` fallback: the list is being emptied by the rule it
+   depends on.
+
+The fix is one predicate with an edge test, not a comment: a `visible`/`hidden` row stays readable
+**only** where the caller already has an edge with that person
+(`blocks`/`hides`/`taps`/`favorites`/a shared `conversation_members` row, all indexed pair lookups),
+which is the honest meaning of "hide from search" — not discoverable, not erased from people who
+already met you. Someone who blocked *the caller* stays `404` in both endpoints. The docstring then
+describes a rule that exists.
+
+### 3.24 Group threads are half-present: two screens branch on them, no table stores them
+
+`chat-view.tsx` and `messages-client.tsx` both branch on `conversation.type === "group"` (name,
+member count, no presence dot, no "You:" prefix), and `/api/profile`'s `createSchema` accepts only a
+`targetId`. `conversations` has no `type` and no `name`, and `0016`'s `member_key` unique index is a
+*pair* — so a group conversation cannot be represented, and the group rows in the UI are dead code
+rather than a missing feature. `GET /api/conversations` now returns `type: "direct"` and
+`memberCount: 2` (truthful for every row the query can produce) instead of inventing a shape.
+
+Decide one of the two: build it (`conversations.type`, a `conversation_members` uniqueness rule that
+excludes pair-keying, invite/leave routes, per-thread roles) or delete the branches from both screens
+plus `ConversationWithMeta.type`'s group reading. Leaving it is the one option that keeps a
+user-visible claim false.
+
+---
+
 ## 4. Minimal assumptions
 
 - Sessions live in `sb-<ref>-auth-token` cookies written by `@supabase/ssr`'s browser
@@ -1507,7 +1648,9 @@ lockfile honest, or a redirect real over the change that adds code nobody asked 
    a behaviour: with no Postgres here, `profileRowExists` can only ever return `unknown` (§3.13).
    Deploy `notify` and `cron-cleanup` in the same sitting (§3.20) — the SQL and the functions are
    one story now: `0025` hands Postgres the header, `config.toml` opens the route, the secret
-   closes it again, and `node scripts/vapid-keys.mjs` mints all of it.
+   closes it again, and `node scripts/vapid-keys.mjs` mints all of it. `0026` belongs to the same
+   sitting: it adds `users.hide_last_online` and puts the notification preferences, `dnd_mode` and
+   the safety exemption into the delivery trigger, none of which exist until something runs the SQL.
 2. **§3.18's mechanical half** — `EntryShell` onto the guard or `/api/auth/me`, and delete one of
    the two onboarding screens. Small, and it removes the last place where a browser decides who
    is signed in.
@@ -1517,10 +1660,13 @@ lockfile honest, or a redirect real over the change that adds code nobody asked 
 4. **§3.21**, the palette: `src/routes/index.tsx` and `Brand.tsx` carry hard-coded hexes no token
    defines, so the front door renders a different black and a different gold from every screen
    behind it. Needs the owner's call on which palette wins before a retokenising diff is reviewable.
-5. **§3.17's debt, file by file**, running `pnpm lint:baseline` in the same commit as each fix so
+5. **§3.23** (`/api/profiles?ids=` and the two lists it empties) and **§3.24** (group threads: build
+   the storage or delete the branches) — both are one small decision plus a predicate, and both
+   currently let a screen describe a capability the schema does not have.
+6. **§3.17's debt, file by file**, running `pnpm lint:baseline` in the same commit as each fix so
    the ledger shrinks where it is visible. `--strict-baseline` on `main` makes skipping that step
    fail CI.
-6. **§3.12** (Premium is a product decision with a known plug-in point in `#/lib/economy.ts`),
+7. **§3.12** (Premium is a product decision with a known plug-in point in `#/lib/economy.ts`),
    then **§3.9** (single-valued tribe vocabulary) and **§3.7** (pruning, one module per commit,
    re-measured with §2.19's script).
 
@@ -1531,6 +1677,9 @@ the migration sequence abort (§2.15), the 405/404 surface (§2.17), cookie sess
 lockfile (§2.19, §2.20), a lint gate that blocks instead of decorating (§2.21's neighbour §2.18),
 the installable layer — manifest, icons, service worker, offline shell, viewport, badge (§2.22),
 the edge functions that could not be called and the payload that recursed into itself (§2.23), and
-the push client half that burned a permission prompt for nothing (§2.24). Steps 1 and 2 of the
+the push client half that burned a permission prompt for nothing (§2.24), the privacy switches that
+wrote to `localStorage` while the server held the columns, and the push trigger that silenced
+nothing (§2.25, §2.27), the inbox rendering placeholder copy over a complete API (§2.26), and the
+mobile keyboards behind every signup field (§2.28). Steps 1 and 2 of the
 previous version of this list are what §2.22–§2.24 replaced; the migrations remain first, because
 they are still the only thing in the repository that has never been executed.

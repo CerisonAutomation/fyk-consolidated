@@ -142,6 +142,30 @@ to the Home Screen first — the screen says so rather than failing quietly. The
 registered only in a production build (`pnpm build && pnpm start`), because a caching worker in
 front of Vite's dev server makes hot reload undebuggable.
 
+## Privacy controls are server-owned
+
+The switches that decide what other people see — online status, last online, distance, ghost mode,
+hide-from-search, read receipts, and every notification category — are columns on `users` written
+through `PUT /api/settings`, not `localStorage`. `src/lib/settings-map.ts` is the only place a
+screen's vocabulary maps onto a column; `src/lib/settings-map.test.ts` checks that map against
+`drizzle/schema.ts` and against the endpoint's allow-lists, so a switch cannot be re-pointed at the
+browser store without failing CI. (It used to be, which is how "Hide my online status" could render
+"Saved ✓" while presence kept broadcasting.)
+
+Two rules the database enforces, because a client cannot be trusted with either:
+
+- `0026_privacy_controls.sql` makes the push trigger consult `users.notif_prefs` and `dnd_mode`, and
+  exempts `check_in`/`check_in_resolved`/`check_in_overdue` from Do Not Disturb — a mute for dinner
+  is not consent to miss an alarm. An absent preference means *deliver*: no migration turns "never
+  opened Settings" into "no notifications".
+- ghost mode is applied by `GET /api/profile/{id}` inside the `insert … select` that records a
+  visit, so the test cannot be skipped by calling a different endpoint or raced by toggling the
+  switch mid-request.
+
+Device-local by design (and not a stub): units, background-presence (`stayOnline`, which
+`src/domains/presence/heartbeat.ts` reads), auto-updating location, the grid's geohash and its
+filter state.
+
 ## Deployment notes
 
 Four things a reviewer asks about, answered where they will be read:
