@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import {
   Shield, Ban, Flag, Lock, Eye, Smartphone, X, Heart, Zap, FileLock2, Handshake, Moon,
@@ -14,6 +14,7 @@ import { useAppStore } from "@/lib/store";
 import {
   listFootprints, listBlocks, unblockUser,
   listNotes, createNote, deleteNote, createCheckIn,
+  listCheckIns, listEmergencyContacts, addEmergencyContact, removeEmergencyContact,
   type SafetyProfile,
 } from "#/integrations/supabase/safety";
 import { EmptyState, Skeleton, Button } from "@/components/ui/primitives";
@@ -63,11 +64,19 @@ export function SafetyClient() {
   const router = useRouter();
   const pushToast = useAppStore((s) => s.pushToast);
   const setCheckIn = useAppStore((s) => s.setCheckIn);
+  const checkIn = useAppStore((s) => s.checkIn);
+  const resolveCheckIn = useAppStore((s) => s.resolveCheckIn);
   const { user, profile } = useAuth();
   const [tab, setTab] = useState<"viewed" | "blocked" | "notes">("viewed");
   const [noteTarget, setNoteTarget] = useState<SafetyProfile | null>(null);
   const [noteContent, setNoteContent] = useState("");
   const [checkingIn, setCheckingIn] = useState(false);
+  // Which emergency contact this check-in is pointed at. `null` means "whatever the
+  // server calls the default one", so a contact deleted in another tab cannot leave a
+  // stale uuid here that arms against nobody.
+  const [contactPick, setContactPick] = useState<string | null>(null);
+  const [addingContact, setAddingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: "", phone: "", email: "" });
 
   const userId = user?.id ?? "";
   const isIncognito = profile?.incognito ?? false;
@@ -91,6 +100,35 @@ export function SafetyClient() {
     queryFn: () => listNotes(userId).then((r) => (r.ok ? r.data : [])),
     enabled: !!userId,
   });
+
+  // The contact list and the running check-in come from the server, so arming
+  // survives a reload: before 0021 the only copy of the timer was in
+  // `#/lib/store.ts`, which is why refreshing the page "resolved" it.
+  const { data: contacts } = useQuery({
+    queryKey: ["emergency-contacts"],
+    queryFn: () => listEmergencyContacts(userId).then((r) => (r.ok ? r.data : [])),
+    enabled: !!userId,
+  });
+
+  const { data: checkIns } = useQuery({
+    queryKey: ["safety-checkins"],
+    queryFn: () => listCheckIns(userId).then((r) => (r.ok ? r.data : null)),
+    enabled: !!userId,
+  });
+
+  useEffect(() => {
+    const active = checkIns?.active;
+    if (!active || checkIn) return;
+    setCheckIn({
+      status: "ARMED",
+      dueAt: new Date(active.due_at).getTime(),
+      personId: userId,
+      contactId: active.contact_id ?? "",
+      contact: active.contact_name ?? "",
+      place: active.place ?? "",
+      checkInId: active.id,
+    });
+  }, [checkIns, checkIn, setCheckIn, userId]);
 
   // ── Mutations ──────────────────────────────────────────────────────────
 
@@ -120,6 +158,37 @@ export function SafetyClient() {
     },
   });
 
+  const saveContact = useMutation({
+    mutationFn: () =>
+      addEmergencyContact(userId, {
+        name: contactForm.name,
+        phone: contactForm.phone || undefined,
+        email: contactForm.email || undefined,
+      }),
+    onSuccess: (r) => {
+      if (!r.ok) {
+        pushToast(r.message ?? "Could not add that contact", "error");
+        return;
+      }
+      setContactPick(r.data.id);
+      setContactForm({ name: "", phone: "", email: "" });
+      setAddingContact(false);
+      pushToast(`${r.data.name} will be told if you miss a check-in`, "success");
+      qc.invalidateQueries({ queryKey: ["emergency-contacts"] });
+    },
+    onError: (err) =>
+      pushToast(err instanceof Error ? err.message : "Could not add that contact", "error"),
+  });
+
+  const dropContact = useMutation({
+    mutationFn: (id: string) => removeEmergencyContact(userId, id),
+    onSuccess: () => {
+      setContactPick(null);
+      pushToast("Contact removed", "info");
+      qc.invalidateQueries({ queryKey: ["emergency-contacts"] });
+    },
+  });
+
   const doCheckIn = useMutation({
     mutationFn: async () => {
       setCheckingIn(true);
@@ -134,21 +203,37 @@ export function SafetyClient() {
       const { latitude, longitude } = pos.coords;
       // Default dueAt: 4 hours from now
       const dueAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
-      const result = await createCheckIn(userId, userId, `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`, dueAt);
+      // The contact is a row in `safety_contacts` (0021). This used to pass the
+      // user's own id, which armed the timer against themselves — the copy on this
+      // card promises "a trusted contact", and now the payload matches it.
+      const result = await createCheckIn(
+        userId,
+        contactPick,
+        `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        dueAt,
+        { lat: latitude, lng: longitude },
+      );
       if (!result.ok) throw new Error(result.message ?? "Failed to create check-in");
       return result.data;
     },
     onSuccess: (data) => {
       setCheckIn({
-        status: data.status,
+        status: "ARMED",
         dueAt: new Date(data.due_at).getTime(),
-        personId: data.contact_id,
-        contactId: data.contact_id,
-        contact: data.contact_name,
-        place: data.place,
+        personId: userId,
+        contactId: data.contact_id ?? "",
+        contact: data.contact_name ?? "",
+        place: data.place ?? "",
         checkInId: data.id,
       });
-      pushToast("Safety check-in armed. You have 4 hours to confirm safe.", "success");
+      qc.invalidateQueries({ queryKey: ["safety-checkins"] });
+      pushToast(
+        data.warning ??
+          (data.contactNotified
+            ? "Check-in armed — your contact has been told and will be alerted if you miss it."
+            : "Check-in armed. Nobody will be notified: add an emergency contact below."),
+        data.contactNotified ? "success" : "warn",
+      );
     },
     onError: (err) => {
       const msg = err instanceof Error ? err.message : "Check-in failed";
@@ -211,6 +296,121 @@ export function SafetyClient() {
         <p className="mb-3 text-[11px] text-muted">
           Share your approximate location with a trusted contact before meeting someone new.
         </p>
+
+        {/* running check-in — read back from the server, so this survives a reload */}
+        {checkIn && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-gold/40 bg-gold/10 p-2.5">
+            <ShieldCheck className="h-4 w-4 shrink-0 text-gold" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-white">
+                Check-in running{checkIn.contact ? ` · ${checkIn.contact}` : ""}
+              </p>
+              <p className="text-[11px] text-muted">
+                Due {new Date(checkIn.dueAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {checkIn.place ? ` · ${checkIn.place}` : ""}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                resolveCheckIn(true);
+                qc.invalidateQueries({ queryKey: ["safety-checkins"] });
+              }}
+              className="shrink-0 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 transition-colors hover:bg-emerald-500/25"
+            >
+              I'm safe
+            </button>
+          </div>
+        )}
+
+        {/* who gets told */}
+        <h4 className="mb-2 text-xs font-semibold text-white/80">
+          {contacts?.length ? "Tell them if I miss it" : "No emergency contact yet"}
+        </h4>
+        {contacts?.length ? (
+          <div className="mb-3 flex flex-wrap gap-1.5">
+            {contacts.map((c) => {
+              const picked = contactPick === c.id || (contactPick === null && c.is_default);
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setContactPick(c.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition-colors",
+                    picked ? "border-gold/60 bg-gold/15 text-white" : "border-line bg-surface-2 text-muted hover:text-white",
+                  )}
+                >
+                  {c.name}
+                  {!c.notifiable && (
+                    <span className="text-[10px] text-muted" title="No FYK account — their number is shown to you, but nothing can be sent to them">
+                      · off-platform
+                    </span>
+                  )}
+                  <span
+                    role="button"
+                    tabIndex={-1}
+                    aria-label={`Remove ${c.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dropContact.mutate(c.id);
+                    }}
+                    className="ml-0.5 text-muted hover:text-rose-300"
+                  >
+                    <X className="h-3 w-3" />
+                  </span>
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setAddingContact((v) => !v)}
+              className="rounded-full border border-line bg-surface-2 px-2.5 py-1 text-[11px] text-muted transition-colors hover:text-white"
+            >
+              + Add
+            </button>
+          </div>
+        ) : (
+          <p className="mb-2 text-[11px] text-muted">
+            A check-in with no contact still counts down, but nobody is told when it runs
+            out. Add one and it becomes an alert.
+          </p>
+        )}
+
+        {(addingContact || !contacts?.length) && (
+          <div className="mb-3 space-y-1.5 rounded-xl border border-line bg-surface-2 p-2.5">
+            <input
+              value={contactForm.name}
+              onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Name"
+              className="w-full rounded-lg bg-surface px-2.5 py-1.5 text-xs text-white outline-none ring-1 ring-line placeholder:text-muted focus:ring-gold/60"
+            />
+            <div className="flex gap-1.5">
+              <input
+                value={contactForm.phone}
+                onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="Phone"
+                inputMode="tel"
+                className="min-w-0 flex-1 rounded-lg bg-surface px-2.5 py-1.5 text-xs text-white outline-none ring-1 ring-line placeholder:text-muted focus:ring-gold/60"
+              />
+              <input
+                value={contactForm.email}
+                onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="Email (optional)"
+                inputMode="email"
+                className="min-w-0 flex-1 rounded-lg bg-surface px-2.5 py-1.5 text-xs text-white outline-none ring-1 ring-line placeholder:text-muted focus:ring-gold/60"
+              />
+            </div>
+            <button
+              onClick={() => saveContact.mutate()}
+              disabled={saveContact.isPending || contactForm.name.trim().length === 0}
+              className="w-full rounded-lg bg-gold py-1.5 text-xs font-semibold text-ink transition-opacity disabled:opacity-50"
+            >
+              {saveContact.isPending ? "Saving..." : "Save contact"}
+            </button>
+            <p className="text-[10px] leading-relaxed text-muted">
+              Only you see these details. A contact with an FYK account is what gets notified —
+              a phone number alone stays on this screen, for whoever you call.
+            </p>
+          </div>
+        )}
         <button
           onClick={() => doCheckIn.mutate()}
           disabled={checkingIn || doCheckIn.isPending}

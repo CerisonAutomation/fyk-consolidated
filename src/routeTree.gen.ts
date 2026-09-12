@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as DiscoverRouteImport } from './routes/discover'
+import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as ChatIndexRouteImport } from './routes/chat/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
@@ -70,6 +71,7 @@ import { Route as ApiInterestStatsIndexRouteImport } from './routes/api/interest
 import { Route as ApiMessagesMessageIdIndexRouteImport } from './routes/api/messages/$messageId/index'
 import { Route as ApiProfileProfileIdIndexRouteImport } from './routes/api/profile/$profileId/index'
 import { Route as ApiSafetyCheckInIndexRouteImport } from './routes/api/safety/check-in/index'
+import { Route as ApiSafetyContactsIndexRouteImport } from './routes/api/safety/contacts/index'
 import { Route as ApiSafetyReportsIndexRouteImport } from './routes/api/safety/reports/index'
 import { Route as ApiConversationsConversationIdMessagesIndexRouteImport } from './routes/api/conversations/$conversationId/messages/index'
 import { Route as ApiMessagesMessageIdReactIndexRouteImport } from './routes/api/messages/$messageId/react/index'
@@ -88,6 +90,11 @@ const AboutRoute = AboutRouteImport.update({
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSplatRoute = ApiSplatRouteImport.update({
+  id: '/api/$',
+  path: '/api/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardIndexRoute = BoardIndexRouteImport.update({
@@ -384,6 +391,11 @@ const ApiSafetyCheckInIndexRoute = ApiSafetyCheckInIndexRouteImport.update({
   path: '/api/safety/check-in/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSafetyContactsIndexRoute = ApiSafetyContactsIndexRouteImport.update({
+  id: '/api/safety/contacts/',
+  path: '/api/safety/contacts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSafetyReportsIndexRoute = ApiSafetyReportsIndexRouteImport.update({
   id: '/api/safety/reports/',
   path: '/api/safety/reports/',
@@ -412,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
+  '/api/$': typeof ApiSplatRoute
   '/board/': typeof BoardIndexRoute
   '/chat/': typeof ChatIndexRoute
   '/events/': typeof EventsIndexRoute
@@ -470,6 +483,7 @@ export interface FileRoutesByFullPath {
   '/api/messages/$messageId/': typeof ApiMessagesMessageIdIndexRoute
   '/api/profile/$profileId/': typeof ApiProfileProfileIdIndexRoute
   '/api/safety/check-in/': typeof ApiSafetyCheckInIndexRoute
+  '/api/safety/contacts/': typeof ApiSafetyContactsIndexRoute
   '/api/safety/reports/': typeof ApiSafetyReportsIndexRoute
   '/api/conversations/$conversationId/messages/': typeof ApiConversationsConversationIdMessagesIndexRoute
   '/api/messages/$messageId/react/': typeof ApiMessagesMessageIdReactIndexRoute
@@ -479,6 +493,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
+  '/api/$': typeof ApiSplatRoute
   '/board': typeof BoardIndexRoute
   '/chat': typeof ChatIndexRoute
   '/events': typeof EventsIndexRoute
@@ -537,6 +552,7 @@ export interface FileRoutesByTo {
   '/api/messages/$messageId': typeof ApiMessagesMessageIdIndexRoute
   '/api/profile/$profileId': typeof ApiProfileProfileIdIndexRoute
   '/api/safety/check-in': typeof ApiSafetyCheckInIndexRoute
+  '/api/safety/contacts': typeof ApiSafetyContactsIndexRoute
   '/api/safety/reports': typeof ApiSafetyReportsIndexRoute
   '/api/conversations/$conversationId/messages': typeof ApiConversationsConversationIdMessagesIndexRoute
   '/api/messages/$messageId/react': typeof ApiMessagesMessageIdReactIndexRoute
@@ -547,6 +563,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
+  '/api/$': typeof ApiSplatRoute
   '/board/': typeof BoardIndexRoute
   '/chat/': typeof ChatIndexRoute
   '/events/': typeof EventsIndexRoute
@@ -605,6 +622,7 @@ export interface FileRoutesById {
   '/api/messages/$messageId/': typeof ApiMessagesMessageIdIndexRoute
   '/api/profile/$profileId/': typeof ApiProfileProfileIdIndexRoute
   '/api/safety/check-in/': typeof ApiSafetyCheckInIndexRoute
+  '/api/safety/contacts/': typeof ApiSafetyContactsIndexRoute
   '/api/safety/reports/': typeof ApiSafetyReportsIndexRoute
   '/api/conversations/$conversationId/messages/': typeof ApiConversationsConversationIdMessagesIndexRoute
   '/api/messages/$messageId/react/': typeof ApiMessagesMessageIdReactIndexRoute
@@ -616,6 +634,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/discover'
+    | '/api/$'
     | '/board/'
     | '/chat/'
     | '/events/'
@@ -674,6 +693,7 @@ export interface FileRouteTypes {
     | '/api/messages/$messageId/'
     | '/api/profile/$profileId/'
     | '/api/safety/check-in/'
+    | '/api/safety/contacts/'
     | '/api/safety/reports/'
     | '/api/conversations/$conversationId/messages/'
     | '/api/messages/$messageId/react/'
@@ -683,6 +703,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/discover'
+    | '/api/$'
     | '/board'
     | '/chat'
     | '/events'
@@ -741,6 +762,7 @@ export interface FileRouteTypes {
     | '/api/messages/$messageId'
     | '/api/profile/$profileId'
     | '/api/safety/check-in'
+    | '/api/safety/contacts'
     | '/api/safety/reports'
     | '/api/conversations/$conversationId/messages'
     | '/api/messages/$messageId/react'
@@ -750,6 +772,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/discover'
+    | '/api/$'
     | '/board/'
     | '/chat/'
     | '/events/'
@@ -808,6 +831,7 @@ export interface FileRouteTypes {
     | '/api/messages/$messageId/'
     | '/api/profile/$profileId/'
     | '/api/safety/check-in/'
+    | '/api/safety/contacts/'
     | '/api/safety/reports/'
     | '/api/conversations/$conversationId/messages/'
     | '/api/messages/$messageId/react/'
@@ -818,6 +842,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   DiscoverRoute: typeof DiscoverRoute
+  ApiSplatRoute: typeof ApiSplatRoute
   BoardIndexRoute: typeof BoardIndexRoute
   ChatIndexRoute: typeof ChatIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
@@ -876,6 +901,7 @@ export interface RootRouteChildren {
   ApiMessagesMessageIdIndexRoute: typeof ApiMessagesMessageIdIndexRoute
   ApiProfileProfileIdIndexRoute: typeof ApiProfileProfileIdIndexRoute
   ApiSafetyCheckInIndexRoute: typeof ApiSafetyCheckInIndexRoute
+  ApiSafetyContactsIndexRoute: typeof ApiSafetyContactsIndexRoute
   ApiSafetyReportsIndexRoute: typeof ApiSafetyReportsIndexRoute
   ApiConversationsConversationIdMessagesIndexRoute: typeof ApiConversationsConversationIdMessagesIndexRoute
   ApiMessagesMessageIdReactIndexRoute: typeof ApiMessagesMessageIdReactIndexRoute
@@ -903,6 +929,13 @@ declare module '@tanstack/react-router' {
       path: '/discover'
       fullPath: '/discover'
       preLoaderRoute: typeof DiscoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/$': {
+      id: '/api/$'
+      path: '/api/$'
+      fullPath: '/api/$'
+      preLoaderRoute: typeof ApiSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/board/': {
@@ -1311,6 +1344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSafetyCheckInIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/safety/contacts/': {
+      id: '/api/safety/contacts/'
+      path: '/api/safety/contacts'
+      fullPath: '/api/safety/contacts/'
+      preLoaderRoute: typeof ApiSafetyContactsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/safety/reports/': {
       id: '/api/safety/reports/'
       path: '/api/safety/reports'
@@ -1346,6 +1386,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   DiscoverRoute: DiscoverRoute,
+  ApiSplatRoute: ApiSplatRoute,
   BoardIndexRoute: BoardIndexRoute,
   ChatIndexRoute: ChatIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
@@ -1404,6 +1445,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMessagesMessageIdIndexRoute: ApiMessagesMessageIdIndexRoute,
   ApiProfileProfileIdIndexRoute: ApiProfileProfileIdIndexRoute,
   ApiSafetyCheckInIndexRoute: ApiSafetyCheckInIndexRoute,
+  ApiSafetyContactsIndexRoute: ApiSafetyContactsIndexRoute,
   ApiSafetyReportsIndexRoute: ApiSafetyReportsIndexRoute,
   ApiConversationsConversationIdMessagesIndexRoute:
     ApiConversationsConversationIdMessagesIndexRoute,

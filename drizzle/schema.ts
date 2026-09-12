@@ -9,6 +9,7 @@ import {
 	doublePrecision,
 	timestamp,
 	date,
+	index,
 	unique,
 	uuid,
 } from "drizzle-orm/pg-core";
@@ -659,3 +660,122 @@ export const fansiteSubscribers = pgTable(
 	},
 	(table) => [unique("fansite_subscribers_fansite_id_user_id_key").on(table.fansiteId, table.userId)],
 );
+
+/* --------------------------------- safety (0021) ------------------------------ */
+
+/**
+ * A user's own emergency contacts. Created by the browser through
+ * `POST /api/safety/contacts`: this is data *about* the user, not privilege, and
+ * RLS lets them edit it freely — the same line 0019 §5 drew for `user_notes`.
+ *
+ * `safety_contacts_not_self` in the migration makes the bug this table exists to
+ * fix impossible at the row: an account cannot be its own emergency contact. The
+ * composite unique on (id, user_id) is not redundancy — `safety_checkins` points at
+ * *that* pair, so a check-in cannot reference somebody else's contact even with a
+ * guessed uuid.
+ */
+export const safetyContacts = pgTable(
+	"safety_contacts",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		contactUserId: uuid("contact_user_id").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		name: text("name").notNull(),
+		phone: text("phone"),
+		email: text("email"),
+		note: text("note"),
+		isDefault: boolean("is_default").notNull().default(false),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 })
+			.notNull()
+			.defaultNow(),
+	},
+	(table) => [
+		unique("safety_contacts_id_user_id_key").on(table.id, table.userId),
+		index("safety_contacts_owner_idx").on(
+			table.userId,
+			table.isDefault,
+			table.createdAt,
+		),
+	],
+);
+
+/**
+ * The safety check-in record. Read-only for the browser (RLS select-own and no
+ * INSERT/UPDATE/DELETE grant): arming, confirming and marking overdue each notify a
+ * third party, so they belong to `#/lib/safety.server.ts` and the routes around it.
+ *
+ * `status` is `text` + CHECK in the migration rather than a pg enum for the usual
+ * reason (`ALTER TYPE ... ADD VALUE` cannot be used in the same transaction that
+ * creates it), and the same four values are what `notifications` mirrors:
+ * `check_in`, `check_in_resolved`, `check_in_overdue`.
+ *
+ * `alertedAt` is what makes the overdue transition safe to compute lazily: no job
+ * runner exists in this deployment, so the first read after `due_at` marks the row
+ * `missed`, and only the statement that flipped `alerted_at` from null gets to
+ * notify. `notificationId` is the projection in the inbox, not the record.
+ */
+export const safetyCheckins = pgTable(
+	"safety_checkins",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		contactId: uuid("contact_id").references(() => safetyContacts.id, {
+			onDelete: "set null",
+		}),
+		place: text("place").notNull().default(""),
+		lat: doublePrecision("lat"),
+		lng: doublePrecision("lng"),
+		armedAt: timestamp("armed_at", { withTimezone: true, precision: 6 })
+			.notNull()
+			.defaultNow(),
+		dueAt: timestamp("due_at", { withTimezone: true, precision: 6 }).notNull(),
+		resolvedAt: timestamp("resolved_at", { withTimezone: true, precision: 6 }),
+		status: text("status")
+			.notNull()
+			.default("armed")
+			.$type<"armed" | "safe" | "missed" | "cancelled">(),
+		alertedAt: timestamp("alerted_at", { withTimezone: true, precision: 6 }),
+		alertedContact: uuid("alerted_contact").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		note: text("note"),
+		notificationId: uuid("notification_id"),
+	},
+	(table) => [
+		index("safety_checkins_owner_idx").on(table.userId, table.armedAt),
+	],
+);
+
+/* ---------------------------------- tribes ---------------------------------- */
+
+/**
+ * The tribe catalogue (`0010`), seeded by `0019` §9.
+ *
+ * Membership is a `users.tribes` jsonb array of **names**, not an edge table: that is
+ * what the GIN index `users_tribes_idx` filters on and what
+ * `#/lib/compatibility.ts`'s `tagOverlap` intersects. `member_count` is derived by
+ * `tribes_recount` (0019 §7, repaired in 0022 §0) and a hand-written value is refused
+ * by the counter guard, so nothing here may update it.
+ *
+ * There is no `tags` table in this schema, which is why `0022`'s header can say the
+ * numeric tokens that used to appear in `users.tribes` were never foreign keys to
+ * anything: they were unresolvable, not merely a second vocabulary.
+ */
+export const tribes = pgTable("tribes", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull().unique(),
+	description: text("description"),
+	icon: text("icon"),
+	memberCount: integer("member_count").default(0),
+	createdAt: timestamp("created_at", {
+		withTimezone: true,
+		precision: 6,
+	}).defaultNow(),
+});
+
