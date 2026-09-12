@@ -17,8 +17,7 @@ import { useCallback, useEffect } from "react";
 import { Avatar } from "#/components/ui/Avatar";
 import { PushRow } from "#/components/notifications/push-row";
 import { setUnreadBadge } from "#/lib/badge";
-import { onPushMessage, restorePush, syncPushSubscription } from "#/lib/push";
-import { registerServiceWorker } from "#/lib/persist";
+import { syncPushSubscription } from "#/lib/push";
 import { Button, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
@@ -59,14 +58,14 @@ export function safeDeepLink(value: string | null | undefined): string | null {
 }
 
 /**
- * Nothing happens on mount except reads. Permission is only ever requested from the
- * `PushRow` button (`#/lib/push` explains why that distinction is not cosmetic), and the
- * service worker is registered here — rather than inside `PushRow` — because the offline
- * shell and the app badge need it too, so it must exist even for a user who never touches
- * the notifications screen.
+ * Mount does reads only. Permission is never requested here — `PushRow`'s button is the only
+ * path to `enablePush()`, and `#/lib/push` explains why that distinction is not cosmetic. The
+ * service-worker registration and the `postMessage` channel live in
+ * `#/components/DeviceBridge`, mounted from the root route, because a capability attached to
+ * one screen is unavailable everywhere else (and because the two components that used to hold
+ * this kind of wiring, `topbar.tsx` and `Header.tsx`, are rendered by nothing at all: §3.7).
  */
 async function prepareDevice(): Promise<void> {
-	await registerServiceWorker();
 	await syncPushSubscription();
 }
 
@@ -77,35 +76,6 @@ export function NotificationsClient() {
 	useEffect(() => {
 		void prepareDevice();
 	}, []);
-
-	/**
-	 * The service worker cannot route, refetch or re-subscribe by itself (no document, no
-	 * providers), so it posts these three things and this is where they land:
-	 * `fyk:navigate` from a notification click, `fyk:inbox-dirty` when a push arrived or was
-	 * dismissed while the app was open, and `fyk:push-resync` after the browser dropped the
-	 * subscription. Navigating with `location.assign` rather than the router is deliberate —
-	 * it works while the route tree is still hydrating, which is exactly when a user taps a
-	 * notification.
-	 */
-	useEffect(() => {
-		return onPushMessage((message) => {
-			if (message.type === "fyk:inbox-dirty") {
-				qc.invalidateQueries({ queryKey: ["notifications"] });
-				return;
-			}
-			if (message.type === "fyk:push-resync") {
-				// Re-subscribe (no prompt: permission is already granted), and if the
-				// browser will not, at least re-POST whatever it does hold.
-				void restorePush().then(() => syncPushSubscription());
-				return;
-			}
-			if (window.location.pathname + window.location.search !== message.href) {
-				window.location.assign(message.href);
-			} else {
-				qc.invalidateQueries({ queryKey: ["notifications"] });
-			}
-		});
-	}, [qc]);
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["notifications"],

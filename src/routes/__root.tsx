@@ -11,6 +11,7 @@ import { EntryShell } from "#/components/EntryShell";
 import { ErrorBoundary } from "#/components/ErrorBoundary";
 import { LoadingSpinner } from "#/components/FYKLoadingSpinner";
 import { SupabaseSessionProvider } from "#/integrations/supabase/session-provider";
+import { DeviceBridge } from "#/components/DeviceBridge";
 import { noStoreHeaders, securityHeaders } from "#/lib/security";
 
 export const Route = createRootRouteWithContext()({
@@ -111,6 +112,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 function RootLayout() {
 	return (
 		<ErrorBoundary>
+			<DeviceBridge />
 			<TanstackQueryProvider>
 				{/* `useSupabaseSession()` has a default context, so skipping this did
 				    not crash the nine components that call it — it kept them signed out. */}

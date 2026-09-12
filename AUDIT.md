@@ -1089,7 +1089,7 @@ shape because a reviewer sees the files and stops looking:
 | `public/offline.html` | precached as `/offline`, a URL that does not exist ⇒ `cache.addAll` rejected, `install` failed, **the worker never activated** | precached as `/offline.html`, and `app-shell.test.ts` fails if any precached URL stops being a file in `public/` |
 | `public/theme-init.js` | correct, complete, loaded by nothing ⇒ light-mode users got a dark flash every load, because `<html class="dark">` is server-rendered | referenced pre-paint from `__root.tsx`, and it now also re-paints `theme-color` per scheme (Start de-duplicates `meta[name]`, so a dark+light pair in the head collapses to whichever is last — measured, not guessed) |
 | `viewport-fit` | absent, while the stylesheet spends ~10 declarations on `env(safe-area-inset-*)` — every one of them `0px` on a notched phone, which is why the tab bar sat under the home indicator | `width=device-width, initial-scale=1, viewport-fit=cover`, and exactly one viewport meta (a duplicate would win) |
-| app badge | `benchmark.ts` claimed "home-screen badging"; the only trace was a capability *probe* in `platform.ts` | `setUnreadBadge()` in `src/lib/badge.ts`, called from the notifications screen and the topbar (the two places the unread count is authoritative) |
+| app badge | `benchmark.ts` claimed "home-screen badging"; the only trace was a capability *probe* in `platform.ts` | `setUnreadBadge()` in `src/lib/badge.ts`, called from the root-mounted `DeviceBridge` (a 30 s poll, the interval `topbar.tsx` already used) and from the notifications screen, where the count is authoritative the moment a row is read |
 | `public/prisma.svg` | orphan from the removed ORM, shipped to every client | deleted; the new orphan-asset guard in `app-shell.test.ts` is what noticed |
 
 The claim in `src/lib/benchmark.ts` — "Manifest, service worker, offline shell, push and
@@ -1179,6 +1179,16 @@ out of a `useEffect`:
   `restorePush()` — which re-subscribes **without** prompting and returns `prompt` if permission is
   no longer granted, because calling `enablePush()` there would fire a gesture-less
   `requestPermission()` and take a permanent silent "denied" for it.
+
+One correction worth its own sentence, because it is this repository's most repeatable mistake:
+the first version of this paragraph went into `src/components/topbar.tsx` — the component the
+app *used* to poll `/api/notifications` from — and `topbar.tsx` is rendered by nothing. So the
+badge, the registration and the `postMessage` listener were correct code on an unreachable
+screen, and only the new guard in `app-shell.test.ts` caught it (it asserts `__root.tsx` renders
+`<DeviceBridge />` and asserts that `topbar.tsx`/`Header.tsx` do *not* contain device wiring).
+This is the third time the same shape has appeared here, after `auth-gate.tsx` being credited with
+a redirect it never ran (§2.16) and `theme-init.js` sitting unreferenced (§2.22); §3.7's 43% is
+what makes it likely, and a test is the only defence that scales.
 
 The service worker is the other half of the same contract: `push` shows the notification with the
 `{title, body, href}` that `notify` sends (asserted against both files, since `public/` is not

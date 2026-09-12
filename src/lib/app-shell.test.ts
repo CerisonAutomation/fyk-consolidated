@@ -102,6 +102,33 @@ function publicFiles(dir = PUBLIC, prefix = ""): string[] {
 }
 
 describe("web manifest", () => {
+	it("mounts the device plumbing on a component the app actually renders", () => {
+		// The orphan-component failure mode this repository keeps hitting: behaviour wired
+		// into `topbar.tsx`/`Header.tsx`, which nothing renders, so the feature is real in the
+		// source and absent at runtime. §3.7 measures those files as unreachable; the root
+		// route is unreachable by definition, so that is where the worker, the badge and the
+		// worker's message channel belong.
+		expect(root).toContain("<DeviceBridge />");
+		const bridge = readFileSync(
+			join(ROOT, "src/components/DeviceBridge.tsx"),
+			"utf8",
+		);
+		expect(bridge).toContain("registerServiceWorker");
+		expect(bridge).toContain("onPushMessage");
+		expect(bridge).toContain("setUnreadBadge");
+		for (const orphan of [
+			"src/components/topbar.tsx",
+			"src/components/Header.tsx",
+		]) {
+			const src = readFileSync(join(ROOT, orphan), "utf8");
+			expect(
+				src,
+				`${orphan} is rendered by nothing; device behaviour cannot live there`,
+			).not.toContain("setUnreadBadge");
+			expect(src).not.toContain("registerServiceWorker");
+		}
+	});
+
 	it("references only head assets that exist under public/", () => {
 		// Every `href`/`src` the document head advertises must resolve, because a missing
 		// one is invisible to the build, to `tsc` and to a desktop browser: `/apple-touch-icon-180.png`
