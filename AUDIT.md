@@ -478,6 +478,43 @@ Two schema consequences came out of that pass:
   in the grid) textifies numbers — `3` and `"3"` now match. The residual mess is
   data, not code: see §3.10.
 
+### 2.12 Every profile photo in the app was a stock image
+
+Not a styling bug: `demoMediaUrl()` hashes any string and returns one of ~20
+Unsplash photos, and four surfaces called it on every profile image — the grid
+cards and map pins, the profile carousel, the "who viewed me" grid, and the
+`UserAvatar` molecule underneath them. Uploading your own photo therefore
+rendered a stranger; a profile with six photos and one with none looked the
+same, and the only way to see a real image was to have no images.
+
+`resolveMediaUrl()` (`#/integrations/supabase/media`) is the one resolver now:
+absolute URLs pass through, anything else becomes the `media` bucket's public
+URL, an empty reference stays empty instead of becoming a placeholder face, and
+the demo catalogue still applies *in demo mode only* — which is the entire
+purpose of `#/domains/demo`.
+
+Fixing the resolver was half of it; the data paths were labelled as if they were
+hashes:
+
+- `GET /api/profile/{uuid}` returned `medias: [{ mediaHash: "<path>" }]` —
+  a real storage path wearing a hash's name, which is what taught clients to
+  treat uploads as seeds. It returns `photos: string[]` now, the same key
+  `PUT /api/profile` writes. The carousel resolves before rendering, drops
+  references that cannot become a URL, and keys on the path, so the strip, the
+  dots and the lightbox stay in step.
+- `/interest/views` read `profileImageMediaHash`, a field no endpoint has ever
+  emitted, so visitors rendered initials forever. It reads the card's `photo`.
+- The grid carries `photoUrl` on the rendered card (resolved once in the
+  service, beside `profilePhotosHashes`, which the cards legitimately key on).
+
+`src/core/model/media.ts` still defines `mediaHashPublicSchema` as a 40-hex
+string, and `core/ui/organisms/{ProfileItem,ProfileMiniCard,IncomingMessageToast}`
+take `mediaHash` props. Those are the demo-era model layer, unreachable from any
+route (§3.7 covers the pruning) — left alone deliberately rather than renamed to
+look finished.
+
+---
+
 ---
 
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
