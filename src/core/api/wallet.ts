@@ -60,7 +60,7 @@ export type WalletAction =
 	| { action: "cancel" };
 
 export function loadWalletData(): Promise<WalletPayload> {
-	return api<WalletPayload>("/api/wallet");
+	return api.get<WalletPayload>("/api/wallet");
 }
 
 /**
@@ -72,7 +72,7 @@ export function loadWalletData(): Promise<WalletPayload> {
 export function performWalletAction(
 	action: WalletAction,
 ): Promise<Record<string, unknown> & { ok: boolean }> {
-	return api("/api/wallet", { method: "POST", body: action });
+	return api.post("/api/wallet", action);
 }
 
 /**
@@ -86,5 +86,5 @@ export function spendBoost(): Promise<{
 	boostsLeft: number;
 	minutes: number;
 }> {
-	return api("/api/boost", { method: "POST", body: {} });
+	return api.post("/api/boost", {});
 }

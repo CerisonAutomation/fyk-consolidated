@@ -14,6 +14,9 @@ interface ToastState {
 	dismiss: (id: string) => void;
 }
 
+// Timer IDs keyed by toast id — cancelled when dismiss() is called early.
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
+
 export const useToasts = create<ToastState>((set) => ({
 	toasts: [],
 	push: (message, tone = "info") => {
@@ -22,18 +25,27 @@ export const useToasts = create<ToastState>((set) => ({
 			toasts: [...state.toasts.slice(-2), { id, message, tone }],
 		}));
 		// Auto-dismiss; a toast that needs a decision is a dialog, not a toast.
-		setTimeout(
-			() =>
+		const timer = setTimeout(
+			() => {
+				timers.delete(id);
 				set((state) => ({
 					toasts: state.toasts.filter((toast) => toast.id !== id),
-				})),
+				}));
+			},
 			tone === "error" ? 6000 : 3500,
 		);
+		timers.set(id, timer);
 	},
-	dismiss: (id) =>
+	dismiss: (id) => {
+		const timer = timers.get(id);
+		if (timer !== undefined) {
+			clearTimeout(timer);
+			timers.delete(id);
+		}
 		set((state) => ({
 			toasts: state.toasts.filter((toast) => toast.id !== id),
-		})),
+		}));
+	},
 }));
 
 /** Components call this instead of reaching for the store, so error toasts are uniform. */

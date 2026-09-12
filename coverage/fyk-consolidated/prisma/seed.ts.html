@@ -1,0 +1,565 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for fyk-consolidated/prisma/seed.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">fyk-consolidated/prisma</a> seed.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/129</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/129</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import { PrismaClient } from "../src/generated/prisma/client.js";<span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" ></span></span></span>
+<span class="cstat-no" title="statement not covered" >import { PrismaPg } from "@prisma/adapter-pg";</span>
+<span class="cstat-no" title="statement not covered" >import bcrypt from "bcryptjs";</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >const adapter = new PrismaPg({</span>
+<span class="cstat-no" title="statement not covered" >  connectionString: process.env.DATABASE_URL!,</span>
+<span class="cstat-no" title="statement not covered" >  ssl: { rejectUnauthorized: false },</span>
+<span class="cstat-no" title="statement not covered" >});</span>
+<span class="cstat-no" title="statement not covered" >const prisma = new PrismaClient({ adapter });</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >async function main() {</span>
+<span class="cstat-no" title="statement not covered" >  console.log("🌱 Seeding FYK Consolidated database...");</span>
+&nbsp;
+  // Clean existing data
+<span class="cstat-no" title="statement not covered" >  await prisma.$executeRaw`TRUNCATE TABLE users CASCADE`;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  const passwordHash = await bcrypt.hash("password123", 10);</span>
+&nbsp;
+  // === USERS (13 demo personas) ===
+<span class="cstat-no" title="statement not covered" >  const users = await Promise.all([</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "sol@fyk.app", passwordHash, pseudo: "Sol", age: 28, description: "Product Designer. Building the future of queer dating.", occupation: "Product Designer", tier: "gold", verification: 92, trustScore: 92, role: "admin", photos: ["https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400"], tribes: ["Jock", "Geek"], interests: ["Art", "Coffee", "Travel"], lookingFor: ["Dating", "Friends"], lat: 40.7128, lng: -74.006, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "marco@fyk.app", passwordHash, pseudo: "Marco", age: 29, description: "Architect by day, dancer by night.", occupation: "Architect", tier: "gold", verification: 88, trustScore: 85, photos: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400"], tribes: ["Jock", "Muscle"], interests: ["Gym", "Music", "Travel"], lookingFor: ["Dating", "Relationship"], lat: 40.7589, lng: -73.9851, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "leo@fyk.app", passwordHash, pseudo: "Leo", age: 31, description: "Musician. Guitar, piano, and everything in between.", occupation: "Musician", tier: "free", verification: 75, trustScore: 70, photos: ["https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400"], tribes: ["Bear", "Geek"], interests: ["Music", "Film", "Coffee"], lookingFor: ["Friends", "Dating"], lat: 40.7282, lng: -73.7949, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "adrian@fyk.app", passwordHash, pseudo: "Adrian", age: 27, description: "Tech founder. Building something cool.", occupation: "Founder", tier: "plus", verification: 82, trustScore: 80, photos: ["https://images.unsplash.com/photo-1463453091185-61582044d556?w=400"], tribes: ["Geek", "Otter"], interests: ["Travel", "Food", "Books"], lookingFor: ["Dating", "Networking"], lat: 40.7484, lng: -73.9857, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "felix@fyk.app", passwordHash, pseudo: "Felix", age: 34, description: "Creative Director. Making things beautiful.", occupation: "Creative Director", tier: "platinum", verification: 95, trustScore: 90, photos: ["https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400"], tribes: ["Daddy", "Leather", "Muscle"], interests: ["Art", "Film", "Wine"], lookingFor: ["Relationship", "Right Now"], lat: 40.7614, lng: -73.9776, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "theo@fyk.app", passwordHash, pseudo: "Theo", age: 24, description: "Film student. Always at the cinema.", occupation: "Film Student", tier: "free", verification: 65, trustScore: 60, photos: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400"], tribes: ["Twink", "Geek"], interests: ["Film", "Books", "Coffee"], lookingFor: ["Friends", "Dating"], lat: 40.7282, lng: -73.7949, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "damian@fyk.app", passwordHash, pseudo: "Damian", age: 36, description: "Chef. Food is my love language.", occupation: "Chef", tier: "plus", verification: 80, trustScore: 78, photos: ["https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400"], tribes: ["Bear", "Polar"], interests: ["Food", "Cooking", "Travel"], lookingFor: ["Dating", "Right Now"], lat: 40.7589, lng: -73.9851, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "sebastian@fyk.app", passwordHash, pseudo: "Sebastian", age: 28, description: "Personal Trainer. Let's get fit together.", occupation: "Personal Trainer", tier: "gold", verification: 90, trustScore: 88, photos: ["https://images.unsplash.com/photo-1564564321837-a57b7070ac4f?w=400"], tribes: ["Jock", "Muscle"], interests: ["Gym", "Running", "Hiking"], lookingFor: ["Dating", "Gym buddy"], lat: 40.7484, lng: -73.9857, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "kai@fyk.app", passwordHash, pseudo: "Kai", age: 26, description: "Product Designer. Making tech human.", occupation: "Product Designer", tier: "free", verification: 70, trustScore: 68, photos: ["https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400"], tribes: ["Otter", "Geek"], interests: ["Art", "Travel", "Music"], lookingFor: ["Friends", "Networking"], lat: 40.7128, lng: -74.006, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "raheem@fyk.app", passwordHash, pseudo: "Raheem", age: 30, description: "Physician. Saving lives and looking for love.", occupation: "Physician", tier: "plus", verification: 85, trustScore: 82, photos: ["https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=400"], tribes: ["Jock", "Muscle"], interests: ["Gym", "Travel", "Food"], lookingFor: ["Relationship", "Dating"], lat: 40.7589, lng: -73.9851, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "andre@fyk.app", passwordHash, pseudo: "Andre", age: 33, description: "Bartender. Best drinks in the city.", occupation: "Bartender", tier: "free", verification: 60, trustScore: 55, photos: ["https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400"], tribes: ["Daddy", "Geek"], interests: ["Coffee", "Music", "Film"], lookingFor: ["Right Now", "Friends"], lat: 40.7282, lng: -73.7949, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "julian@fyk.app", passwordHash, pseudo: "Julian", age: 38, description: "Teacher. Wisdom comes with age.", occupation: "Teacher", tier: "free", verification: 55, trustScore: 50, photos: ["https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400"], tribes: ["Chub", "Bear"], interests: ["Books", "Travel", "Food"], lookingFor: ["Dating", "Relationship"], lat: 40.7484, lng: -73.9857, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >    prisma.user.create({ data: { email: "noah@fyk.app", passwordHash, pseudo: "Noah", age: 25, description: "Fashion Stylist. Style is a way of life.", occupation: "Fashion Stylist", tier: "plus", verification: 78, trustScore: 75, photos: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400"], tribes: ["Twink"], interests: ["Art", "Drag", "Photography"], lookingFor: ["Dating", "Networking"], lat: 40.7614, lng: -73.9776, city: "New York" } }),</span>
+<span class="cstat-no" title="statement not covered" >  ]);</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  console.log(`✅ Created ${users.length} users`);</span>
+&nbsp;
+  // === TRIBES ===
+<span class="cstat-no" title="statement not covered" >  const tribeNames = ["Bear", "Twink", "Otter", "Jock", "Geek", "Daddy", "Muscle", "Leather", "Chub", "Polar"];</span>
+<span class="cstat-no" title="statement not covered" >  for (const name of tribeNames) {</span>
+<span class="cstat-no" title="statement not covered" >    await prisma.tribe.create({ data: { name, memberCount: Math.floor(Math.random() * 500) + 50 } });</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created 10 tribes");</span>
+&nbsp;
+  // === KING PETS ===
+<span class="cstat-no" title="statement not covered" >  for (let i = 0; i &lt; 7; i++) {</span>
+<span class="cstat-no" title="statement not covered" >    const level = Math.floor(Math.random() * 12) + 1;</span>
+<span class="cstat-no" title="statement not covered" >    const stage = level &gt;= 10 ? "adult" : level &gt;= 5 ? "juvenile" : "baby";</span>
+<span class="cstat-no" title="statement not covered" >    await prisma.kingPet.create({</span>
+<span class="cstat-no" title="statement not covered" >      data: {</span>
+<span class="cstat-no" title="statement not covered" >        userId: users[i].id,</span>
+<span class="cstat-no" title="statement not covered" >        name: ["Rex", "Luna", "Max", "Charlie", "Buddy", "Rocky", "Bear"][i],</span>
+<span class="cstat-no" title="statement not covered" >        stage: stage as any,</span>
+<span class="cstat-no" title="statement not covered" >        mood: "happy",</span>
+<span class="cstat-no" title="statement not covered" >        bones: Math.floor(Math.random() * 200) + 50,</span>
+<span class="cstat-no" title="statement not covered" >        experience: level * 80,</span>
+<span class="cstat-no" title="statement not covered" >        level,</span>
+<span class="cstat-no" title="statement not covered" >        streak: Math.floor(Math.random() * 14),</span>
+<span class="cstat-no" title="statement not covered" >      },</span>
+<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created 7 king pets");</span>
+&nbsp;
+  // === WALLET (admin) ===
+<span class="cstat-no" title="statement not covered" >  const wallet = await prisma.wallet.create({ data: { userId: users[0].id, balance: 320, currency: "bones" } });</span>
+<span class="cstat-no" title="statement not covered" >  await prisma.walletTransaction.createMany({</span>
+<span class="cstat-no" title="statement not covered" >    data: [</span>
+<span class="cstat-no" title="statement not covered" >      { walletId: wallet.id, type: "credit", amount: 50, description: "Starting balance" },</span>
+<span class="cstat-no" title="statement not covered" >      { walletId: wallet.id, type: "credit", amount: 15, description: "Daily reward" },</span>
+<span class="cstat-no" title="statement not covered" >      { walletId: wallet.id, type: "debit", amount: 50, description: "Tap Boost" },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created admin wallet (320 bones)");</span>
+&nbsp;
+  // === SUBSCRIPTION (admin) ===
+<span class="cstat-no" title="statement not covered" >  await prisma.subscription.create({</span>
+<span class="cstat-no" title="statement not covered" >    data: { userId: users[0].id, tier: "gold", status: "active", currentPeriodEnd: new Date(Date.now() + 30 * 86400000) },</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+&nbsp;
+  // === TAPS &amp; MATCHES ===
+<span class="cstat-no" title="statement not covered" >  const taps = [];</span>
+<span class="cstat-no" title="statement not covered" >  for (let i = 1; i &lt; users.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >    taps.push({ tapperId: users[i].id, tappedId: users[0].id, type: "like" as const });</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  taps.push({ tapperId: users[0].id, tappedId: users[1].id, type: "like" as const });</span>
+<span class="cstat-no" title="statement not covered" >  taps.push({ tapperId: users[0].id, tappedId: users[2].id, type: "like" as const });</span>
+<span class="cstat-no" title="statement not covered" >  await prisma.tap.createMany({ data: taps });</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  await prisma.match.create({ data: { user1Id: users[0].id &lt; users[1].id ? users[0].id : users[1].id, user2Id: users[0].id &lt; users[1].id ? users[1].id : users[0].id } });</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created 13 taps + 1 match");</span>
+&nbsp;
+  // === CONVERSATIONS &amp; MESSAGES ===
+<span class="cstat-no" title="statement not covered" >  for (let i = 0; i &lt; 5; i++) {</span>
+<span class="cstat-no" title="statement not covered" >    const conv = await prisma.conversation.create({ data: { type: "direct" } });</span>
+<span class="cstat-no" title="statement not covered" >    await prisma.conversationParticipant.createMany({</span>
+<span class="cstat-no" title="statement not covered" >      data: [</span>
+<span class="cstat-no" title="statement not covered" >        { conversationId: conv.id, userId: users[0].id },</span>
+<span class="cstat-no" title="statement not covered" >        { conversationId: conv.id, userId: users[i + 1].id },</span>
+<span class="cstat-no" title="statement not covered" >      ],</span>
+<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" >    const msgs = [`Hey! How's your week going?`, `Pretty good! Just finished a project.`, `Nice! What kind of project?`, `A dating app actually 😄`, `That's awesome! How's it going?`, `Slowly but surely!`];</span>
+<span class="cstat-no" title="statement not covered" >    for (let j = 0; j &lt; 4; j++) {</span>
+<span class="cstat-no" title="statement not covered" >      await prisma.message.create({</span>
+<span class="cstat-no" title="statement not covered" >        data: {</span>
+<span class="cstat-no" title="statement not covered" >          conversationId: conv.id,</span>
+<span class="cstat-no" title="statement not covered" >          senderId: j % 2 === 0 ? users[0].id : users[i + 1].id,</span>
+<span class="cstat-no" title="statement not covered" >          content: msgs[j],</span>
+<span class="cstat-no" title="statement not covered" >        },</span>
+<span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created 5 conversations with messages");</span>
+&nbsp;
+  // === EVENTS ===
+<span class="cstat-no" title="statement not covered" >  const eventData = [</span>
+<span class="cstat-no" title="statement not covered" >    { name: "Rooftop Kings Mixer", category: "Party", location: "Sky Lounge, NYC", startTime: new Date(Date.now() + 86400000), createdBy: users[0].id },</span>
+<span class="cstat-no" title="statement not covered" >    { name: "Harbour Run", category: "Fitness", location: "Hudson River Park", startTime: new Date(Date.now() + 172800000), createdBy: users[1].id },</span>
+<span class="cstat-no" title="statement not covered" >    { name: "Queer Film Night", category: "Culture", location: "Angelika Film Center", startTime: new Date(Date.now() + 259200000), createdBy: users[2].id },</span>
+<span class="cstat-no" title="statement not covered" >  ];</span>
+<span class="cstat-no" title="statement not covered" >  for (const e of eventData) {</span>
+<span class="cstat-no" title="statement not covered" >    await prisma.event.create({ data: { ...e, status: "published", maxAttendees: 50, tags: ["social"] } });</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created 3 events");</span>
+&nbsp;
+  // === SHOUTS ===
+<span class="cstat-no" title="statement not covered" >  await prisma.shout.createMany({</span>
+<span class="cstat-no" title="statement not covered" >    data: [</span>
+<span class="cstat-no" title="statement not covered" >      { userId: users[0].id, content: "Just launched my dating app! Check it out 🚀" },</span>
+<span class="cstat-no" title="statement not covered" >      { userId: users[1].id, content: "Who's up for rooftop drinks tonight? 🍸" },</span>
+<span class="cstat-no" title="statement not covered" >      { userId: users[2].id, content: "New song dropped! Link in bio 🎵" },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created 3 shouts");</span>
+&nbsp;
+  // === NOTIFICATIONS ===
+<span class="cstat-no" title="statement not covered" >  await prisma.notification.createMany({</span>
+<span class="cstat-no" title="statement not covered" >    data: [</span>
+<span class="cstat-no" title="statement not covered" >      { userId: users[0].id, type: "tap", title: "Marco tapped you!", body: "Start a conversation", actorId: users[1].id, href: "/taps" },</span>
+<span class="cstat-no" title="statement not covered" >      { userId: users[0].id, type: "match", title: "New match!", body: "You and Marco matched", actorId: users[1].id, href: "/chat" },</span>
+<span class="cstat-no" title="statement not covered" >      { userId: users[0].id, type: "message", title: "New message", body: "Hey! How's your week going?", actorId: users[2].id, href: "/chat" },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created 3 notifications");</span>
+&nbsp;
+  // === SITE CONFIG ===
+<span class="cstat-no" title="statement not covered" >  await prisma.siteConfig.createMany({</span>
+<span class="cstat-no" title="statement not covered" >    data: [</span>
+<span class="cstat-no" title="statement not covered" >      { key: "trademark", value: "FYK — Find Your King" },</span>
+<span class="cstat-no" title="statement not covered" >      { key: "wallet_perks", value: { daily_reward: 15, starting_balance: 50 } },</span>
+<span class="cstat-no" title="statement not covered" >      { key: "moderation", value: { auto_flag_threshold: 0.7, review_queue_enabled: true } },</span>
+<span class="cstat-no" title="statement not covered" >    ],</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  console.log("✅ Created site config");</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  console.log("\n🎉 Seeding complete! 13 users, 10 tribes, 7 pets, conversations, events, shouts, notifications.");</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >main()</span>
+<span class="cstat-no" title="statement not covered" >  .catch((e) =&gt; { console.error(e); process.exit(1); })</span>
+<span class="cstat-no" title="statement not covered" >  .finally(() =&gt; prisma.$disconnect());</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-09-11T17:36:19.367Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

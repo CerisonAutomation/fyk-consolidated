@@ -50,6 +50,8 @@ function AuthCallback() {
 			return data.session ? "done" : "none";
 		})();
 
+		let fallbackTimer: number | null = null;
+
 		void exchange.then((result) => {
 			if (!alive) return;
 			if (result === "done") {
@@ -66,7 +68,8 @@ function AuthCallback() {
 				return;
 			}
 			// Some providers return a hash fragment; let onAuthStateChange settle first.
-			window.setTimeout(async () => {
+			fallbackTimer = window.setTimeout(async () => {
+				fallbackTimer = null;
 				const { data } = await client.auth.getSession();
 				if (!alive) return;
 				if (data.session) setState({ kind: "done" });
@@ -80,6 +83,7 @@ function AuthCallback() {
 
 		return () => {
 			alive = false;
+			if (fallbackTimer !== null) clearTimeout(fallbackTimer);
 		};
 	}, []);
 

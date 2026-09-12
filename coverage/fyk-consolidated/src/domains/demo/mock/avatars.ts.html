@@ -1,0 +1,298 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for fyk-consolidated/src/domains/demo/mock/avatars.ts</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../../../prettify.css" />
+    <link rel="stylesheet" href="../../../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../../../index.html">All files</a> / <a href="index.html">fyk-consolidated/src/domains/demo/mock</a> avatars.ts</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">72.22% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>39/54</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">100% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>5/5</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">60% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>3/5</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">72.22% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>39/54</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line medium'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">36x</span>
+<span class="cline-any cline-yes">36x</span>
+<span class="cline-any cline-yes">36x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">export const demoBaseAvatarUrl =
+	"https://api.dicebear.com/10.x/lorelei/svg?beardProbability=7&amp;rotate=0&amp;hairVariant=variant01:1,variant02:1,variant03:1,variant04:1,variant05:1,variant06:1,variant07:1,variant08:1,variant09:1,variant10:0.5,variant11:1,variant12:1,variant17:0.5,variant18:0.5,variant20:1,variant22:1,variant25:1,variant27:1,variant28:1,variant29:0.5,variant31:0.5,variant32:0.5,variant33:0.5,variant34:1,variant35:0.5,variant36:1,variant37:0.5,variant39:1,variant43:1,variant44:1,variant47:1&amp;eyesVariant=variant01,variant02,variant03,variant04,variant05,variant06,variant07,variant08,variant09,variant10,variant12,variant13,variant14,variant15,variant16,variant17,variant18,variant19,variant20,variant21,variant22,variant24";
+&nbsp;
+// Curated editorial portraits mirrored from FYK Zenith's production seed set.
+// These are stable Unsplash assets rather than generated illustrations, which
+// makes the demo discovery experience representative of a real dating product.
+const demoProfilePhotos = [
+	"photo-1507003211169-0a1dd7228f2d",
+	"photo-1506794778202-cad84cf45f1d",
+	"photo-1492562080023-ab3db95bfbce",
+	"photo-1521119989659-a83eee488004",
+	"photo-1539571696357-5a69c17a67c6",
+	"photo-1500648767791-00dcc994a43e",
+	"photo-1568602471122-7832951cc4c5",
+	"photo-1581803118522-7b72a50f7e9f",
+	"photo-1463453091185-61582044d556",
+] as const;
+&nbsp;
+const demoMediaSeeds = new Map&lt;string, string&gt;();
+&nbsp;
+function hashString(str: string): number {
+	let hash = 0;
+	for (let i = 0; i &lt; str.length; i++) {
+		const char = str.charCodeAt(i);
+		hash = ((hash &lt;&lt; 5) - hash + char) | 0;
+	}
+	return hash;
+}
+&nbsp;
+export <span class="fstat-no" title="function not covered" >function picsum({</span>
+<span class="cstat-no" title="statement not covered" >	seed,</span>
+<span class="cstat-no" title="statement not covered" >	width = 600,</span>
+<span class="cstat-no" title="statement not covered" >	height = 800,</span>
+<span class="cstat-no" title="statement not covered" >}: {</span>
+	seed: string;
+	width?: number;
+	height?: number;
+<span class="cstat-no" title="statement not covered" >}): string {</span>
+<span class="cstat-no" title="statement not covered" >	return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${width}/${height}`;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;
+export function hashFromSeed(seed: string): string {
+	let state = hashString(seed);
+	let out = "";
+	while (out.length &lt; 40) {
+		state = Math.imul(state ^ (state &gt;&gt;&gt; 15), 2246822519) &gt;&gt;&gt; 0;
+		state = (state ^ (state &gt;&gt;&gt; 13)) &gt;&gt;&gt; 0;
+		out += state.toString(16).padStart(8, "0");
+	}
+	return out.slice(0, 40);
+}
+&nbsp;
+export function registerPhoto(seed: string): string {
+	const hash = hashFromSeed(seed);
+	demoMediaSeeds.set(hash, seed);
+	return hash;
+}
+&nbsp;
+export function demoMediaUrl(mediaHash: string): string;
+export function demoMediaUrl(
+	mediaHash: string | null | undefined,
+): string | null;
+export <span class="fstat-no" title="function not covered" >function demoMediaUrl(</span>
+<span class="cstat-no" title="statement not covered" >	mediaHash: string | null | undefined,</span>
+<span class="cstat-no" title="statement not covered" >): string | null {</span>
+<span class="cstat-no" title="statement not covered" >	if (!mediaHash) return null;</span>
+<span class="cstat-no" title="statement not covered" >	const seed = demoMediaSeeds.get(mediaHash) ?? mediaHash;</span>
+<span class="cstat-no" title="statement not covered" >	const index = Math.abs(hashString(seed)) % demoProfilePhotos.length;</span>
+<span class="cstat-no" title="statement not covered" >	const photo = demoProfilePhotos[index] ?? demoProfilePhotos[0];</span>
+<span class="cstat-no" title="statement not covered" >	return `https://images.unsplash.com/${photo}?auto=format&amp;fit=crop&amp;w=900&amp;h=1200&amp;q=84`;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-09-11T17:36:19.367Z
+            </div>
+        <script src="../../../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../../../sorter.js"></script>
+        <script src="../../../../../block-navigation.js"></script>
+    </body>
+</html>
+    

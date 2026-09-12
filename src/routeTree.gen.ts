@@ -17,11 +17,39 @@ import { Route as ChatIndexRouteImport } from './routes/chat/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as GridIndexRouteImport } from './routes/grid/index'
 import { Route as NotificationsIndexRouteImport } from './routes/notifications/index'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as SafetyIndexRouteImport } from './routes/safety/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as ApiAiIndexRouteImport } from './routes/api/ai/index'
+import { Route as ApiBoostIndexRouteImport } from './routes/api/boost/index'
+import { Route as ApiConversationsIndexRouteImport } from './routes/api/conversations/index'
+import { Route as ApiDiscoverIndexRouteImport } from './routes/api/discover/index'
+import { Route as ApiHealthIndexRouteImport } from './routes/api/health/index'
+import { Route as ApiKingPetIndexRouteImport } from './routes/api/king-pet/index'
+import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
+import { Route as ApiProfileIndexRouteImport } from './routes/api/profile/index'
+import { Route as ApiProfilesIndexRouteImport } from './routes/api/profiles/index'
+import { Route as ApiSettingsIndexRouteImport } from './routes/api/settings/index'
+import { Route as ApiSocialIndexRouteImport } from './routes/api/social/index'
+import { Route as ApiTapsIndexRouteImport } from './routes/api/taps/index'
+import { Route as ApiWalletIndexRouteImport } from './routes/api/wallet/index'
 import { Route as AuthCallbackIndexRouteImport } from './routes/auth/callback/index'
 import { Route as ChatConversationIdIndexRouteImport } from './routes/chat/$conversationId/index'
 import { Route as ProfileProfileIdIndexRouteImport } from './routes/profile/$profileId/index'
+import { Route as ApiAuthMeIndexRouteImport } from './routes/api/auth/me/index'
+import { Route as ApiFansitesSubscribeIndexRouteImport } from './routes/api/fansites/subscribe/index'
+import { Route as ApiInterestTabIndexRouteImport } from './routes/api/interest/$tab/index'
+import { Route as ApiInterestFavouriteIndexRouteImport } from './routes/api/interest/favourite/index'
+import { Route as ApiInterestLikeIndexRouteImport } from './routes/api/interest/like/index'
+import { Route as ApiInterestStatsIndexRouteImport } from './routes/api/interest/stats/index'
+import { Route as ApiMessagesMessageIdIndexRouteImport } from './routes/api/messages/$messageId/index'
+import { Route as ApiProfileProfileIdIndexRouteImport } from './routes/api/profile/$profileId/index'
+import { Route as ApiSafetyCheckInIndexRouteImport } from './routes/api/safety/check-in/index'
+import { Route as ApiSafetyContactsIndexRouteImport } from './routes/api/safety/contacts/index'
+import { Route as ApiSafetyReportsIndexRouteImport } from './routes/api/safety/reports/index'
+import { Route as ApiConversationsConversationIdMessagesIndexRouteImport } from './routes/api/conversations/$conversationId/messages/index'
+import { Route as ApiMessagesMessageIdReactIndexRouteImport } from './routes/api/messages/$messageId/react/index'
+import { Route as ApiSafetyCheckInResolveIndexRouteImport } from './routes/api/safety/check-in/resolve/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -63,6 +91,11 @@ const NotificationsIndexRoute = NotificationsIndexRouteImport.update({
   path: '/notifications/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SafetyIndexRoute = SafetyIndexRouteImport.update({
   id: '/safety/',
   path: '/safety/',
@@ -71,6 +104,71 @@ const SafetyIndexRoute = SafetyIndexRouteImport.update({
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiIndexRoute = ApiAiIndexRouteImport.update({
+  id: '/api/ai/',
+  path: '/api/ai/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBoostIndexRoute = ApiBoostIndexRouteImport.update({
+  id: '/api/boost/',
+  path: '/api/boost/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConversationsIndexRoute = ApiConversationsIndexRouteImport.update({
+  id: '/api/conversations/',
+  path: '/api/conversations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDiscoverIndexRoute = ApiDiscoverIndexRouteImport.update({
+  id: '/api/discover/',
+  path: '/api/discover/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthIndexRoute = ApiHealthIndexRouteImport.update({
+  id: '/api/health/',
+  path: '/api/health/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiKingPetIndexRoute = ApiKingPetIndexRouteImport.update({
+  id: '/api/king-pet/',
+  path: '/api/king-pet/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotesIndexRoute = ApiNotesIndexRouteImport.update({
+  id: '/api/notes/',
+  path: '/api/notes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileIndexRoute = ApiProfileIndexRouteImport.update({
+  id: '/api/profile/',
+  path: '/api/profile/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfilesIndexRoute = ApiProfilesIndexRouteImport.update({
+  id: '/api/profiles/',
+  path: '/api/profiles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSettingsIndexRoute = ApiSettingsIndexRouteImport.update({
+  id: '/api/settings/',
+  path: '/api/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSocialIndexRoute = ApiSocialIndexRouteImport.update({
+  id: '/api/social/',
+  path: '/api/social/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTapsIndexRoute = ApiTapsIndexRouteImport.update({
+  id: '/api/taps/',
+  path: '/api/taps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWalletIndexRoute = ApiWalletIndexRouteImport.update({
+  id: '/api/wallet/',
+  path: '/api/wallet/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackIndexRoute = AuthCallbackIndexRouteImport.update({
@@ -88,6 +186,83 @@ const ProfileProfileIdIndexRoute = ProfileProfileIdIndexRouteImport.update({
   path: '/profile/$profileId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthMeIndexRoute = ApiAuthMeIndexRouteImport.update({
+  id: '/api/auth/me/',
+  path: '/api/auth/me/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFansitesSubscribeIndexRoute =
+  ApiFansitesSubscribeIndexRouteImport.update({
+    id: '/api/fansites/subscribe/',
+    path: '/api/fansites/subscribe/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiInterestTabIndexRoute = ApiInterestTabIndexRouteImport.update({
+  id: '/api/interest/$tab/',
+  path: '/api/interest/$tab/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInterestFavouriteIndexRoute =
+  ApiInterestFavouriteIndexRouteImport.update({
+    id: '/api/interest/favourite/',
+    path: '/api/interest/favourite/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiInterestLikeIndexRoute = ApiInterestLikeIndexRouteImport.update({
+  id: '/api/interest/like/',
+  path: '/api/interest/like/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInterestStatsIndexRoute = ApiInterestStatsIndexRouteImport.update({
+  id: '/api/interest/stats/',
+  path: '/api/interest/stats/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMessagesMessageIdIndexRoute =
+  ApiMessagesMessageIdIndexRouteImport.update({
+    id: '/api/messages/$messageId/',
+    path: '/api/messages/$messageId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProfileProfileIdIndexRoute =
+  ApiProfileProfileIdIndexRouteImport.update({
+    id: '/api/profile/$profileId/',
+    path: '/api/profile/$profileId/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiSafetyCheckInIndexRoute = ApiSafetyCheckInIndexRouteImport.update({
+  id: '/api/safety/check-in/',
+  path: '/api/safety/check-in/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSafetyContactsIndexRoute = ApiSafetyContactsIndexRouteImport.update({
+  id: '/api/safety/contacts/',
+  path: '/api/safety/contacts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSafetyReportsIndexRoute = ApiSafetyReportsIndexRouteImport.update({
+  id: '/api/safety/reports/',
+  path: '/api/safety/reports/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConversationsConversationIdMessagesIndexRoute =
+  ApiConversationsConversationIdMessagesIndexRouteImport.update({
+    id: '/api/conversations/$conversationId/messages/',
+    path: '/api/conversations/$conversationId/messages/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMessagesMessageIdReactIndexRoute =
+  ApiMessagesMessageIdReactIndexRouteImport.update({
+    id: '/api/messages/$messageId/react/',
+    path: '/api/messages/$messageId/react/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiSafetyCheckInResolveIndexRoute =
+  ApiSafetyCheckInResolveIndexRouteImport.update({
+    id: '/api/safety/check-in/resolve/',
+    path: '/api/safety/check-in/resolve/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -98,11 +273,39 @@ export interface FileRoutesByFullPath {
   '/events/': typeof EventsIndexRoute
   '/grid/': typeof GridIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/ai/': typeof ApiAiIndexRoute
+  '/api/boost/': typeof ApiBoostIndexRoute
+  '/api/conversations/': typeof ApiConversationsIndexRoute
+  '/api/discover/': typeof ApiDiscoverIndexRoute
+  '/api/health/': typeof ApiHealthIndexRoute
+  '/api/king-pet/': typeof ApiKingPetIndexRoute
+  '/api/notes/': typeof ApiNotesIndexRoute
+  '/api/profile/': typeof ApiProfileIndexRoute
+  '/api/profiles/': typeof ApiProfilesIndexRoute
+  '/api/settings/': typeof ApiSettingsIndexRoute
+  '/api/social/': typeof ApiSocialIndexRoute
+  '/api/taps/': typeof ApiTapsIndexRoute
+  '/api/wallet/': typeof ApiWalletIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
   '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/api/auth/me/': typeof ApiAuthMeIndexRoute
+  '/api/fansites/subscribe/': typeof ApiFansitesSubscribeIndexRoute
+  '/api/interest/$tab/': typeof ApiInterestTabIndexRoute
+  '/api/interest/favourite/': typeof ApiInterestFavouriteIndexRoute
+  '/api/interest/like/': typeof ApiInterestLikeIndexRoute
+  '/api/interest/stats/': typeof ApiInterestStatsIndexRoute
+  '/api/messages/$messageId/': typeof ApiMessagesMessageIdIndexRoute
+  '/api/profile/$profileId/': typeof ApiProfileProfileIdIndexRoute
+  '/api/safety/check-in/': typeof ApiSafetyCheckInIndexRoute
+  '/api/safety/contacts/': typeof ApiSafetyContactsIndexRoute
+  '/api/safety/reports/': typeof ApiSafetyReportsIndexRoute
+  '/api/conversations/$conversationId/messages/': typeof ApiConversationsConversationIdMessagesIndexRoute
+  '/api/messages/$messageId/react/': typeof ApiMessagesMessageIdReactIndexRoute
+  '/api/safety/check-in/resolve/': typeof ApiSafetyCheckInResolveIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -113,11 +316,39 @@ export interface FileRoutesByTo {
   '/events': typeof EventsIndexRoute
   '/grid': typeof GridIndexRoute
   '/notifications': typeof NotificationsIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
   '/safety': typeof SafetyIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/api/ai': typeof ApiAiIndexRoute
+  '/api/boost': typeof ApiBoostIndexRoute
+  '/api/conversations': typeof ApiConversationsIndexRoute
+  '/api/discover': typeof ApiDiscoverIndexRoute
+  '/api/health': typeof ApiHealthIndexRoute
+  '/api/king-pet': typeof ApiKingPetIndexRoute
+  '/api/notes': typeof ApiNotesIndexRoute
+  '/api/profile': typeof ApiProfileIndexRoute
+  '/api/profiles': typeof ApiProfilesIndexRoute
+  '/api/settings': typeof ApiSettingsIndexRoute
+  '/api/social': typeof ApiSocialIndexRoute
+  '/api/taps': typeof ApiTapsIndexRoute
+  '/api/wallet': typeof ApiWalletIndexRoute
   '/auth/callback': typeof AuthCallbackIndexRoute
   '/chat/$conversationId': typeof ChatConversationIdIndexRoute
   '/profile/$profileId': typeof ProfileProfileIdIndexRoute
+  '/api/auth/me': typeof ApiAuthMeIndexRoute
+  '/api/fansites/subscribe': typeof ApiFansitesSubscribeIndexRoute
+  '/api/interest/$tab': typeof ApiInterestTabIndexRoute
+  '/api/interest/favourite': typeof ApiInterestFavouriteIndexRoute
+  '/api/interest/like': typeof ApiInterestLikeIndexRoute
+  '/api/interest/stats': typeof ApiInterestStatsIndexRoute
+  '/api/messages/$messageId': typeof ApiMessagesMessageIdIndexRoute
+  '/api/profile/$profileId': typeof ApiProfileProfileIdIndexRoute
+  '/api/safety/check-in': typeof ApiSafetyCheckInIndexRoute
+  '/api/safety/contacts': typeof ApiSafetyContactsIndexRoute
+  '/api/safety/reports': typeof ApiSafetyReportsIndexRoute
+  '/api/conversations/$conversationId/messages': typeof ApiConversationsConversationIdMessagesIndexRoute
+  '/api/messages/$messageId/react': typeof ApiMessagesMessageIdReactIndexRoute
+  '/api/safety/check-in/resolve': typeof ApiSafetyCheckInResolveIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -129,11 +360,39 @@ export interface FileRoutesById {
   '/events/': typeof EventsIndexRoute
   '/grid/': typeof GridIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/ai/': typeof ApiAiIndexRoute
+  '/api/boost/': typeof ApiBoostIndexRoute
+  '/api/conversations/': typeof ApiConversationsIndexRoute
+  '/api/discover/': typeof ApiDiscoverIndexRoute
+  '/api/health/': typeof ApiHealthIndexRoute
+  '/api/king-pet/': typeof ApiKingPetIndexRoute
+  '/api/notes/': typeof ApiNotesIndexRoute
+  '/api/profile/': typeof ApiProfileIndexRoute
+  '/api/profiles/': typeof ApiProfilesIndexRoute
+  '/api/settings/': typeof ApiSettingsIndexRoute
+  '/api/social/': typeof ApiSocialIndexRoute
+  '/api/taps/': typeof ApiTapsIndexRoute
+  '/api/wallet/': typeof ApiWalletIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
   '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/api/auth/me/': typeof ApiAuthMeIndexRoute
+  '/api/fansites/subscribe/': typeof ApiFansitesSubscribeIndexRoute
+  '/api/interest/$tab/': typeof ApiInterestTabIndexRoute
+  '/api/interest/favourite/': typeof ApiInterestFavouriteIndexRoute
+  '/api/interest/like/': typeof ApiInterestLikeIndexRoute
+  '/api/interest/stats/': typeof ApiInterestStatsIndexRoute
+  '/api/messages/$messageId/': typeof ApiMessagesMessageIdIndexRoute
+  '/api/profile/$profileId/': typeof ApiProfileProfileIdIndexRoute
+  '/api/safety/check-in/': typeof ApiSafetyCheckInIndexRoute
+  '/api/safety/contacts/': typeof ApiSafetyContactsIndexRoute
+  '/api/safety/reports/': typeof ApiSafetyReportsIndexRoute
+  '/api/conversations/$conversationId/messages/': typeof ApiConversationsConversationIdMessagesIndexRoute
+  '/api/messages/$messageId/react/': typeof ApiMessagesMessageIdReactIndexRoute
+  '/api/safety/check-in/resolve/': typeof ApiSafetyCheckInResolveIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -146,11 +405,39 @@ export interface FileRouteTypes {
     | '/events/'
     | '/grid/'
     | '/notifications/'
+    | '/onboarding/'
     | '/safety/'
     | '/settings/'
+    | '/api/ai/'
+    | '/api/boost/'
+    | '/api/conversations/'
+    | '/api/discover/'
+    | '/api/health/'
+    | '/api/king-pet/'
+    | '/api/notes/'
+    | '/api/profile/'
+    | '/api/profiles/'
+    | '/api/settings/'
+    | '/api/social/'
+    | '/api/taps/'
+    | '/api/wallet/'
     | '/auth/callback/'
     | '/chat/$conversationId/'
     | '/profile/$profileId/'
+    | '/api/auth/me/'
+    | '/api/fansites/subscribe/'
+    | '/api/interest/$tab/'
+    | '/api/interest/favourite/'
+    | '/api/interest/like/'
+    | '/api/interest/stats/'
+    | '/api/messages/$messageId/'
+    | '/api/profile/$profileId/'
+    | '/api/safety/check-in/'
+    | '/api/safety/contacts/'
+    | '/api/safety/reports/'
+    | '/api/conversations/$conversationId/messages/'
+    | '/api/messages/$messageId/react/'
+    | '/api/safety/check-in/resolve/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -161,11 +448,39 @@ export interface FileRouteTypes {
     | '/events'
     | '/grid'
     | '/notifications'
+    | '/onboarding'
     | '/safety'
     | '/settings'
+    | '/api/ai'
+    | '/api/boost'
+    | '/api/conversations'
+    | '/api/discover'
+    | '/api/health'
+    | '/api/king-pet'
+    | '/api/notes'
+    | '/api/profile'
+    | '/api/profiles'
+    | '/api/settings'
+    | '/api/social'
+    | '/api/taps'
+    | '/api/wallet'
     | '/auth/callback'
     | '/chat/$conversationId'
     | '/profile/$profileId'
+    | '/api/auth/me'
+    | '/api/fansites/subscribe'
+    | '/api/interest/$tab'
+    | '/api/interest/favourite'
+    | '/api/interest/like'
+    | '/api/interest/stats'
+    | '/api/messages/$messageId'
+    | '/api/profile/$profileId'
+    | '/api/safety/check-in'
+    | '/api/safety/contacts'
+    | '/api/safety/reports'
+    | '/api/conversations/$conversationId/messages'
+    | '/api/messages/$messageId/react'
+    | '/api/safety/check-in/resolve'
   id:
     | '__root__'
     | '/'
@@ -176,11 +491,39 @@ export interface FileRouteTypes {
     | '/events/'
     | '/grid/'
     | '/notifications/'
+    | '/onboarding/'
     | '/safety/'
     | '/settings/'
+    | '/api/ai/'
+    | '/api/boost/'
+    | '/api/conversations/'
+    | '/api/discover/'
+    | '/api/health/'
+    | '/api/king-pet/'
+    | '/api/notes/'
+    | '/api/profile/'
+    | '/api/profiles/'
+    | '/api/settings/'
+    | '/api/social/'
+    | '/api/taps/'
+    | '/api/wallet/'
     | '/auth/callback/'
     | '/chat/$conversationId/'
     | '/profile/$profileId/'
+    | '/api/auth/me/'
+    | '/api/fansites/subscribe/'
+    | '/api/interest/$tab/'
+    | '/api/interest/favourite/'
+    | '/api/interest/like/'
+    | '/api/interest/stats/'
+    | '/api/messages/$messageId/'
+    | '/api/profile/$profileId/'
+    | '/api/safety/check-in/'
+    | '/api/safety/contacts/'
+    | '/api/safety/reports/'
+    | '/api/conversations/$conversationId/messages/'
+    | '/api/messages/$messageId/react/'
+    | '/api/safety/check-in/resolve/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -192,11 +535,39 @@ export interface RootRouteChildren {
   EventsIndexRoute: typeof EventsIndexRoute
   GridIndexRoute: typeof GridIndexRoute
   NotificationsIndexRoute: typeof NotificationsIndexRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
   SafetyIndexRoute: typeof SafetyIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  ApiAiIndexRoute: typeof ApiAiIndexRoute
+  ApiBoostIndexRoute: typeof ApiBoostIndexRoute
+  ApiConversationsIndexRoute: typeof ApiConversationsIndexRoute
+  ApiDiscoverIndexRoute: typeof ApiDiscoverIndexRoute
+  ApiHealthIndexRoute: typeof ApiHealthIndexRoute
+  ApiKingPetIndexRoute: typeof ApiKingPetIndexRoute
+  ApiNotesIndexRoute: typeof ApiNotesIndexRoute
+  ApiProfileIndexRoute: typeof ApiProfileIndexRoute
+  ApiProfilesIndexRoute: typeof ApiProfilesIndexRoute
+  ApiSettingsIndexRoute: typeof ApiSettingsIndexRoute
+  ApiSocialIndexRoute: typeof ApiSocialIndexRoute
+  ApiTapsIndexRoute: typeof ApiTapsIndexRoute
+  ApiWalletIndexRoute: typeof ApiWalletIndexRoute
   AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute
   ChatConversationIdIndexRoute: typeof ChatConversationIdIndexRoute
   ProfileProfileIdIndexRoute: typeof ProfileProfileIdIndexRoute
+  ApiAuthMeIndexRoute: typeof ApiAuthMeIndexRoute
+  ApiFansitesSubscribeIndexRoute: typeof ApiFansitesSubscribeIndexRoute
+  ApiInterestTabIndexRoute: typeof ApiInterestTabIndexRoute
+  ApiInterestFavouriteIndexRoute: typeof ApiInterestFavouriteIndexRoute
+  ApiInterestLikeIndexRoute: typeof ApiInterestLikeIndexRoute
+  ApiInterestStatsIndexRoute: typeof ApiInterestStatsIndexRoute
+  ApiMessagesMessageIdIndexRoute: typeof ApiMessagesMessageIdIndexRoute
+  ApiProfileProfileIdIndexRoute: typeof ApiProfileProfileIdIndexRoute
+  ApiSafetyCheckInIndexRoute: typeof ApiSafetyCheckInIndexRoute
+  ApiSafetyContactsIndexRoute: typeof ApiSafetyContactsIndexRoute
+  ApiSafetyReportsIndexRoute: typeof ApiSafetyReportsIndexRoute
+  ApiConversationsConversationIdMessagesIndexRoute: typeof ApiConversationsConversationIdMessagesIndexRoute
+  ApiMessagesMessageIdReactIndexRoute: typeof ApiMessagesMessageIdReactIndexRoute
+  ApiSafetyCheckInResolveIndexRoute: typeof ApiSafetyCheckInResolveIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -257,6 +628,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotificationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/safety/': {
       id: '/safety/'
       path: '/safety'
@@ -269,6 +647,97 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/': {
+      id: '/api/ai/'
+      path: '/api/ai'
+      fullPath: '/api/ai/'
+      preLoaderRoute: typeof ApiAiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/boost/': {
+      id: '/api/boost/'
+      path: '/api/boost'
+      fullPath: '/api/boost/'
+      preLoaderRoute: typeof ApiBoostIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/conversations/': {
+      id: '/api/conversations/'
+      path: '/api/conversations'
+      fullPath: '/api/conversations/'
+      preLoaderRoute: typeof ApiConversationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/': {
+      id: '/api/discover/'
+      path: '/api/discover'
+      fullPath: '/api/discover/'
+      preLoaderRoute: typeof ApiDiscoverIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health/': {
+      id: '/api/health/'
+      path: '/api/health'
+      fullPath: '/api/health/'
+      preLoaderRoute: typeof ApiHealthIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/king-pet/': {
+      id: '/api/king-pet/'
+      path: '/api/king-pet'
+      fullPath: '/api/king-pet/'
+      preLoaderRoute: typeof ApiKingPetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notes/': {
+      id: '/api/notes/'
+      path: '/api/notes'
+      fullPath: '/api/notes/'
+      preLoaderRoute: typeof ApiNotesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/': {
+      id: '/api/profile/'
+      path: '/api/profile'
+      fullPath: '/api/profile/'
+      preLoaderRoute: typeof ApiProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profiles/': {
+      id: '/api/profiles/'
+      path: '/api/profiles'
+      fullPath: '/api/profiles/'
+      preLoaderRoute: typeof ApiProfilesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/settings/': {
+      id: '/api/settings/'
+      path: '/api/settings'
+      fullPath: '/api/settings/'
+      preLoaderRoute: typeof ApiSettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/social/': {
+      id: '/api/social/'
+      path: '/api/social'
+      fullPath: '/api/social/'
+      preLoaderRoute: typeof ApiSocialIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/taps/': {
+      id: '/api/taps/'
+      path: '/api/taps'
+      fullPath: '/api/taps/'
+      preLoaderRoute: typeof ApiTapsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/wallet/': {
+      id: '/api/wallet/'
+      path: '/api/wallet'
+      fullPath: '/api/wallet/'
+      preLoaderRoute: typeof ApiWalletIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback/': {
@@ -292,6 +761,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileProfileIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/me/': {
+      id: '/api/auth/me/'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me/'
+      preLoaderRoute: typeof ApiAuthMeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fansites/subscribe/': {
+      id: '/api/fansites/subscribe/'
+      path: '/api/fansites/subscribe'
+      fullPath: '/api/fansites/subscribe/'
+      preLoaderRoute: typeof ApiFansitesSubscribeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/interest/$tab/': {
+      id: '/api/interest/$tab/'
+      path: '/api/interest/$tab'
+      fullPath: '/api/interest/$tab/'
+      preLoaderRoute: typeof ApiInterestTabIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/interest/favourite/': {
+      id: '/api/interest/favourite/'
+      path: '/api/interest/favourite'
+      fullPath: '/api/interest/favourite/'
+      preLoaderRoute: typeof ApiInterestFavouriteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/interest/like/': {
+      id: '/api/interest/like/'
+      path: '/api/interest/like'
+      fullPath: '/api/interest/like/'
+      preLoaderRoute: typeof ApiInterestLikeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/interest/stats/': {
+      id: '/api/interest/stats/'
+      path: '/api/interest/stats'
+      fullPath: '/api/interest/stats/'
+      preLoaderRoute: typeof ApiInterestStatsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/messages/$messageId/': {
+      id: '/api/messages/$messageId/'
+      path: '/api/messages/$messageId'
+      fullPath: '/api/messages/$messageId/'
+      preLoaderRoute: typeof ApiMessagesMessageIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/$profileId/': {
+      id: '/api/profile/$profileId/'
+      path: '/api/profile/$profileId'
+      fullPath: '/api/profile/$profileId/'
+      preLoaderRoute: typeof ApiProfileProfileIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/check-in/': {
+      id: '/api/safety/check-in/'
+      path: '/api/safety/check-in'
+      fullPath: '/api/safety/check-in/'
+      preLoaderRoute: typeof ApiSafetyCheckInIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/contacts/': {
+      id: '/api/safety/contacts/'
+      path: '/api/safety/contacts'
+      fullPath: '/api/safety/contacts/'
+      preLoaderRoute: typeof ApiSafetyContactsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/reports/': {
+      id: '/api/safety/reports/'
+      path: '/api/safety/reports'
+      fullPath: '/api/safety/reports/'
+      preLoaderRoute: typeof ApiSafetyReportsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/conversations/$conversationId/messages/': {
+      id: '/api/conversations/$conversationId/messages/'
+      path: '/api/conversations/$conversationId/messages'
+      fullPath: '/api/conversations/$conversationId/messages/'
+      preLoaderRoute: typeof ApiConversationsConversationIdMessagesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/messages/$messageId/react/': {
+      id: '/api/messages/$messageId/react/'
+      path: '/api/messages/$messageId/react'
+      fullPath: '/api/messages/$messageId/react/'
+      preLoaderRoute: typeof ApiMessagesMessageIdReactIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/check-in/resolve/': {
+      id: '/api/safety/check-in/resolve/'
+      path: '/api/safety/check-in/resolve'
+      fullPath: '/api/safety/check-in/resolve/'
+      preLoaderRoute: typeof ApiSafetyCheckInResolveIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -304,11 +871,40 @@ const rootRouteChildren: RootRouteChildren = {
   EventsIndexRoute: EventsIndexRoute,
   GridIndexRoute: GridIndexRoute,
   NotificationsIndexRoute: NotificationsIndexRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
   SafetyIndexRoute: SafetyIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  ApiAiIndexRoute: ApiAiIndexRoute,
+  ApiBoostIndexRoute: ApiBoostIndexRoute,
+  ApiConversationsIndexRoute: ApiConversationsIndexRoute,
+  ApiDiscoverIndexRoute: ApiDiscoverIndexRoute,
+  ApiHealthIndexRoute: ApiHealthIndexRoute,
+  ApiKingPetIndexRoute: ApiKingPetIndexRoute,
+  ApiNotesIndexRoute: ApiNotesIndexRoute,
+  ApiProfileIndexRoute: ApiProfileIndexRoute,
+  ApiProfilesIndexRoute: ApiProfilesIndexRoute,
+  ApiSettingsIndexRoute: ApiSettingsIndexRoute,
+  ApiSocialIndexRoute: ApiSocialIndexRoute,
+  ApiTapsIndexRoute: ApiTapsIndexRoute,
+  ApiWalletIndexRoute: ApiWalletIndexRoute,
   AuthCallbackIndexRoute: AuthCallbackIndexRoute,
   ChatConversationIdIndexRoute: ChatConversationIdIndexRoute,
   ProfileProfileIdIndexRoute: ProfileProfileIdIndexRoute,
+  ApiAuthMeIndexRoute: ApiAuthMeIndexRoute,
+  ApiFansitesSubscribeIndexRoute: ApiFansitesSubscribeIndexRoute,
+  ApiInterestTabIndexRoute: ApiInterestTabIndexRoute,
+  ApiInterestFavouriteIndexRoute: ApiInterestFavouriteIndexRoute,
+  ApiInterestLikeIndexRoute: ApiInterestLikeIndexRoute,
+  ApiInterestStatsIndexRoute: ApiInterestStatsIndexRoute,
+  ApiMessagesMessageIdIndexRoute: ApiMessagesMessageIdIndexRoute,
+  ApiProfileProfileIdIndexRoute: ApiProfileProfileIdIndexRoute,
+  ApiSafetyCheckInIndexRoute: ApiSafetyCheckInIndexRoute,
+  ApiSafetyContactsIndexRoute: ApiSafetyContactsIndexRoute,
+  ApiSafetyReportsIndexRoute: ApiSafetyReportsIndexRoute,
+  ApiConversationsConversationIdMessagesIndexRoute:
+    ApiConversationsConversationIdMessagesIndexRoute,
+  ApiMessagesMessageIdReactIndexRoute: ApiMessagesMessageIdReactIndexRoute,
+  ApiSafetyCheckInResolveIndexRoute: ApiSafetyCheckInResolveIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
