@@ -7,7 +7,9 @@ import { getSupabase } from "#/integrations/supabase/client";
  * ---------------------
  * It used to read a bearer token from `localStorage["fyk:session-token"]` and
  * attach it as `Authorization: Bearer …`. Nothing in the app ever *wrote* that
- * key (the session lives in Supabase's own `fyk.auth` storage), so:
+ * key (the session is persisted by `@supabase/ssr` in `sb-<ref>-auth-token`
+ * cookies, which is also what lets a document render verify it — see
+ * `#/lib/document-auth.server`), so:
  *   - every request reached the API anonymous, and
  *   - `setSessionToken()`/`clearSessionToken()` were a standing invitation to
  *     store an auth token in a third localStorage key — which AI_RULES.md

@@ -11,8 +11,16 @@ import {
 	UserX,
 } from "lucide-react";
 import { useAuthStore } from "#/domains/auth/store";
+import { requireDocumentSession } from "#/lib/document-auth";
 
 export const Route = createFileRoute("/settings/account/")({
+	// AUDIT §3.3: a private screen must not be rendered for a request that carries no
+	// session. `requireDocumentSession` is the isomorphic guard — its client branch is
+	// a no-op, because a browser has no credential to inspect and `/api/*` verifies
+	// every request and 401s without one; its server branch is the redirect.
+	beforeLoad: async () => {
+		await requireDocumentSession();
+	},
 	component: AccountSettingsPage,
 });
 

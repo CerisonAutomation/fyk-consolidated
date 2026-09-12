@@ -9,9 +9,15 @@ import { users } from "#/schema";
 /**
  * `GET /api/auth/me` — "who am I, and is my profile provisioned?"
  *
- * The client shell needs this to decide between app, onboarding and sign-in.
- * `#/components/auth-gate.tsx` renders "Signing you in…" forever if this 404s,
- * which is what happened while it did not exist.
+ * Who calls it, honestly: nothing in the browser does today. `EntryShell` reads the
+ * same facts by querying `profiles` through supabase-js directly, so this endpoint
+ * is the *contract* — the server-side mapping to `ProfileUser`, and the
+ * `{ user: null }`-rather-than-401 distinction — rather than a live dependency, and
+ * AUDIT §3.18 records the choice that has to be made (move the shell onto it, or
+ * delete it). Its former caller, `src/components/auth-gate.tsx`, was imported by
+ * nothing and is deleted; the server-side equivalent for documents is now
+ * `#/lib/document-auth.server`, which answers the same question without a round
+ * trip and without trusting the browser's word about its own session.
  *
  * Answers `200 { user: null }` for anonymous traffic rather than `401`: the
  * caller has to distinguish "not signed in" (redirect to sign-in) from "signed
