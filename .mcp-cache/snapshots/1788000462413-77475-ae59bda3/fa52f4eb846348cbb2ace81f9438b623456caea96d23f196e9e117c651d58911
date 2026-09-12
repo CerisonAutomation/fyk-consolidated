@@ -1,9 +1,0 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/discover")({
-	component: DiscoverCompatibilityRoute,
-});
-
-function DiscoverCompatibilityRoute() {
-	return <Navigate to="/grid" replace />;
-}
