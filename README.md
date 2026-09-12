@@ -87,6 +87,8 @@ reads: `drizzle-kit push` would `drop` what this schema does not model, so
 | `pnpm lint:code` | Zero-tolerance lint of the API/integration/lib/schema scope. Blocking |
 | `pnpm lint:changed` | Blocking gate for the diff against `main`, checked against `lint-baseline.json` (a changed file may not exceed its recorded count per rule) |
 | `pnpm lint:baseline` | Regenerate `lint-baseline.json` after fixing violations, in the same commit as the fix |
+| `pnpm icons:build` | Regenerate `public/icons/*.png`, `apple-touch-icon-180.png` and `manifest.webmanifest` from the `src/styles.css` tokens and `public/logo-square.svg` |
+| `pnpm push:vapid-keys` | Print a fresh VAPID key pair and the two internal function tokens (nothing is written to disk) |
 | `pnpm generate-routes` | `tsr generate` — re-run after adding or renaming a route file, or `tsc` will not know it exists |
 | `pnpm db:generate` | Generate a Drizzle SQL diff from `drizzle/schema.ts` |
 | `pnpm db:push` | Apply the Drizzle schema to `DATABASE_URL` |
@@ -105,6 +107,40 @@ reads: `drizzle-kit push` would `drop` what this schema does not model, so
 - Vite 8
 - Vitest + Playwright
 - Docker + GitHub Actions CI/CD
+
+## Push, install and offline
+
+The app is an installable web app: a manifest and icons generated from the design tokens, a
+service worker that adds an offline notice and receives push, and a home-screen badge that tracks
+unread activity. All of it is asserted by `src/lib/app-shell.test.ts`, which reads the files
+rather than the bundle — these artefacts have no compiler and no browser in CI.
+
+```bash
+pnpm icons:build      # regenerate public/icons/*.png + manifest.webmanifest from src/styles.css
+pnpm push:vapid-keys  # mint a VAPID key pair and the two internal tokens (prints, never writes)
+```
+
+Push needs four things to line up, because the browser verifies the *sender*, not the app:
+
+1. `VITE_VAPID_PUBLIC_KEY` in the browser env — without it the UI says "push is not configured"
+   and never asks for permission (that is the intended default, not a bug).
+2. `supabase secrets set VAPID_PRIVATE_KEY=… VAPID_SUBJECT=… PUSH_INTERNAL_TOKEN=… CRON_INTERNAL_TOKEN=…`
+3. `supabase functions deploy notify cron-cleanup` — both are configured `verify_jwt = false` in
+   `supabase/config.toml` because their callers are Postgres and a scheduler, and both **refuse to
+   run** unless their `x-fyk-*-token` header matches the secret. `notify` also requires that the
+   caller is the database: it never writes to `notifications`, it only delivers what is already there.
+4. `alter role authenticated set fyk.push_notify_url = 'https://<ref>.functions.supabase.co/v1/notify'`
+   and `fyk.push_notify_token = '<PUSH_INTERNAL_TOKEN>'`. While either is unset the trigger does
+   nothing, so a half-configured project silently sends no push instead of failing user writes.
+
+Then point something at `POST /v1/cron-cleanup` with `x-fyk-cron-token` (or let `pg_cron` run the
+two SQL jobs 0023 schedules) — expired sessions, stories and MeetNow rows are deleted nowhere else.
+
+Enable notifications from the Activity screen (`/notifications`): the button there asks for
+permission, and nothing asks on page load. On iPhone, web push is delivered only to an installed app, so add FYK
+to the Home Screen first — the screen says so rather than failing quietly. The service worker is
+registered only in a production build (`pnpm build && pnpm start`), because a caching worker in
+front of Vite's dev server makes hot reload undebuggable.
 
 ## Deployment notes
 

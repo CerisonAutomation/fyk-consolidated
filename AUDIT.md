@@ -41,7 +41,7 @@ product/schema decision and are documented instead of guessed at.
 | `POST /api/events` with `Content-Type: text/plain` | `415 {"error":"Content-Type must be application/json"}` |
 | `GET /`, `GET /discover` (production build, SSR) | `200 text/html` with CSP, HSTS, `X-Frame-Options`, `Permissions-Policy` and `private, no-store` |
 | `GET /does-not-exist` | `404` + the router's not-found document (not a redirect, not a 500) |
-| `tsc --noEmit` / `vitest run` / `vite build`, §2.15–§2.21 pass | 0 errors · **196 passed (15 files)** · build success. `pnpm verify` cannot be run as one command in this sandbox (`pnpm` is absent from `PATH` inside the corepack shim's child env), so the four steps were run directly |
+| `tsc --noEmit` / `vitest run` / `vite build`, §2.15–§2.24 pass | 0 errors · **230 passed (16 files)** · build success. `pnpm verify` cannot be run as one command in this sandbox (`pnpm` is absent from `PATH` inside the corepack shim's child env), so the four steps were run directly |
 | `src/lib/migration-invariants.test.ts` (new) | 14 pass; two rules found real defects on their first run (the 0009 abort, the `meetnow` CHECK violation) and each was then proved non-vacuous by planting the violation |
 | `biome check` on every file this pass edited | clean, and `pnpm lint:code` (the scope this repository owns outright) is **zero-error** / 55 warnings / 1 info after 8 `useIterableCallbackReturn` sites were braced. Repo-wide `biome lint src drizzle` still exits 1 with **314 errors / 125 warnings / 6 infos** over ~56 screen files — now a *ledger* rather than noise (§2.18) |
 | `node scripts/lint-gate.mjs` (new, §2.18) | four behaviours exercised: clean run exit 0; planted 4th `useIterableCallbackReturn` in `CallOverlay.tsx` (allowance 3) fails naming rule+file+allowance; a stale ledger under `--strict-baseline` fails asking for a shrink; `LINT_BASE` overrides the base. `biome lint --changed --since=<ref>` was tried and **rejected**: empty diff ⇒ "The list is empty." + exit 1, so docs-only PRs would fail CI |
@@ -49,6 +49,10 @@ product/schema decision and are documented instead of guessed at.
 | guarded-document headers, `GET /settings` `/safety` `/notifications` with a valid session | `200` + `cache-control: private, no-store, max-age=0, must-revalidate`, `pragma: no-cache`, `vary: Cookie, Authorization` — the SSR document is not CDN-cacheable, which is what makes §2.16's "server never writes a cookie" safe to keep |
 | guard probe after §2.21 (configured `SUPABASE_JWT_SECRET`, **no** database) | valid `200`, chunked `200`, expired `200`, forged `307 → /auth/sign-in`, no cookie `307 → /auth/sign-in`, `/discover` `200`, `/onboarding` `200` (no loop) |
 | reachability re-measured after the `src/components/discover` deletion | **160 of 364** non-test source files (43%) unreachable; the script and the exclusions are recorded in §2.19 |
+| `src/lib/app-shell.test.ts` (new, §2.22) | 15 static guards; three of them failed on their first run against code I had just written — a manifest declaring `192x192` over a 768×768 PNG, `/apple-touch-icon-180.png` written outside `public/` (so it 404'd while every local check stayed green), and a duplicate `meta[name=viewport]` whose earlier entry would have won. That is the intended use: these files have no compiler and no browser in CI. |
+| rendered `<head>` of `/settings`, counted with `uniq -c` | exactly one each of `viewport` (with `viewport-fit=cover`), `theme-color` `#010101`, `color-scheme`, `manifest`, `icon`, `apple-touch-icon`, plus the pre-paint `theme-init.js` — the *count* is the assertion, because Start de-duplicates `meta[name]` and a dark+light `theme-color` pair silently collapses to one |
+| `vite preview` over `dist/` (the installed-app surface) | `/sw.js` `200 text/javascript` · `/manifest.webmanifest` `200 application/manifest+json` · `/icons/icon-512.png` `200 image/png` · `/offline.html` `200` · `/theme-init.js` `200` · `/prisma.svg` `404` (deleted as an orphan) |
+| `pnpm install --frozen-lockfile` after `sharp` + `culori` became devDependencies | passes — the icon generator's only two deps, both declared, so `Dockerfile:27` and `ci.yml:31` still install |
 | `pnpm install --frozen-lockfile` | passes after §2.17's lockfile regeneration; it *failed* on every commit since the Prisma removal, which is what `Dockerfile:27` and `ci.yml:31` run |
 | `GET /settings`, `GET /safety` with `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_JWT_SECRET` set to a non-existent project | `307 → /auth/sign-in` with no cookie; `200` with a valid session cookie *and* with the same session split across `sb-*-auth-token.0/.1`; `200` for an expired-but-signed token; `307` for a forged signature, for an anon-role token, and for a forged signature reassembled from chunks (full table in §2.16) |
 | the same routes with the env removed | `200` — `unconfigured` is fail-open for a document and the preview is unaffected |
@@ -1072,13 +1076,126 @@ against a single source of truth, not a fork in the logic.
 
 ---
 
+### 2.22 The installable layer was configuration theatre (P0 for "mobile first")
+
+Everything an installed web app needs was *present* and *inert*, which is the worst failure
+shape because a reviewer sees the files and stops looking:
+
+| artefact | state found | now |
+|---|---|---|
+| `public/manifest.json` + `public/manifest.webmanifest` | two manifests: one named the app **FYKING** with `theme_color #d4af37`/`background_color #000000`, the other **FYK** with `#0B0D11`/`#EDB219`; **neither hex is a token in `src/styles.css`**, and neither file was referenced by any HTML, so no browser had ever read either | one `manifest.webmanifest`, **generated** by `pnpm icons:build` from `--color-background` (→ `#010101`) and `public/logo-square.svg`; `name`/`short_name`/`description` are read out of `__root.tsx` so the manifest and the document cannot disagree; `manifest.json` deleted |
+| icons | the manifest declared `/icons/icon-192.png` and `/icons/icon-512.png`; `public/icons/` held only two SVGs, so installability — which every browser gates on a real PNG ≥144 px — was one missing file from never happening | `icon-{192,512}.png`, `icon-maskable-512.png` (60 % safe zone), `apple-touch-icon-180.png`, `favicon-32.png`, `badge-72.png` (alpha silhouette), all rasterised from the logo SVG with 4× supersampling + lanczos, because at 32 px the `Y` outline and the underline fall between pixels |
+| `public/sw.js` | cache-first `caches.match(event.request)` for **every** request, precaching `"/"` and `"/offline"`; no `push` handler; registered by nobody | documents and `/api/*` are never cached (the app answers them `private, no-store`, so a cached copy would be both stale *and* somebody else's); static assets get a bounded runtime cache; `push` / `notificationclick` / `notificationclose` / `pushsubscriptionchange` implemented; offline navigations land on `/offline.html`; registered absolutely as `/sw.js`, only in a production build |
+| `public/offline.html` | precached as `/offline`, a URL that does not exist ⇒ `cache.addAll` rejected, `install` failed, **the worker never activated** | precached as `/offline.html`, and `app-shell.test.ts` fails if any precached URL stops being a file in `public/` |
+| `public/theme-init.js` | correct, complete, loaded by nothing ⇒ light-mode users got a dark flash every load, because `<html class="dark">` is server-rendered | referenced pre-paint from `__root.tsx`, and it now also re-paints `theme-color` per scheme (Start de-duplicates `meta[name]`, so a dark+light pair in the head collapses to whichever is last — measured, not guessed) |
+| `viewport-fit` | absent, while the stylesheet spends ~10 declarations on `env(safe-area-inset-*)` — every one of them `0px` on a notched phone, which is why the tab bar sat under the home indicator | `width=device-width, initial-scale=1, viewport-fit=cover`, and exactly one viewport meta (a duplicate would win) |
+| app badge | `benchmark.ts` claimed "home-screen badging"; the only trace was a capability *probe* in `platform.ts` | `setUnreadBadge()` in `src/lib/badge.ts`, called from the notifications screen and the topbar (the two places the unread count is authoritative) |
+| `public/prisma.svg` | orphan from the removed ORM, shipped to every client | deleted; the new orphan-asset guard in `app-shell.test.ts` is what noticed |
+
+The claim in `src/lib/benchmark.ts` — "Manifest, service worker, offline shell, push and
+home-screen badging", scored **yes** against Grindr/ROMEO/MACHOBB — is now true of the code
+rather than of the file listing. That is the difference this section is about: a marketing row
+on a public screen was the *only* place any of it was asserted, and it was false.
+
+### 2.23 Two edge functions could not be called at all — and the third was a hazard
+
+`supabase/config.toml` declared no `[functions.*]` section, so all five inherited the
+platform's `verify_jwt = true`. For `ai-chat` and `moderate` that is right (a browser calls
+them with its own token, and `ai-chat`'s spend limit keys off that identity). For the two whose
+callers are not browsers it was fatal:
+
+* **`notify`** is invoked by `pg_net` from the `notifications` insert trigger (0023 §4). Postgres
+  sends no `Authorization` header, so every push delivery was answered **401 by the platform**.
+  "Push notifications" had a working API route, a working trigger, a working `web-push` sender
+  and a client that would have subscribed — and could never deliver, with the 401 visible only
+  in a log nobody reads.
+* **`cron-cleanup`** is invoked by "an external scheduler" per its own header comment, which has
+  no more JWT than Postgres does. Expired sessions, expired stories, expired MeetNow posts and
+  the `user_stats` refresh were therefore *never* cleaned, while §2.x described the housekeeping
+  as scheduled.
+
+Opening them (`verify_jwt = false`) is the obvious fix and the dangerous one, because **both
+hold the service role**: one sends attacker-chosen text to another user's lock screen, the other
+deletes rows. So each now requires a shared secret — `x-fyk-push-token` against
+`PUSH_INTERNAL_TOKEN`, `x-fyk-cron-token` against `CRON_INTERNAL_TOKEN` — compared in constant
+time, with **no default**: an unset token answers 503 rather than accepting anything. The
+permissive `Access-Control-Allow-Origin: *` they both carried is gone (no browser is a caller;
+CORS was decoration), and the pair is pinned by a rule in `migration-invariants.test.ts`: *any*
+function declared `verify_jwt = false` that touches the service role, writes, or calls an RPC
+must have header + secret + refuse-when-unset. Drift is therefore a test failure, not a review
+miss.
+
+While reading `notify` I found the second-order defect: it inserted a row into
+`public.notifications` (`type: "push"`) for the event that had *just* fired the trigger on
+`public.notifications`. `push` is not in `notifications_type_check` (0019/0024 list eleven types
+— and `push` is a transport, not something anybody displays), so the insert was rejected and the
+function 500'd; had the CHECK allowed it, every push would have re-fired its own trigger until
+the stack-depth guard aborted. The insert is deleted, `0025_push_delivery_secret.sql` redefines the
+trigger to add the secret header and to skip users with no subscriptions (an index probe instead
+of an HTTP round trip inside the insert transaction), and the same test file now asserts that no
+edge function inserts into a table whose notify-trigger calls it. Also deleted rather than
+configured: **`embed-profile`**, 157 lines that read profiles **with the service role** from a
+public URL with no caller in the app — unusable with the JWT check (anonymous embedders have no
+token) and an RLS-bypassing read without it. An endpoint whose correct configuration does not
+exist is not a feature.
+
+`scripts/vapid-keys.mjs` closes the last "just configure it" gap: VAPID is what makes push real,
+there was no way to make a key pair, and the documented env vars had no generator — which leaves
+"copy one from a tutorial" as the only move, and a shared private VAPID key is the ability to
+notify every user of the deployment. It uses `node:crypto` only, prints the pair once (never
+writes a file), generates both internal tokens alongside, and fails its own JWK round trip rather
+than emitting a key `web-push` would reject.
+
+### 2.24 Push's client half: a permission prompt that bought nothing
+
+`notifications-client.tsx` called `registerPushSubscription()` on mount. It checked the VAPID key,
+asked `Notification.requestPermission()`, then `await`ed `navigator.serviceWorker.ready` — which
+**never resolves** while no worker is registered, because nothing had ever called
+`registerServiceWorker()`. So a signed-in user opening the notifications screen was shown the
+browser prompt, spent the one ask that browser remembers, and got: a hung function, no
+subscription, no error, no log. That is why "silent" failure modes are the audit's favourite:
+the promise rejection that would have shown it never happened.
+
+`src/lib/push.ts` replaces it with a state machine the UI can render, and moves every judgement
+out of a `useEffect`:
+
+* permission is requested **only** from `enablePush()`, which the `PushRow` button calls; the
+  mount path now does reads (`syncPushSubscription()`), never asks.
+* eight states, each with its own sentence in the UI — `prompt / off / on / denied /
+  needs-install / no-vapid-key / dev-server / unsupported / error` — where "the dev server does not
+  register a worker on purpose" and "on iPhone, add FYK to your Home Screen first" are *states*,
+  not silent returns. iOS only delivers web push to a standalone installed app; requesting
+  permission in Safari before that is how users end up permanently blocked with nothing enabled.
+* `on` reports the endpoint's host + last 8 path chars and nothing more: the path segment of a
+  push endpoint is a bearer credential.
+* a failure to store the subscription is reported as "subscribed, but the server did not record
+  it" rather than rolled back or swallowed, because the retry is a re-POST, not a re-prompt.
+* `disablePush()` calls `DELETE /api/push/subscribe?endpoint=…`, added here:
+  `PushManager.unsubscribe()` is local only, so "turn off notifications" without a server-side
+  delete leaves a live endpoint in `push_subscriptions` for a device its owner no longer controls.
+  On an app of this kind that is a safety hole, not a leak. Both forms (one endpoint, all of a
+  user's) are keyed on the caller's id.
+* `pushsubscriptionchange` posts `fyk:push-resync` to the page, and the page calls
+  `restorePush()` — which re-subscribes **without** prompting and returns `prompt` if permission is
+  no longer granted, because calling `enablePush()` there would fire a gesture-less
+  `requestPermission()` and take a permanent silent "denied" for it.
+
+The service worker is the other half of the same contract: `push` shows the notification with the
+`{title, body, href}` that `notify` sends (asserted against both files, since `public/` is not
+compiled with the app), `notificationclick` focuses an existing window and hands it the route, and
+`href` passes through a copy of the inbox's own `UNSAFE_SCHEME` filter — a notification that opened
+`https://attacker.example` would be the most convincing phish a phone ever showed.
+
+---
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
-Nineteen entries, and the split is the point: **§3.1, 3.2, 3.3, 3.8, 3.10, 3.15, 3.16, 3.17
-are closed** with the reasoning kept, because a closed finding that does not say *why* it is
+Twenty-two entries, and the split is the point: **§3.1, 3.2, 3.3, 3.8, 3.10, 3.15, 3.16, 3.17,
+3.22 are closed** with the reasoning kept, because a closed finding that does not say *why* it is
 closed becomes a re-audit; **§3.5, 3.6, 3.7, 3.9, 3.11, 3.13, 3.18 are each one deliberate
 half** whose other half is a mechanism (a lint rule, a trigger, an apply, one shell's import)
-rather than more code; and **§3.4, 3.12, 3.14, 3.19 need a product or schema decision** — for
+rather than more code; and **§3.4, 3.12, 3.14, 3.19, 3.20, 3.21 need a product or schema
+decision** — for
 those, inventing an implementation is how a second, worse truth gets committed, so each entry
 says what to decide instead of deciding it here. The most recent closures (§2.18–§2.21) came
 from the same reflex: prefer the change that makes a signal blocking, a subtree gone, a
@@ -1300,6 +1417,42 @@ lockfile honest, or a redirect real over the change that adds code nobody asked 
     `createServerClient` in a `beforeLoad` that also *writes* the cookie, plus a refresh
     path), which is the next step up from §2.16 and is not a change to make in passing.
 
+20. **Nothing proves an edge function boots.** §2.23 fixed the *configuration* (`verify_jwt`
+    per function, a shared secret each) and the payload bug, and `migration-invariants.test.ts`
+    pins the pairing rule statically — but a Deno file under `supabase/functions/` is not
+    typechecked, not linted, not built and not started by anything here. Two of the five imports
+    in those files are pinned CDNs (`deno.land/std@0.168.0`, `esm.sh/web-push@3.6.7`), so a
+    network failure at deploy time is a runtime failure of the push pipeline with no earlier
+    signal. Deciding this needs a choice about the toolchain, not more code in this repository:
+    either `deno check supabase/functions/*/index.ts` in CI (needs Deno in the image, and
+    `deno.json` import maps for the pinned URLs), or the platform-side equivalent —
+    `supabase functions deploy --no-verify-jwt` in a throwaway project from CI, then one
+    authenticated probe per function (the 503 "not configured" answers are deliberately
+    *distinguishable* responses, which is what makes a boot check possible without secrets).
+21. **The landing page runs on its own palette.** `src/routes/index.tsx` hard-codes
+    `bg-[#0B0D11]`, `bg-[#16181D]`, `border-[#2A2D35]` and a gold of `#EDB219`, and
+    `src/components/Brand.tsx` has `const GOLD = "#EDB219"`. None of those are values in
+    `src/styles.css` — the tokens are `--color-background: oklch(0.06 0.008 280)` (`#010101`)
+    and `--color-primary: oklch(0.80 0.17 85)` (`#efb300`) — so the public front door renders a
+    *different* black and a *different* gold from every screen behind it, ignores the theme
+    toggle (it is hard-coding dark values), and its `© 2024` is fixed text. Deliberately not
+    "fixed" here: retokenising it (`bg-canvas`, `text-gold`, a live year) is a visible change to
+    a design file, which is the standing rule, so it needs the owner's yes — and the same yes is
+    wanted for whichever of the two palettes is the truth. `pnpm icons:build` reads the tokens,
+    so from §2.22 forward the manifest, the icons and the OS chrome follow the design system;
+    this page is the one surface that will keep disagreeing until somebody decides.
+22. **~~`/api/push/subscribe` had no counterpart on the browser side.~~ Closed by §2.24**, except
+    that the install prompt is still uncalled for: `watchInstallPrompt()`/`promptInstall()` in
+    `src/lib/persist.ts` are correct, exported, and have no caller, so a user who is told "add FYK
+    to your Home Screen first" (the honest iOS state) gets instructions rather than a button.
+    On Android/Chrome a `beforeinstallprompt` button is one call away and needs no app-store; on
+    iOS there is no API, so the sentence stays. Whether the app should offer an install nudge at
+    all — and where, since it competes with the first-run flow — is a product call, not a gap in
+    the plumbing, which is why the helpers are wired to state (`app-shell.test.ts` fails if
+    `public/` gains an orphan asset or the manifest lies about an icon) and to no UI.
+
+---
+
 ## 4. Minimal assumptions
 
 - Sessions live in `sb-<ref>-auth-token` cookies written by `@supabase/ssr`'s browser
@@ -1340,26 +1493,34 @@ lockfile honest, or a redirect real over the change that adds code nobody asked 
 
 1. **Apply the migrations for real** (`supabase db push` against a throwaway project, then
    `pg_policies`, then `pnpm db:seed`). This is the last item whose answer cannot be obtained
-   by reading, and it is also what turns §2.21's `missing → /onboarding` branch from a unit
-   test into a behaviour: with no Postgres here, `profileRowExists` can only ever return
-   `unknown` (§3.13).
-2. **§3.18's mechanical half** — `EntryShell` onto the guard or `/api/auth/me`, and delete one
-   of the two onboarding screens. Small, and it removes the last place where a browser decides
-   who is signed in.
-3. **§3.19**, with §3.4 read first: `HttpOnly` needs a server-side exchange, and the CSP that
-   would make script-readable storage non-extractive is the other half of the same decision.
-4. **§3.17's debt, file by file**, running `pnpm lint:baseline` in the same commit as each fix
-   so the ledger shrinks where it should be visible. `--strict-baseline` on `main` makes
-   skipping that step fail CI.
-5. **§3.12** (Premium is a product decision with a known plug-in point in `#/lib/economy.ts`),
+   by reading, and it is what turns §2.21's `missing → /onboarding` branch from a unit test into
+   a behaviour: with no Postgres here, `profileRowExists` can only ever return `unknown` (§3.13).
+   Deploy `notify` and `cron-cleanup` in the same sitting (§3.20) — the SQL and the functions are
+   one story now: `0025` hands Postgres the header, `config.toml` opens the route, the secret
+   closes it again, and `node scripts/vapid-keys.mjs` mints all of it.
+2. **§3.18's mechanical half** — `EntryShell` onto the guard or `/api/auth/me`, and delete one of
+   the two onboarding screens. Small, and it removes the last place where a browser decides who
+   is signed in.
+3. **§3.4 + §3.19 together**: the CSP that would make script-readable session storage
+   non-extractive, and the server-side exchange `HttpOnly` needs. One decision about the document,
+   not two.
+4. **§3.21**, the palette: `src/routes/index.tsx` and `Brand.tsx` carry hard-coded hexes no token
+   defines, so the front door renders a different black and a different gold from every screen
+   behind it. Needs the owner's call on which palette wins before a retokenising diff is reviewable.
+5. **§3.17's debt, file by file**, running `pnpm lint:baseline` in the same commit as each fix so
+   the ledger shrinks where it is visible. `--strict-baseline` on `main` makes skipping that step
+   fail CI.
+6. **§3.12** (Premium is a product decision with a known plug-in point in `#/lib/economy.ts`),
    then **§3.9** (single-valued tribe vocabulary) and **§3.7** (pruning, one module per commit,
-   re-measured each time with §2.19's script).
+   re-measured with §2.19's script).
 
 Closed since the first draft of this list: the wallet/entitlement ledger (§2.13), the inbox and
-social graph leaving the browser (§2.13), the safety record and its notifications (§2.14,
-§2.15), the migration sequence abort (§2.15), the 405/404 surface (§2.17), cookie sessions →
-an SSR guard (§2.16) and its provisioning branch (§2.21), the dead discover subtree and the
-Prisma-shaped lockfile (§2.19, §2.20), and a lint gate that blocks instead of decorating
-(§2.18). Items 1 and 2 of the previous version of this list — "six files, one green
-`pnpm lint`" and "`/api/auth/me`: move the shell or delete the endpoint" — are what those
-four sections replaced.
+social graph leaving the browser (§2.13), the safety record and its notifications (§2.14, §2.15),
+the migration sequence abort (§2.15), the 405/404 surface (§2.17), cookie sessions → an SSR guard
+(§2.16) and its provisioning branch (§2.21), the dead discover subtree and the Prisma-shaped
+lockfile (§2.19, §2.20), a lint gate that blocks instead of decorating (§2.21's neighbour §2.18),
+the installable layer — manifest, icons, service worker, offline shell, viewport, badge (§2.22),
+the edge functions that could not be called and the payload that recursed into itself (§2.23), and
+the push client half that burned a permission prompt for nothing (§2.24). Steps 1 and 2 of the
+previous version of this list are what §2.22–§2.24 replaced; the migrations remain first, because
+they are still the only thing in the repository that has never been executed.
