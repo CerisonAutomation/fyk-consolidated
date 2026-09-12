@@ -41,9 +41,14 @@ product/schema decision and are documented instead of guessed at.
 | `POST /api/events` with `Content-Type: text/plain` | `415 {"error":"Content-Type must be application/json"}` |
 | `GET /`, `GET /discover` (production build, SSR) | `200 text/html` with CSP, HSTS, `X-Frame-Options`, `Permissions-Policy` and `private, no-store` |
 | `GET /does-not-exist` | `404` + the router's not-found document (not a redirect, not a 500) |
-| `tsc --noEmit` / `vitest run` / `vite build`, §2.15–§2.17 pass | 0 errors · **191 passed (15 files)** · build success. `pnpm verify` cannot be run as one command in this sandbox (`pnpm` is absent from `PATH` inside the corepack shim's child env), so the four steps were run directly |
+| `tsc --noEmit` / `vitest run` / `vite build`, §2.15–§2.21 pass | 0 errors · **196 passed (15 files)** · build success. `pnpm verify` cannot be run as one command in this sandbox (`pnpm` is absent from `PATH` inside the corepack shim's child env), so the four steps were run directly |
 | `src/lib/migration-invariants.test.ts` (new) | 14 pass; two rules found real defects on their first run (the 0009 abort, the `meetnow` CHECK violation) and each was then proved non-vacuous by planting the violation |
-| `biome check` on every file this pass edited | clean. The repo-wide scripts are **not** clean and never were: `biome lint` exits 1 with 369 errors / 130 warnings, `pnpm check:changed` with 28 / 36 — all in files outside this pass, recorded as §3.17 rather than "fixed" by a formatting sweep |
+| `biome check` on every file this pass edited | clean, and `pnpm lint:code` (the scope this repository owns outright) is **zero-error** / 55 warnings / 1 info after 8 `useIterableCallbackReturn` sites were braced. Repo-wide `biome lint src drizzle` still exits 1 with **314 errors / 125 warnings / 6 infos** over ~56 screen files — now a *ledger* rather than noise (§2.18) |
+| `node scripts/lint-gate.mjs` (new, §2.18) | four behaviours exercised: clean run exit 0; planted 4th `useIterableCallbackReturn` in `CallOverlay.tsx` (allowance 3) fails naming rule+file+allowance; a stale ledger under `--strict-baseline` fails asking for a shrink; `LINT_BASE` overrides the base. `biome lint --changed --since=<ref>` was tried and **rejected**: empty diff ⇒ "The list is empty." + exit 1, so docs-only PRs would fail CI |
+| `pnpm install --frozen-lockfile` after `.npmrc` gained `auto-install-peers=false` | passes; `node_modules/prisma` no longer exists; `pnpm-lock.yaml` −1257/+28 lines (§2.20) |
+| guarded-document headers, `GET /settings` `/safety` `/notifications` with a valid session | `200` + `cache-control: private, no-store, max-age=0, must-revalidate`, `pragma: no-cache`, `vary: Cookie, Authorization` — the SSR document is not CDN-cacheable, which is what makes §2.16's "server never writes a cookie" safe to keep |
+| guard probe after §2.21 (configured `SUPABASE_JWT_SECRET`, **no** database) | valid `200`, chunked `200`, expired `200`, forged `307 → /auth/sign-in`, no cookie `307 → /auth/sign-in`, `/discover` `200`, `/onboarding` `200` (no loop) |
+| reachability re-measured after the `src/components/discover` deletion | **160 of 364** non-test source files (43%) unreachable; the script and the exclusions are recorded in §2.19 |
 | `pnpm install --frozen-lockfile` | passes after §2.17's lockfile regeneration; it *failed* on every commit since the Prisma removal, which is what `Dockerfile:27` and `ci.yml:31` run |
 | `GET /settings`, `GET /safety` with `SUPABASE_URL`/`SUPABASE_ANON_KEY`/`SUPABASE_JWT_SECRET` set to a non-existent project | `307 → /auth/sign-in` with no cookie; `200` with a valid session cookie *and* with the same session split across `sb-*-auth-token.0/.1`; `200` for an expired-but-signed token; `307` for a forged signature, for an anon-role token, and for a forged signature reassembled from chunks (full table in §2.16) |
 | the same routes with the env removed | `200` — `unconfigured` is fail-open for a document and the preview is unaffected |
@@ -933,7 +938,14 @@ not a closed one. What changed is that the server can now tell who is asking.
 imported by nothing, and described by three comments in this repository as the thing that
 redirects a new account to `/onboarding` — which it never did, because it never ran. The
 comments now say what is true (`EntryShell` renders its own inline onboarding step and
-does not redirect).
+does not redirect) — until §2.21, which gave the server a redirect of its own.
+
+**A rendered private document is `private, no-store`.** `GET /settings`, `/safety` and
+`/notifications` with a valid session return `cache-control: private, no-store, max-age=0,
+must-revalidate`, `pragma: no-cache` and `vary: Cookie, Authorization`. That is the necessary
+companion to "the server verifies and never writes": an HTML document whose content depends
+on a session has to be uncacheable at every layer in front of the origin, or the guard's
+verdict — and the profile inside it — leaks to whoever the CDN serves next.
 
 ### 2.17 Every verb a route does not implement, and a lockfile that lets CI install
 
@@ -958,15 +970,119 @@ is unchanged and remains a packaging decision, not a security one.
 
 ---
 
+### 2.18 A lint gate that can be blocking, built on a debt ledger
+
+`pnpm lint` fails: 314 errors over `src` + `drizzle`, concentrated in ~56 screen files
+(`useExhaustiveDependencies` in `CommandPalette.tsx`, `a11y/*` almost everywhere,
+`noExplicitAny` in `CallOverlay.tsx`). A CI step that fails for every PR in the repository's
+history is information-free, and the two obvious reactions were both refused: mass-fixing 60
+design files (hook dependency arrays and JSX semantics *are* behaviour changes, and a
+repo-wide `--write` would make a later wiring-only diff unprovable), and deleting the step.
+
+`scripts/lint-gate.mjs` + `lint-baseline.json` is the third option. The ledger records how
+many errors each `(file, rule)` pair has today; the gate lints **only the files a branch
+touches** and fails when any of them exceeds its allowance. So a PR cannot add a violation
+to a file that "already has some" — the excuse that makes a repo-wide gate decorative — and
+no PR is blocked by debt it did not create. `pnpm lint:baseline` regenerates it and CI runs
+`--strict-baseline` on `main`, which makes an improvement mandatory to record: **the ledger is
+monotonic**, and `git diff lint-baseline.json` is the debt trend line.
+
+Why not `biome lint --changed --since=<ref>`, the one-liner: measured here, an empty diff
+makes Biome print "The list is empty." and **exit 1**, so a markdown-only change fails CI,
+and its own git scan degrades to "no changed files" in a shallow checkout. The script unions
+the committed and uncommitted diffs, restricts to `src/`+`drizzle/`, and skips paths that no
+longer exist — a deleted file otherwise reaches Biome as
+`internalError/io  No such file or directory`.
+
+Four behaviours were exercised, not assumed: clean run exits 0; a planted 4th
+`useIterableCallbackReturn` in `CallOverlay.tsx` (grandfathered at 3) exits 1 naming the
+rule, the file, the allowance and the instruction not to raise it; a stale ledger under
+`--strict-baseline` exits 1 asking for a shrink; `LINT_BASE` overrides the base ref for local
+runs. And `pnpm lint:code` — the scope this repository owns outright (`src/lib`, the API
+routes, the integrations, the auth domain, the middleware, the schema, `drizzle/`) — is
+**zero-error**, so it blocks, after 8 `useIterableCallbackReturn` sites in `realtime.ts`,
+`audio.ts`, `gpu.ts`, `platform.ts` and `profiles.ts` were braced (callback returns that
+`forEach` discards; behaviour identical).
+
+### 2.19 Pruning as remediation, with the numbers re-measured
+
+`src/components/discover/` — 4 files, 1448 lines, `DiscoverClient` and its
+`profile-card`/`profile-modal`/`stories-rail` parts — is deleted: zero importers outside the
+directory, verified for the bare basenames too (the only `profile-card` matches in the repo
+are CSS class names in `/grid`). `/discover` renders
+`src/components/explore/explore-client.tsx`, which has carried the real API contract since
+§2.9. Deleting it also removed 47 of the repo-wide lint errors, which is the honest way to
+reduce that count: the code that fails the rules and the code that is unreferenced are the
+same code.
+
+Re-measured after the deletion, with the graph written down so the next pass re-measures
+instead of re-quoting: every file under `src/routes/` plus everything `src/routeTree.gen.ts`
+names is a root, `#/` and relative specifiers are followed transitively, tests excluded →
+**160 of 364 non-test source files (43%)** are unreachable (`core` 71, `components` 36,
+`lib` 22, `domains` 16, `integrations` 5, `data` 4, `hooks` 4). It was 57% when the audit
+started. Two clusters must not be pruned by that graph alone, and are the reason the number
+is a starting point rather than a to-do list: `src/core/**` is tested (22 of its files have
+passing specs, so §3.17's UI debt and §3.7's "unreachable" overlap in files somebody owns)
+and `src/domains/demo` is read at runtime through `VITE_ENABLE_DEMO`, which no static import
+expresses.
+
+### 2.20 `node_modules/prisma` was never needed
+
+`pnpm why prisma` answers §3.16 directly: the only thing requiring it is pnpm's own
+`auto-install-peers` resolving `drizzle-orm`'s optional `prisma` peer. Nothing in the
+repository imports `prisma` or `@prisma/client`; `drizzle-kit` and `drizzle-orm` work without
+them. So `.npmrc` gained `auto-install-peers=false`, which:
+
+* removes 1257 lines from `pnpm-lock.yaml` — the whole optional-peer closure
+  (`@prisma/engines`, `@prisma/studio-core`, `@prisma/query-plan-executor`, the AWS/Cloudflare
+  driver peers of `drizzle-orm`) — leaving 28 lines changed instead of a 1300-line re-resolve;
+* makes `pnpm install` stop printing "Ignored build scripts: … prisma" and stop creating
+  `node_modules/prisma`, which was the artefact that made the stack look half-migrated;
+* keeps typecheck, 196 tests, `vite build` and `pnpm install --frozen-lockfile` green, which
+  is the evidence that no runtime peer was actually being satisfied that way.
+
+The one-off cost is that *future* genuinely-needed peers must be declared as direct
+dependencies instead of implicitly hoisted. That is the preferable failure mode (a missing
+module at install or build time, versus a package manager silently guessing at a
+dependency graph), and it is why the option is documented in `.npmrc` rather than left
+implicit.
+
+### 2.21 A signed-in account with no profile row is routed by the server
+
+The last branch of §3.3. `#/lib/provisioning.server` answers "does this auth id have a
+`public.users` row?" for both the document guard and (by contract, not by call) the
+`/api/auth/me` shape, and it is **three**-valued — `present | missing | unknown`, where
+`unknown` is a missing `DATABASE_URL`, a refused pooler or a timeout. A render must not read
+an outage as "this account is new": that would send every signed-in user to a form that
+writes a profile row over a healthy one, turning a health check into a data bug. So
+`unknown` renders; only an empty `SELECT` redirects, to `/onboarding`.
+
+`documentDecision()` is separated from the I/O so the navigation table is testable without a
+request, a database or a project (5 cases, `src/lib/__tests__/document-auth.test.ts`), and
+`/onboarding` is deliberately *not* guarded: the same rule at the destination is a loop, and
+loops are this class of guard's characteristic failure. Measured against a configured dev
+server with no database: valid `200`, chunked `200`, expired `200`, forged `307 →
+/auth/sign-in`, no cookie `307 → /auth/sign-in`, `/discover` `200`, `/onboarding` `200`. The
+`missing` branch cannot be probed here (no Postgres, §3.13), which is why it is the one
+behaviour in this audit carried by a unit test rather than by a `curl`.
+
+This also settles §3.18 the way the finding asked to be settled: the endpoint and the guard
+now share one predicate, so `EntryShell` re-deriving it in the browser is a small cleanup
+against a single source of truth, not a fork in the logic.
+
+---
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
-Nineteen entries, and the split is the point: **§3.1, 3.2, 3.3, 3.8, 3.10, 3.15 are closed**
-with the reasoning kept, because a closed finding that does not say *why* it is closed
-becomes a re-audit; **§3.5, 3.6, 3.9, 3.11, 3.13, 3.16 are each one deliberate half** whose
-other half is a mechanism (a lint rule, a trigger, an apply) rather than more code; and
-**§3.4, 3.7, 3.12, 3.14, 3.17, 3.18, 3.19 need a product or schema decision** — for those,
-inventing an implementation is how a second, worse truth gets committed, so each entry says
-what to decide instead of deciding it here.
+Nineteen entries, and the split is the point: **§3.1, 3.2, 3.3, 3.8, 3.10, 3.15, 3.16, 3.17
+are closed** with the reasoning kept, because a closed finding that does not say *why* it is
+closed becomes a re-audit; **§3.5, 3.6, 3.7, 3.9, 3.11, 3.13, 3.18 are each one deliberate
+half** whose other half is a mechanism (a lint rule, a trigger, an apply, one shell's import)
+rather than more code; and **§3.4, 3.12, 3.14, 3.19 need a product or schema decision** — for
+those, inventing an implementation is how a second, worse truth gets committed, so each entry
+says what to decide instead of deciding it here. The most recent closures (§2.18–§2.21) came
+from the same reflex: prefer the change that makes a signal blocking, a subtree gone, a
+lockfile honest, or a redirect real over the change that adds code nobody asked for.
 
 1. **~~Still-missing endpoints~~ — closed by §2.8**, except by decision: no
    `/api/auth/*` should ever exist (Supabase owns the session), and `/api/users`
@@ -995,7 +1111,10 @@ what to decide instead of deciding it here.
    "protected only after hydration" by `AuthGate`/`auth-guard`; nothing protected them at
    any layer, because `src/components/auth-gate.tsx` was imported by no route. It is
    deleted, the guard is `beforeLoad` on the nine routes whose screen belongs to somebody,
-   and `/discover`//`/grid` stay public on purpose.
+   and `/discover`//`/grid` stay public on purpose. Its last open branch — an authenticated
+   id with no profile row getting an empty private screen instead of being routed to the flow
+   that fills it — is closed by §2.21, including the outage rule that had to exist before that
+   branch could be closed safely.
 4. **`script-src 'unsafe-inline'` is still required** because TanStack Start
    inlines the hydration payload. Nonces + `'strict-dynamic'` (or a
    hashed-per-response payload) is the follow-up; until then a stored XSS in a
@@ -1019,42 +1138,33 @@ what to decide instead of deciding it here.
    item — building the map popup from `textContent`/elements instead of a fixed string —
    is a design-file change and is left to the owner. DOMPurify remains a dependency
    imported by nothing.
-6. **Unowned modules — mostly resolved.** Deleted in §2.13: `src/routes/test.tsx`,
-   `src/routes/platform/index.tsx`, `src/domains/auth/test-accounts.ts`,
-   `src/components/providers.tsx`; deleted in §2.16: `src/components/auth-gate.tsx`, which
-   no route rendered. `src/lib/r2-upload.ts` and `src/lib/crypto.ts`, named by an earlier
-   pass, no longer exist. Re-checked rather than assumed: `src/utils/cn.ts` is *not* a
-   duplicate `cn()` implementation — it is a one-line re-export of `cn` from
-   `src/lib/utils.ts` — so there is nothing to merge and the 26 files importing it should
-   be left alone. What is genuinely still open here is ownership, not code — and the
-   previous version of this entry overstated it: `src/core/ui/organisms/*` is **not** all
-   unreachable. `GridFilters.tsx` and the `organisms/filters/*` subtree render inside
-   `/grid` today; what has no importer outside `src/core/ui` is the flat set —
-   `CommandCenter`, `CommandCenterTrigger`, `NavBar`, `VideoPlayer`, `ProfileMiniCard`,
-   `LocationChooser`, `PlaceSearch`, `IncomingMessageToast`, `LocateMeButton`,
-   `ProgressiveBlur` (10 of the 26, `src/routes/grid/index.tsx` and
-   `src/routes/profile/$profileId/index.tsx` being the two route files that import from
-   that directory at all). Whether those ten are the design system's future or its past is
-   an owner's call, not a reviewer's; they are also the reason `src/lib/audio.ts` and
-   `src/lib/geocoding.ts` look orphaned when they are used by them.
-7. **~44% of `src/` is unreachable from any route**, re-measured after §2.13–§2.16
-   (it was 57%, 212 of 370, when the audit started; 162 of 367 non-test files now). The
-   graph is: every file under `src/routes/` plus everything `src/routeTree.gen.ts` names is
-   a root, `#/`/relative specifiers are followed transitively, tests are excluded. By area:
-   `src/core` 71, `src/components` 40, `src/lib` 21, `src/domains` 16, and single files in
-   `data`, `hooks`, `integrations`, `types`. Two entries in that set are *not* dead weight
-   and should not be pruned by a graph: `src/core/**` is tested (22 of its files have
-   passing specs) and `src/domains/demo` is what `VITE_ENABLE_DEMO` turns on at runtime, so
-   no static import reaches it from the routes that consult the flag. What the number is
-   actually telling you: `src/components/discover/discover-client.tsx` (476 lines) has no
-   importer at all since `/discover` was routed to `components/explore/explore-client.tsx`,
-   and `/onboarding` duplicates the inline `<Onboarding>` step `EntryShell` renders — two
-   screens, one flow, no navigation between them (§2.16's correction of the "auth-gate
-   redirects here" comment is the same finding from the other side). Prune with the tests as
-   the guide, one module per commit, and re-run the measurement rather than trusting this
-   number after the next deletion. `pnpm-workspace.yaml` still carries ~900 lines of
-   tool-managed `dyad-default-allow-builds` entries; they are the sandbox's, not the app's,
+6. **Unowned modules — further reduced.** Deleted in §2.13: `src/routes/test.tsx`,
+   `src/routes/platform/` and the five browser-authority modules; in §2.16:
+   `src/components/auth-gate.tsx` (imported by nothing, and its comment claimed a redirect
+   that did not exist); in §2.19: `src/components/discover/`, four files and 1448 lines whose
+   only live reference was its own test. Each of those deletions also removed lint errors,
+   which is the honest ordering: the code that fails the rules and the code nobody imports are
+   largely the same files. What is left in this finding is the part deletion cannot solve —
+   `src/core/**` and the unused `src/components/**` leaves, whose real problem is §3.17's lint
+   debt and whose fix is a per-module decision about whether the design system is a product or
+   a fixture. The static graph that produced these numbers is written down in §2.19, so the
+   next pass re-measures instead of re-quoting this one.
+
+7. **~43% of `src/` is unreachable from any route** — 160 of 364 non-test files, re-measured
+   after §2.19's deletion (it was 57%, 212 of 370, when the audit started, and 44% after
+   §2.13–§2.16). By area: `src/core` 71, `src/components` 36, `src/lib` 22, `src/domains` 16,
+   and single files in `data`, `hooks`, `integrations`, `types`. Two sets must **not** be
+   pruned on the graph alone: `src/core/**` is tested (22 of its files have passing specs) and
+   `src/domains/demo` is what `VITE_ENABLE_DEMO` turns on at runtime, so no static import
+   reaches it from the routes that consult the flag. The finding's two named examples are now
+   closed: `src/components/discover/discover-client.tsx` is deleted (§2.19), and `/onboarding`
+   has its first real entry point because the guard routes an unprovisioned account to it
+   (§2.21) — two screens, one flow, and now a direction to travel between them. Prune the rest
+   one module per commit with the tests as the guide, and re-run the measurement rather than
+   trusting this number after the next deletion. `pnpm-workspace.yaml` still carries ~900 lines
+   of tool-managed `dyad-default-allow-builds` entries; they are the sandbox's, not the app's,
    and hand-editing them has broken installs before.
+
 8. **~~Seeds write `password_hash` with bcryptjs~~ — closed by §2.10.**
    `scripts/seed.mjs` creates the login through `POST /auth/v1/admin/users`
    before it inserts the row, and refuses to run at all when the service key is
@@ -1146,42 +1256,37 @@ what to decide instead of deciding it here.
     setting, and `VITE_VAPID_PUBLIC_KEY` in the browser (`.env.example` documents all four).
     Until that happens, a push subscription is stored and never used, and stale
     stories/meetnow posts are filtered at read time forever instead of being cleaned.
-16. **`pnpm-lock.yaml` still resolves the Prisma-era optional peers, but CI installs
-    again.** The blocking half was real and is fixed (§2.17): the lockfile did not match
-    `package.json` after the Prisma removal, and `Dockerfile:27` and `.github/workflows/ci.yml:31`
-    both run `pnpm install --frozen-lockfile`, so every pipeline and image build since was
-    red on the first step. What is left is cosmetic: `prisma` is gone from the importers,
-    but `drizzle-orm`'s optional peer graph still records `@prisma/client@7.10.0`, so
-    `pnpm install` materialises `node_modules/prisma` and prints "Ignored build scripts:
-    … prisma". Silencing that means `pnpm.peerDependencyRules`/`overrides` in
-    `package.json` or a `--lockfile-only` re-resolve (~1300 lines touching every transitive
-    dependency) — a packaging decision, deliberately not folded into a security pass.
-17. **`pnpm lint` and `pnpm check:changed` fail on `main`, and CI has been running red
-    because of it.** Measured at this tip: `biome lint` exits 1 with 369 errors and 130
-    warnings repo-wide; `pnpm check:changed` (`biome check src/lib src/routes/api drizzle
-    src/db.ts src/schema.ts`) exits 1 with 28 errors and 36 warnings. **None of them are in
-    files this audit edited** — every file touched by §2.9 through §2.17 was brought to
-    clean and re-checked, which is also why the audit refuses to let Biome reformat files it
-    did not functionally change: a 369-error sweep across the design components would destroy
-    the ability to prove any later diff is wiring-only. The named diagnostics concentrate in
-    six files (`src/components/CommandPalette.tsx`, `CallOverlay.tsx`, `EntryShell.tsx`,
-    `ErrorBoundary.tsx`, `src/routes/right-now/index.tsx`, `src/routes/grid/index.tsx`) and
-    are mostly `useIterableCallbackReturn`, `useExhaustiveDependencies`,
-    `noExplicitAny`/`noNonNullAssertion` and `a11y/*` — real, individually small, and in
-    screens somebody should review while they are touching that screen anyway. `ci.yml`'s
-    `Lint` step therefore reports a failure for every PR, which is how a linter stops being a
-    signal: fix the six files and narrow the gate, or narrow the gate and say so.
-18. **`/api/auth/me` implements the shell's contract and nothing calls it.** It maps
-    `users` → `ProfileUser`, distinguishes "not signed in" (`200 {user: null}`) from
-    "signed in, no profile row" so the caller can choose sign-in versus onboarding, and is
-    covered by tests. `src/components/EntryShell.tsx`, which is the thing that needs those
-    facts, queries `profiles` through supabase-js instead — a second implementation of the
-    same decision, in the browser, on a table the revoke in §2.10 keeps read-only. Either
-    move `EntryShell` onto the endpoint (its loader gets one round trip and the server keeps
-    the mapping) or delete the endpoint and let `documentSession` (§2.16) be the only
-    answer. This pass leaves both in place and records it, because deleting a working
-    endpoint on the strength of a grep, in a tree where the *document* guard just moved,
-    would be the kind of change nobody can review the next day.
+16. **~~`pnpm-lock.yaml` still resolves the Prisma-era optional peers.~~ Closed by §2.20.**
+    `pnpm why prisma` showed `node_modules/prisma` existed only because pnpm's
+    `auto-install-peers` resolves `drizzle-orm`'s *optional* `prisma` peer; nothing imports it.
+    `.npmrc` now sets `auto-install-peers=false`, the lockfile lost 1257 lines, and
+    `pnpm install --frozen-lockfile`, typecheck, 196 tests and `vite build` all pass afterwards.
+    The standing consequence is written in `.npmrc`: a future peer that is genuinely required
+    must be added as a direct dependency, not assumed.
+
+17. **~~`pnpm lint` fails on `main` and CI has been running red since `7637929`.~~ The gate is
+    closed; the debt is not.** §2.18 pins `biome check` on every file this repository touches
+    and makes a *diff* gate blocking through `lint-baseline.json`, so a PR cannot add a
+    violation to a file that already has some. 314 errors remain across ~56 screen files —
+    `useExhaustiveDependencies` in `CommandPalette.tsx`, `a11y/noStaticElementInteractions` and
+    `a11y/useKeyWithClickEvents` in nearly every interactive div, `useSemanticElements` where a
+    `div` should be a `button`, `noExplicitAny` in `CallOverlay.tsx`. Fixing them is a per-file
+    change to hook arrays and JSX semantics, which *is* behaviour, and it is worth doing exactly
+    once per file with the preview open — the ledger is what makes that ordering safe, since
+    every fix has to shrink it in the same commit and every regression has to fail CI. This
+    audit is not going to pretend a sweep of 60 design files was a refactor.
+
+18. **~~`/api/auth/me` implements the shell's contract and nothing calls it.~~ Decided, and half
+    closed.** The endpoint stays (§2.21): the server-side mapping to `ProfileUser` and the
+    `{ user: null }`-rather-than-401 distinction are what a shell needs, and re-deriving them
+    per screen is how three login states get committed. The server-side twin of its
+    "provisioned?" question now exists and is shared with the document guard, so the guard
+    routes instead of rendering an empty screen. What remains is the mechanical half:
+    `EntryShell` should stop deciding who is signed in in the browser, and one of
+    `src/routes/onboarding.tsx` and the inline `<Onboarding>` step it duplicates should be
+    deleted — §2.21 gave the route its first caller, so the duplication is now a fork rather
+    than a curiosity.
+
 19. **The session is a cookie now, and it is not `HttpOnly`.** Listed so it is not
     rediscovered as an oversight: `@supabase/ssr`'s browser client has to read the session
     it wrote, so `sb-<ref>-auth-token` is script-readable exactly as `localStorage` was.
@@ -1233,22 +1338,28 @@ what to decide instead of deciding it here.
 
 ## 5. Suggested order for the next pass
 
-1. **§3.17** — six files, one `pnpm lint` gate that is green again. Cheap, and it restores
-   the only signal that catches the sink class §2.17 just pinned.
-2. **Apply the migrations for real** (`supabase db push` against a throwaway project, then
-   `pg_policies`, then `pnpm db:seed`). This is the last item whose answer cannot be
-   obtained by reading; everything static the audit could assert about the SQL, it now does.
-3. **§3.18** — `EntryShell` onto `/api/auth/me`, or the endpoint goes. Then the browser
-   stops deciding who is signed in.
-4. **§3.19** — `HttpOnly` + a server-side refresh path, which also retires the last
-   script-readable session storage in the app.
-5. **§3.12** — Premium is a product decision with a known plug-in point
-   (`#/lib/economy.ts`); §3.7 and §3.9 are the two sweeps that make the tree smaller and
-   the vocabulary single-valued, best done one table or one module per commit.
+1. **Apply the migrations for real** (`supabase db push` against a throwaway project, then
+   `pg_policies`, then `pnpm db:seed`). This is the last item whose answer cannot be obtained
+   by reading, and it is also what turns §2.21's `missing → /onboarding` branch from a unit
+   test into a behaviour: with no Postgres here, `profileRowExists` can only ever return
+   `unknown` (§3.13).
+2. **§3.18's mechanical half** — `EntryShell` onto the guard or `/api/auth/me`, and delete one
+   of the two onboarding screens. Small, and it removes the last place where a browser decides
+   who is signed in.
+3. **§3.19**, with §3.4 read first: `HttpOnly` needs a server-side exchange, and the CSP that
+   would make script-readable storage non-extractive is the other half of the same decision.
+4. **§3.17's debt, file by file**, running `pnpm lint:baseline` in the same commit as each fix
+   so the ledger shrinks where it should be visible. `--strict-baseline` on `main` makes
+   skipping that step fail CI.
+5. **§3.12** (Premium is a product decision with a known plug-in point in `#/lib/economy.ts`),
+   then **§3.9** (single-valued tribe vocabulary) and **§3.7** (pruning, one module per commit,
+   re-measured each time with §2.19's script).
 
-Closed since the first draft of this list: the wallet/entitlement ledger (§2.13), the inbox
-and social graph leaving the browser (§2.13), the safety record and its notifications (§2.14,
-§2.15), the migration sequence abort (§2.15), the 405/404 surface (§2.17), and cookie
-sessions → an SSR guard (§2.16) — which was step 3 of the previous version of this list and
-the last item in it that was an authorisation gap rather than a decision.
-
+Closed since the first draft of this list: the wallet/entitlement ledger (§2.13), the inbox and
+social graph leaving the browser (§2.13), the safety record and its notifications (§2.14,
+§2.15), the migration sequence abort (§2.15), the 405/404 surface (§2.17), cookie sessions →
+an SSR guard (§2.16) and its provisioning branch (§2.21), the dead discover subtree and the
+Prisma-shaped lockfile (§2.19, §2.20), and a lint gate that blocks instead of decorating
+(§2.18). Items 1 and 2 of the previous version of this list — "six files, one green
+`pnpm lint`" and "`/api/auth/me`: move the shell or delete the endpoint" — are what those
+four sections replaced.

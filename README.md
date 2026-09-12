@@ -27,7 +27,16 @@ pnpm build
 
 # Test
 pnpm test
+
+# Check your own work before pushing (format, lint, imports)
+pnpm check --write
 ```
+
+Everything above runs offline. `pnpm check --write` is what a contributor needs: it is the
+Biome gate for the files you name, and CI blocks on the same rules for *changed* files
+(`pnpm lint:changed`) and on the API/integration/lib scope outright (`pnpm lint:code`). The
+repo-wide `pnpm lint` still reports ~314 pre-existing errors in screen components and exits
+1 — see AUDIT.md §2.18 for why that is a ledger, not a to-do you must finish first.
 
 ## Architecture
 
@@ -70,10 +79,18 @@ reads: `drizzle-kit push` would `drop` what this schema does not model, so
 |---------|-------------|
 | `pnpm dev` | Start dev server |
 | `pnpm build` | Production build |
-| `pnpm test` | Run tests |
+| `pnpm test` | Run tests (unit, no network) |
 | `pnpm typecheck` | Type check |
+| `pnpm verify` | `typecheck` + `test` + `build` + `lint:code`, the whole pre-push gate |
+| `pnpm check` / `pnpm format` | Biome check (lint + format + import order) / format only. Pass paths — bare means the repo |
+| `pnpm lint` | `biome lint`, repo-wide. **Exits 1 on ~314 grandfathered errors** by design; use the two below |
+| `pnpm lint:code` | Zero-tolerance lint of the API/integration/lib/schema scope. Blocking |
+| `pnpm lint:changed` | Blocking gate for the diff against `main`, checked against `lint-baseline.json` (a changed file may not exceed its recorded count per rule) |
+| `pnpm lint:baseline` | Regenerate `lint-baseline.json` after fixing violations, in the same commit as the fix |
+| `pnpm generate-routes` | `tsr generate` — re-run after adding or renaming a route file, or `tsc` will not know it exists |
 | `pnpm db:generate` | Generate a Drizzle SQL diff from `drizzle/schema.ts` |
 | `pnpm db:push` | Apply the Drizzle schema to `DATABASE_URL` |
+| `pnpm db:migrate:sql` | Run every `supabase/migrations/*.sql` in filename order with `ON_ERROR_STOP=1`. Prefer `supabase db push` for a real project: the legacy `002_rls`/`003_storage`/`004_functions` files sort *after* `0024`, and the numbered chain is written to be idempotent but ordered |
 | `pnpm db:studio` | Browse the database (Drizzle Studio) |
 | `pnpm test:e2e` | Playwright suite in `e2e/` (boots the dev server) |
 | `pnpm db:seed` | Seed database |
