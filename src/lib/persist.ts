@@ -170,19 +170,70 @@ export const opfs = {
 
 /* ----------------------------- service worker --------------------------- */
 
-export type SwStatus = "unsupported" | "registering" | "active" | "unavailable";
+export type SwStatus =
+  | "unsupported"
+  | "registering"
+  | "active"
+  | "unavailable"
+  | "disabled-in-dev";
+
+/**
+ * Registers `public/sw.js`, once per page, and hands back the registration.
+ *
+ * Three things the previous version got wrong, each of which is the difference between a
+ * working install and one that silently never happens:
+ *
+ *   * `"./sw.js"` is resolved against the *document* URL, so a route rendered at a path
+ *     with a trailing slash looked for `/settings/sw.js`, the register promise rejected,
+ *     and the catch turned it into "unavailable" with nothing logged. A service worker is
+ *     scoped by URL, so it is addressed absolutely.
+ *   * `await navigator.serviceWorker.ready` **never resolves** while no worker is
+ *     registered for the scope — that is how `registerPushSubscription()` managed to hang
+ *     for the whole session (it awaited readiness without ever registering anything), and
+ *     it is why a caller here gets the registration object itself rather than a promise
+ *     with no failure path.
+ *   * A caching worker in front of Vite's dev server is a self-inflicted debugging tax:
+ *     HMR chunks stop matching the ones on disk. Development therefore declines to
+ *     register and *says so with a status*, and `#/lib/push` surfaces that as text instead
+ *     of pretending the feature is on. `pnpm start` serves the production build, which is
+ *     where the offline shell and push are meant to be exercised anyway.
+ */
+let pending: Promise<ServiceWorkerRegistration | null> | null = null;
+
+export function serviceWorkerRegistration(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return Promise.resolve(null);
+  }
+  if (location.protocol === "file:") return Promise.resolve(null);
+  if (!import.meta.env.PROD) return Promise.resolve(null);
+  if (!pending) {
+    pending = navigator.serviceWorker
+      .register("/sw.js", { scope: "/" })
+      .then(async (reg) => {
+        // Without this, a deploy can take a whole *further* navigation to reach the user,
+        // because the browser only re-checks the worker script opportunistically.
+        await reg.update().catch(() => undefined);
+        return reg;
+      })
+      .catch(() => null);
+  }
+  return pending;
+}
 
 export async function registerServiceWorker(): Promise<SwStatus> {
-  if (!("serviceWorker" in navigator)) return "unsupported";
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+    return "unsupported";
+  }
   // A single-file build has no separate script to register; say so rather than pretend.
   if (location.protocol === "file:") return "unavailable";
-  try {
-    const reg = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
-    await navigator.serviceWorker.ready;
-    return reg.active ? "active" : "registering";
-  } catch {
-    return "unavailable";
-  }
+  if (!import.meta.env.PROD) return "disabled-in-dev";
+  const reg = await serviceWorkerRegistration();
+  if (!reg) return "unavailable";
+  if (reg.active && navigator.serviceWorker.controller) return "active";
+  // First visit: the worker installs and activates, but this document was not controlled
+  // by it. Reporting "active" here would be the same lie the old comment told about
+  // `AuthGate` — a claim about a component that never ran.
+  return reg.installing || reg.waiting ? "registering" : "active";
 }
 
 /* ------------------------------ install prompt -------------------------- */

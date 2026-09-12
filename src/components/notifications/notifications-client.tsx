@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect } from "react";
 import { Avatar } from "#/components/ui/Avatar";
+import { PushRow } from "#/components/notifications/push-row";
+import { setUnreadBadge } from "#/lib/badge";
+import { onPushMessage, restorePush, syncPushSubscription } from "#/lib/push";
+import { registerServiceWorker } from "#/lib/persist";
 import { Button, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
@@ -39,54 +43,69 @@ const ICONS: Record<string, { icon: typeof Bell; color: string }> = {
  * to same-origin, app-relative paths before they reach an <a href>. This blocks
  * `javascript:`/`http://evil` and protocol-relative `//host` values.
  */
+/**
+ * A scheme, in anything that claims to be a path. Exported as a named constant so
+ * `public/sw.js` can carry the *same literal text* and `src/lib/app-shell.test.ts` can
+ * require the two to stay identical: the notification tap path is a second, uncompiled
+ * consumer of the same untrusted `href` column, and two hand-copied filters drift.
+ */
+export const UNSAFE_SCHEME = /^[a-z][a-z0-9+.-]*:/i;
+
 export function safeDeepLink(value: string | null | undefined): string | null {
 	if (!value) return null;
 	if (!value.startsWith("/") || value.startsWith("//")) return null;
-	if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return null;
+	if (UNSAFE_SCHEME.test(value)) return null;
 	return value;
 }
 
-/** Register the service worker and subscribe to push notifications. */
-async function registerPushSubscription() {
-	if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-
-	const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-	if (!vapidKey) return;
-
-	try {
-		const permission = await Notification.requestPermission();
-		if (permission !== "granted") return;
-
-		const reg = await navigator.serviceWorker.ready;
-		const subscription = await reg.pushManager.subscribe({
-			userVisibleOnly: true,
-			applicationServerKey: vapidKey,
-		});
-
-		const sub = subscription.toJSON();
-		if (sub.endpoint && sub.keys) {
-			await api("/api/push/subscribe", {
-				method: "POST",
-				body: {
-					endpoint: sub.endpoint,
-					p256dh: sub.keys.p256dh,
-					auth: sub.keys.auth,
-				},
-			});
-		}
-	} catch {
-		// Push subscription failed silently — non-critical
-	}
+/**
+ * Nothing happens on mount except reads. Permission is only ever requested from the
+ * `PushRow` button (`#/lib/push` explains why that distinction is not cosmetic), and the
+ * service worker is registered here — rather than inside `PushRow` — because the offline
+ * shell and the app badge need it too, so it must exist even for a user who never touches
+ * the notifications screen.
+ */
+async function prepareDevice(): Promise<void> {
+	await registerServiceWorker();
+	await syncPushSubscription();
 }
 
 export function NotificationsClient() {
 	const qc = useQueryClient();
 	const pushToast = useAppStore((s) => s.pushToast);
 
-	// Register push notifications on mount
 	useEffect(() => {
-		registerPushSubscription();
+		void prepareDevice();
 	}, []);
+
+	/**
+	 * The service worker cannot route, refetch or re-subscribe by itself (no document, no
+	 * providers), so it posts these three things and this is where they land:
+	 * `fyk:navigate` from a notification click, `fyk:inbox-dirty` when a push arrived or was
+	 * dismissed while the app was open, and `fyk:push-resync` after the browser dropped the
+	 * subscription. Navigating with `location.assign` rather than the router is deliberate —
+	 * it works while the route tree is still hydrating, which is exactly when a user taps a
+	 * notification.
+	 */
+	useEffect(() => {
+		return onPushMessage((message) => {
+			if (message.type === "fyk:inbox-dirty") {
+				qc.invalidateQueries({ queryKey: ["notifications"] });
+				return;
+			}
+			if (message.type === "fyk:push-resync") {
+				// Re-subscribe (no prompt: permission is already granted), and if the
+				// browser will not, at least re-POST whatever it does hold.
+				void restorePush().then(() => syncPushSubscription());
+				return;
+			}
+			if (window.location.pathname + window.location.search !== message.href) {
+				window.location.assign(message.href);
+			} else {
+				qc.invalidateQueries({ queryKey: ["notifications"] });
+			}
+		});
+	}, [qc]);
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["notifications"],
@@ -124,6 +143,14 @@ export function NotificationsClient() {
 	const items = data?.notifications ?? [];
 	const unread = data?.unread ?? 0;
 
+	// The home-screen badge is derived from the same number the "N new" chip above uses, so
+	// the two can never disagree while this screen is open. `#/lib/badge` is a no-op where
+	// the platform has no badging API.
+	useEffect(() => {
+		if (isLoading) return;
+		void setUnreadBadge(unread);
+	}, [unread, isLoading]);
+
 	const groups = items.reduce<Record<string, Notification[]>>((acc, n) => {
 		const bucket = !n.read
 			? "New"
@@ -148,6 +175,8 @@ export function NotificationsClient() {
 			<p className="mb-4 text-sm text-muted">
 				Taps, matches, views and AI suggestions — all in one place.
 			</p>
+
+			<PushRow />
 
 			{items.length > 0 && (
 				<div className="mb-4 flex gap-2">

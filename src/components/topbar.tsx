@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { Search, Crown, Bell } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import {api} from "@/lib/client";
+import { setUnreadBadge } from "@/lib/badge";
+import { registerServiceWorker } from "@/lib/persist";
 import { useAppStore } from "@/lib/store";
 import type { ProfileUser } from "@/lib/types";
 
@@ -30,6 +32,18 @@ export function Topbar({ user }: { user: ProfileUser }) {
     const t = setInterval(load, 30000);
     return () => { alive = false; clearInterval(t); };
   }, []);
+
+  // The offline shell, push delivery and the app badge all hang off one registration, and
+  // this is the component every signed-in screen renders — so this is where the worker gets
+  // installed rather than inside a notifications screen the user may never open. Both calls
+  // are idempotent and both are prod-only; see #/lib/persist and #/lib/badge.
+  useEffect(() => {
+    void registerServiceWorker();
+  }, []);
+
+  useEffect(() => {
+    void setUnreadBadge(unread);
+  }, [unread]);
 
   useEffect(() => {
     if (q.trim().length < 1) { setResults([]); return; }
