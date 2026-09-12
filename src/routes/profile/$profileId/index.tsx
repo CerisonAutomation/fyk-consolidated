@@ -21,7 +21,7 @@ import { useSendTap } from "#/core/api/hooks/use-taps";
 import { useRecordView } from "#/core/api/hooks/use-views";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 const PhotoLightbox = lazy(() => import("#/core/ui/organisms/PhotoLightbox").then(m => ({ default: m.PhotoLightbox })));
-import { conversationIdFor, demoMediaUrl } from "#/domains/demo";
+import { demoMediaUrl } from "#/domains/demo";
 import { cn } from "#/lib/utils";
 
 const PROFILE_STAT_SKELETON_IDS = ["height", "weight", "body", "position"];
@@ -416,7 +416,9 @@ function PhotoCarousel({
 function ProfilePage() {
 	const { profileId } = Route.useParams();
 	const router = useRouter();
-	const numericId = Number(profileId);
+	// Supabase ids are uuids; `Number(profileId)` used to produce NaN here,
+	// which is why this screen never rendered a profile.
+	const numericId = profileId;
 
 	const { data: profile, isLoading, error } = useProfile(numericId);
 	const addFavorite = useAddFavorite();
@@ -431,7 +433,7 @@ function ProfilePage() {
 	const [actionMessage, setActionMessage] = useState<string | null>(null);
 
 	useEffect(() => {
-		if (Number.isFinite(numericId)) {
+		if (numericId) {
 			recordView({ profileId: numericId });
 		}
 	}, [numericId, recordView]);
@@ -816,7 +818,11 @@ function ProfilePage() {
 						{/* Message (gold) */}
 						<Link
 							to="/chat/$conversationId"
-							params={{ conversationId: conversationIdFor(numericId) }}
+							// `new` + `?with=` asks `POST /api/conversations` for the pair's thread
+							// (idempotent per pair); the `min:max` composite this used to build
+							// matched nothing in Supabase.
+							params={{ conversationId: "new" }}
+							search={{ with: numericId }}
 							className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl gold-gradient text-black font-display tracking-wider hover:shadow-[0_0_24px_-2px_rgba(212,175,55,0.45)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] transition-all duration-200 shimmer-btn btn-press"
 							style={{ fontSize: "var(--fs-sm)" }}
 						>
@@ -828,7 +834,7 @@ function ProfilePage() {
 							type="button"
 							onClick={() => {
 								sendTap.mutate(
-									{ recipientId: numericId, tapType: 0 },
+									{ recipientId: numericId, tapType: 1 },
 									{
 										onSuccess: () => setActionMessage("Tap sent"),
 										onError: () => setActionMessage("Tap could not be sent"),

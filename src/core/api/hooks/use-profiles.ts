@@ -1,161 +1,73 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import { api } from "#/lib/client";
 
-// -- Schemas (inlined from open-grind model) --
+/**
+ * Profile reads and the caller's own profile write.
+ *
+ * These used to be `fetchRest("/v7/profiles/{id}")` — the REST surface of the
+ * project this one was merged from. Nothing here served `/v7`, and the ids it
+ * expected were numeric while every id in this database is a uuid, so the
+ * profile screen fetched `/v7/profiles/NaN`. They are now thin wrappers over the
+ * Supabase-backed `/api` routes, which is where the authorisation actually lives
+ * (Row Level Security protects the browser's own reads; a list of *other* people
+ * must go through a check, so it goes through the API).
+ */
 
-export const profileSchema = z.record(z.string(), z.unknown());
-export type Profile = z.infer<typeof profileSchema>;
-
-const profileResponseSchema = z.object({
-	profiles: z.array(profileSchema).length(1),
-});
-
-const profileShortWithRightNowSchema = z.record(z.string(), z.unknown());
-
-const getProfilesResponseSchema = z.object({
-	profiles: z.array(profileShortWithRightNowSchema),
-});
-
-const GET_PROFILES_MAX_IDS = 150;
-
-// -- Query keys --
+export type Profile = Record<string, unknown> & { profileId: string };
+export type ProfileCard = Profile & { id: string };
 
 export const profileKeys = {
 	all: ["profiles"] as const,
-	detail: (profileId: number) =>
-		[...profileKeys.all, "detail", profileId] as const,
-	list: (ids: number[]) => [...profileKeys.all, "list", ids] as const,
+	detail: (profileId: string) => [...profileKeys.all, "detail", profileId] as const,
+	list: (profileIds: readonly string[]) =>
+		[...profileKeys.all, "list", profileIds.join(",")] as const,
+	me: () => [...profileKeys.all, "me"] as const,
 };
 
-// -- Hooks --
+/** One public profile, with the caller's flags about it (favourite, tap, note). */
+export function useProfile(profileId: string | null | undefined) {
+	return useQuery<Profile, Error>({
+		queryKey: profileKeys.detail(profileId ?? ""),
+		queryFn: () =>
+			api<{ profile: Profile }>(`/api/profile/${encodeURIComponent(profileId ?? "")}`).then(
+				(response) => response.profile,
+			),
+		enabled: Boolean(profileId),
+		staleTime: 30_000,
+		retry: false,
+	});
+}
 
-/**
- * Fetch a single profile by ID.
- * Maps to getProfile from open-grind.
- */
-export function useProfile(profileId: number | null | undefined) {
-	return useQuery<Profile, ApiError>({
-		queryKey: profileKeys.detail(profileId ?? 0),
-		queryFn: async () => {
-			const res = await fetchRest(`/v7/profiles/${profileId}`, {
-				method: "GET",
-			});
-			const { profiles } = res.jsonParsed(profileResponseSchema);
-			return profiles[0];
-		},
-		enabled: profileId !== null && profileId !== undefined,
+/** Several profiles at once, for the "blocked / hidden / saved" lists. */
+export function useProfiles(profileIds: readonly string[]) {
+	const ids = [...new Set(profileIds.filter(Boolean))].slice(0, 50);
+	return useQuery<ProfileCard[], Error>({
+		queryKey: profileKeys.list(ids),
+		queryFn: () =>
+			api<{ profiles: ProfileCard[] }>(`/api/profiles?ids=${ids.join(",")}`).then(
+				(response) => response.profiles,
+			),
+		enabled: ids.length > 0,
 		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
+		retry: false,
 	});
 }
 
-/**
- * Fetch multiple profiles by IDs (batched).
- * Maps to getProfiles from open-grind.
- */
-export function useProfiles(profileIds: number[]) {
-	return useQuery<Profile[], ApiError>({
-		queryKey: profileKeys.list(profileIds),
-		queryFn: async () => {
-			if (profileIds.length === 0) return [];
-			const batches: number[][] = [];
-			for (
-				let start = 0;
-				start < profileIds.length;
-				start += GET_PROFILES_MAX_IDS
-			) {
-				batches.push(profileIds.slice(start, start + GET_PROFILES_MAX_IDS));
-			}
-			const results = await Promise.all(
-				batches.map(async (ids) => {
-					const res = await fetchRest("/v3/profiles", {
-						method: "POST",
-						body: { targetProfileIds: ids },
-					});
-					return res.jsonParsed(getProfilesResponseSchema).profiles;
-				}),
-			);
-			return results.flat();
-		},
-		enabled: profileIds.length > 0,
-		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
-	});
-}
-
-/**
- * Patch own profile (partial update).
- * Maps to patchOwnProfile from open-grind.
- */
-export function usePatchProfile() {
-	const queryClient = useQueryClient();
-
-	return useMutation<
-		void,
-		ApiError,
-		{ cacheProfileId: number; patch: Partial<Profile> }
-	>({
-		mutationFn: async ({ patch }) => {
-			const res = await fetchRest("/v4/me/profile", {
-				method: "PATCH",
-				body: patch,
-			});
-			res.assertOk();
-		},
-		onSuccess: (_data, { cacheProfileId, patch }) => {
-			queryClient.setQueryData<Profile>(
-				profileKeys.detail(cacheProfileId),
-				(old) => {
-					if (!old) return old;
-					const merged = { ...old, ...patch };
-					if (patch.socialNetworks) {
-						merged.socialNetworks = {
-							...(old.socialNetworks as Record<string, unknown>),
-							...(patch.socialNetworks as Record<string, unknown>),
-						};
-					}
-					return merged;
-				},
-			);
-		},
-	});
-}
-
-/**
- * Full profile update (PUT).
- * Maps to updateOwnProfile from open-grind.
- */
+/** `PUT /api/profile` — the same save onboarding performs. */
 export function useUpdateProfile() {
 	const queryClient = useQueryClient();
-
-	return useMutation<
-		void,
-		ApiError,
-		{
-			cacheProfileId: number;
-			profile: Profile;
-		}
-	>({
-		mutationFn: async ({ profile }) => {
-			const res = await fetchRest("/v3.1/me/profile", {
+	return useMutation<Profile, Error, Record<string, unknown>>({
+		mutationFn: (patch) =>
+			api<{ ok: boolean; profile: Profile }>("/api/profile", {
 				method: "PUT",
-				body: profile,
-			});
-			if (res.status !== 200) {
-				res.assertOk();
-			}
-		},
-		onSuccess: (_data, { cacheProfileId, profile }) => {
-			queryClient.setQueryData<Profile>(
-				profileKeys.detail(cacheProfileId),
-				(old) => {
-					if (!old) return old;
-					return { ...old, ...profile };
-				},
-			);
+				body: patch,
+			}).then((response) => response.profile),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: profileKeys.all });
 		},
 	});
 }
+
+/** Alias kept for the screens that were written against the older name. */
+export const usePatchProfile = useUpdateProfile;

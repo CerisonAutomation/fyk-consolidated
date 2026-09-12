@@ -1,80 +1,51 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import { api } from "#/lib/client";
 
-// -- Schemas (inlined from open-grind model) --
-
-const getBlockedUsersResponseSchema = z.object({
-	blocking: z.array(
-		z.object({ profileId: z.number(), blockedTime: z.number() }),
-	),
-});
-
-type BlockedUsers = z.infer<typeof getBlockedUsersResponseSchema>["blocking"];
-
-// -- Query keys --
-
+/**
+ * The block list. `blocks` has no Row Level Security (it is not a browser-readable
+ * table), so the read goes through `/api/social?view=blocks`, which also hides
+ * profiles that were deleted or suspended underneath the edge.
+ */
 export const blockKeys = {
 	all: ["blocks"] as const,
 	list: () => [...blockKeys.all, "list"] as const,
 };
 
-// -- Hooks --
+export type BlockedUser = { profileId: string; blockedTime: number };
 
-/**
- * Fetch blocked users list.
- * Maps to getBlockedUsers from open-grind.
- */
 export function useBlockedUsers() {
-	return useQuery<BlockedUsers, ApiError>({
+	return useQuery<BlockedUser[], Error>({
 		queryKey: blockKeys.list(),
-		queryFn: async () => {
-			const res = await fetchRest("/v3.1/me/blocks");
-			return res.jsonParsed(getBlockedUsersResponseSchema).blocking;
-		},
+		queryFn: () =>
+			api<{ blocks: { profile: { id: string }; blockedAt?: string; at?: string }[] }>(
+				"/api/social?view=blocks",
+			).then((response) =>
+				response.blocks.map((entry) => ({
+					profileId: entry.profile.id,
+					// Milliseconds, because the screen formats `new Date(blockedTime)`.
+					blockedTime: Date.parse(entry.at ?? entry.blockedAt ?? "") || Date.now(),
+				})),
+			),
 		staleTime: 5_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
+		retry: false,
 	});
 }
 
-/**
- * Block a user.
- * Maps to blockUser from open-grind.
- */
-export function useBlockUser() {
-	const queryClient = useQueryClient();
-
-	return useMutation<void, ApiError, { profileId: number }>({
-		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v3/me/blocks/${profileId}`, {
-				method: "POST",
-			});
-			res.assertOk();
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: blockKeys.all });
-		},
-	});
+function blockMutation(action: "block" | "unblock") {
+	return function useBlockAction() {
+		const queryClient = useQueryClient();
+		return useMutation<void, Error, { profileId: string }>({
+			mutationFn: async ({ profileId }) => {
+				await api("/api/social", { method: "POST", body: { targetId: profileId, action } });
+			},
+			onSuccess: () => {
+				queryClient.invalidateQueries({ queryKey: blockKeys.all });
+				queryClient.invalidateQueries({ queryKey: ["profiles"] });
+			},
+		});
+	};
 }
 
-/**
- * Unblock a user.
- * Maps to unblockUser from open-grind.
- */
-export function useUnblockUser() {
-	const queryClient = useQueryClient();
-
-	return useMutation<void, ApiError, { profileId: number }>({
-		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v3/me/blocks/${profileId}`, {
-				method: "DELETE",
-			});
-			res.assertOk();
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: blockKeys.all });
-		},
-	});
-}
+export const useBlockUser = blockMutation("block");
+export const useUnblockUser = blockMutation("unblock");

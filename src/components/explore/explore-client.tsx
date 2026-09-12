@@ -14,6 +14,8 @@ import { useState } from "react";
 import { candidatesToPins } from "#/components/map/candidate-pins";
 import { FYKMap } from "#/components/map/FYKMap";
 import { MapSearchBar } from "#/components/map/MapSearchBar";
+import { onlineUntil } from "#/lib/compatibility";
+import { haversineKm } from "#/lib/geo";
 import { getSupabase } from "#/integrations/supabase/client";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
 import type { GeocodingFeature } from "#/lib/geocoding";
@@ -37,7 +39,12 @@ interface ExploreProfile {
 	name: string;
 	age: number | null;
 	photo: string;
-	distance: number;
+	/** Kilometres from the viewer, or `null` when either side has no
+	coarse fix (or the owner hides the distance). */
+	distance: number | null;
+	/** The candidate's coarse position, so map pins sit on real ground. */
+	lat: number | null;
+	lng: number | null;
 	status: "online" | "active" | "offline";
 	verified: boolean;
 	hosting: boolean;
@@ -171,13 +178,16 @@ export function ExploreClient() {
 			const sb = getSupabase();
 			if (!sb) return [];
 
-			// Count users per city, with online count
+			// Count profiles per city, with the online count. `profiles`
+			// (0000 + 0018) is the discoverable projection: the
+			// visibility trio and the suspension flag are already folded into
+			// `discoverable` by the mirror trigger, and `city` is plain text here
+			// rather than the jsonb blob `users` keeps.
 			const { data: rows } = await sb
-				.from("users")
+				.from("profiles")
 				.select("city, online")
 				.in("city", CITY_IDS)
-				.eq("visible", true)
-				.eq("hidden", false);
+				.eq("discoverable", true);
 
 			if (!rows) return [];
 
@@ -223,15 +233,26 @@ export function ExploreClient() {
 			const sb = getSupabase();
 			if (!sb) return [];
 
+			// The viewer's own coarse fix is the other half of every distance
+			// below; without it the card says nothing rather than guessing.
+			let viewerCoords: { lat: number; lng: number } | null = null;
+			if (authUser) {
+				const { data: me } = await sb
+					.from("profiles")
+					.select("lat_coarse, lng_coarse")
+					.eq("id", authUser.id)
+					.maybeSingle();
+				if (me?.lat_coarse != null && me.lng_coarse != null) {
+					viewerCoords = { lat: me.lat_coarse, lng: me.lng_coarse };
+				}
+			}
+
 			let qb = sb
-				.from("users")
+				.from("profiles")
 				.select(
-					"id, pseudo, nick, age, photos, city, area, headline, online, visible, hidden, incognito, last_active_at, created_at, looking_for, tribes",
+					"id, display_name, handle, age, photos, city, area, headline, online, last_active_at, created_at, looking_for, tribes, verification, lat_coarse, lng_coarse, hide_distance",
 				)
-				.eq("visible", true)
-				.eq("hidden", false)
-				.eq("incognito", false)
-				.neq("status", "suspended")
+				.eq("discoverable", true)
 				.eq("city", selectedCity);
 
 			if (authUser) {
@@ -256,20 +277,37 @@ export function ExploreClient() {
 				// Determine status from last_active_at
 				const lastActive = new Date(row.last_active_at).getTime();
 				const minutesSince = (Date.now() - lastActive) / 60_000;
-				const status: ExploreProfile["status"] = row.online
-					? "online"
-					: minutesSince < 60
-						? "active"
-						: "offline";
+				const status: ExploreProfile["status"] =
+					onlineUntil(row.last_active_at, row.online) !== null
+						? "online"
+						: minutesSince < 60
+							? "active"
+							: "offline";
 
 				return {
 					id: row.id,
-					name: row.nick ?? row.pseudo ?? "Someone",
+					name: row.handle ?? row.display_name ?? "Someone",
 					age: row.age ?? null,
 					photo,
-					distance: 0.3,
+					// Real distance from the two coarse fixes, and `null` when
+					// either side is missing one or the owner hides it — a made-up
+					// 0.3 km used to make every listing look like it was next door.
+					distance:
+						viewerCoords &&
+						!row.hide_distance &&
+						row.lat_coarse != null &&
+						row.lng_coarse != null
+							? haversineKm(viewerCoords, {
+									lat: row.lat_coarse,
+									lng: row.lng_coarse,
+								})
+							: null,
+					lat: row.lat_coarse ?? null,
+					lng: row.lng_coarse ?? null,
 					status,
-					verified: false,
+					// 0 none · 1 phone · 2 documents · 3 expert (0001), so a badge
+					// needs documents or better.
+					verified: Number(row.verification ?? 0) >= 2,
 					hosting: lookingFor.includes("Hosting"),
 					lookingFor,
 					tags: tribes.slice(0, 3),
@@ -289,7 +327,11 @@ export function ExploreClient() {
 		if (sort === "recent") {
 			return 0; // already sorted by last_active_at from Supabase
 		}
-		return a.distance - b.distance;
+		// Listings without a distance sort last instead of first, which a
+		// raw subtraction would do once `null` coerced to 0.
+		const at = a.distance ?? Number.POSITIVE_INFINITY;
+		const bt = b.distance ?? Number.POSITIVE_INFINITY;
+		return at - bt;
 	});
 
 	// ── Handlers ──────────────────────────────────────────────────────────
@@ -498,9 +540,12 @@ export function ExploreClient() {
 							id: p.id,
 							name: p.name,
 							photoUrl: p.photo || undefined,
-							distance: p.distance,
+							distance: p.distance ?? undefined,
+							geo:
+								p.lat != null && p.lng != null
+									? { lat: p.lat, lng: p.lng }
+									: undefined,
 							online: p.status === "online",
-							matchScore: p.verified ? 90 : undefined,
 						})),
 						authUser?.id ?? "explore-viewer",
 					)}

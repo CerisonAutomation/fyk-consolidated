@@ -1,78 +1,51 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import { api } from "#/lib/client";
+import { blockKeys } from "./use-blocks";
 
-// -- Schemas (inlined from open-grind model) --
-
-const getHiddenUsersResponseSchema = z.object({
-	hides: z.array(z.object({ profileId: z.coerce.number() })),
-});
-
-type HiddenUsers = z.infer<typeof getHiddenUsersResponseSchema>["hides"];
-
-// -- Query keys --
-
+/**
+ * "Hide this person from me" — `public.hides`, added by `0018`.
+ *
+ * Until that table existed there was nothing to write: `/settings/hidden` was
+ * pointed at `users.hidden`, which is *someone's own* "hide my profile" switch.
+ * Reading or clearing it as a viewer would have edited a stranger's privacy
+ * setting, so the screen read an empty list and the action silently missed.
+ */
 export const hideKeys = {
 	all: ["hides"] as const,
 	list: () => [...hideKeys.all, "list"] as const,
 };
 
-// -- Hooks --
+export type HiddenUser = { profileId: string };
 
-/**
- * Fetch hidden users list.
- * Maps to getHiddenUsers from open-grind.
- */
 export function useHiddenUsers() {
-	return useQuery<HiddenUsers, ApiError>({
+	return useQuery<HiddenUser[], Error>({
 		queryKey: hideKeys.list(),
-		queryFn: async () => {
-			const res = await fetchRest("/v1/hides");
-			return res.jsonParsed(getHiddenUsersResponseSchema).hides;
-		},
+		queryFn: () =>
+			api<{ hides: { profile: { id: string } }[] }>("/api/social?view=hides").then((response) =>
+				response.hides.map((entry) => ({ profileId: entry.profile.id })),
+			),
 		staleTime: 5_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
+		retry: false,
 	});
 }
 
-/**
- * Hide a user.
- * Maps to hideUser from open-grind.
- */
-export function useHideUser() {
-	const queryClient = useQueryClient();
-
-	return useMutation<void, ApiError, { profileId: number }>({
-		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v1/me/hides/${profileId}`, {
-				method: "POST",
-			});
-			res.assertOk();
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: hideKeys.all });
-		},
-	});
+function hideMutation(action: "hide" | "unhide") {
+	return function useHideAction() {
+		const queryClient = useQueryClient();
+		return useMutation<void, Error, { profileId: string }>({
+			mutationFn: async ({ profileId }) => {
+				await api("/api/social", { method: "POST", body: { targetId: profileId, action } });
+			},
+			onSuccess: () => {
+				queryClient.invalidateQueries({ queryKey: hideKeys.all });
+				// The deck is the other place a hidden person disappears from.
+				queryClient.invalidateQueries({ queryKey: ["discover"] });
+				queryClient.invalidateQueries({ queryKey: blockKeys.all });
+			},
+		});
+	};
 }
 
-/**
- * Unhide a user.
- * Maps to unhideUser from open-grind.
- */
-export function useUnhideUser() {
-	const queryClient = useQueryClient();
-
-	return useMutation<void, ApiError, { profileId: number }>({
-		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v1/hides/${profileId}`, {
-				method: "DELETE",
-			});
-			res.assertOk();
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: hideKeys.all });
-		},
-	});
-}
+export const useHideUser = hideMutation("hide");
+export const useUnhideUser = hideMutation("unhide");

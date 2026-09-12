@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "#/db";
 import { cleanText, readJson, requireCaller, z } from "#/lib/api-helpers";
 import { json, jsonError, withSecurity } from "#/middleware";
-import { users } from "#/schema";
+import { profilePrivate, users } from "#/schema";
 
 /**
  * `GET|PUT /api/profile` — the caller's own profile row, and the only way an
@@ -26,6 +26,26 @@ import { users } from "#/schema";
  * never reads them from the body. Location is also not accepted here: precise
  * `lat`/`lng` are written by the map picker flow, which coarsens them.
  */
+/** Whole years lived on `day`; `null` when the string is not a real date. */
+function ageFromDob(day: string): number | null {
+	const [year, month, date] = day.split("-").map(Number);
+	if (!year || !month || !date) return null;
+	const birth = new Date(Date.UTC(year, month - 1, date));
+	if (
+		birth.getUTCFullYear() !== year ||
+		birth.getUTCMonth() !== month - 1 ||
+		birth.getUTCDate() !== date
+	)
+		return null;
+	const now = new Date();
+	let years = now.getUTCFullYear() - year;
+	const before =
+		now.getUTCMonth() < month - 1 ||
+		(now.getUTCMonth() === month - 1 && now.getUTCDate() < date);
+	if (before) years -= 1;
+	return years;
+}
+
 const REQUIRED_FOR_COMPLETE = [
 	"pseudo",
 	"description",
@@ -62,6 +82,18 @@ const profileSchema = z.object({
 	pronouns: z.string().max(40).optional(),
 	onboarding_done: z.boolean().optional(),
 	visible: z.boolean().optional(),
+	incognito: z.boolean().optional(),
+	exposure_level: z.enum(["clean", "mature", "explicit"]).optional(),
+	/**
+	 * Accepted here because onboarding is one user gesture: the birth date goes
+	 * to `profile_private`, the derived age and the attestation to this row. A
+	 * client cannot claim to be 30 with a 2008 birthday — the age is recomputed
+	 * from the dob below and any `age` in the body is overridden by it.
+	 */
+	dob: z
+		.string()
+		.regex(/^\d{4}-\d{2}-\d{2}$/, "Use the format YYYY-MM-DD")
+		.optional(),
 	hide_distance: z.boolean().optional(),
 	hide_online: z.boolean().optional(),
 });
@@ -133,6 +165,32 @@ export const Route = createFileRoute("/api/profile/")({
 					if (body.description !== undefined)
 						set.bio = cleanText(body.description, 2000);
 					if (body.age !== undefined) set.age = body.age;
+					if (body.incognito !== undefined) set.incognito = body.incognito;
+					if (body.exposure_level !== undefined)
+						set.exposureLevel = body.exposure_level;
+
+					if (body.dob !== undefined) {
+						const years = ageFromDob(body.dob);
+						if (years === null) {
+							return jsonError("That date of birth is not a real day", 400);
+						}
+						if (years < 18) {
+							return jsonError("FYKING is for adults aged 18 and over", 400);
+						}
+						const stored = await db
+							.insert(profilePrivate)
+							.values({ id: user.id, dob: body.dob })
+							.onConflictDoUpdate({
+								target: profilePrivate.id,
+								set: { dob: body.dob, updatedAt: new Date() },
+							})
+							.returning({ id: profilePrivate.id });
+						if (stored.length === 0) {
+							return jsonError("Could not store your date of birth", 500);
+						}
+						set.age = years;
+						set.ageVerifiedAt = new Date();
+					}
 					if (body.height !== undefined) set.height = body.height;
 					if (body.weight !== undefined) set.weight = body.weight;
 					if (body.body_type !== undefined)
@@ -174,10 +232,20 @@ export const Route = createFileRoute("/api/profile/")({
 					>;
 					set.profileComplete = completeness(merged);
 					if (body.onboarding_done === true) {
-						const ready = set.profileComplete >= 60;
-						if (!ready) {
+						// The gate in `EntryShell`/`auth-gate` only asks for four things
+						// before it lets an account into the app; the 60% completeness
+						// score is a *profile quality* nudge, not an entry requirement, and
+						// conflating the two left a signed-up user with no photos stuck in
+						// the onboarding loop. The score still has to be one of the two.
+						const gateFieldsPresent = [
+							merged.displayName,
+							merged.handle,
+							merged.age,
+							merged.city,
+						].every((value) => value != null && String(value).trim() !== "");
+						if (!gateFieldsPresent && (set.profileComplete ?? 0) < 60) {
 							return jsonError(
-								"Add a name, bio, age, one photo, an interest and your city to finish",
+								"Add a display name, a handle, your age and your city to finish",
 								400,
 							);
 						}

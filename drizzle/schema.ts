@@ -57,12 +57,6 @@ export const users = pgTable("users", {
 	email: text("email").unique(),
 	phone: text("phone"),
 
-	/**
-	 * Legacy: Supabase Auth owns credentials, so this column is never read or
-	 * written by the API. Nullable since `0015` (it used to be NOT NULL, which
-	 * made a Supabase-only signup impossible).
-	 */
-	passwordHash: text("password_hash"),
 
 	displayName: text("pseudo"),
 	handle: text("nick"),
@@ -128,8 +122,6 @@ export const users = pgTable("users", {
 	notifPrefs: jsonb("notif_prefs").default(sql`'{}'::jsonb`),
 	aiPrefs: jsonb("ai_prefs").default(sql`'{}'::jsonb`),
 
-	appleId: text("apple_id"),
-	googleId: text("google_id"),
 
 	lastCursor: text("last_cursor"),
 	lastSeen: timestamp("last_seen", { withTimezone: true, precision: 6 }).defaultNow(),
@@ -142,6 +134,13 @@ export const users = pgTable("users", {
 	 */
 	boostExpiresAt: timestamp("boost_expires_at", { withTimezone: true, precision: 6 }),
 	onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true, precision: 6 }),
+	/**
+	 * When the adult attestation was last accepted. 0000 kept this on
+	 * `profiles` alone, which stopped it being writable once `profiles`
+	 * became a read-only projection (0018): the date of birth lives in
+	 * `profile_private`, and the attestation belongs with the rest of the row.
+	 */
+	ageVerifiedAt: timestamp("age_verified_at", { withTimezone: true, precision: 6 }),
 
 	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
@@ -198,6 +197,18 @@ export const eventRsvps = pgTable(
  * A "tap" (like). `UNIQUE(tapper_id, tapped_id)` in the DDL is what makes the
  * MeetNow join flow idempotent — no read-before-write to check for a duplicate.
  */
+/**
+ * `profile_private` (0000) — the only place a real date of birth is kept.
+ * Never projected into `profiles`, never selected by a list endpoint; the
+ * derived `age` is what discovery sees.
+ */
+export const profilePrivate = pgTable("profile_private", {
+	id: uuid("id").primaryKey(),
+	dob: date("dob", { mode: "string" }).notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
 export const taps = pgTable(
 	"taps",
 	{
@@ -293,6 +304,26 @@ export const matches = pgTable("matches", {
 	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
 	unmatchedAt: timestamp("unmatched_at", { withTimezone: true, precision: 6 }),
 });
+
+/**
+ * "I never want to see this person again" — a per-viewer edge, distinct from
+ * `users.hidden`, which is "my profile is hidden from everyone". `/settings/hidden`
+ * had nothing to list before this table existed (`0018`).
+ */
+export const hides = pgTable(
+	"hides",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		hiderId: uuid("hider_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		hiddenId: uuid("hidden_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+	},
+	(table) => [unique("hides_hider_id_hidden_id_key").on(table.hiderId, table.hiddenId)],
+);
 
 export const blocks = pgTable("blocks", {
 	id: uuid("id").primaryKey().defaultRandom(),

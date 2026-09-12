@@ -8,7 +8,7 @@ export const Route = createFileRoute("/settings/hidden/")({
 });
 
 interface HiddenUser {
-	profileId: number;
+	profileId: string;
 	displayName: string;
 	avatar?: string;
 	hiddenAt: Date;
@@ -33,7 +33,7 @@ function HiddenUsersPage() {
 		};
 	});
 
-	const handleUnhide = (profileId: number) => {
+	const handleUnhide = (profileId: string) => {
 		unhide.mutate({ profileId });
 	};
 

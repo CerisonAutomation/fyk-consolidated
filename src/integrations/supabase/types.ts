@@ -47,6 +47,26 @@ export type Profile = {
   last_active_at: string;
   created_at: string;
   updated_at: string;
+  /**
+   * Mirrored from `public.users` by `users_apply_projection()` (0018). The
+   * jsonb bags are untyped on purpose: PostgREST hands back `unknown` and each
+   * caller narrows them with `asStringArray`-style helpers.
+   */
+  photos: unknown;
+  tribes: unknown;
+  position: unknown;
+  languages: unknown;
+  interests: unknown;
+  looking_for: unknown;
+  tag_codes: unknown;
+  verification: number;
+  trust_score: number;
+  relationship_status: string | null;
+  occupation: string | null;
+  tier: string | null;
+  weight: number | null;
+  online: boolean;
+  discoverable: boolean;
 };
 
 export type ProfilePrivate = {
@@ -448,20 +468,27 @@ export type StoryView = {
   viewed_at: string;
 };
 
+/**
+ * `public.users` — the server-owned row. Browser code reads its own account
+ * through `/api/*` and everyone else's through `profiles`; direct selects are
+ * revoked in 0018, so this shape exists for the integrations that still write
+ * with a service token and for the Drizzle schema's naming to stay checkable.
+ * There is no `password_hash`, `apple_id` or `google_id` any more: Supabase
+ * owns credentials in `auth.users`.
+ */
 export type User = {
-  id: string;
-  email: string;
+  id: string | null;
+  email: string | null;
   phone: string | null;
-  password_hash: string;
   pseudo: string | null;
   nick: string | null;
-  birthday: string | null;
-  age: number | null;
   description: string | null;
-  headline: string | null;
   occupation: string | null;
   relationship_status: string | null;
   ethnicity: string | null;
+  pronouns: string | null;
+  birthday: string | null;
+  age: number | null;
   height: number | null;
   weight: number | null;
   body_type: string | null;
@@ -473,14 +500,15 @@ export type User = {
   interests: unknown;
   tribes: unknown;
   photos: unknown;
+  avatar: string | null;
   geo_mode: string | null;
   h3_index: string | null;
   lat: number | null;
   lng: number | null;
-  city: string | null;
-  area: string | null;
   lat_coarse: number | null;
   lng_coarse: number | null;
+  city: string | null;
+  area: string | null;
   status: string | null;
   role: string | null;
   tier: string | null;
@@ -506,13 +534,11 @@ export type User = {
   language: string | null;
   notif_prefs: unknown;
   ai_prefs: unknown;
-  pronouns: string | null;
-  apple_id: string | null;
-  google_id: string | null;
   last_cursor: string | null;
   last_seen: string | null;
   last_active_at: string;
   onboarding_done: boolean | null;
+  boost_expires_at: string | null;
   onboarding_completed_at: string | null;
   created_at: string;
   updated_at: string;

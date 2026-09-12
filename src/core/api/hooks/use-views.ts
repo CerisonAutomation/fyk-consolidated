@@ -1,58 +1,37 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { fetchRest } from "../client/api-client";
-import { ApiError } from "../client/api-error";
+import { api } from "#/lib/client";
 
-// -- Schemas (inlined from open-grind model) --
-
-const viewsListResponseSchema = z.object({
-	profiles: z.array(z.record(z.string(), z.unknown())),
-	previews: z.array(z.record(z.string(), z.unknown())),
-});
-
-// -- Query keys --
-
-const viewKeys = {
+/**
+ * Profile views. `GET /api/interest/visitors` returns the identified visitors in
+ * `profiles` and the incognito ones in `previews` — the screen deliberately shows
+ * the second group without an id, and that distinction is the visitor's privacy
+ * setting, not a client-side invention.
+ */
+export const viewKeys = {
 	all: ["views"] as const,
 	list: () => [...viewKeys.all, "list"] as const,
 };
 
-// -- Hooks --
-
-/**
- * Fetch views list (who viewed your profile).
- * Maps to getViews from open-grind.
- */
 export function useViews() {
-	return useQuery<z.infer<typeof viewsListResponseSchema>, ApiError>({
-		queryKey: viewKeys.list(),
-		queryFn: async () => {
-			const res = await fetchRest("/v7/views/list");
-			return res.jsonParsed(viewsListResponseSchema);
+	return useQuery<{ profiles: Record<string, unknown>[]; previews: Record<string, unknown>[] }, Error>(
+		{
+			queryKey: viewKeys.list(),
+			queryFn: () => api("/api/interest/visitors"),
+			staleTime: 60_000,
+			retry: false,
 		},
-		staleTime: 60_000,
-		retry: (_count, error) => error instanceof ApiError && error.retryable,
-	});
+	);
 }
 
-/**
- * Record a profile view.
- * Maps to recordProfileView from open-grind.
- */
 export function useRecordView() {
 	const queryClient = useQueryClient();
-
-	return useMutation<void, ApiError, { profileId: number }>({
-		mutationFn: async ({ profileId }) => {
-			const res = await fetchRest(`/v5/views/${profileId}`, {
+	return useMutation<{ recorded: boolean }, Error, { profileId: string }>({
+		mutationFn: ({ profileId }) =>
+			api<{ recorded: boolean }>("/api/social", {
 				method: "POST",
-				body: { source: "UNKNOWN", foundVia: null },
-			});
-			res.assertOk();
-		},
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: viewKeys.all });
-		},
+				body: { targetId: profileId, action: "footprint" },
+			}),
+		onSuccess: () => queryClient.invalidateQueries({ queryKey: viewKeys.all }),
 	});
 }

@@ -1,4 +1,6 @@
 import { TtlCache } from "#/core/lib/ttl-cache";
+import { compatibilityScore, onlineUntil } from "#/lib/compatibility";
+import { api } from "#/lib/client";
 import { getSupabase } from "#/integrations/supabase/client";
 import { decodeGeohash } from "#/core/model/geohash";
 import { haversineKm } from "#/lib/geo";
@@ -10,14 +12,18 @@ export type RenderedGridProfile = {
 	age: number | null;
 	position: string | null;
 	headline: string | null;
-	compatibilityScore: number;
+	/**
+	 * Six-dimension compatibility against the signed-in viewer (0-100), or
+	 * `null` when there is no viewer row to compare against — the card draws
+	 * no ring instead of drawing a made-up one.
+	 */
+	compatibilityScore: number | null;
 	isNew: boolean;
 	distance: number | null;
 	profilePhotosHashes: string[] | null;
 	unread: number | null;
 	onlineUntil: number | null;
 	isFavorite: boolean;
-	isVisiting: boolean;
 	hasChattedInLast24Hrs: boolean;
 };
 
@@ -25,7 +31,6 @@ export type LazyGridProfile = {
 	type: "lazy";
 	id: string;
 	unread: number | null;
-	isVisiting: boolean;
 };
 
 export type GridProfile = RenderedGridProfile | LazyGridProfile;
@@ -66,9 +71,18 @@ function geohashBounds(
 	};
 }
 
-/** Columns selected from the `users` table for the grid query. */
+/**
+ * The projection comes from `public.profiles` — the discoverable view over the
+ * canonical `public.users` row — so the names are the canonical ones:
+ * `display_name`/`handle` instead of `nick`/`pseudo`, `height_cm` instead of
+ * `height`, and a single `discoverable` flag in place of the old
+ * `visible`/`hidden`/`incognito`/`status` quartet, because the mirror trigger
+ * already folds visibility, suspension, incognito mode and blocks into it.
+ * `interests` and `verification` are here for the same reason the score is:
+ * the card renders a badge and a percentage, both of which need real input.
+ */
 const GRID_COLUMNS =
-	"id, pseudo, nick, age, body_type, position, headline, photos, city, area, lat_coarse, lng_coarse, online, visible, hidden, incognito, status, last_active_at, created_at, height, weight, relationship_status, tag_codes, tribes, looking_for";
+	"id, display_name, handle, age, body_type, position, headline, photos, city, area, lat_coarse, lng_coarse, online, last_active_at, created_at, height_cm, weight, relationship_status, tag_codes, tribes, looking_for, interests, verification";
 
 export async function getGrid(query: {
 	nearbyGeoHash?: string;
@@ -124,6 +138,11 @@ export async function getGrid(query: {
 		favoriteIds = new Set(favs?.map((f) => f.target_id) ?? []);
 	}
 
+	// ── Viewer row + own threads: the input for the compatibility ring, the
+	// unread badge and the "chatted recently" flag, none of which used to be
+	// derived from anything at all.
+	const viewer = userId ? await getViewerContext(client, userId) : null;
+
 	// ── If favorites filter active but user has none, short-circuit ──
 	if (query.favorites && favoriteIds && favoriteIds.size === 0) {
 		return { items: [], nextPage: null, shuffled: false };
@@ -147,14 +166,15 @@ export async function getGrid(query: {
 		lngMax = bounds.lngMax;
 	}
 
-	// ── Build Supabase query against the `users` table ──
+	// ── Build Supabase query against the `profiles` projection ──
 	let qb = client
-		.from("users")
+		.from("profiles")
 		.select(GRID_COLUMNS, { count: "exact" })
-		.eq("visible", true)
-		.eq("hidden", false)
-		.eq("incognito", false)
-		.neq("status", "suspended");
+		.eq("discoverable", true)
+		// `discoverable` already excludes suspended and hidden accounts; the
+		// explicit predicate stays so a partial backfill can never leak a
+		// suspended profile into the grid.
+		.eq("is_suspended", false);
 
 	// ── 1. Geographic filtering using lat_coarse / lng_coarse ──
 	if (
@@ -198,12 +218,22 @@ export async function getGrid(query: {
 		qb = qb.not("photos", "is", null);
 	}
 
-	// ── 6. Height filters (users table column is `height`, in cm) ──
+	// ── 6. Height filters (centimetres, both bounds on `height_cm`) ──
 	if (query.heightCmMin !== undefined) {
-		qb = qb.gte("height", query.heightCmMin);
+		qb = qb.gte("height_cm", query.heightCmMin);
 	}
 	if (query.heightCmMax !== undefined) {
-		qb = qb.lte("height", query.heightCmMax);
+		qb = qb.lte("height_cm", query.heightCmMax);
+	}
+
+	// ── 7. Weight, in grams (the filter panel sends kilograms × 1000). This
+	// predicate used to be missing entirely, so moving the weight slider
+	// changed the label and nothing else.
+	if (query.weightGramsMin !== undefined) {
+		qb = qb.gte("weight", query.weightGramsMin);
+	}
+	if (query.weightGramsMax !== undefined) {
+		qb = qb.lte("weight", query.weightGramsMax);
 	}
 
 	// ── 7. Relationship-status filter ──
@@ -289,24 +319,32 @@ export async function getGrid(query: {
 		return {
 			type: "rendered" as const,
 			id: p.id,
-			displayName: p.nick ?? p.pseudo,
+			displayName: p.handle ?? p.display_name,
 			age: p.age ?? null,
 			position: Array.isArray(p.position)
 				? (p.position as string[])[0]
 				: (p.position as string | null),
 			headline: p.headline ?? null,
-			compatibilityScore: 50,
+			compatibilityScore: viewer
+				? compatibilityScore(viewer.me, {
+						tribes: asStrings(p.tribes),
+						interests: asStrings(p.interests),
+						intents: asStrings(p.looking_for),
+						age: p.age,
+						distanceKm: distance,
+						lastActiveAt: p.last_active_at
+							? new Date(p.last_active_at)
+							: null,
+					})
+				: null,
 			isNew,
 			distance,
 			profilePhotosHashes: primaryImageHashes(primaryPhoto),
-			unread: null,
-			onlineUntil:
-				p.online
-					? Date.now() + 15 * 60 * 1000
-					: null,
+			unread: viewer?.unread.get(String(p.id)) ?? 0,
+			onlineUntil: onlineUntil(p.last_active_at, p.online),
 			isFavorite: favoriteIds?.has(p.id) ?? false,
-			isVisiting: false,
-			hasChattedInLast24Hrs: false,
+			hasChattedInLast24Hrs:
+				viewer?.chattedRecently.has(String(p.id)) ?? false,
 		};
 	});
 
@@ -319,6 +357,95 @@ export async function getGrid(query: {
 		items,
 		nextPage: hasMore ? page + 1 : null,
 		shuffled: false,
+	};
+}
+
+/**
+ * The viewer's own row and threads: the input for the three card fields that
+ * used to be invented (`compatibilityScore`, `unread`, `hasChattedInLast24Hrs`).
+ * Unread counts come from `/api/conversations`, which owns the "only my own
+ * member row counts" rule, instead of being re-derived from a second table here.
+ */
+type ViewerContext = {
+	me: {
+		tribes: string[];
+		interests: string[];
+		intents: string[];
+		age: number | null;
+	};
+	unread: Map<string, number>;
+	chattedRecently: Set<string>;
+};
+
+/** jsonb tag arrays arrive untyped; only non-empty strings are input. */
+function asStrings(value: unknown): string[] {
+	return Array.isArray(value)
+		? value.filter(
+				(item): item is string =>
+					typeof item === "string" && item.trim() !== "",
+			)
+		: [];
+}
+
+/** One page of the grid costs one viewer lookup, not one per card. */
+const viewerCache = new TtlCache<string, ViewerContext | null>({
+	ttlMs: 60_000,
+});
+
+async function getViewerContext(
+	client: NonNullable<ReturnType<typeof getSupabase>>,
+	userId: string,
+): Promise<ViewerContext | null> {
+	const cached = viewerCache.get(userId);
+	if (cached !== null) return cached;
+	const loaded = await loadViewerContext(client, userId);
+	viewerCache.set(userId, loaded);
+	return loaded;
+}
+
+async function loadViewerContext(
+	client: NonNullable<ReturnType<typeof getSupabase>>,
+	userId: string,
+): Promise<ViewerContext | null> {
+	const { data: row } = await client
+		.from("profiles")
+		.select("age, tribes, interests, looking_for")
+		.eq("id", userId)
+		.maybeSingle();
+	if (!row) return null;
+
+	// The thread list needs the viewer's session, so it is only asked for in the
+	// browser; during SSR the badges stay at zero rather than defaulting to
+	// something optimistic.
+	const unread = new Map<string, number>();
+	const chattedRecently = new Set<string>();
+	if (typeof window !== "undefined") {
+		const threads = await api<{
+			conversations: {
+				unread_count?: number;
+				last_message_at?: string | null;
+				participant?: { id?: string } | null;
+			}[];
+		}>("/api/conversations").catch(() => null);
+		const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+		for (const thread of threads?.conversations ?? []) {
+			const peer = thread.participant?.id;
+			if (!peer) continue;
+			unread.set(peer, Number(thread.unread_count ?? 0));
+			const at = thread.last_message_at ? Date.parse(thread.last_message_at) : 0;
+			if (at >= dayAgo) chattedRecently.add(peer);
+		}
+	}
+
+	return {
+		me: {
+			tribes: asStrings(row.tribes),
+			interests: asStrings(row.interests),
+			intents: asStrings(row.looking_for),
+			age: row.age ?? null,
+		},
+		unread,
+		chattedRecently,
 	};
 }
 
@@ -363,9 +490,9 @@ export async function resolveLazyProfile(
 
 		// Fetch the target profile
 		const { data: user } = await client
-			.from("users")
+			.from("profiles")
 			.select(
-				"id, pseudo, nick, age, position, headline, photos, lat_coarse, lng_coarse, online, incognito, last_active_at, created_at",
+				"id, display_name, handle, age, position, headline, photos, lat_coarse, lng_coarse, online, last_active_at, created_at, tribes, interests, looking_for, verification",
 			)
 			.eq("id", profile.id)
 			.single();
@@ -385,7 +512,7 @@ export async function resolveLazyProfile(
 		} = await client.auth.getUser();
 		if (authUser) {
 			const { data: me } = await client
-				.from("users")
+				.from("profiles")
 				.select("lat_coarse, lng_coarse")
 				.eq("id", authUser.id)
 				.single();
@@ -403,6 +530,10 @@ export async function resolveLazyProfile(
 			}
 		}
 
+		const viewer = authUser
+			? await getViewerContext(client, authUser.id)
+			: null;
+
 		// ── Favorites cross-reference ──
 		let isFavorite = false;
 		if (authUser) {
@@ -418,23 +549,34 @@ export async function resolveLazyProfile(
 		return {
 			type: "rendered",
 			id: profile.id,
-			displayName: user.nick ?? user.pseudo,
+			displayName: user.handle ?? user.display_name,
 			age: user.age ?? null,
 			position: Array.isArray(user.position)
 				? (user.position as string[])[0]
 				: (user.position as string | null),
 			headline: user.headline ?? null,
-			compatibilityScore: 50,
+			compatibilityScore: viewer
+				? compatibilityScore(viewer.me, {
+						
+							tribes: asStrings(user.tribes),
+							interests: asStrings(user.interests),
+							intents: asStrings(user.looking_for),
+							age: user.age,
+							distanceKm: distance,
+							lastActiveAt: user.last_active_at
+								? new Date(user.last_active_at)
+								: null,
+						},
+					)
+				: null,
 			isNew,
 			distance,
 			profilePhotosHashes: primaryImageHashes(primaryPhoto),
-			unread: profile.unread,
-			onlineUntil: user.online
-				? Date.now() + 15 * 60 * 1000
-				: null,
+			unread: viewer?.unread.get(String(profile.id)) ?? 0,
+			onlineUntil: onlineUntil(user.last_active_at, user.online),
 			isFavorite,
-			isVisiting: profile.isVisiting,
-			hasChattedInLast24Hrs: false,
+			hasChattedInLast24Hrs:
+				viewer?.chattedRecently.has(String(profile.id)) ?? false,
 		};
 	}
 
@@ -460,7 +602,6 @@ export async function resolveLazyProfile(
 		unread: profile.unread,
 		onlineUntil: onlineUntilOf(seed),
 		isFavorite: demoFavoriteOf({ profileId: Number(profile.id) }),
-		isVisiting: profile.isVisiting,
 		hasChattedInLast24Hrs: seed.unread > 0,
 	};
 }

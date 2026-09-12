@@ -10,6 +10,7 @@ import {
 	toProfileCard,
 	z,
 } from "#/lib/api-helpers";
+import { compatibilityScore } from "#/lib/compatibility";
 import { recordTap } from "#/lib/tap.server";
 import { json, jsonError, withSecurity } from "#/middleware";
 import { favorites, taps, users } from "#/schema";
@@ -41,75 +42,11 @@ import { favorites, taps, users } from "#/schema";
  */
 const MAX_PAGE = 50;
 
-/** Presence/recency decay used by the fifth compatibility dimension. */
-const RECENCY_HALFLIFE_DAYS = 7;
-
 const tapSchema = z.object({
 	targetId: z.uuid(),
 	// Optional so the deck can post "pass" without creating anything.
 	type: z.enum(["like", "pass", "woof"]).default("like"),
 });
-
-/** Jaccard overlap of two tag lists, normalised; 0 when either side is empty. */
-function overlap(a: string[], b: string[]): number {
-	if (a.length === 0 || b.length === 0) return 0;
-	const setB = new Set(b.map((v) => v.toLowerCase()));
-	const setA = new Set(a.map((v) => v.toLowerCase()));
-	let shared = 0;
-	for (const value of setA) if (setB.has(value)) shared += 1;
-	return shared / new Set([...setA, ...setB]).size;
-}
-
-/**
- * Five dimensions, weighted, 0–100:
- *   tribes (0.30) · interests (0.25) · intent (0.20) · distance (0.15) · recency (0.10)
- *
- * Every term is derived from stored columns; nothing is guessed. A profile
- * without coordinates or without tags scores 0 on that term rather than a
- * flattering default, because the slider filters on the number.
- */
-function compatibility(
-	me: {
-		tribes: string[];
-		interests: string[];
-		intents: string[];
-		age: number | null;
-	},
-	row: {
-		tribes: string[];
-		interests: string[];
-		intents: string[];
-		age: number | null;
-		distanceKm: number | null;
-		lastActiveAt: Date | null;
-	},
-): number {
-	const tribes = overlap(me.tribes, row.tribes);
-	const interests = overlap(me.interests, row.interests);
-	const intent = overlap(me.intents, row.intents);
-	// 25 km is the practical reach of the deck; closer scores higher, unknown distance is 0.
-	const distance =
-		row.distanceKm == null
-			? 0
-			: Math.max(0, 1 - Math.min(row.distanceKm, 25) / 25);
-	const days = row.lastActiveAt
-		? (Date.now() - row.lastActiveAt.getTime()) / 86_400_000
-		: 999;
-	const recency = 0.5 ** (Math.max(0, days) / RECENCY_HALFLIFE_DAYS);
-	const ageGap =
-		me.age != null && row.age != null
-			? Math.max(0, 1 - Math.abs(me.age - row.age) / 20)
-			: 0.5;
-	const raw =
-		0.3 * tribes +
-		0.25 * interests +
-		0.2 * intent +
-		0.15 * distance +
-		0.1 * recency +
-		0.05 * ageGap;
-	// 0.75 is the maximum the weights can reach when everything lines up.
-	return Math.min(100, Math.round((raw / 0.75) * 100));
-}
 
 export const Route = createFileRoute("/api/discover/")({
 	server: {
@@ -154,8 +91,22 @@ export const Route = createFileRoute("/api/discover/")({
 							and(
 								eq(users.visible, true),
 								eq(users.hidden, false),
+								// "Appear in discovery" off really means off: an
+								// incognito profile must not be in anyone's deck.
+								eq(users.incognito, false),
 								eq(users.isSuspended, false),
 								ne(users.id, user.id),
+								// A block or a hide in either direction removes the
+								// person from the deck entirely — not just the match.
+								sql`not exists (
+									select 1 from public.blocks b
+									 where (b.blocker_id = ${users.id} and b.blocked_id = ${user.id})
+									    or (b.blocker_id = ${user.id} and b.blocked_id = ${users.id})
+								)`,
+								sql`not exists (
+									select 1 from public.hides h
+									 where (h.hidden_id = ${user.id} and h.hider_id = ${users.id})
+								)`,
 								// An adult-only app must not serve a profile whose age
 								// is missing *or* under the floor, whatever the UI says.
 								or(gt(users.age, 17), eq(users.age, 18)),
@@ -208,7 +159,7 @@ export const Route = createFileRoute("/api/discover/")({
 								likedYou: likedBy.has(row.id),
 								isFavourite: favourited.has(row.id),
 								tapped: alreadyTapped.has(row.id),
-								matchScore: compatibility(meTags, {
+								matchScore: compatibilityScore(meTags, {
 									tribes: asStringArray(row.tribes),
 									interests: asStringArray(row.interests),
 									intents: intentOf(row.intents, row.lookingFor),

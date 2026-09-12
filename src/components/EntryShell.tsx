@@ -31,6 +31,14 @@ import { envMissing, isConfigured } from "@/lib/supabase/env";
 import { getSupabase, toFailure } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
 
+/**
+ * The signed-in profile as the shell knows it: whatever `PROFILE_COLUMNS`
+ * selects. Every mirrored column exists in the database, but a partial select
+ * is not a full `Profile`, and pretending it is let the shell hand out
+ * `undefined` as if it were a value.
+ */
+export type GateProfile = Partial<Profile> & { id: string };
+
 // --- Zod schemas for form validation (per react-forms.md docs) ---
 
 const authSchema = z.object({
@@ -60,9 +68,10 @@ const passwordUpdateSchema = z.object({
 type AuthState = {
   user: User;
   session: Session;
-  profile: Profile;
+  profile: GateProfile;
   readiness: BackendReadiness;
   updateProfile: (changes: Partial<Profile>) => Promise<{ ok: boolean; message?: string }>;
+  /** Kept so callers can be type-checked against the projection, not the row. */
   signOut: () => Promise<void>;
 };
 
@@ -89,10 +98,71 @@ type GateState =
   | { kind: "loading" }
   | { kind: "setup"; reason: string; missing: string[] }
   | { kind: "signed-out" }
-  | { kind: "signed-in"; session: Session; profile: Profile | null; readiness: BackendReadiness };
+  | { kind: "signed-in"; session: Session; profile: GateProfile | null; readiness: BackendReadiness };
 
 const PROFILE_COLUMNS =
   "id,handle,display_name,avatar_url,bio,headline,age,age_verified_at,city,area,lat_coarse,lng_coarse,exposure_level,height_cm,body_type,position_role,pronouns,hide_distance,hide_online,incognito,is_demo,is_suspended,onboarding_completed_at,last_active_at,created_at,updated_at";
+
+/**
+ * `profiles` column → the key `PUT /api/profile` validates. The projection
+ * is named after what a card needs, the row underneath uses the legacy
+ * vocabulary (`pseudo`, `nick`, `description`, `height`), and this is the one
+ * place that translation is allowed to live.
+ */
+const PROFILE_FIELD_TO_API: Record<string, string> = {
+  display_name: "pseudo",
+  handle: "nick",
+  bio: "description",
+  headline: "occupation",
+  occupation: "occupation",
+  age: "age",
+  height_cm: "height",
+  weight: "weight",
+  body_type: "body_type",
+  pronouns: "pronouns",
+  city: "city",
+  area: "area",
+  relationship_status: "relationship_status",
+  photos: "photos",
+  tribes: "tribes",
+  interests: "interests",
+  languages: "languages",
+  looking_for: "looking_for",
+  position: "position",
+  hide_distance: "hide_distance",
+  hide_online: "hide_online",
+};
+
+/** Tag bags are numeric ids on the row and untyped jsonb in the projection. */
+const NUMERIC_TAG_FIELDS = new Set(["tribes", "looking_for", "position"]);
+
+function profileChangesToApiBody(changes: Partial<Profile>): {
+  payload: Record<string, unknown>;
+  unsupported: string[];
+} {
+  const payload: Record<string, unknown> = {};
+  const unsupported: string[] = [];
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === undefined || key === "id") continue;
+    const target = PROFILE_FIELD_TO_API[key];
+    if (!target) {
+      unsupported.push(key);
+      continue;
+    }
+    if (NUMERIC_TAG_FIELDS.has(key) && Array.isArray(value)) {
+      payload[target] = value
+        .map((item) => (typeof item === "string" ? Number(item) : item))
+        .filter((item) => Number.isInteger(item));
+      continue;
+    }
+    if (Array.isArray(value) || (value && typeof value === "object")) {
+      payload[target] = value;
+      continue;
+    }
+    payload[target] = value;
+  }
+  return { payload, unsupported };
+}
 
 function friendlySchemaError(message: string) {
   if (/column|relation|schema cache|does not exist/i.test(message)) {
@@ -257,7 +327,7 @@ export function EntryShell({ children }: { children: ReactNode }) {
   if (gate.kind === "setup") return <SetupRequired reason={gate.reason} missing={gate.missing} onRetry={() => void load()} />;
   if (gate.kind === "signed-out") return <SignedOut />;
   if (!gate.profile?.onboarding_completed_at || !gate.profile.age_verified_at) {
-    return <Onboarding session={gate.session} initial={gate.profile} onComplete={() => void load()} />;
+    return <Onboarding initial={gate.profile} onComplete={() => void load()} />;
   }
 
   const profile = gate.profile;
@@ -277,22 +347,51 @@ function AuthenticatedBoundary({
   onReload,
   children,
 }: {
-  profile: Profile;
+  profile: GateProfile;
   session: Session;
   readiness: BackendReadiness;
   onReload: () => Promise<void>;
   children: ReactNode;
 }) {
+  // `public.profiles` is a projection the database owns (0018 refuses direct
+  // writes to it), so the shell writes through PUT /api/profile and lets the
+  // mirror trigger push the change into the projection. Field names are
+  // translated back to the row's vocabulary; anything the API does not accept
+  // is reported instead of being dropped on the floor.
   const updateProfile = useCallback(
     async (changes: Partial<Profile>) => {
-      const client = getSupabase();
-      if (!client) return { ok: false, message: "Supabase is not configured." };
-      const { error } = await client.from("profiles").update(changes).eq("id", session.user.id);
-      if (error) return { ok: false, message: toFailure(error).message };
+      const body = profileChangesToApiBody(changes);
+      if (body.unsupported.length > 0) {
+        return {
+          ok: false,
+          message: `These fields are not editable here: ${body.unsupported.join(", ")}.`,
+        };
+      }
+      if (Object.keys(body.payload).length === 0) return { ok: true };
+      try {
+        const response = await fetch("/api/profile", {
+          method: "PUT",
+          credentials: "include",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body.payload),
+        });
+        if (!response.ok) {
+          const detail = (await response.json().catch(() => null)) as
+            | { error?: { message?: string }; message?: string }
+            | null;
+          return {
+            ok: false,
+            message:
+              detail?.error?.message ?? detail?.message ?? `Could not save (HTTP ${response.status}).`,
+          };
+        }
+      } catch {
+        return { ok: false, message: "Could not reach the server; nothing was saved." };
+      }
       await onReload();
       return { ok: true };
     },
-    [onReload, session.user.id],
+    [onReload],
   );
 
   const signOut = useCallback(async () => {
@@ -816,7 +915,12 @@ function PasswordUpdate({ onComplete }: { onComplete: () => Promise<void> }) {
   );
 }
 
-function Onboarding({ session, initial, onComplete }: { session: Session; initial: Profile | null; onComplete: () => void }) {
+/**
+ * The two-step gate: identity, then the adult attestation. No session is
+ * passed in — the write goes to `/api/profile`, which resolves the caller from
+ * the cookie, so this component cannot save into someone else's row.
+ */
+function Onboarding({ initial, onComplete }: { initial: GateProfile | null; onComplete: () => void }) {
   const [step, setStep] = useState(1);
   const [displayName, setDisplayName] = useState(initial?.display_name ?? "");
   const [handle, setHandle] = useState(initial?.handle ?? "");
@@ -858,42 +962,47 @@ function Onboarding({ session, initial, onComplete }: { session: Session; initia
       setError("Confirm the adult-content and privacy defaults before continuing.");
       return;
     }
-    const client = getSupabase();
-    if (!client) return;
+    // One API call, not two table writes. `profiles` is the projection the
+    // database owns (0018 refuses direct writes and revokes `users` from
+    // browser tokens), and the age is derived server-side from the birth date:
+    // an attestation a client could set to anything is not an age gate.
     setBusy(true);
     setError("");
-    const now = new Date().toISOString();
-    const privateResult = await client.from("profile_private").upsert({
-      id: session.user.id,
-      dob,
-      updated_at: now,
-    });
-    if (privateResult.error) {
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          pseudo: displayName.trim(),
+          nick: handle.trim().toLowerCase(),
+          city: city.trim(),
+          dob,
+          exposure_level: "clean",
+          incognito: false,
+          hide_distance: false,
+          hide_online: false,
+          onboarding_done: true,
+        }),
+      });
+      if (!response.ok) {
+        const detail = (await response.json().catch(() => null)) as
+          | { error?: { message?: string }; message?: string }
+          | null;
+        setBusy(false);
+        setError(
+          detail?.error?.message ??
+            detail?.message ??
+            `Could not save your profile (HTTP ${response.status}).`,
+        );
+        return;
+      }
+    } catch {
       setBusy(false);
-      setError(toFailure(privateResult.error).message);
+      setError("Could not reach the server; nothing was saved.");
       return;
     }
-
-    const { error: saveError } = await client.from("profiles").upsert({
-      id: session.user.id,
-      display_name: displayName.trim(),
-      handle: handle.trim().toLowerCase(),
-      city: city.trim(),
-      age,
-      age_verified_at: now,
-      exposure_level: "clean",
-      hide_distance: false,
-      hide_online: false,
-      incognito: false,
-      onboarding_completed_at: now,
-      last_active_at: now,
-      updated_at: now,
-    });
     setBusy(false);
-    if (saveError) {
-      setError(toFailure(saveError).message);
-      return;
-    }
     onComplete();
   };
 

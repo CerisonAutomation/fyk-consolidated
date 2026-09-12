@@ -7,10 +7,10 @@ export function registerAccountCache({ reset }: { reset: () => void }): void {
 }
 
 export function accountScoped<T extends { destroy(): unknown }>(
-	create: (profileId: number) => T,
-): (profileId: number) => T {
+	create: (profileId: string) => T,
+): (profileId: string) => T {
 	let cached: T | null = null;
-	let cachedProfileId: number | null = null;
+	let cachedProfileId: string | null = null;
 	registerAccountCache({
 		reset: () => {
 			void cached?.destroy();

@@ -1,137 +1,49 @@
-// Client
-export { fetchRest } from "./client/api-client";
-export type { RestResponse } from "./client/api-client";
-export { ApiError, apiErrorKinds } from "./client/api-error";
-export type { ApiErrorKind } from "./client/api-error";
-export { TtlCache, FetchCache, cachedFetch } from "./client/cache";
-
-// Hooks - Grid/Browse
-export {
-	useCascadeV4,
-	useSearchProfiles,
-	gridKeys,
-	cascadeV4QuerySchema,
-	searchQuerySchema,
-} from "./hooks/use-grid";
-export type { CascadeV4Query, SearchQuery } from "./hooks/use-grid";
-
-// Hooks - Profiles
+// Supabase-backed hooks. There is deliberately no HTTP client exported here:
+// the transport is `#/lib/client` (which authenticates with the Supabase session
+// and nothing else), and every route these hooks call is a `/api/*` handler in
+// this repository. The old `/v1`–`/v7` REST surface and the `localStorage`
+// bearer-token client were deleted with `0018_supabase_canonical.sql`.
 export {
 	useProfile,
 	useProfiles,
+	useUpdateProfile,
+	usePatchProfile,
 	profileKeys,
-	profileSchema,
+	type Profile,
+	type ProfileCard,
 } from "./hooks/use-profiles";
-export type { Profile } from "./hooks/use-profiles";
-
-// Hooks - Conversations
-export {
-	useConversations,
-	useDeleteConversation,
-	usePinConversation,
-	useMuteConversation,
-	conversationKeys,
-	fullConversationSchema,
-} from "./hooks/use-conversations";
-export type {
-	Conversation,
-	InboxFilterRequest,
-} from "./hooks/use-conversations";
-
-// Hooks - Messages
-export {
-	useConversationMessages,
-	useSendMessage,
-	messageKeys,
-	apiResponseMessageSchema,
-} from "./hooks/use-messages";
-export type { ApiResponseMessage, OutboundMessage } from "./hooks/use-messages";
-
-// Hooks - Favorites
-export {
-	useAddFavorite,
-	useRemoveFavorite,
-	favoriteKeys,
-	favoriteNoteSchema,
-} from "./hooks/use-favorites";
-export type { FavoriteNote } from "./hooks/use-favorites";
-
-// Hooks - Blocks
 export {
 	useBlockedUsers,
 	useBlockUser,
 	useUnblockUser,
 	blockKeys,
+	type BlockedUser,
 } from "./hooks/use-blocks";
-
-// Hooks - Hides
 export {
 	useHiddenUsers,
 	useHideUser,
 	useUnhideUser,
 	hideKeys,
+	type HiddenUser,
 } from "./hooks/use-hides";
-
-// Hooks - Taps
+export {
+	useFavorites,
+	useAddFavorite,
+	useRemoveFavorite,
+	favoriteKeys,
+} from "./hooks/use-favorites";
 export {
 	useReceivedTaps,
+	useTapsSent,
 	useSendTap,
+	useUndoTap,
 	tapKeys,
-	tapProfileSchema,
+	type TapType,
 } from "./hooks/use-taps";
-export type { TapProfile, TapType } from "./hooks/use-taps";
-
-// Hooks - Views
+export { useViews, useRecordView, viewKeys } from "./hooks/use-views";
+export { ApiError, apiErrorKinds, type ApiErrorKind } from "./client/api-error";
 export {
-	useViews,
-	useRecordView,
-} from "./hooks/use-views";
-
-// Hooks - Settings
-export {
-	useAccountPreferences,
-	useSetAccountPreferences,
-	settingsKeys,
-} from "./hooks/use-settings";
-export type {
-	AccountPreferences,
-	AccountPreferencesPatch,
-} from "./hooks/use-settings";
-
-// Hooks - Albums
-export {
-	useMyAlbums,
-	useAlbumContent,
-	useShareAlbum,
-	useUnshareAlbum,
-	albumKeys,
-} from "./hooks/use-albums";
-export type {
-	AlbumContentResponse,
-	AlbumExpirationType,
-} from "./hooks/use-albums";
-
-// Hooks - Places
-export {
-	usePlaces,
-	placeKeys,
-} from "./hooks/use-places";
-export type { Place, PlacesResponse } from "./hooks/use-places";
-
-// Hooks - Auth
-export {
-	useLogin,
-	useLogout,
-	useAuthState,
-	useSessionHealth,
-	authKeys,
-} from "./hooks/use-auth";
-export type { Restriction, LoginResult, SessionHealth } from "./hooks/use-auth";
-
-// Hooks - Reference Data
-export {
-	useGenders,
-	usePronouns,
-	useTags,
-	referenceKeys,
-} from "./hooks/use-reference-data";
+	accountScoped,
+	registerAccountCache,
+	clearAccountCaches,
+} from "./account-caches";

@@ -20,6 +20,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/primitives";
 import { getSupabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/client";
 import { LANGUAGES } from "@/lib/constants";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -126,23 +127,17 @@ export function SettingsClient() {
 				return;
 			}
 
-			const {
-				data: { user: authUser },
-			} = await supabase.auth.getUser();
-			if (!authUser || cancelled) {
-				setLoadingPrefs(false);
+			// `GET /api/settings`, not a `users` read: `0018` revoked the browser's
+			// grants on that table (it carries email, phone and the precise fix), and
+			// the endpoint answers with the same snake_case keys this effect maps.
+			let data: Record<string, any>;
+			try {
+				data = (await api<{ prefs: Record<string, any> }>("/api/settings")).prefs;
+			} catch {
+				if (!cancelled) setLoadingPrefs(false);
 				return;
 			}
-
-			const { data, error } = await supabase
-				.from("users")
-				.select(
-					"notif_prefs, ai_prefs, accent, font_size, language, colorblind_mode, dnd_mode, theme, incognito, hide_distance, hide_online, hide_online",
-				)
-				.eq("id", authUser.id)
-				.single();
-
-			if (error || !data || cancelled) {
+			if (!data || cancelled) {
 				setLoadingPrefs(false);
 				return;
 			}
@@ -192,21 +187,12 @@ export function SettingsClient() {
 	// ── Persist helper: writes a partial update to the users table ────────────
 	const persistUpdate = useCallback(
 		async (patch: Record<string, unknown>) => {
-			const supabase = getSupabase();
-			if (!supabase) return;
-
-			const {
-				data: { user: authUser },
-			} = await supabase.auth.getUser();
-			if (!authUser) return;
-
-			const { error } = await supabase
-				.from("users")
-				.update({ ...patch, updated_at: new Date().toISOString() })
-				.eq("id", authUser.id);
-
-			if (error) {
-				pushToast(`Save failed: ${error.message}`, "error");
+			// `PUT /api/settings` allow-lists which columns a preference may touch; the
+			// direct write could equally well have set `role` or `is_suspended`.
+			try {
+				await api("/api/settings", { method: "PUT", body: patch });
+			} catch (error) {
+				pushToast(`Save failed: ${(error as Error).message}`, "error");
 			}
 		},
 		[pushToast],
@@ -321,7 +307,7 @@ export function SettingsClient() {
 	const handleColorblind = useCallback(
 		(id: string) => {
 			setColorblind(id);
-			persistUpdate({ colorblind_mode: id === "off" ? false : id });
+			persistUpdate({ colorblind_mode: id !== "off" });
 			pushToast(
 				`Colour-blind: ${COLORBLIND.find((c) => c.id === id)?.label ?? id}`,
 				"info",
@@ -785,11 +771,12 @@ export function SettingsClient() {
 							}
 
 							// Fetch all user data for export
-							const { data } = await supabase
-								.from("users")
-								.select("*")
-								.eq("id", authUser.id)
-								.single();
+							// The API's own projection of the caller's row: a `select("*")`
+							// on `users` would hand over moderation columns too, and after
+							// `0018` it would simply be denied.
+							const data = await api<{ generated_at: string; profile: unknown }>(
+								"/api/settings?view=export",
+							);
 							const blob = new Blob([JSON.stringify(data, null, 2)], {
 								type: "application/json",
 							});

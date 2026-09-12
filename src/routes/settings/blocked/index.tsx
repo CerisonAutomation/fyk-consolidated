@@ -8,7 +8,7 @@ export const Route = createFileRoute("/settings/blocked/")({
 });
 
 interface BlockedUser {
-	profileId: number;
+	profileId: string;
 	displayName: string;
 	avatar?: string;
 	blockedAt: Date;
@@ -35,7 +35,7 @@ function BlockedUsersPage() {
 		},
 	);
 
-	const handleUnblock = (profileId: number) => {
+	const handleUnblock = (profileId: string) => {
 		unblock.mutate({ profileId });
 	};
 

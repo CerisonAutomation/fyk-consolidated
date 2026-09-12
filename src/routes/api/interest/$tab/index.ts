@@ -189,7 +189,7 @@ export const Route = createFileRoute("/api/interest/$tab/")({
 					const byId = new Map(rows.map((row) => [row.id, row]));
 
 					// Keep the relation's order rather than the profile table's.
-					const profiles = ids.flatMap((id) => {
+					const cards = ids.flatMap((id) => {
 						const row = byId.get(id);
 						if (!row) return [];
 						const card = toProfileCard(row, viewer);
@@ -201,11 +201,28 @@ export const Route = createFileRoute("/api/interest/$tab/")({
 								isFavourite: saved.has(id),
 								tapped: tapped.has(id),
 								note: noteMap.get(id),
+								incognito: row.incognito === true,
 							},
 						];
 					});
+					const profiles = cards.map(({ incognito, ...card }) => card);
 
-					return json({ profiles }, { cache: "private" });
+					// Visitors is the one tab with two audiences: a normal visitor is listed
+					// with their card, while someone browsing incognito becomes a
+					// "secret admirer" preview — counted, but with no id, no handle and no
+					// distance, because their privacy setting outranks the list.
+					if (tab !== "visitors") return json({ profiles, previews: [] }, { cache: "private" });
+					const previews = cards
+						.filter((card) => card.incognito)
+						.map((card) => ({ age: card.age ?? null, city: card.city ?? null, photo: card.photo ?? "" }));
+					return json(
+						{
+							profiles: cards.filter((card) => !card.incognito).map(({ incognito, ...card }) => card),
+							previews,
+							anonymousCount: previews.length,
+						},
+						{ cache: "private" },
+					);
 				},
 				{
 					rateLimit: {

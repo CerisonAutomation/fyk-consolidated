@@ -225,12 +225,48 @@ export const cardSelection = {
 	verification: users.verification,
 	hideDistance: users.hideDistance,
 	hideOnline: users.hideOnline,
+	/**
+	 * Not a display field: `incognito` is what makes a profile invisible to
+	 * browse/deck queries, so every list endpoint needs the flag to honour it.
+	 */
+	incognito: users.incognito,
 	latCoarse: users.latCoarse,
 	lngCoarse: users.lngCoarse,
 	lastSeen: users.lastSeen,
 };
 
 export type CardRow = Pick<UserRow, keyof typeof cardSelection>;
+
+/**
+ * Everything a public profile sheet may show. Still no email, phone, precise
+ * fix, `password_hash` (dropped by `0018`), `role` or `tier`: a profile page is
+ * the single most scraped surface in the app.
+ */
+export const profileDetailSelection = {
+	...cardSelection,
+	bio: users.bio,
+	occupation: users.occupation,
+	relationshipStatus: users.relationshipStatus,
+	pronouns: users.pronouns,
+	bodyType: users.bodyType,
+	height: users.height,
+	weight: users.weight,
+	photos: users.photos,
+	tribes: users.tribes,
+	interests: users.interests,
+	lookingFor: users.lookingFor,
+	position: users.position,
+	languages: users.languages,
+	visible: users.visible,
+	hidden: users.hidden,
+	isSuspended: users.isSuspended,
+	profileComplete: users.profileComplete,
+};
+
+export type ProfileDetailRow = Pick<
+	UserRow,
+	keyof typeof profileDetailSelection
+>;
 
 /** `last_active_at` older than this means "offline", whatever `online` says. */
 export const PRESENCE_WINDOW_MS = 5 * 60 * 1000;

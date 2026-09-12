@@ -183,13 +183,18 @@ export function ProfileClient() {
 				return;
 			}
 
-			const { data, error } = await supabase
-				.from("users")
-				.select("*")
-				.eq("id", authUser.id)
-				.single();
-
-			if (error || !data || cancelled) {
+			// `GET /api/profile` instead of `select("*")` on `public.users`: `0018`
+			// revoked the browser's grants on that table, and a star read was pulling
+			// moderation columns into the client for no reason. The endpoint returns
+			// the same snake_case keys `rowToProfileUser` maps.
+			let data: Record<string, any>;
+			try {
+				data = (await api<{ profile: Record<string, any> }>("/api/profile")).profile;
+			} catch {
+				if (!cancelled) setLoadingProfile(false);
+				return;
+			}
+			if (!data || cancelled) {
 				setLoadingProfile(false);
 				return;
 			}
@@ -258,37 +263,32 @@ export function ProfileClient() {
 			} = await supabase.auth.getUser();
 			if (!authUser) throw new Error("Not authenticated");
 
-			const { error } = await supabase
-				.from("users")
-				.update({
-					pseudo: form.pseudo || null,
-					description: form.description || null,
-					occupation: form.occupation || null,
-					age: form.age,
-					height: form.height,
-					weight: form.weight,
-					body_type: form.bodyType || null,
-					position: form.position,
-					languages: form.languages,
-					looking_for: form.lookingFor,
-					interests: form.interests,
-					tribes: form.tribes,
-					photos: form.photos,
-					updated_at: new Date().toISOString(),
-				})
-				.eq("id", authUser.id);
+			// One call, one validator: `PUT /api/profile` is what onboarding already
+			// posts to, so the edit screen and onboarding can no longer disagree about
+			// what a field means — or let a client write columns it does not own.
+			const { profile } = await api<{ ok: boolean; profile: Record<string, any> }>(
+				"/api/profile",
+				{
+					method: "PUT",
+					body: {
+						pseudo: form.pseudo || undefined,
+						description: form.description || undefined,
+						occupation: form.occupation || undefined,
+						age: form.age || undefined,
+						height: form.height || undefined,
+						weight: form.weight || undefined,
+						body_type: form.bodyType || undefined,
+						position: form.position,
+						languages: form.languages,
+						looking_for: form.lookingFor,
+						interests: form.interests,
+						tribes: form.tribes,
+						photos: form.photos,
+					},
+				},
+			);
 
-			if (error) throw error;
-
-			// Re-fetch the full row so the store stays accurate
-			const { data: updated, error: fetchErr } = await supabase
-				.from("users")
-				.select("*")
-				.eq("id", authUser.id)
-				.single();
-
-			if (fetchErr) throw fetchErr;
-			return { profile: rowToProfileUser(updated, authUser.email ?? "") };
+			return { profile: rowToProfileUser(profile, authUser.email ?? "") };
 		},
 		onSuccess: (res) => {
 			setUser(res.profile);

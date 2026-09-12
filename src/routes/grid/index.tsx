@@ -323,7 +323,9 @@ function GridPage() {
 								distance: item.distance ?? undefined,
 								online:
 									item.onlineUntil !== null && item.onlineUntil > Date.now(),
-								matchScore: item.compatibilityScore,
+								// The ring is only drawn when a real score exists, and the pin's
+								// accent follows it; `null` means "no viewer to compare with".
+								matchScore: item.compatibilityScore ?? undefined,
 								geo: (item as any).geo,
 							})),
 							"grid-viewer",
@@ -503,17 +505,19 @@ const GridCell = memo(function GridCell({
 						</span>
 					)}
 				</div>
-				<div
-					className="grid size-8 place-items-center rounded-full p-[2px] shadow-lg"
-					style={{
-						background: `conic-gradient(${item.compatibilityScore >= 80 ? "#34d399" : "#eab308"} ${item.compatibilityScore * 3.6}deg, rgba(255,255,255,.14) 0deg)`,
-					}}
-					title={`${item.compatibilityScore}% compatibility`}
-				>
-					<span className="grid size-full place-items-center rounded-full bg-black/80 font-mono text-[9px] font-bold text-white backdrop-blur">
-						{item.compatibilityScore}
-					</span>
-				</div>
+{item.compatibilityScore !== null ? (
+					<div
+						className="grid size-8 place-items-center rounded-full p-[2px] shadow-lg"
+						style={{
+							background: `conic-gradient(${item.compatibilityScore >= 80 ? "#34d399" : "#eab308"} ${item.compatibilityScore * 3.6}deg, rgba(255,255,255,.14) 0deg)`,
+						}}
+						title={`${item.compatibilityScore}% compatibility`}
+					>
+						<span className="grid size-full place-items-center rounded-full bg-black/80 font-mono text-[9px] font-bold text-white backdrop-blur">
+							{item.compatibilityScore}
+						</span>
+					</div>
+				) : null}
 			</div>
 
 			{/* ── Bottom info ── */}
