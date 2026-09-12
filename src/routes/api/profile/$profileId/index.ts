@@ -41,7 +41,10 @@ import {
  */
 const idSchema = z.uuid();
 
-async function hiddenFromViewer(viewerId: string, targetId: string): Promise<boolean> {
+async function hiddenFromViewer(
+	viewerId: string,
+	targetId: string,
+): Promise<boolean> {
 	const [row] = await db
 		.select({ id: blocks.id })
 		.from(blocks)
@@ -51,7 +54,10 @@ async function hiddenFromViewer(viewerId: string, targetId: string): Promise<boo
 				and(eq(blocks.blockerId, targetId), eq(blocks.blockedId, viewerId)),
 				// Hiding is softer than blocking, but it still means "do not show me
 				// this person" — in one direction only.
-				and(eq(hidesTable.hiddenId, viewerId), eq(hidesTable.hiderId, targetId)),
+				and(
+					eq(hidesTable.hiddenId, viewerId),
+					eq(hidesTable.hiderId, targetId),
+				),
 			),
 		)
 		.limit(1);
@@ -69,10 +75,12 @@ export const Route = createFileRoute("/api/profile/$profileId/")({
 					// `/api/interest/$tab`, so no route-specific plumbing leaks into the
 					// middleware.
 					const segment = decodeURIComponent(
-						new URL(request.url).pathname.split("/").filter(Boolean).at(-1) ?? "",
+						new URL(request.url).pathname.split("/").filter(Boolean).at(-1) ??
+							"",
 					);
 					const parsed = idSchema.safeParse(segment);
-					if (!parsed.success) return jsonError("Profile id must be a uuid", 400);
+					if (!parsed.success)
+						return jsonError("Profile id must be a uuid", 400);
 					const profileId = parsed.data;
 
 					const [row] = await db
@@ -89,49 +97,65 @@ export const Route = createFileRoute("/api/profile/$profileId/")({
 						(await hiddenFromViewer(user.id, profileId));
 					// Your own row is always readable: `/profile` and the edit flow use
 					// the same endpoint and must not 404 on yourself.
-					if (invisible && profileId !== user.id) return jsonError("Profile not found", 404);
+					if (invisible && profileId !== user.id)
+						return jsonError("Profile not found", 404);
 
-					const [me, saved, myTap, theirTap, note, recorded] = await Promise.all([
-						db
-							.select({ lat: users.latCoarse, lng: users.lngCoarse })
-							.from(users)
-							.where(eq(users.id, user.id))
-							.limit(1),
-						db
-							.select({ id: favorites.id })
-							.from(favorites)
-							.where(and(eq(favorites.userId, user.id), eq(favorites.targetId, profileId)))
-							.limit(1),
-						db
-							.select({ id: taps.id })
-							.from(taps)
-							.where(and(eq(taps.tapperId, user.id), eq(taps.tappedId, profileId)))
-							.limit(1),
-						db
-							.select({ id: taps.id })
-							.from(taps)
-							.where(and(eq(taps.tapperId, profileId), eq(taps.tappedId, user.id)))
-							.limit(1),
-						db
-							.select({ content: userNotes.content })
-							.from(userNotes)
-							.where(
-								and(eq(userNotes.noteOwnerId, user.id), eq(userNotes.targetUserId, profileId)),
-							)
-							.limit(1),
-						// "Seen by" is a fact, so it is written here rather than by a second
-						// client call that a buggy screen could skip — never on yourself.
-						profileId === user.id
-							? Promise.resolve([] as { id: string }[])
-							: db
-									.insert(footprints)
-									.values({ visitorId: user.id, visitedId: profileId })
-									.returning({ id: footprints.id }),
-					]);
+					const [me, saved, myTap, theirTap, note, recorded] =
+						await Promise.all([
+							db
+								.select({ lat: users.latCoarse, lng: users.lngCoarse })
+								.from(users)
+								.where(eq(users.id, user.id))
+								.limit(1),
+							db
+								.select({ id: favorites.id })
+								.from(favorites)
+								.where(
+									and(
+										eq(favorites.userId, user.id),
+										eq(favorites.targetId, profileId),
+									),
+								)
+								.limit(1),
+							db
+								.select({ id: taps.id })
+								.from(taps)
+								.where(
+									and(eq(taps.tapperId, user.id), eq(taps.tappedId, profileId)),
+								)
+								.limit(1),
+							db
+								.select({ id: taps.id })
+								.from(taps)
+								.where(
+									and(eq(taps.tapperId, profileId), eq(taps.tappedId, user.id)),
+								)
+								.limit(1),
+							db
+								.select({ content: userNotes.content })
+								.from(userNotes)
+								.where(
+									and(
+										eq(userNotes.noteOwnerId, user.id),
+										eq(userNotes.targetUserId, profileId),
+									),
+								)
+								.limit(1),
+							// "Seen by" is a fact, so it is written here rather than by a second
+							// client call that a buggy screen could skip — never on yourself.
+							profileId === user.id
+								? Promise.resolve([] as { id: string }[])
+								: db
+										.insert(footprints)
+										.values({ visitorId: user.id, visitedId: profileId })
+										.returning({ id: footprints.id }),
+						]);
 
 					const point = me[0];
 					const viewer =
-						point?.lat != null && point.lng != null ? { lat: point.lat, lng: point.lng } : null;
+						point?.lat != null && point.lng != null
+							? { lat: point.lat, lng: point.lng }
+							: null;
 					void recorded;
 
 					const photos = Array.isArray(row.photos) ? row.photos : [];
@@ -149,7 +173,11 @@ export const Route = createFileRoute("/api/profile/$profileId/")({
 								sexualPosition: asStringArray(row.position)[0] ?? null,
 								grindrTribes: asStringArray(row.tribes),
 								lookingFor: asStringArray(row.lookingFor),
-								medias: photos.map((photo) => ({ mediaHash: String(photo) })),
+								// The stored references *are* paths or public URLs, so they come
+								// back under the name the profile editor writes them with.
+								// Labelling them `medias: [{ mediaHash }]` is what taught every
+								// client to treat a real upload as a demo seed.
+								photos: photos.map((photo) => String(photo)),
 								pronouns: row.pronouns ?? null,
 								occupation: row.occupation ?? null,
 								relationshipStatus: row.relationshipStatus ?? null,

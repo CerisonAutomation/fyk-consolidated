@@ -30,7 +30,6 @@ import {
 	useGridSearchFiltersStore,
 } from "#/domains/grid/filters-store";
 import { useGridStore } from "#/domains/grid/store";
-import { demoMediaUrl } from "#/domains/demo";
 import {
 	getPreferencesSnapshot,
 	hydratePreferences,
@@ -317,9 +316,7 @@ function GridPage() {
 							renderedProfiles.map((item) => ({
 								id: String(item.id),
 								displayName: item.displayName ?? undefined,
-								photoUrl: item.profilePhotosHashes?.[0]
-									? demoMediaUrl(item.profilePhotosHashes[0])
-									: undefined,
+								photoUrl: item.photoUrl ?? undefined,
 								distance: item.distance ?? undefined,
 								online:
 									item.onlineUntil !== null && item.onlineUntil > Date.now(),
@@ -475,9 +472,9 @@ const GridCell = memo(function GridCell({
 			params={{ profileId: String(item.id) }}
 			className="group relative aspect-[3/4] overflow-hidden rounded-2xl glass-card profile-card-romeo"
 		>
-			{item.profilePhotosHashes && item.profilePhotosHashes.length > 0 ? (
+			{item.photoUrl ? (
 				<img
-					src={demoMediaUrl(item.profilePhotosHashes[0])}
+					src={item.photoUrl}
 					alt={item.displayName ?? "Profile"}
 					className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.035]"
 					loading="lazy"

@@ -21,7 +21,7 @@ import { useSendTap } from "#/core/api/hooks/use-taps";
 import { useRecordView } from "#/core/api/hooks/use-views";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 const PhotoLightbox = lazy(() => import("#/core/ui/organisms/PhotoLightbox").then(m => ({ default: m.PhotoLightbox })));
-import { demoMediaUrl } from "#/domains/demo";
+import { resolveMediaUrl } from "#/integrations/supabase/media";
 import { cn } from "#/lib/utils";
 
 const PROFILE_STAT_SKELETON_IDS = ["height", "weight", "body", "position"];
@@ -70,7 +70,8 @@ interface ProfileData {
 	weight?: number | null;
 	grindrTribes?: string[] | null;
 	lookingFor?: string[] | null;
-	medias?: Array<{ mediaHash: string }> | null;
+	/** Stored photo references, exactly as `PUT /api/profile` writes them. */
+	photos?: string[] | null;
 	onlineUntil?: number | null;
 	isFavorite?: boolean | null;
 	socialNetworks?: Record<string, string | null> | null;
@@ -316,16 +317,25 @@ function PhotoCarousel({
 	medias,
 	displayName,
 }: {
-	medias: Array<{ mediaHash: string }>;
+	/** Stored references (bucket paths or public URLs), not hashes. */
+	medias: string[];
 	displayName: string;
 }) {
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const images = medias.map((media, index) => ({
-		src: demoMediaUrl(media.mediaHash),
-		alt: `${displayName}, photo ${index + 1} of ${medias.length}`,
-	}));
+	// Resolve first, then render: a reference that cannot become a URL is
+	// dropped rather than replaced, so the strip and its dots stay in step.
+	const images = medias
+		.map((media, index) => ({
+			src: resolveMediaUrl(media),
+			key: media,
+			alt: `${displayName}, photo ${index + 1} of ${medias.length}`,
+		}))
+		.filter(
+			(image): image is { src: string; key: string; alt: string } =>
+				image.src !== null,
+		);
 
 	const scrollTo = useCallback((index: number) => {
 		setActiveIndex(index);
@@ -340,7 +350,7 @@ function PhotoCarousel({
 		}
 	}, []);
 
-	if (medias.length === 0) {
+	if (images.length === 0) {
 		return (
 			<div className="aspect-[3/4] w-full bg-muted flex items-center justify-center">
 				<span className="text-muted-foreground font-mono text-sm">
@@ -357,18 +367,18 @@ function PhotoCarousel({
 				className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
 				style={{ scrollSnapType: "x mandatory" }}
 			>
-				{medias.map((media, i) => (
+				{images.map((image, i) => (
 					<button
 						type="button"
-						key={media.mediaHash}
+						key={image.key}
 						onClick={() => setLightboxIndex(i)}
 						aria-label={`Open ${displayName} photo ${i + 1} full screen`}
 						className="group relative w-full flex-shrink-0 snap-center overflow-hidden text-left"
 						style={{ scrollSnapAlign: "center" }}
 					>
 						<img
-							src={images[i].src}
-							alt={`${displayName}, ${i + 1} of ${medias.length}`}
+							src={image.src}
+							alt={`${displayName}, ${i + 1} of ${images.length}`}
 							className="w-full aspect-[3/4] object-cover transition duration-500 group-hover:scale-[1.015]"
 							loading={i === 0 ? "eager" : "lazy"}
 						/>
@@ -380,12 +390,12 @@ function PhotoCarousel({
 				))}
 			</div>
 			{/* Photo dots indicator */}
-			{medias.length > 1 && (
+			{images.length > 1 && (
 				<div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-1.5">
-					{medias.map((media, i) => (
+					{images.map((image, i) => (
 						<button
 							type="button"
-							key={media.mediaHash}
+							key={image.key}
 							onClick={() => scrollTo(i)}
 							className={cn(
 								"rounded-full transition-all duration-300",
@@ -441,7 +451,12 @@ function ProfilePage() {
 	const p = profile as ProfileData | undefined;
 	const isOnline = p?.onlineUntil !== null && p?.onlineUntil !== undefined;
 	const isFav = localFavorite || (p?.isFavorite as boolean) || false;
-	const medias = (p?.medias as Array<{ mediaHash: string }> | null) || [];
+	const photos = Array.isArray(p?.photos)
+		? p.photos.filter(
+				(path): path is string =>
+					typeof path === "string" && path.trim() !== "",
+			)
+		: [];
 
 	const handleFavoriteToggle = useCallback(() => {
 		if (!p) return;
@@ -548,7 +563,7 @@ function ProfilePage() {
 				<main className="relative mx-auto min-h-[calc(100vh-4rem)] w-full max-w-2xl">
 					{/* ── Photo carousel (full-width) ── */}
 					<PhotoCarousel
-						medias={medias}
+						medias={photos}
 						displayName={p.displayName ?? "User"}
 					/>
 

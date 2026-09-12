@@ -1,10 +1,15 @@
-import type { ReactNode } from "react";
 import { User } from "lucide-react";
+import type { ReactNode } from "react";
+import { resolveMediaUrl } from "#/integrations/supabase/media";
 import { cn } from "../cn";
 import { MediaImage } from "./MediaImage";
-import { demoMediaUrl } from "#/domains/demo";
 
 interface UserAvatarProps {
+	/**
+	 * A stored photo reference: a path in the `media` bucket or a public URL.
+	 * The name is kept because every caller passes it, and `resolveMediaUrl`
+	 * accepts both shapes.
+	 */
 	mediaHash: string | null;
 	className?: string;
 	size?: "md" | "lg" | "xl";
@@ -19,8 +24,11 @@ const iconSizeClasses = {
 function profileMediaUrl(opts: {
 	mediaHash: string;
 	size: "thumb" | "full";
-}): string {
-	return demoMediaUrl(opts.mediaHash);
+}): string | null {
+	// `size` is deliberately unused: the `media` bucket serves one object per
+	// upload and no transform variants exist yet, so pretending otherwise would
+	// mean a URL that 404s on the thumb.
+	return resolveMediaUrl(opts.mediaHash);
 }
 
 export function UserAvatar({
@@ -32,7 +40,7 @@ export function UserAvatar({
 		<div className={cn(className)}>
 			{mediaHash ? (
 				<MediaImage
-					src={profileMediaUrl({ mediaHash, size: "thumb" })}
+					src={profileMediaUrl({ mediaHash, size: "thumb" }) ?? ""}
 					className="h-full w-full"
 					imgClassName="bg-neutral-600 blur-2xl"
 					tone="photo"

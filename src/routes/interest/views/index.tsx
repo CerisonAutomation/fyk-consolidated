@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useViews } from "#/core/api/hooks/use-views";
 import { Eye, Heart, Lock } from "lucide-react";
-import { demoMediaUrl } from "#/domains/demo";
+import { resolveMediaUrl } from "#/integrations/supabase/media";
 
 export const Route = createFileRoute("/interest/views/")({
 	component: ViewsPage,
@@ -10,7 +10,8 @@ export const Route = createFileRoute("/interest/views/")({
 interface ViewerItem {
 	profileId: number;
 	displayName: string | null;
-	profileImageMediaHash: string | null;
+	/** The visitor's primary photo reference, straight from the card. */
+	photo: string | null;
 	onlineUntil: number | null;
 	isSecretAdmirer: boolean;
 	lastViewed: number | null;
@@ -136,6 +137,7 @@ function ViewCard({ viewer }: { viewer: ViewerItem }) {
 
 	const isOnline =
 		viewer.onlineUntil !== null && viewer.onlineUntil > Date.now();
+	const photoUrl = resolveMediaUrl(viewer.photo);
 
 	return (
 		<Link
@@ -144,9 +146,9 @@ function ViewCard({ viewer }: { viewer: ViewerItem }) {
 			className="group relative aspect-[3/4] overflow-hidden rounded-xl"
 			style={{ border: "1px solid rgba(255,255,255,0.06)" }}
 		>
-			{viewer.profileImageMediaHash ? (
+			{photoUrl ? (
 				<img
-					src={demoMediaUrl(viewer.profileImageMediaHash)}
+					src={photoUrl}
 					alt={viewer.displayName ?? "Profile viewer"}
 					className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.035]"
 				/>

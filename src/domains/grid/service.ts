@@ -1,4 +1,5 @@
 import { TtlCache } from "#/core/lib/ttl-cache";
+import { resolveMediaUrl } from "#/integrations/supabase/media";
 import { compatibilityScore, onlineUntil } from "#/lib/compatibility";
 import { api } from "#/lib/client";
 import { getSupabase } from "#/integrations/supabase/client";
@@ -21,6 +22,12 @@ export type RenderedGridProfile = {
 	isNew: boolean;
 	distance: number | null;
 	profilePhotosHashes: string[] | null;
+	/**
+	 * The primary photo, resolved for an `<img>` (bucket path or public URL).
+	 * The hash list stays because cards and lightboxes key on it; rendering
+	 * *that* as an image is what produced stock photos in place of uploads.
+	 */
+	photoUrl: string | null;
 	unread: number | null;
 	onlineUntil: number | null;
 	isFavorite: boolean;
@@ -340,6 +347,7 @@ export async function getGrid(query: {
 			isNew,
 			distance,
 			profilePhotosHashes: primaryImageHashes(primaryPhoto),
+			photoUrl: resolveMediaUrl(primaryPhoto),
 			unread: viewer?.unread.get(String(p.id)) ?? 0,
 			onlineUntil: onlineUntil(p.last_active_at, p.online),
 			isFavorite: favoriteIds?.has(p.id) ?? false,
@@ -581,6 +589,7 @@ export async function resolveLazyProfile(
 			isNew,
 			distance,
 			profilePhotosHashes: primaryImageHashes(primaryPhoto),
+			photoUrl: resolveMediaUrl(primaryPhoto),
 			unread: viewer?.unread.get(String(profile.id)) ?? 0,
 			onlineUntil: onlineUntil(user.last_active_at, user.online),
 			isFavorite,
@@ -608,6 +617,7 @@ export async function resolveLazyProfile(
 		isNew: Number(profile.id) % 11 === 0,
 		distance: seed.distanceM,
 		profilePhotosHashes: photos.length > 0 ? photos : null,
+		photoUrl: resolveMediaUrl(photos[0]),
 		unread: profile.unread,
 		onlineUntil: onlineUntilOf(seed),
 		isFavorite: demoFavoriteOf({ profileId: Number(profile.id) }),
