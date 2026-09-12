@@ -24,11 +24,15 @@ import { Route as ApiAiIndexRouteImport } from './routes/api/ai/index'
 import { Route as ApiBoostIndexRouteImport } from './routes/api/boost/index'
 import { Route as ApiConversationsIndexRouteImport } from './routes/api/conversations/index'
 import { Route as ApiDiscoverIndexRouteImport } from './routes/api/discover/index'
+import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
 import { Route as ApiHealthIndexRouteImport } from './routes/api/health/index'
 import { Route as ApiKingPetIndexRouteImport } from './routes/api/king-pet/index'
+import { Route as ApiMeetnowIndexRouteImport } from './routes/api/meetnow/index'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
+import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
 import { Route as ApiProfileIndexRouteImport } from './routes/api/profile/index'
 import { Route as ApiProfilesIndexRouteImport } from './routes/api/profiles/index'
+import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
 import { Route as ApiSettingsIndexRouteImport } from './routes/api/settings/index'
 import { Route as ApiSocialIndexRouteImport } from './routes/api/social/index'
 import { Route as ApiTapsIndexRouteImport } from './routes/api/taps/index'
@@ -126,6 +130,11 @@ const ApiDiscoverIndexRoute = ApiDiscoverIndexRouteImport.update({
   path: '/api/discover/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEventsIndexRoute = ApiEventsIndexRouteImport.update({
+  id: '/api/events/',
+  path: '/api/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthIndexRoute = ApiHealthIndexRouteImport.update({
   id: '/api/health/',
   path: '/api/health/',
@@ -136,9 +145,19 @@ const ApiKingPetIndexRoute = ApiKingPetIndexRouteImport.update({
   path: '/api/king-pet/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMeetnowIndexRoute = ApiMeetnowIndexRouteImport.update({
+  id: '/api/meetnow/',
+  path: '/api/meetnow/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiNotesIndexRoute = ApiNotesIndexRouteImport.update({
   id: '/api/notes/',
   path: '/api/notes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiNotificationsIndexRoute = ApiNotificationsIndexRouteImport.update({
+  id: '/api/notifications/',
+  path: '/api/notifications/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiProfileIndexRoute = ApiProfileIndexRouteImport.update({
@@ -149,6 +168,11 @@ const ApiProfileIndexRoute = ApiProfileIndexRouteImport.update({
 const ApiProfilesIndexRoute = ApiProfilesIndexRouteImport.update({
   id: '/api/profiles/',
   path: '/api/profiles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
+  id: '/api/push/subscribe',
+  path: '/api/push/subscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSettingsIndexRoute = ApiSettingsIndexRouteImport.update({
@@ -276,13 +300,17 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof OnboardingIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/ai/': typeof ApiAiIndexRoute
   '/api/boost/': typeof ApiBoostIndexRoute
   '/api/conversations/': typeof ApiConversationsIndexRoute
   '/api/discover/': typeof ApiDiscoverIndexRoute
+  '/api/events/': typeof ApiEventsIndexRoute
   '/api/health/': typeof ApiHealthIndexRoute
   '/api/king-pet/': typeof ApiKingPetIndexRoute
+  '/api/meetnow/': typeof ApiMeetnowIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
+  '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/profile/': typeof ApiProfileIndexRoute
   '/api/profiles/': typeof ApiProfilesIndexRoute
   '/api/settings/': typeof ApiSettingsIndexRoute
@@ -319,13 +347,17 @@ export interface FileRoutesByTo {
   '/onboarding': typeof OnboardingIndexRoute
   '/safety': typeof SafetyIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/ai': typeof ApiAiIndexRoute
   '/api/boost': typeof ApiBoostIndexRoute
   '/api/conversations': typeof ApiConversationsIndexRoute
   '/api/discover': typeof ApiDiscoverIndexRoute
+  '/api/events': typeof ApiEventsIndexRoute
   '/api/health': typeof ApiHealthIndexRoute
   '/api/king-pet': typeof ApiKingPetIndexRoute
+  '/api/meetnow': typeof ApiMeetnowIndexRoute
   '/api/notes': typeof ApiNotesIndexRoute
+  '/api/notifications': typeof ApiNotificationsIndexRoute
   '/api/profile': typeof ApiProfileIndexRoute
   '/api/profiles': typeof ApiProfilesIndexRoute
   '/api/settings': typeof ApiSettingsIndexRoute
@@ -363,13 +395,17 @@ export interface FileRoutesById {
   '/onboarding/': typeof OnboardingIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/ai/': typeof ApiAiIndexRoute
   '/api/boost/': typeof ApiBoostIndexRoute
   '/api/conversations/': typeof ApiConversationsIndexRoute
   '/api/discover/': typeof ApiDiscoverIndexRoute
+  '/api/events/': typeof ApiEventsIndexRoute
   '/api/health/': typeof ApiHealthIndexRoute
   '/api/king-pet/': typeof ApiKingPetIndexRoute
+  '/api/meetnow/': typeof ApiMeetnowIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
+  '/api/notifications/': typeof ApiNotificationsIndexRoute
   '/api/profile/': typeof ApiProfileIndexRoute
   '/api/profiles/': typeof ApiProfilesIndexRoute
   '/api/settings/': typeof ApiSettingsIndexRoute
@@ -408,13 +444,17 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/safety/'
     | '/settings/'
+    | '/api/push/subscribe'
     | '/api/ai/'
     | '/api/boost/'
     | '/api/conversations/'
     | '/api/discover/'
+    | '/api/events/'
     | '/api/health/'
     | '/api/king-pet/'
+    | '/api/meetnow/'
     | '/api/notes/'
+    | '/api/notifications/'
     | '/api/profile/'
     | '/api/profiles/'
     | '/api/settings/'
@@ -451,13 +491,17 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/safety'
     | '/settings'
+    | '/api/push/subscribe'
     | '/api/ai'
     | '/api/boost'
     | '/api/conversations'
     | '/api/discover'
+    | '/api/events'
     | '/api/health'
     | '/api/king-pet'
+    | '/api/meetnow'
     | '/api/notes'
+    | '/api/notifications'
     | '/api/profile'
     | '/api/profiles'
     | '/api/settings'
@@ -494,13 +538,17 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/safety/'
     | '/settings/'
+    | '/api/push/subscribe'
     | '/api/ai/'
     | '/api/boost/'
     | '/api/conversations/'
     | '/api/discover/'
+    | '/api/events/'
     | '/api/health/'
     | '/api/king-pet/'
+    | '/api/meetnow/'
     | '/api/notes/'
+    | '/api/notifications/'
     | '/api/profile/'
     | '/api/profiles/'
     | '/api/settings/'
@@ -538,13 +586,17 @@ export interface RootRouteChildren {
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   SafetyIndexRoute: typeof SafetyIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
   ApiAiIndexRoute: typeof ApiAiIndexRoute
   ApiBoostIndexRoute: typeof ApiBoostIndexRoute
   ApiConversationsIndexRoute: typeof ApiConversationsIndexRoute
   ApiDiscoverIndexRoute: typeof ApiDiscoverIndexRoute
+  ApiEventsIndexRoute: typeof ApiEventsIndexRoute
   ApiHealthIndexRoute: typeof ApiHealthIndexRoute
   ApiKingPetIndexRoute: typeof ApiKingPetIndexRoute
+  ApiMeetnowIndexRoute: typeof ApiMeetnowIndexRoute
   ApiNotesIndexRoute: typeof ApiNotesIndexRoute
+  ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
   ApiProfileIndexRoute: typeof ApiProfileIndexRoute
   ApiProfilesIndexRoute: typeof ApiProfilesIndexRoute
   ApiSettingsIndexRoute: typeof ApiSettingsIndexRoute
@@ -677,6 +729,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDiscoverIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/events/': {
+      id: '/api/events/'
+      path: '/api/events'
+      fullPath: '/api/events/'
+      preLoaderRoute: typeof ApiEventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health/': {
       id: '/api/health/'
       path: '/api/health'
@@ -691,11 +750,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiKingPetIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/meetnow/': {
+      id: '/api/meetnow/'
+      path: '/api/meetnow'
+      fullPath: '/api/meetnow/'
+      preLoaderRoute: typeof ApiMeetnowIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/notes/': {
       id: '/api/notes/'
       path: '/api/notes'
       fullPath: '/api/notes/'
       preLoaderRoute: typeof ApiNotesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/notifications/': {
+      id: '/api/notifications/'
+      path: '/api/notifications'
+      fullPath: '/api/notifications/'
+      preLoaderRoute: typeof ApiNotificationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/profile/': {
@@ -710,6 +783,13 @@ declare module '@tanstack/react-router' {
       path: '/api/profiles'
       fullPath: '/api/profiles/'
       preLoaderRoute: typeof ApiProfilesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/subscribe': {
+      id: '/api/push/subscribe'
+      path: '/api/push/subscribe'
+      fullPath: '/api/push/subscribe'
+      preLoaderRoute: typeof ApiPushSubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/settings/': {
@@ -874,13 +954,17 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingIndexRoute: OnboardingIndexRoute,
   SafetyIndexRoute: SafetyIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  ApiPushSubscribeRoute: ApiPushSubscribeRoute,
   ApiAiIndexRoute: ApiAiIndexRoute,
   ApiBoostIndexRoute: ApiBoostIndexRoute,
   ApiConversationsIndexRoute: ApiConversationsIndexRoute,
   ApiDiscoverIndexRoute: ApiDiscoverIndexRoute,
+  ApiEventsIndexRoute: ApiEventsIndexRoute,
   ApiHealthIndexRoute: ApiHealthIndexRoute,
   ApiKingPetIndexRoute: ApiKingPetIndexRoute,
+  ApiMeetnowIndexRoute: ApiMeetnowIndexRoute,
   ApiNotesIndexRoute: ApiNotesIndexRoute,
+  ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
   ApiProfileIndexRoute: ApiProfileIndexRoute,
   ApiProfilesIndexRoute: ApiProfilesIndexRoute,
   ApiSettingsIndexRoute: ApiSettingsIndexRoute,
