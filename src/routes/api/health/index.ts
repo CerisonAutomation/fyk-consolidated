@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { pingDatabase } from "#/db";
+import { methodNotAllowed } from "#/lib/api-helpers";
 import { publicCacheHeaders } from "#/lib/security";
 import { isAuthConfigured } from "#/lib/supabase-auth.server";
 import { json } from "#/middleware";
@@ -23,6 +24,16 @@ import { json } from "#/middleware";
 export const Route = createFileRoute("/api/health/")({
 	server: {
 		handlers: {
+			/* Every verb this route does not implement is answered in JSON (405 +
+			 * Allow). Without a declaration TanStack Start treats the request as
+			 * unmatched-by-path-and-method and falls through to the document handler,
+			 * which answers `200 text/html` with the SPA bundle — a client parsing
+			 * JSON then blames the server instead of its own verb. AUDIT §3.10. */
+			POST: methodNotAllowed("GET"),
+			PUT: methodNotAllowed("GET"),
+			PATCH: methodNotAllowed("GET"),
+			DELETE: methodNotAllowed("GET"),
+
 			GET: async ({ request }: { request: Request }) => {
 				const url = new URL(request.url);
 				const deep = url.searchParams.get("deep") === "1";
