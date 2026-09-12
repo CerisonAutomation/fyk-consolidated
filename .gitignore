@@ -12,3 +12,9 @@ dist-ssr
 __unconfig*
 todos.json
 .dyad/
+# Tooling/session state, never app code (see AI_RULES.md).
+.mcp-cache/
+.agents/
+.playwright-mcp/
+.graph-it/
+supabase/.temp/

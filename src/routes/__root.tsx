@@ -47,6 +47,10 @@ export const Route = createRootRouteWithContext()({
 		],
 		links: [
 			{ rel: "stylesheet", href: appCss },
+			// The square brand mark on the app background (`public/favicon.svg`,
+			// derived from logo-square.svg). No manifest and no service worker: this
+			// build has neither, so it asks for neither.
+			{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
 			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
 			{
 				rel: "preconnect",
