@@ -64,11 +64,63 @@ function biome(biomeArgs) {
 	);
 }
 
+/**
+ * Parse Biome's JSON report, or stop.
+ *
+ * This matters more than it looks: `tally` is the only thing between "the tool
+ * could not run" and "the code is clean". With a partially installed
+ * `node_modules` — which happens here, and in CI whenever an optional platform
+ * package like `@biomejs/biome-linux-x64` fails to link — Biome writes to stderr
+ * and prints no JSON at all. The old code read that as zero diagnostics, so
+ * `lint:changed` reported "0 over the grandfathered allowance" and exited 0,
+ * and `--update-baseline` would have written an empty ledger, which is the same
+ * lie with a longer tail: every violation in the repository becomes new debt the
+ * next run reports.
+ */
+function parseReport(run, checkedCount) {
+	if (run.error) {
+		console.error(`lint: could not run biome — ${run.error.message}`);
+		process.exit(1);
+	}
+	const stdout = (run.stdout ?? "").trim();
+	if (stdout === "") {
+		const tail = (run.stderr ?? "").trim().split("\n").slice(-4).join("\n");
+		console.error(
+			`lint: biome produced no report for ${checkedCount} file(s) (exit ${run.status}). ` +
+				"This is treated as a broken run, not a clean one.\n" +
+				(tail ? `  biome said: ${tail}\n` : "") +
+				"  Check the install: `pnpm install --frozen-lockfile`.",
+		);
+		process.exit(1);
+	}
+	let parsed;
+	try {
+		parsed = JSON.parse(stdout);
+	} catch (error) {
+		console.error(
+			`lint: biome's JSON report is unreadable (${error.message}); the gate cannot be trusted on a half-written report.`,
+		);
+		process.exit(1);
+	}
+	if (!Array.isArray(parsed.diagnostics)) {
+		console.error("lint: biome's report has no `diagnostics` array — refusing to read that as clean.");
+		process.exit(1);
+	}
+	// Exit status 1 means "violations found"; with none in the report, the two
+	// disagree and one of them is lying about the run.
+	if (run.status !== 0 && parsed.diagnostics.length === 0) {
+		console.error(
+			`lint: biome exited ${run.status} but reported no diagnostics — refusing to read a contradictory run as clean.`,
+		);
+		process.exit(1);
+	}
+	return parsed;
+}
+
 /** Diagnostics → `file → rule → count`, error severity only (warnings never failed CI). */
-function tally(json) {
-	const parsed = JSON.parse(json || '{"diagnostics":[]}');
+function tally(diagnostics) {
 	const out = new Map();
-	for (const d of parsed.diagnostics ?? []) {
+	for (const d of diagnostics) {
 		if (d.severity !== "error") continue;
 		const file = d.location?.path;
 		const rule = d.category ?? "unknown";
@@ -91,7 +143,7 @@ if (updateBaseline) {
 		console.error(`lint: could not run biome — ${run.error.message}`);
 		process.exit(1);
 	}
-	const counts = tally(run.stdout);
+	const counts = tally(parseReport(run, SCOPES.length).diagnostics);
 	const serialised = {};
 	for (const [file, byRule] of [...counts].sort((a, b) => a[0].localeCompare(b[0]))) {
 		serialised[file] = Object.fromEntries(
@@ -188,7 +240,7 @@ if (existsSync(baselinePath)) {
 }
 
 const run = biome(["lint", "--reporter=json", "--max-diagnostics=100000", ...changed]);
-const counts = tally(run.stdout);
+const counts = tally(parseReport(run, changed.length).diagnostics);
 
 const failures = [];
 const improvements = [];
