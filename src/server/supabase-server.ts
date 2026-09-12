@@ -7,18 +7,29 @@
  * handler cannot read rows the caller could not read from the browser.
  */
 
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { type CookieOptions, createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "#/integrations/supabase/types";
 import { unauthorized } from "./errors";
 
-const SERVER_URL = (process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? "").trim();
-const SERVER_KEY = (process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? "").trim();
+const SERVER_URL = (
+	process.env.SUPABASE_URL ??
+	process.env.VITE_SUPABASE_URL ??
+	""
+).trim();
+const SERVER_KEY = (
+	process.env.SUPABASE_ANON_KEY ??
+	process.env.VITE_SUPABASE_ANON_KEY ??
+	""
+).trim();
 const SERVICE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
 
 export function serverConfigured(): boolean {
-	return /^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(SERVER_URL) && SERVER_KEY.length > 20;
+	return (
+		/^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(SERVER_URL) &&
+		SERVER_KEY.length > 20
+	);
 }
 
 /**
@@ -28,22 +39,37 @@ export function serverConfigured(): boolean {
  * trusted worker, not in this process.
  */
 export function serviceKeyConfigured(): boolean {
-	return SERVICE_KEY.length > 20 && !SERVER_KEY.startsWith(SERVICE_KEY.slice(0, 12));
+	return (
+		SERVICE_KEY.length > 20 && !SERVER_KEY.startsWith(SERVICE_KEY.slice(0, 12))
+	);
 }
 
 /** Minimal cookie serializer: the options Supabase sets, plus HttpOnly. */
-function serializeCookie(name: string, value: string, opts: CookieOptions): string {
-	const parts = [`${name}=${encodeURIComponent(value)}`, `Path=${opts.path ?? "/"}`];
+function serializeCookie(
+	name: string,
+	value: string,
+	opts: CookieOptions,
+): string {
+	const parts = [
+		`${name}=${encodeURIComponent(value)}`,
+		`Path=${opts.path ?? "/"}`,
+	];
 	if (opts.maxAge != null) parts.push(`Max-Age=${Math.floor(opts.maxAge)}`);
-	if (opts.expires) parts.push(`Expires=${new Date(opts.expires).toUTCString()}`);
-	parts.push(`SameSite=${opts.sameSite === "strict" ? "Strict" : opts.sameSite === "none" ? "None" : "Lax"}`);
+	if (opts.expires)
+		parts.push(`Expires=${new Date(opts.expires).toUTCString()}`);
+	parts.push(
+		`SameSite=${opts.sameSite === "strict" ? "Strict" : opts.sameSite === "none" ? "None" : "Lax"}`,
+	);
 	if (opts.secure) parts.push("Secure");
 	parts.push("HttpOnly");
 	return parts.join("; ");
 }
 
 /** Client scoped to the caller's access token (RLS applies). Null when signed out. */
-export function createUserClient(headers: Headers, onSetCookie?: (setCookieHeader: string) => void): SupabaseClient<Database> | null {
+export function createUserClient(
+	headers: Headers,
+	onSetCookie?: (setCookieHeader: string) => void,
+): SupabaseClient<Database> | null {
 	const auth = headers.get("authorization");
 	const cookie = headers.get("cookie");
 
@@ -58,25 +84,40 @@ export function createUserClient(headers: Headers, onSetCookie?: (setCookieHeade
 
 	if (!cookie) return null;
 	return createServerClient<Database>(SERVER_URL, SERVER_KEY, {
-		cookieOptions: { name: "fyk-auth", sameSite: "lax", secure: true, path: "/" },
+		cookieOptions: {
+			name: "fyk-auth",
+			sameSite: "lax",
+			secure: true,
+			path: "/",
+		},
 		cookies: {
 			getAll: () =>
 				cookie.split(/; */).map((entry) => {
 					const idx = entry.indexOf("=");
 					if (idx < 0) return { name: entry.trim(), value: "" };
-					return { name: entry.slice(0, idx).trim(), value: decodeURIComponent(entry.slice(idx + 1)) };
+					return {
+						name: entry.slice(0, idx).trim(),
+						value: decodeURIComponent(entry.slice(idx + 1)),
+					};
 				}),
 			setAll: (cookies) => {
 				// Without this the refreshed token is dropped and the session decays
 				// into a logout the user cannot explain.
 				if (!onSetCookie) return;
-				for (const entry of cookies) onSetCookie(serializeCookie(entry.name, entry.value, entry.options ?? {}));
+				for (const entry of cookies)
+					onSetCookie(
+						serializeCookie(entry.name, entry.value, entry.options ?? {}),
+					);
 			},
 		},
 	});
 }
 
-export type Caller = { userId: string; email: string | null; role: "user" | "moderator" | "admin" };
+export type Caller = {
+	userId: string;
+	email: string | null;
+	role: "user" | "moderator" | "admin";
+};
 
 /**
  * Resolves the caller from the request. `profiles.role` (a database column, not a
@@ -94,10 +135,17 @@ export async function resolveCaller(headers: Headers): Promise<Caller | null> {
 	return { userId: data.user.id, email: data.user.email ?? null, role };
 }
 
-async function readRole(client: SupabaseClient<Database>, userId: string): Promise<Caller["role"]> {
+async function readRole(
+	client: SupabaseClient<Database>,
+	userId: string,
+): Promise<Caller["role"]> {
 	// `profiles` is readable by its owner under RLS, so a user can only ever read
 	// their own role row. Moderation rights are therefore never client-asserted.
-	const { data, error } = await client.from("profiles").select("id,role").eq("id", userId).maybeSingle();
+	const { data, error } = await client
+		.from("profiles")
+		.select("id,role")
+		.eq("id", userId)
+		.maybeSingle();
 	if (error || !data) return "user";
 	const value = (data as { role?: string | null }).role;
 	return value === "admin" || value === "moderator" ? value : "user";

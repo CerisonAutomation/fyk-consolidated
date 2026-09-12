@@ -5,15 +5,25 @@
  */
 
 import { z } from "zod";
-import { PROFILE_DETAIL_COLUMNS, encodeGeohash, toPublicProfile, type ProfileRow } from "../data/profiles";
-import { coarsen } from "../data/profiles";
-import { badRequest, notFound, dbFailure } from "../errors";
-import { readJson, type RequestCtx } from "../context";
+import { type RequestCtx, readJson } from "../context";
+import {
+	coarsen,
+	encodeGeohash,
+	PROFILE_DETAIL_COLUMNS,
+	type ProfileRow,
+	toPublicProfile,
+} from "../data/profiles";
+import { badRequest, dbFailure, notFound } from "../errors";
 import { adultAgeOrThrow } from "./session";
 
 export const profileUpdateSchema = z.object({
 	displayName: z.string().trim().min(2).max(40).optional(),
-	handle: z.string().trim().toLowerCase().regex(/^[a-z0-9_]{3,24}$/).optional(),
+	handle: z
+		.string()
+		.trim()
+		.toLowerCase()
+		.regex(/^[a-z0-9_]{3,24}$/)
+		.optional(),
 	bio: z.string().trim().max(1000).optional(),
 	headline: z.string().trim().max(120).optional(),
 	city: z.string().trim().max(80).optional(),
@@ -67,9 +77,16 @@ const WRITABLE = new Set([
 export async function getSettings(ctx: RequestCtx) {
 	const caller = await ctx.auth();
 	const client = ctx.db();
-	const { data, error } = await client.from("profiles").select(PROFILE_DETAIL_COLUMNS).eq("id", caller.userId).maybeSingle();
+	const { data, error } = await client
+		.from("profiles")
+		.select(PROFILE_DETAIL_COLUMNS)
+		.eq("id", caller.userId)
+		.maybeSingle();
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
-	if (!data) throw notFound("Your profile row is missing. Sign out and back in to recreate it.");
+	if (!data)
+		throw notFound(
+			"Your profile row is missing. Sign out and back in to recreate it.",
+		);
 	const row = data as unknown as ProfileRow;
 	return {
 		profile: toPublicProfile(row, { viewer: null, client, includeBio: true }),
@@ -89,7 +106,9 @@ export async function updateProfile(ctx: RequestCtx) {
 	const body = await readJson(ctx.request, profileUpdateSchema);
 	const client = ctx.db();
 
-	const patch: Record<string, unknown> = { last_active_at: new Date().toISOString() };
+	const patch: Record<string, unknown> = {
+		last_active_at: new Date().toISOString(),
+	};
 	if (body.displayName !== undefined) patch.display_name = body.displayName;
 	if (body.handle !== undefined) patch.handle = body.handle;
 	if (body.bio !== undefined) patch.bio = body.bio || null;
@@ -104,12 +123,25 @@ export async function updateProfile(ctx: RequestCtx) {
 	if (body.pronouns !== undefined) patch.pronouns = body.pronouns;
 
 	for (const key of Object.keys(patch)) {
-		if (!WRITABLE.has(key)) throw badRequest("That field cannot be changed here.");
+		if (!WRITABLE.has(key))
+			throw badRequest("That field cannot be changed here.");
 	}
 
-	const update = await client.from("profiles").update(patch as never).eq("id", caller.userId).select(PROFILE_DETAIL_COLUMNS).single();
-	if (update.error) throw dbFailure(update.error, "That did not save. Please try again.");
-	return { profile: toPublicProfile(update.data as unknown as ProfileRow, { viewer: null, client, includeBio: true }) };
+	const update = await client
+		.from("profiles")
+		.update(patch as never)
+		.eq("id", caller.userId)
+		.select(PROFILE_DETAIL_COLUMNS)
+		.single();
+	if (update.error)
+		throw dbFailure(update.error, "That did not save. Please try again.");
+	return {
+		profile: toPublicProfile(update.data as unknown as ProfileRow, {
+			viewer: null,
+			client,
+			includeBio: true,
+		}),
+	};
 }
 
 export async function updatePrivacy(ctx: RequestCtx) {
@@ -117,15 +149,20 @@ export async function updatePrivacy(ctx: RequestCtx) {
 	const body = await readJson(ctx.request, privacySchema);
 	const client = ctx.db();
 
-	const patch: Record<string, unknown> = { last_active_at: new Date().toISOString() };
+	const patch: Record<string, unknown> = {
+		last_active_at: new Date().toISOString(),
+	};
 	if (body.hideDistance !== undefined) patch.hide_distance = body.hideDistance;
 	if (body.hideOnline !== undefined) patch.hide_online = body.hideOnline;
 	if (body.incognito !== undefined) patch.incognito = body.incognito;
-	if (body.exposureLevel !== undefined) patch.exposure_level = body.exposureLevel;
+	if (body.exposureLevel !== undefined)
+		patch.exposure_level = body.exposureLevel;
 	if (body.openToMeet !== undefined) {
 		patch.open_to_meet = body.openToMeet;
 		patch.available_until = body.openToMeet
-			? new Date(Date.now() + (body.availableMinutes ?? 120) * 60_000).toISOString()
+			? new Date(
+					Date.now() + (body.availableMinutes ?? 120) * 60_000,
+				).toISOString()
 			: null;
 	}
 
@@ -138,33 +175,58 @@ export async function updatePrivacy(ctx: RequestCtx) {
 		patch.geohash6 = encodeGeohash(point.lat, point.lng);
 	}
 
-	const update = await client.from("profiles").update(patch as never).eq("id", caller.userId).select(PROFILE_DETAIL_COLUMNS).single();
-	if (update.error) throw dbFailure(update.error, "That did not save. Please try again.");
-	return { profile: toPublicProfile(update.data as unknown as ProfileRow, { viewer: null, client, includeBio: true }) };
+	const update = await client
+		.from("profiles")
+		.update(patch as never)
+		.eq("id", caller.userId)
+		.select(PROFILE_DETAIL_COLUMNS)
+		.single();
+	if (update.error)
+		throw dbFailure(update.error, "That did not save. Please try again.");
+	return {
+		profile: toPublicProfile(update.data as unknown as ProfileRow, {
+			viewer: null,
+			client,
+			includeBio: true,
+		}),
+	};
 }
 
 /** "Right now" toggle — a window, not a live status, so it cannot lie about presence. */
 export async function updateAvailability(ctx: RequestCtx) {
 	const caller = await ctx.auth();
-	const body = await readJson(ctx.request, z.object({ openToMeet: z.boolean(), minutes: z.number().int().min(30).max(720).default(120) }));
+	const body = await readJson(
+		ctx.request,
+		z.object({
+			openToMeet: z.boolean(),
+			minutes: z.number().int().min(30).max(720).default(120),
+		}),
+	);
 	const client = ctx.db();
 	const update = await client
 		.from("profiles")
 		.update({
 			open_to_meet: body.openToMeet,
-			available_until: body.openToMeet ? new Date(Date.now() + body.minutes * 60_000).toISOString() : null,
+			available_until: body.openToMeet
+				? new Date(Date.now() + body.minutes * 60_000).toISOString()
+				: null,
 			last_active_at: new Date().toISOString(),
 		})
 		.eq("id", caller.userId)
 		.select("id,open_to_meet,available_until")
 		.single();
-	if (update.error) throw dbFailure(update.error, "That did not save. Please try again.");
+	if (update.error)
+		throw dbFailure(update.error, "That did not save. Please try again.");
 	return update.data;
 }
 
 export const onboardingSubmitSchema = z.object({
 	displayName: z.string().trim().min(2).max(40),
-	handle: z.string().trim().toLowerCase().regex(/^[a-z0-9_]{3,24}$/),
+	handle: z
+		.string()
+		.trim()
+		.toLowerCase()
+		.regex(/^[a-z0-9_]{3,24}$/),
 	city: z.string().trim().min(1).max(80),
 	dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 	interests: z.array(z.string().trim().min(1).max(32)).max(15).default([]),
@@ -180,8 +242,16 @@ export async function completeOnboarding(ctx: RequestCtx) {
 	const client = ctx.db();
 
 	// dob never lands in `profiles`; it stays in profile_private with the 18+ check.
-	const privateResult = await client.from("profile_private").upsert({ id: caller.userId, dob: body.dob, updated_at: new Date().toISOString() });
-	if (privateResult.error) throw dbFailure(privateResult.error, "That did not save. Please try again.");
+	const privateResult = await client.from("profile_private").upsert({
+		id: caller.userId,
+		dob: body.dob,
+		updated_at: new Date().toISOString(),
+	});
+	if (privateResult.error)
+		throw dbFailure(
+			privateResult.error,
+			"That did not save. Please try again.",
+		);
 
 	const patch: Record<string, unknown> = {
 		display_name: body.displayName,
@@ -201,7 +271,19 @@ export async function completeOnboarding(ctx: RequestCtx) {
 		patch.geohash6 = encodeGeohash(point.lat, point.lng);
 	}
 
-	const update = await client.from("profiles").update(patch as never).eq("id", caller.userId).select(PROFILE_DETAIL_COLUMNS).single();
-	if (update.error) throw dbFailure(update.error, "That did not save. Please try again.");
-	return { profile: toPublicProfile(update.data as unknown as ProfileRow, { viewer: null, client, includeBio: true }) };
+	const update = await client
+		.from("profiles")
+		.update(patch as never)
+		.eq("id", caller.userId)
+		.select(PROFILE_DETAIL_COLUMNS)
+		.single();
+	if (update.error)
+		throw dbFailure(update.error, "That did not save. Please try again.");
+	return {
+		profile: toPublicProfile(update.data as unknown as ProfileRow, {
+			viewer: null,
+			client,
+			includeBio: true,
+		}),
+	};
 }

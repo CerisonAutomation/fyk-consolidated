@@ -31,7 +31,14 @@ export class ApiClientError extends Error {
 	/** 409/400-class problems should be surfaced inline, not as a toast. */
 	readonly retryable: boolean;
 
-	constructor(options: { code: ApiErrorCode; message: string; status: number; requestId?: string | null; details?: Record<string, unknown>; retryable?: boolean }) {
+	constructor(options: {
+		code: ApiErrorCode;
+		message: string;
+		status: number;
+		requestId?: string | null;
+		details?: Record<string, unknown>;
+		retryable?: boolean;
+	}) {
 		super(options.message);
 		this.name = "ApiClientError";
 		this.code = options.code;
@@ -45,7 +52,11 @@ export class ApiClientError extends Error {
 		return this.code === "unauthorized";
 	}
 	get isBlocking(): boolean {
-		return this.code === "forbidden" || this.code === "conflict" || this.code === "bad_request";
+		return (
+			this.code === "forbidden" ||
+			this.code === "conflict" ||
+			this.code === "bad_request"
+		);
 	}
 }
 
@@ -53,7 +64,11 @@ interface Envelope<T> {
 	ok: boolean;
 	data?: T;
 	requestId?: string;
-	error?: { code: ApiErrorCode; message: string; details?: Record<string, unknown> };
+	error?: {
+		code: ApiErrorCode;
+		message: string;
+		details?: Record<string, unknown>;
+	};
 }
 
 export interface ApiCallOptions {
@@ -71,12 +86,21 @@ function newRequestId(): string {
 	return `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 }
 
-async function call<T>(path: string, options: ApiCallOptions, retries = 1): Promise<T> {
+async function call<T>(
+	path: string,
+	options: ApiCallOptions,
+	retries = 1,
+): Promise<T> {
 	const requestId = newRequestId();
 	const isForm = options.form != null;
 	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 20_000);
-	const signal = options.signal ? AbortSignal.any([options.signal, controller.signal]) : controller.signal;
+	const timeout = setTimeout(
+		() => controller.abort(),
+		options.timeoutMs ?? 20_000,
+	);
+	const signal = options.signal
+		? AbortSignal.any([options.signal, controller.signal])
+		: controller.signal;
 
 	let response: Response;
 	try {
@@ -91,19 +115,33 @@ async function call<T>(path: string, options: ApiCallOptions, retries = 1): Prom
 				...(isForm ? {} : { "Content-Type": "application/json" }),
 				"X-Request-Id": requestId,
 			},
-			body: isForm ? options.form : options.body != null ? JSON.stringify(options.body) : undefined,
+			body: isForm
+				? options.form
+				: options.body != null
+					? JSON.stringify(options.body)
+					: undefined,
 			signal,
 		});
 	} catch (error) {
 		clearTimeout(timeout);
-		const aborted = error instanceof DOMException && error.name === "AbortError";
-		if (aborted && options.signal?.aborted) throw new ApiClientError({ code: "network_error", message: "Request cancelled.", status: 0, requestId });
+		const aborted =
+			error instanceof DOMException && error.name === "AbortError";
+		if (aborted && options.signal?.aborted)
+			throw new ApiClientError({
+				code: "network_error",
+				message: "Request cancelled.",
+				status: 0,
+				requestId,
+			});
 		// One retry for a transient network failure; never for a write that may have
 		// already landed, because that would duplicate messages.
-		if (retries > 0 && (options.method ?? "GET") === "GET") return call<T>(path, options, retries - 1);
+		if (retries > 0 && (options.method ?? "GET") === "GET")
+			return call<T>(path, options, retries - 1);
 		throw new ApiClientError({
 			code: "network_error",
-			message: aborted ? "That took too long. Check your connection and try again." : "You appear to be offline. FYK needs a connection.",
+			message: aborted
+				? "That took too long. Check your connection and try again."
+				: "You appear to be offline. FYK needs a connection.",
 			status: 0,
 			requestId,
 			retryable: true,
@@ -123,7 +161,9 @@ async function call<T>(path: string, options: ApiCallOptions, retries = 1): Prom
 		// A proxy or an unconfigured server answered with HTML. Never forward that.
 		throw new ApiClientError({
 			code: response.ok ? "internal_error" : "dependency_unavailable",
-			message: response.ok ? "The server returned something unexpected." : `The server is unavailable (${response.status}).`,
+			message: response.ok
+				? "The server returned something unexpected."
+				: `The server is unavailable (${response.status}).`,
 			status: response.status,
 			requestId,
 			retryable: true,
@@ -131,7 +171,10 @@ async function call<T>(path: string, options: ApiCallOptions, retries = 1): Prom
 	}
 
 	if (!payload.ok) {
-		const error = payload.error ?? { code: "internal_error" as const, message: "Something went wrong on our side." };
+		const error = payload.error ?? {
+			code: "internal_error" as const,
+			message: "Something went wrong on our side.",
+		};
 		// The server decides retryability (429 yes, 409/400 never); a client that
 		// guessed would re-send a message the server already stored.
 		const shouldRetry = response.headers.get("x-should-retry") === "true";
@@ -149,9 +192,23 @@ async function call<T>(path: string, options: ApiCallOptions, retries = 1): Prom
 }
 
 export const api = {
-	get: <T,>(path: string, options?: ApiCallOptions) => call<T>(path, { ...options, method: "GET" }),
-	post: <T,>(path: string, body?: unknown, options?: Omit<ApiCallOptions, "body" | "method">) => call<T>(path, { ...options, method: "POST", body }),
-	postForm: <T,>(path: string, form: FormData, options?: Omit<ApiCallOptions, "form" | "method">) => call<T>(path, { ...options, method: "POST", form }),
-	patch: <T,>(path: string, body?: unknown, options?: Omit<ApiCallOptions, "body" | "method">) => call<T>(path, { ...options, method: "PATCH", body }),
-	del: <T,>(path: string, options?: ApiCallOptions) => call<T>(path, { ...options, method: "DELETE" }),
+	get: <T>(path: string, options?: ApiCallOptions) =>
+		call<T>(path, { ...options, method: "GET" }),
+	post: <T>(
+		path: string,
+		body?: unknown,
+		options?: Omit<ApiCallOptions, "body" | "method">,
+	) => call<T>(path, { ...options, method: "POST", body }),
+	postForm: <T>(
+		path: string,
+		form: FormData,
+		options?: Omit<ApiCallOptions, "form" | "method">,
+	) => call<T>(path, { ...options, method: "POST", form }),
+	patch: <T>(
+		path: string,
+		body?: unknown,
+		options?: Omit<ApiCallOptions, "body" | "method">,
+	) => call<T>(path, { ...options, method: "PATCH", body }),
+	del: <T>(path: string, options?: ApiCallOptions) =>
+		call<T>(path, { ...options, method: "DELETE" }),
 };

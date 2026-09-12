@@ -93,7 +93,10 @@ export type PublicProfile = {
 	compatibility: number;
 };
 
-export function presenceOf(row: Pick<ProfileRow, "hide_online" | "last_active_at">, now = Date.now()): PublicProfile["presence"] {
+export function presenceOf(
+	row: Pick<ProfileRow, "hide_online" | "last_active_at">,
+	now = Date.now(),
+): PublicProfile["presence"] {
 	if (row.hide_online) return "offline";
 	const last = Date.parse(row.last_active_at);
 	if (Number.isNaN(last)) return "offline";
@@ -103,7 +106,10 @@ export function presenceOf(row: Pick<ProfileRow, "hide_online" | "last_active_at
 	return "offline";
 }
 
-export function availableNow(row: Pick<ProfileRow, "open_to_meet" | "available_until">, now = Date.now()): boolean {
+export function availableNow(
+	row: Pick<ProfileRow, "open_to_meet" | "available_until">,
+	now = Date.now(),
+): boolean {
 	if (!row.open_to_meet) return false;
 	if (!row.available_until) return true;
 	return Date.parse(row.available_until) > now;
@@ -115,10 +121,18 @@ export function distanceBetween(
 	viewerId: string,
 	targetId: string,
 ): { km: number | null; label: string | null } {
-	if (!viewer || target.hide_distance || target.lat_coarse == null || target.lng_coarse == null) {
+	if (
+		!viewer ||
+		target.hide_distance ||
+		target.lat_coarse == null ||
+		target.lng_coarse == null
+	) {
 		return { km: null, label: null };
 	}
-	const raw = haversineKm(viewer, { lat: target.lat_coarse, lng: target.lng_coarse });
+	const raw = haversineKm(viewer, {
+		lat: target.lat_coarse,
+		lng: target.lng_coarse,
+	});
 	const km = resolveDistanceKm(viewerId, targetId, raw);
 	return { km, label: formatDistance(km) };
 }
@@ -134,14 +148,25 @@ export function formatDistance(km: number | null): string | null {
  * Overlap-based affinity. Deliberately simple and explainable: shared interests
  * and matching intent, capped so it can never read as a precise prediction.
  */
-export function affinity(viewerTags: string[], candidate: Pick<ProfileRow, "interests" | "looking_for">) {
-	const candidateTags = new Set((candidate.interests ?? []).map((t) => t.toLowerCase()));
-	const shared = (viewerTags ?? []).filter((t) => candidateTags.has(t.toLowerCase()));
+export function affinity(
+	viewerTags: string[],
+	candidate: Pick<ProfileRow, "interests" | "looking_for">,
+) {
+	const candidateTags = new Set(
+		(candidate.interests ?? []).map((t) => t.toLowerCase()),
+	);
+	const shared = (viewerTags ?? []).filter((t) =>
+		candidateTags.has(t.toLowerCase()),
+	);
 	const score = Math.min(90, 35 + shared.length * 11);
 	return { shared, score };
 }
 
-export function publicUrl(client: ApiClient, bucket: string, path: string): string {
+export function publicUrl(
+	client: ApiClient,
+	bucket: string,
+	path: string,
+): string {
 	const { data } = client.storage.from(bucket).getPublicUrl(path);
 	return data.publicUrl;
 }
@@ -192,7 +217,10 @@ export function encodeGeohash(lat: number, lng: number, precision = 6): string {
 	return hash;
 }
 
-export async function photosByOwner(client: ApiClient, ownerIds: string[]): Promise<Map<string, ProfilePhotoRow[]>> {
+export async function photosByOwner(
+	client: ApiClient,
+	ownerIds: string[],
+): Promise<Map<string, ProfilePhotoRow[]>> {
 	if (!ownerIds.length) return new Map();
 	const { data, error } = await client
 		.from("profile_photos")
@@ -213,16 +241,28 @@ export async function photosByOwner(client: ApiClient, ownerIds: string[]): Prom
 export function toPublicProfile(
 	row: ProfileRow,
 	options: {
-		viewer: { id: string; lat: number | null; lng: number | null; interests: string[] } | null;
+		viewer: {
+			id: string;
+			lat: number | null;
+			lng: number | null;
+			interests: string[];
+		} | null;
 		photos?: ProfilePhotoRow[];
 		client: ApiClient;
 		includeBio?: boolean;
 	},
 ): PublicProfile {
-	const { shared, score } = options.viewer ? affinity(options.viewer.interests, row) : { shared: [] as string[], score: 0 };
+	const { shared, score } = options.viewer
+		? affinity(options.viewer.interests, row)
+		: { shared: [] as string[], score: 0 };
 	const distance =
 		options.viewer && options.viewer.lat != null && options.viewer.lng != null
-			? distanceBetween({ lat: options.viewer.lat, lng: options.viewer.lng }, row, options.viewer.id, row.id)
+			? distanceBetween(
+					{ lat: options.viewer.lat, lng: options.viewer.lng },
+					row,
+					options.viewer.id,
+					row.id,
+				)
 			: { km: null, label: null };
 
 	const photos = (options.photos ?? []).map((photo) => ({

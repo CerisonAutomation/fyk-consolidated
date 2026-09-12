@@ -8,10 +8,10 @@
  * always answers 200 is how outages get missed in production.
  */
 
-import { durableLimiterReady, limiterWarning } from "../rate-limit";
-import { serverConfigured, serviceKeyConfigured } from "../supabase-server";
 import type { RequestCtx } from "../context";
 import { dbFailure } from "../errors";
+import { durableLimiterReady, limiterWarning } from "../rate-limit";
+import { serverConfigured, serviceKeyConfigured } from "../supabase-server";
 
 export async function health(ctx: RequestCtx) {
 	const client = ctx.db();

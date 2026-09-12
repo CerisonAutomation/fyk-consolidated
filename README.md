@@ -24,7 +24,7 @@ mock data, and no "coming soon" copy.
 ```bash
 pnpm install
 cp .env.example .env.local          # fill in the Supabase URL + anon key (browser and server)
-pnpm db:migrate                     # or paste supabase/migrations/*.sql in filename order
+pnpm db:push                        # or paste supabase/migrations/*.sql in filename order
 pnpm dev                            # http://localhost:3000
 ```
 

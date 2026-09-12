@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { ApiFailure, badRequest, dbFailure, failureResponse, forbidden, mapUnknownError, redact, unsupported } from "./errors";
+import {
+	ApiFailure,
+	badRequest,
+	dbFailure,
+	failureResponse,
+	forbidden,
+	mapUnknownError,
+	redact,
+	unsupported,
+} from "./errors";
 
 /**
  * These tests are the contract that a browser never sees internals. They are kept
@@ -16,18 +25,32 @@ describe("redact", () => {
 	});
 
 	it("removes Supabase keys and connection strings", () => {
-		expect(redact("key sb_secret_AbCdEfGhIjKlMnOpQrStUvWx")).not.toContain("sb_secret_");
-		expect(redact("postgres://user:[email protected]:5432/db")).not.toContain("password");
-		expect(redact("postgresql://u:[email protected]/x")).not.toContain("innerpass");
+		expect(redact("key sb_secret_AbCdEfGhIjKlMnOpQrStUvWx")).not.toContain(
+			"sb_secret_",
+		);
+		expect(redact("postgres://user:[email protected]:5432/db")).not.toContain(
+			"password",
+		);
+		expect(redact("postgresql://u:[email protected]/x")).not.toContain(
+			"innerpass",
+		);
 	});
 
 	it("removes storage paths and uuids", () => {
-		expect(redact("failed for chat-media-private/9c8a1e0a-1f2e-4a6b-9c0d-1e2f3a4b5c6d/photo.jpg")).not.toContain("chat-media-private");
-		expect(redact("row 9c8a1e0a-1f2e-4a6b-9c0d-1e2f3a4b5c6d missing")).not.toContain("9c8a1e0a");
+		expect(
+			redact(
+				"failed for chat-media-private/9c8a1e0a-1f2e-4a6b-9c0d-1e2f3a4b5c6d/photo.jpg",
+			),
+		).not.toContain("chat-media-private");
+		expect(
+			redact("row 9c8a1e0a-1f2e-4a6b-9c0d-1e2f3a4b5c6d missing"),
+		).not.toContain("9c8a1e0a");
 	});
 
 	it("drops Postgres detail/hint/context tails", () => {
-		const message = redact('duplicate key value violates unique constraint "blocks_pkey" DETAIL: Key (id)=(7) already exists.');
+		const message = redact(
+			'duplicate key value violates unique constraint "blocks_pkey" DETAIL: Key (id)=(7) already exists.',
+		);
 		expect(message).not.toContain("DETAIL");
 		expect(message).not.toContain("blocks_pkey");
 	});
@@ -45,55 +68,84 @@ describe("ApiFailure", () => {
 	});
 
 	it("keeps details for the client when they are authored", () => {
-		const failure = new ApiFailure("bad_request", "Two fields are wrong.", { fields: [{ path: "email", message: "Required" }] });
+		const failure = new ApiFailure("bad_request", "Two fields are wrong.", {
+			fields: [{ path: "email", message: "Required" }],
+		});
 		expect(failure.details?.fields).toBeTruthy();
 	});
 });
 
 describe("dbFailure", () => {
 	it("never forwards the Postgres message for internal errors", () => {
-		const failure = dbFailure({ message: 'relation "profiles" does not exist', code: "42P01" }, "fallback");
+		const failure = dbFailure(
+			{ message: 'relation "profiles" does not exist', code: "42P01" },
+			"fallback",
+		);
 		expect(failure.message).toBe("fallback");
 		expect(failure.status).toBe(500);
 		expect(failure.details?.sqlstate).toBe("42P01");
 	});
 
 	it("turns a unique violation into a conflict", () => {
-		expect(dbFailure({ message: "duplicate key", code: "23505" }, "x").status).toBe(409);
+		expect(
+			dbFailure({ message: "duplicate key", code: "23505" }, "x").status,
+		).toBe(409);
 	});
 
 	it("turns an RLS refusal into a 403", () => {
-		expect(dbFailure({ message: "new row violates row-level security policy", code: "42501" }, "x").status).toBe(403);
+		expect(
+			dbFailure(
+				{
+					message: "new row violates row-level security policy",
+					code: "42501",
+				},
+				"x",
+			).status,
+		).toBe(403);
 	});
 
 	it("treats a raised function exception as authored copy", () => {
 		// Our own triggers raise P0001 with human messages such as 'too_young'.
-		const failure = dbFailure({ message: "you must be 18 or older", code: "P0001" }, "x");
+		const failure = dbFailure(
+			{ message: "you must be 18 or older", code: "P0001" },
+			"x",
+		);
 		expect(failure.status).toBe(400);
 		expect(failure.message).toContain("18");
 	});
 
 	it("handles a null error without throwing", () => {
-		expect(dbFailure(null, "nothing happened").message).toBe("nothing happened");
+		expect(dbFailure(null, "nothing happened").message).toBe(
+			"nothing happened",
+		);
 	});
 });
 
 describe("mapUnknownError", () => {
 	it("converts arbitrary throwables into a safe envelope", () => {
-		const mapped = mapUnknownError({ weird: "object with a password=hunter2 inside" }, "request");
+		const mapped = mapUnknownError(
+			{ weird: "object with a password=hunter2 inside" },
+			"request",
+		);
 		expect(mapped.code).toBe("internal_error");
 		expect(JSON.stringify(mapped)).not.toContain("hunter2");
 	});
 
 	it("passes ApiFailure through unchanged", () => {
 		const failure = badRequest("Write something first.");
-		expect(mapUnknownError(failure, "request").message).toBe("Write something first.");
+		expect(mapUnknownError(failure, "request").message).toBe(
+			"Write something first.",
+		);
 	});
 });
 
 describe("failureResponse", () => {
 	it("returns the requestId so a user report can be matched to a log line", async () => {
-		const response = failureResponse({ code: "rate_limited", message: "Slow down.", retryAfterSeconds: 12 }, "req_123", { "X-Limit": "1" });
+		const response = failureResponse(
+			{ code: "rate_limited", message: "Slow down.", retryAfterSeconds: 12 },
+			"req_123",
+			{ "X-Limit": "1" },
+		);
 		expect(response.status).toBe(429);
 		expect(response.headers.get("x-request-id")).toBe("req_123");
 		expect(response.headers.get("retry-after")).toBe("12");
@@ -101,11 +153,18 @@ describe("failureResponse", () => {
 		// those is how a message gets stored twice.
 		expect(response.headers.get("x-should-retry")).toBe("true");
 		const body = await response.json();
-		expect(body).toMatchObject({ ok: false, error: { code: "rate_limited" }, requestId: "req_123" });
+		expect(body).toMatchObject({
+			ok: false,
+			error: { code: "rate_limited" },
+			requestId: "req_123",
+		});
 	});
 
 	it("never includes a stack or data field on errors", async () => {
-		const body = await failureResponse(mapUnknownError(new Error("at Object.<anonymous> /app/x.ts:1:1")), "req_9").json();
+		const body = await failureResponse(
+			mapUnknownError(new Error("at Object.<anonymous> /app/x.ts:1:1")),
+			"req_9",
+		).json();
 		expect(JSON.stringify(body)).not.toContain("at Object");
 		expect(JSON.stringify(body)).not.toContain("/app/");
 		expect(body.data).toBeUndefined();

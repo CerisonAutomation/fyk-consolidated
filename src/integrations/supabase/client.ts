@@ -14,8 +14,8 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "./types";
 import { env } from "./env";
+import type { Database } from "./types";
 
 export type Client = SupabaseClient<Database>;
 
@@ -25,33 +25,39 @@ let instance: Client | null = null;
 export function getSupabase(): Client | null {
 	if (!env) return null;
 	if (instance) return instance;
-	instance = createBrowserClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
-		isSingleton: false,
-		cookieOptions: {
-			// The session is stored in cookies so the server can read it on every
-			// request; localStorage is never used, which removes the XSS token path.
-			name: "fyk-auth",
-			sameSite: "lax",
-			secure: env.appEnv === "production",
-			path: "/",
+	instance = createBrowserClient<Database>(
+		env.supabaseUrl,
+		env.supabaseAnonKey,
+		{
+			isSingleton: false,
+			cookieOptions: {
+				// The session is stored in cookies so the server can read it on every
+				// request; localStorage is never used, which removes the XSS token path.
+				name: "fyk-auth",
+				sameSite: "lax",
+				secure: env.appEnv === "production",
+				path: "/",
+			},
+			auth: {
+				persistSession: true,
+				detectSessionInUrl: true,
+				autoRefreshToken: true,
+				// PKCE is what makes the emailed link safe: the code in the URL is
+				// useless without the verifier kept in this browser.
+				flowType: "pkce",
+			},
+			global: { headers: { "x-client-info": "fyk-web" } },
 		},
-		auth: {
-			persistSession: true,
-			detectSessionInUrl: true,
-			autoRefreshToken: true,
-			// PKCE is what makes the emailed link safe: the code in the URL is
-			// useless without the verifier kept in this browser.
-			flowType: "pkce",
-		},
-		global: { headers: { "x-client-info": "fyk-web" } },
-	}) as unknown as Client;
+	) as unknown as Client;
 	return instance;
 }
 
 export function requireSupabase(): Client {
 	const client = getSupabase();
 	if (!client) {
-		throw new Error("Supabase is not configured. Copy .env.example to .env.local and set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+		throw new Error(
+			"Supabase is not configured. Copy .env.example to .env.local and set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+		);
 	}
 	return client;
 }
@@ -74,9 +80,18 @@ const FRIENDLY: Record<string, string> = {
 export function toFailure(error: unknown): Failure {
 	const e = error as { code?: string; message?: string } | null;
 	const code = e?.code ?? "unknown";
-	if (import.meta.env.DEV && e?.message) return { ok: false, code, message: FRIENDLY[code] ?? e.message };
-	return { ok: false, code, message: FRIENDLY[code] ?? "Something went wrong. Please try again." };
+	if (import.meta.env.DEV && e?.message)
+		return { ok: false, code, message: FRIENDLY[code] ?? e.message };
+	return {
+		ok: false,
+		code,
+		message: FRIENDLY[code] ?? "Something went wrong. Please try again.",
+	};
 }
 
-export const ok = <T,>(data: T): Success<T> => ({ ok: true, data });
-export const fail = (code: string, message: string): Failure => ({ ok: false, code, message });
+export const ok = <T>(data: T): Success<T> => ({ ok: true, data });
+export const fail = (code: string, message: string): Failure => ({
+	ok: false,
+	code,
+	message,
+});

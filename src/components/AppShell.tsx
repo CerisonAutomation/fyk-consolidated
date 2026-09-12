@@ -11,12 +11,27 @@
  */
 
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, ChevronLeft, Compass, LogOut, MessageCircle, Settings as SettingsIcon, Shield, Zap } from "lucide-react";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Capability, SessionResponse } from "#/server/handlers/session";
+import {
+	CalendarDays,
+	ChevronLeft,
+	Compass,
+	LogOut,
+	MessageCircle,
+	Settings as SettingsIcon,
+	Shield,
+	Zap,
+} from "lucide-react";
+import {
+	createContext,
+	type ReactNode,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { api } from "#/lib/client";
 import { cn } from "#/lib/utils";
-import { useToasts } from "#/lib/toast";
+import type { Capability, SessionResponse } from "#/server/handlers/session";
 import { ToastStack } from "./ui/ToastStack";
 
 export interface ShellApi {
@@ -34,7 +49,12 @@ export function useShell(): ShellApi {
 	return value;
 }
 
-type NavItem = { to: string; label: string; icon: typeof Compass; capability: Capability | null };
+type NavItem = {
+	to: string;
+	label: string;
+	icon: typeof Compass;
+	capability: Capability | null;
+};
 
 const NAV: NavItem[] = [
 	{ to: "/grid", label: "Nearby", icon: Compass, capability: "discovery" },
@@ -46,10 +66,25 @@ const NAV: NavItem[] = [
 
 const DESKTOP_SECONDARY: NavItem[] = [
 	{ to: "/safety", label: "Safety", icon: Shield, capability: "reports" },
-	{ to: "/notifications", label: "Activity", icon: MessageCircle, capability: null },
+	{
+		to: "/notifications",
+		label: "Activity",
+		icon: MessageCircle,
+		capability: null,
+	},
 ];
 
-export function AppShell({ session, refresh, signOut, children }: { session: SessionResponse; refresh: () => Promise<void>; signOut: () => Promise<void>; children: ReactNode }) {
+export function AppShell({
+	session,
+	refresh,
+	signOut,
+	children,
+}: {
+	session: SessionResponse;
+	refresh: () => Promise<void>;
+	signOut: () => Promise<void>;
+	children: ReactNode;
+}) {
 	const pathname = useLocation({ select: (location) => location.pathname });
 	const unread = useUnreadBadge();
 	const value = useMemo<ShellApi>(
@@ -73,9 +108,15 @@ export function AppShell({ session, refresh, signOut, children }: { session: Ses
 						{isDetail ? (
 							<BackButton />
 						) : (
-							<span className="font-display text-[19px] leading-none tracking-[0.18em] text-gold">FYK</span>
+							<span className="font-display text-[19px] leading-none tracking-[0.18em] text-gold">
+								FYK
+							</span>
 						)}
-						{title && !isDetail ? <span className="text-[13px] font-medium text-muted">{title}</span> : null}
+						{title && !isDetail ? (
+							<span className="text-[13px] font-medium text-muted">
+								{title}
+							</span>
+						) : null}
 						<div className="ml-auto flex items-center gap-1.5">
 							<Link
 								to="/notifications"
@@ -84,7 +125,9 @@ export function AppShell({ session, refresh, signOut, children }: { session: Ses
 							>
 								<MessageCircle className="h-[18px] w-[18px]" />
 								{unread > 0 ? (
-									<span className="absolute right-1.5 top-1.5 min-w-4 rounded-full bg-live px-1 text-[10px] font-bold leading-4 text-black">{unread > 9 ? "9+" : unread}</span>
+									<span className="absolute right-1.5 top-1.5 min-w-4 rounded-full bg-live px-1 text-[10px] font-bold leading-4 text-black">
+										{unread > 9 ? "9+" : unread}
+									</span>
 								) : null}
 							</Link>
 							<Link
@@ -98,28 +141,75 @@ export function AppShell({ session, refresh, signOut, children }: { session: Ses
 					</div>
 				</header>
 
-				<main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 md:pb-10 md:pt-6">{children}</main>
+				<main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 md:pb-10 md:pt-6">
+					{children}
+				</main>
 
 				{/* Mobile: one-thumb primary nav. Desktop: a left rail so nav is never hidden. */}
-				<nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-canvas/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden">
+				<nav
+					aria-label="Primary"
+					className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-canvas/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+				>
 					<ul className="mx-auto flex max-w-lg items-stretch justify-around px-1">
 						{NAV.map((item) => (
-							<NavButton key={item.to} item={item} active={pathname.startsWith(item.to)} disabled={item.capability ? !value.capable(item.capability) : false} />
+							<NavButton
+								key={item.to}
+								item={item}
+								active={pathname.startsWith(item.to)}
+								disabled={
+									item.capability ? !value.capable(item.capability) : false
+								}
+							/>
 						))}
 					</ul>
 				</nav>
 
-				<nav aria-label="Primary" className="fixed left-0 top-0 z-30 hidden h-full w-[76px] flex-col items-center gap-1 border-r border-line bg-canvas py-4 md:flex lg:w-[200px] lg:items-stretch lg:px-4">
-					<span className="mb-4 hidden text-center font-display text-[20px] tracking-[0.18em] text-gold lg:block">FYK</span>
-					<span className="mb-4 text-center font-display text-[18px] tracking-[0.18em] text-gold md:block lg:hidden">FYK</span>
+				<nav
+					aria-label="Primary"
+					className="fixed left-0 top-0 z-30 hidden h-full w-[76px] flex-col items-center gap-1 border-r border-line bg-canvas py-4 md:flex lg:w-[200px] lg:items-stretch lg:px-4"
+				>
+					<span className="mb-4 hidden text-center font-display text-[20px] tracking-[0.18em] text-gold lg:block">
+						FYK
+					</span>
+					<span className="mb-4 text-center font-display text-[18px] tracking-[0.18em] text-gold md:block lg:hidden">
+						FYK
+					</span>
 					{NAV.map((item) => (
-						<NavButton key={item.to} item={item} active={pathname.startsWith(item.to)} disabled={item.capability ? !value.capable(item.capability) : false} rail />
+						<NavButton
+							key={item.to}
+							item={item}
+							active={pathname.startsWith(item.to)}
+							disabled={
+								item.capability ? !value.capable(item.capability) : false
+							}
+							rail
+						/>
 					))}
 					<div className="mt-auto flex flex-col gap-1">
 						{DESKTOP_SECONDARY.map((item) => (
-							<NavButton key={item.to} item={item} active={pathname.startsWith(item.to)} disabled={item.capability ? !value.capable(item.capability) : false} rail />
+							<NavButton
+								key={item.to}
+								item={item}
+								active={pathname.startsWith(item.to)}
+								disabled={
+									item.capability ? !value.capable(item.capability) : false
+								}
+								rail
+							/>
 						))}
-						{session.role !== "user" ? <NavButton item={{ to: "/admin", label: "Moderation", icon: Shield, capability: "moderation" }} active={pathname.startsWith("/admin")} disabled={!value.capable("moderation")} rail /> : null}
+						{session.role !== "user" ? (
+							<NavButton
+								item={{
+									to: "/admin",
+									label: "Moderation",
+									icon: Shield,
+									capability: "moderation",
+								}}
+								active={pathname.startsWith("/admin")}
+								disabled={!value.capable("moderation")}
+								rail
+							/>
+						) : null}
 						<button
 							type="button"
 							onClick={() => void signOut()}
@@ -131,14 +221,27 @@ export function AppShell({ session, refresh, signOut, children }: { session: Ses
 					</div>
 				</nav>
 
-				<div className="hidden md:block md:pl-[76px] lg:pl-[200px]" aria-hidden="true" />
+				<div
+					className="hidden md:block md:pl-[76px] lg:pl-[200px]"
+					aria-hidden="true"
+				/>
 				<ToastStack />
 			</div>
 		</ShellContext.Provider>
 	);
 }
 
-function NavButton({ item, active, disabled, rail }: { item: NavItem; active: boolean; disabled: boolean; rail?: boolean }) {
+function NavButton({
+	item,
+	active,
+	disabled,
+	rail,
+}: {
+	item: NavItem;
+	active: boolean;
+	disabled: boolean;
+	rail?: boolean;
+}) {
 	const Icon = item.icon;
 	const label = disabled ? `${item.label} (unavailable)` : item.label;
 	return (
@@ -150,25 +253,54 @@ function NavButton({ item, active, disabled, rail }: { item: NavItem; active: bo
 				title={label}
 				className={cn(
 					"relative flex items-center justify-center gap-2 rounded-xl py-2.5 text-[10.5px] font-medium transition-colors",
-					rail ? "h-11 justify-start px-3 text-[13.5px] lg:text-[14px]" : "flex-col",
-					disabled ? "text-faint" : active ? "text-gold" : "text-muted hover:text-ink",
+					rail
+						? "h-11 justify-start px-3 text-[13.5px] lg:text-[14px]"
+						: "flex-col",
+					disabled
+						? "text-faint"
+						: active
+							? "text-gold"
+							: "text-muted hover:text-ink",
 				)}
 			>
-				<span className={cn("flex h-7 w-11 items-center justify-center rounded-full transition-colors", rail && "h-auto w-auto", active && !rail && "bg-gold/12", active && rail && "text-gold")}>
-					<Icon className={cn(rail ? "h-[18px] w-[18px]" : "h-[20px] w-[20px]")} aria-hidden="true" />
+				<span
+					className={cn(
+						"flex h-7 w-11 items-center justify-center rounded-full transition-colors",
+						rail && "h-auto w-auto",
+						active && !rail && "bg-gold/12",
+						active && rail && "text-gold",
+					)}
+				>
+					<Icon
+						className={cn(rail ? "h-[18px] w-[18px]" : "h-[20px] w-[20px]")}
+						aria-hidden="true"
+					/>
 				</span>
-				<span className={rail ? "hidden lg:inline" : undefined}>{item.label}</span>
+				<span className={rail ? "hidden lg:inline" : undefined}>
+					{item.label}
+				</span>
 			</Link>
 		</li>
 	);
 }
 
+/**
+ * `Back` goes back, not up: a profile opened from the Board should return to the
+ * Board. `history.state.idx` is TanStack Router's own depth counter — 0 means the
+ * session landed on this page directly, so there is nothing to go back to and the
+ * button walks up one route instead of dead-ending.
+ */
 function BackButton() {
 	const navigate = useNavigate();
+	const canGoBack =
+		typeof window !== "undefined" && (window.history.state?.idx ?? 0) > 0;
 	return (
 		<button
 			type="button"
-			onClick={() => navigate({ to: "." })}
+			onClick={() => {
+				if (canGoBack) window.history.back();
+				else navigate({ to: "." });
+			}}
 			className="-ml-2 flex h-10 items-center gap-1 rounded-full px-2 text-[13px] font-medium text-muted transition-colors hover:text-ink"
 		>
 			<ChevronLeft className="h-5 w-5" />
@@ -186,6 +318,9 @@ function useUnreadBadge(): number {
 	const [unread, setUnread] = useState(0);
 	const pathname = useLocation({ select: (location) => location.pathname });
 
+	// `pathname` is not read inside the effect: it is the reason to re-poll, so the
+	// badge reflects the conversation the user just left rather than a stale one.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: see the note above.
 	useEffect(() => {
 		let alive = true;
 		const load = async () => {
@@ -206,5 +341,3 @@ function useUnreadBadge(): number {
 
 	return unread;
 }
-
-export { useToasts };

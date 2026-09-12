@@ -103,7 +103,12 @@ export interface MessageRow {
 
 export interface MessagePage {
 	messages: MessageRow[];
-	pinned: { id: string; body: string | null; senderId: string; pinnedAt: string }[];
+	pinned: {
+		id: string;
+		body: string | null;
+		senderId: string;
+		pinnedAt: string;
+	}[];
 	hasMore: boolean;
 }
 
@@ -143,7 +148,11 @@ export interface FykEvent {
 	attendeeCount: number;
 	attending: "going" | "maybe" | "declined" | null;
 	isHost: boolean;
-	host: { id: string; displayName: string | null; avatarUrl: string | null } | null;
+	host: {
+		id: string;
+		displayName: string | null;
+		avatarUrl: string | null;
+	} | null;
 }
 
 export interface EventPage {
@@ -239,6 +248,16 @@ export interface ModerationQueue {
 export interface ModerationDetail {
 	report: Record<string, unknown> | null;
 	target: Record<string, unknown> | null;
-	history: { id: string; action: string; note: string | null; created_at: string }[];
-	priorAgainstTarget: { id: string; reason: string; status: string; created_at: string }[];
+	history: {
+		id: string;
+		action: string;
+		note: string | null;
+		created_at: string;
+	}[];
+	priorAgainstTarget: {
+		id: string;
+		reason: string;
+		status: string;
+		created_at: string;
+	}[];
 }

@@ -4,11 +4,11 @@
  * handler, so no endpoint can accidentally return a bare object or a raw error.
  */
 
-import { z, type ZodIssue } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { type ZodIssue, z } from "zod";
 import type { Database } from "#/integrations/supabase/types";
 import { ApiFailure, badRequest, type EnvelopeSuccess } from "./errors";
-import { requireCaller, resolveCaller, type Caller } from "./supabase-server";
+import { type Caller, requireCaller, resolveCaller } from "./supabase-server";
 
 export type ApiClient = SupabaseClient<Database>;
 
@@ -76,7 +76,11 @@ export function buildContext(deps: HandlerDeps): RequestCtx {
 	};
 }
 
-export function success<T>(data: T, requestId: string, extraHeaders?: Record<string, string>): Response {
+export function success<T>(
+	data: T,
+	requestId: string,
+	extraHeaders?: Record<string, string>,
+): Response {
 	const body: EnvelopeSuccess<T> = { ok: true, data, requestId };
 	return new Response(JSON.stringify(body), {
 		status: 200,
@@ -96,21 +100,36 @@ const MAX_BODY_BYTES = 64 * 1024;
  * types, and any shape that does not match the supplied Zod schema — before a
  * handler sees a single field, so handlers never defend against junk.
  */
-export async function readJson<T extends z.ZodType>(request: Request, schema: T): Promise<z.infer<T>> {
+export async function readJson<T extends z.ZodType>(
+	request: Request,
+	schema: T,
+): Promise<z.infer<T>> {
 	const method = request.method.toUpperCase();
 	const contentType = request.headers.get("content-type") ?? "";
-	if (method !== "GET" && method !== "HEAD" && !contentType.includes("application/json")) {
+	if (
+		method !== "GET" &&
+		method !== "HEAD" &&
+		!contentType.includes("application/json")
+	) {
 		throw badRequest("Send a JSON body with Content-Type: application/json.");
 	}
 
 	const length = Number(request.headers.get("content-length") ?? 0);
-	if (length > MAX_BODY_BYTES) throw new ApiFailure("payload_too_large", "That is too much data for one request.");
+	if (length > MAX_BODY_BYTES)
+		throw new ApiFailure(
+			"payload_too_large",
+			"That is too much data for one request.",
+		);
 
 	let raw: unknown;
 	try {
 		// clone-free size guard: enforce after read too, since content-length can lie
 		const text = await request.text();
-		if (text.length > MAX_BODY_BYTES) throw new ApiFailure("payload_too_large", "That is too much data for one request.");
+		if (text.length > MAX_BODY_BYTES)
+			throw new ApiFailure(
+				"payload_too_large",
+				"That is too much data for one request.",
+			);
 		raw = text ? JSON.parse(text) : {};
 	} catch (error) {
 		if (error instanceof ApiFailure) throw error;
@@ -124,7 +143,9 @@ export async function readJson<T extends z.ZodType>(request: Request, schema: T)
 			message: humanizeIssue(issue),
 		}));
 		throw badRequest(
-			fields.length === 1 ? fields[0].message : "Some of those answers are not valid.",
+			fields.length === 1
+				? fields[0].message
+				: "Some of those answers are not valid.",
 			{ fields },
 		);
 	}
@@ -138,10 +159,18 @@ export async function readJson<T extends z.ZodType>(request: Request, schema: T)
  * screen. Any issue whose message looks mechanical is rewritten here — one place,
  * so every endpoint is covered even if a schema forgets to author a message.
  */
-const TECHNICAL_ZOD_MESSAGE = /expected .* to have|received (?:nan|undefined|null|object|array)|invalid input|invalid original|too (?:small|big)|not assignable|unrecognized key|invalid enum|invalid date|invalid uuid/i;
+const TECHNICAL_ZOD_MESSAGE =
+	/expected .* to have|received (?:nan|undefined|null|object|array)|invalid input|invalid original|too (?:small|big)|not assignable|unrecognized key|invalid enum|invalid date|invalid uuid/i;
 
 function humanizeIssue(raw: ZodIssue): string {
-	const issue = raw as { code?: string; message: string; path: readonly unknown[]; minimum?: unknown; maximum?: unknown; type?: unknown };
+	const issue = raw as {
+		code?: string;
+		message: string;
+		path: readonly unknown[];
+		minimum?: unknown;
+		maximum?: unknown;
+		type?: unknown;
+	};
 	if (!TECHNICAL_ZOD_MESSAGE.test(issue.message)) return issue.message;
 
 	const label = fieldLabel(issue.path);
@@ -165,13 +194,20 @@ function humanizeIssue(raw: ZodIssue): string {
 }
 
 function fieldLabel(path: readonly unknown[]): string {
-	const last = [...path].reverse().find((segment) => typeof segment === "string" && segment !== "body");
+	const last = [...path]
+		.reverse()
+		.find((segment) => typeof segment === "string" && segment !== "body");
 	if (typeof last !== "string") return "That answer";
-	const spaced = last.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ");
+	const spaced = last
+		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+		.replace(/[_-]+/g, " ");
 	return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
-export function readQuery<T extends z.ZodType>(params: URLSearchParams, schema: T): z.infer<T> {
+export function readQuery<T extends z.ZodType>(
+	params: URLSearchParams,
+	schema: T,
+): z.infer<T> {
 	const obj: Record<string, string> = {};
 	params.forEach((value, key) => {
 		obj[key] = value;
@@ -179,13 +215,21 @@ export function readQuery<T extends z.ZodType>(params: URLSearchParams, schema: 
 	const parsed = schema.safeParse(obj);
 	if (!parsed.success) {
 		throw badRequest("Those filters are not valid.", {
-			fields: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+			fields: parsed.error.issues.map((i) => ({
+				path: i.path.join("."),
+				message: i.message,
+			})),
 		});
 	}
 	return parsed.data;
 }
 
 /** Shared shapes used across endpoints. Kept here so limits cannot drift. */
-export const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i, "Not a valid id.");
+export const uuid = z
+	.string()
+	.regex(
+		/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+		"Not a valid id.",
+	);
 export const messageBodyLimit = 4000;
 export const MAX_MESSAGE_LENGTH = messageBodyLimit;

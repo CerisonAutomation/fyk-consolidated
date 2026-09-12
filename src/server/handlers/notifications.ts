@@ -9,18 +9,28 @@
  */
 
 import { z } from "zod";
+import { type RequestCtx, readJson } from "../context";
 import { badRequest, dbFailure } from "../errors";
-import { readJson, type RequestCtx } from "../context";
 
 export async function list(ctx: RequestCtx) {
 	const caller = await ctx.auth();
 	const client = ctx.db();
 
 	const [items, unread] = await Promise.all([
-		client.from("notifications").select("id,kind,title,body,deep_link,read,created_at").eq("user_id", caller.userId).order("created_at", { ascending: false }).limit(50),
-		client.from("notifications").select("id").eq("user_id", caller.userId).eq("read", false),
+		client
+			.from("notifications")
+			.select("id,kind,title,body,deep_link,read,created_at")
+			.eq("user_id", caller.userId)
+			.order("created_at", { ascending: false })
+			.limit(50),
+		client
+			.from("notifications")
+			.select("id")
+			.eq("user_id", caller.userId)
+			.eq("read", false),
 	]);
-	if (items.error) throw dbFailure(items.error, "That did not save. Please try again.");
+	if (items.error)
+		throw dbFailure(items.error, "That did not save. Please try again.");
 
 	const rows = (items.data ?? []) as unknown as Record<string, unknown>[];
 	return {
@@ -39,15 +49,29 @@ export async function list(ctx: RequestCtx) {
 
 export async function mark(ctx: RequestCtx) {
 	const caller = await ctx.auth();
-	const body = await readJson(ctx.request, z.object({ action: z.enum(["read", "readAll"]), id: z.string().uuid().optional() }));
+	const body = await readJson(
+		ctx.request,
+		z.object({
+			action: z.enum(["read", "readAll"]),
+			id: z.string().uuid().optional(),
+		}),
+	);
 	const client = ctx.db();
 
 	if (body.action === "read") {
 		if (!body.id) throw badRequest("Which notification should be marked read?");
-		await client.from("notifications").update({ read: true, read_at: new Date().toISOString() }).eq("id", body.id).eq("user_id", caller.userId);
+		await client
+			.from("notifications")
+			.update({ read: true, read_at: new Date().toISOString() })
+			.eq("id", body.id)
+			.eq("user_id", caller.userId);
 		return { ok: true };
 	}
 
-	await client.from("notifications").update({ read: true, read_at: new Date().toISOString() }).eq("user_id", caller.userId).eq("read", false);
+	await client
+		.from("notifications")
+		.update({ read: true, read_at: new Date().toISOString() })
+		.eq("user_id", caller.userId)
+		.eq("read", false);
 	return { ok: true };
 }

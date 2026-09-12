@@ -11,14 +11,15 @@
  */
 
 import { z } from "zod";
-import { forbidden, notFound, dbFailure } from "../errors";
-import { readJson, type RequestCtx } from "../context";
+import { type RequestCtx, readJson } from "../context";
+import { dbFailure, forbidden, notFound } from "../errors";
 
 const MODERATOR_ROLES = new Set(["moderator", "admin"]);
 
 async function requireModerator(ctx: RequestCtx) {
 	const caller = await ctx.auth();
-	if (!MODERATOR_ROLES.has(caller.role)) throw forbidden("Moderator access is required for the review queue.");
+	if (!MODERATOR_ROLES.has(caller.role))
+		throw forbidden("Moderator access is required for the review queue.");
 	return caller;
 }
 
@@ -29,7 +30,9 @@ export async function queue(ctx: RequestCtx) {
 
 	const { data, error } = await client
 		.from("reports")
-		.select("id,reporter_id,target_type,target_id,reason,details,status,severity,created_at,reviewed_at,resolution")
+		.select(
+			"id,reporter_id,target_type,target_id,reason,details,status,severity,created_at,reviewed_at,resolution",
+		)
 		.eq("status", status as never)
 		.order("severity", { ascending: false })
 		.order("created_at", { ascending: true })
@@ -37,15 +40,26 @@ export async function queue(ctx: RequestCtx) {
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
 
 	const rows = (data ?? []) as unknown as Record<string, unknown>[];
-	const targetIds = [...new Set(rows.filter((row) => row.target_type === "profile").map((row) => String(row.target_id)))];
+	const targetIds = [
+		...new Set(
+			rows
+				.filter((row) => row.target_type === "profile")
+				.map((row) => String(row.target_id)),
+		),
+	];
 	const profileRows: Record<string, unknown>[] = [];
 	if (targetIds.length) {
 		const profiles = await client
 			.from("profiles")
-			.select("id,display_name,handle,age,is_suspended,onboarding_completed_at,created_at,role")
+			.select(
+				"id,display_name,handle,age,is_suspended,onboarding_completed_at,created_at,role",
+			)
 			.in("id", targetIds);
-		if (profiles.error) throw dbFailure(profiles.error, "That did not save. Please try again.");
-		profileRows.push(...((profiles.data ?? []) as unknown as Record<string, unknown>[]));
+		if (profiles.error)
+			throw dbFailure(profiles.error, "That did not save. Please try again.");
+		profileRows.push(
+			...((profiles.data ?? []) as unknown as Record<string, unknown>[]),
+		);
 	}
 	const profileMap = new Map(profileRows.map((row) => [String(row.id), row]));
 	// Reports about the same target are the strongest priority signal available
@@ -61,7 +75,12 @@ export async function queue(ctx: RequestCtx) {
 		// not three, and a moderator who has to open each tab separately will
 		// resolve them inconsistently.
 		reports: rows.map((row) => {
-			const target = row.target_type === "profile" ? (profileMap.get(String(row.target_id)) as Record<string, unknown> | undefined) : undefined;
+			const target =
+				row.target_type === "profile"
+					? (profileMap.get(String(row.target_id)) as
+							| Record<string, unknown>
+							| undefined)
+					: undefined;
 			return {
 				id: row.id,
 				reporterId: row.reporter_id,
@@ -108,16 +127,27 @@ export async function resolve(ctx: RequestCtx) {
 	}
 
 	// One call, one transaction: the report status and the sanction cannot diverge.
-	const { data, error } = await client.rpc("resolve_report" as never, {
-		p_report_id: body.reportId,
-		p_action: body.action,
-		p_note: body.note ?? null,
-	} as never);
+	const { data, error } = await client.rpc(
+		"resolve_report" as never,
+		{
+			p_report_id: body.reportId,
+			p_action: body.action,
+			p_note: body.note ?? null,
+		} as never,
+	);
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
 
-	const rows = (data ?? []) as unknown as { report_id: string; report_status: string; suspended: boolean }[];
+	const rows = (data ?? []) as unknown as {
+		report_id: string;
+		report_status: string;
+		suspended: boolean;
+	}[];
 	if (!rows.length) throw notFound("That report no longer exists.");
-	return { reportId: rows[0].report_id, status: rows[0].report_status, suspended: rows[0].suspended };
+	return {
+		reportId: rows[0].report_id,
+		status: rows[0].report_status,
+		suspended: rows[0].suspended,
+	};
 }
 
 export async function reportDetail(ctx: RequestCtx, reportId: string) {
@@ -126,16 +156,34 @@ export async function reportDetail(ctx: RequestCtx, reportId: string) {
 	const client = ctx.db();
 
 	const [report, actions] = await Promise.all([
-		client.from("reports").select("id,reporter_id,target_type,target_id,reason,details,status,severity,created_at,reviewed_at,reviewed_by,resolution").eq("id", reportId).maybeSingle(),
-		client.from("moderation_actions").select("id,action,note,created_at,actor_id").eq("report_id", reportId).order("created_at", { ascending: true }),
+		client
+			.from("reports")
+			.select(
+				"id,reporter_id,target_type,target_id,reason,details,status,severity,created_at,reviewed_at,reviewed_by,resolution",
+			)
+			.eq("id", reportId)
+			.maybeSingle(),
+		client
+			.from("moderation_actions")
+			.select("id,action,note,created_at,actor_id")
+			.eq("report_id", reportId)
+			.order("created_at", { ascending: true }),
 	]);
-	if (report.error) throw dbFailure(report.error, "That did not save. Please try again.");
+	if (report.error)
+		throw dbFailure(report.error, "That did not save. Please try again.");
 	if (!report.data) throw notFound("That report no longer exists.");
 
-	const targetId = (report.data as unknown as { target_id: string; target_type: string }).target_id;
+	const targetId = (
+		report.data as unknown as { target_id: string; target_type: string }
+	).target_id;
 	const profile =
-		(report.data as unknown as { target_type: string }).target_type === "profile"
-			? await client.from("profiles").select("id,display_name,handle,age,city,is_suspended,created_at").eq("id", targetId).maybeSingle()
+		(report.data as unknown as { target_type: string }).target_type ===
+		"profile"
+			? await client
+					.from("profiles")
+					.select("id,display_name,handle,age,city,is_suspended,created_at")
+					.eq("id", targetId)
+					.maybeSingle()
 			: null;
 
 	return {
@@ -145,7 +193,13 @@ export async function reportDetail(ctx: RequestCtx, reportId: string) {
 		/** Prior reports on the same target: the only signal a moderator needs to
 		 *  decide between a warning and a suspension. */
 		priorAgainstTarget: (
-			await client.from("reports").select("id,reason,status,created_at").eq("target_id", targetId).neq("id", reportId).order("created_at", { ascending: false }).limit(20)
+			await client
+				.from("reports")
+				.select("id,reason,status,created_at")
+				.eq("target_id", targetId)
+				.neq("id", reportId)
+				.order("created_at", { ascending: false })
+				.limit(20)
 		).data,
 	};
 }
@@ -154,7 +208,8 @@ export async function reportDetail(ctx: RequestCtx, reportId: string) {
  *  admin can reach; a moderator cannot promote themselves or anyone else. */
 export async function setRole(ctx: RequestCtx) {
 	const caller = await ctx.auth();
-	if (caller.role !== "admin") throw forbidden("Only an admin can change moderation roles.");
+	if (caller.role !== "admin")
+		throw forbidden("Only an admin can change moderation roles.");
 	const body = await readJson(
 		ctx.request,
 		z.object({
@@ -166,8 +221,14 @@ export async function setRole(ctx: RequestCtx) {
 	// `profiles.role` is writable by the owner under the update policy, so the
 	// trigger that blocks non-admin escalation is what protects this. is_admin()
 	// has already been verified above for this request.
-	const update = await client.from("profiles").update({ role: body.role } as never).eq("id", body.profileId).select("id,role").single();
-	if (update.error) throw dbFailure(update.error, "That did not save. Please try again.");
+	const update = await client
+		.from("profiles")
+		.update({ role: body.role } as never)
+		.eq("id", body.profileId)
+		.select("id,role")
+		.single();
+	if (update.error)
+		throw dbFailure(update.error, "That did not save. Please try again.");
 	return { role: (update.data as unknown as { role: string }).role };
 }
 

@@ -1,10 +1,15 @@
-import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
+import {
+	createRootRouteWithContext,
+	HeadContent,
+	Outlet,
+	Scripts,
+} from "@tanstack/react-router";
 import { Suspense } from "react";
-import appCss from "../styles.css?url";
-import { TanstackQueryProvider } from "#/integrations/tanstack-query/root-provider";
 import { EntryShell } from "#/components/EntryShell";
 import { ErrorBoundary } from "#/components/ErrorBoundary";
 import { LoadingSpinner } from "#/components/FYKLoadingSpinner";
+import { TanstackQueryProvider } from "#/integrations/tanstack-query/root-provider";
+import appCss from "../styles.css?url";
 
 export const Route = createRootRouteWithContext()({
 	/**
@@ -25,9 +30,16 @@ export const Route = createRootRouteWithContext()({
 	head: () => ({
 		meta: [
 			{ charSet: "utf-8" },
-			{ name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+			{
+				name: "viewport",
+				content: "width=device-width, initial-scale=1, viewport-fit=cover",
+			},
 			{ title: "FYK — Find Your King" },
-			{ name: "description", content: "FYK is a gay social and dating app for men: nearby discovery, a live Board, real conversations and IRL events. Adults only." },
+			{
+				name: "description",
+				content:
+					"FYK is a gay social and dating app for men: nearby discovery, a live Board, real conversations and IRL events. Adults only.",
+			},
 			{ name: "theme-color", content: "#08080c" },
 			{ name: "color-scheme", content: "dark" },
 			// App-store/preview crawlers must not index member profiles.
@@ -36,7 +48,11 @@ export const Route = createRootRouteWithContext()({
 		links: [
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "preconnect", href: "https://fonts.googleapis.com" },
-			{ rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+			{
+				rel: "preconnect",
+				href: "https://fonts.gstatic.com",
+				crossOrigin: "anonymous",
+			},
 			{
 				rel: "stylesheet",
 				href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&display=swap",

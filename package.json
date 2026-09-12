@@ -2,6 +2,8 @@
   "name": "fyk-consolidated",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.4.1",
+  "engines": { "node": ">=20.19" },
   "imports": {
     "#/*": "./src/*"
   },
@@ -14,12 +16,11 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "verify": "pnpm typecheck && pnpm test && pnpm build",
-    "format": "biome format",
-    "lint": "biome lint",
-    "check": "biome check",
+    "format": "biome format .",
+    "lint": "biome lint .",
+    "check": "biome check .",
     "clean": "rm -rf dist .output .tanstack node_modules/.cache .turbo",
-    "db:migrate": "supabase db push",
-    "db:diff": "supabase db diff",
+    "db:push": "npx --yes supabase db push",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test"
   },

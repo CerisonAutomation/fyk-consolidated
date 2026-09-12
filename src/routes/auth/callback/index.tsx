@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { getSupabase } from "#/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback/")({
@@ -15,20 +15,28 @@ export const Route = createFileRoute("/auth/callback/")({
  * the gate. A failed exchange says so instead of bouncing to a blank screen.
  */
 function AuthCallback() {
-	const [state, setState] = useState<{ kind: "working" } | { kind: "done" } | { kind: "failed"; reason: string }>({ kind: "working" });
+	const [state, setState] = useState<
+		{ kind: "working" } | { kind: "done" } | { kind: "failed"; reason: string }
+	>({ kind: "working" });
 
 	useEffect(() => {
 		let alive = true;
 		const client = getSupabase();
 		if (!client) {
-			setState({ kind: "failed", reason: "Supabase is not configured, so this link cannot be verified." });
+			setState({
+				kind: "failed",
+				reason: "Supabase is not configured, so this link cannot be verified.",
+			});
 			return;
 		}
 
 		const url = new URL(window.location.href);
 		const errorDescription = url.searchParams.get("error_description");
 		if (errorDescription) {
-			setState({ kind: "failed", reason: "That link is expired or already used." });
+			setState({
+				kind: "failed",
+				reason: "That link is expired or already used.",
+			});
 			return;
 		}
 
@@ -51,7 +59,10 @@ function AuthCallback() {
 				return;
 			}
 			if (result === "exchange") {
-				setState({ kind: "failed", reason: "That link is expired or already used. Request a new one." });
+				setState({
+					kind: "failed",
+					reason: "That link is expired or already used. Request a new one.",
+				});
 				return;
 			}
 			// Some providers return a hash fragment; let onAuthStateChange settle first.
@@ -59,7 +70,11 @@ function AuthCallback() {
 				const { data } = await client.auth.getSession();
 				if (!alive) return;
 				if (data.session) setState({ kind: "done" });
-				else setState({ kind: "failed", reason: "We could not complete sign-in from that link." });
+				else
+					setState({
+						kind: "failed",
+						reason: "We could not complete sign-in from that link.",
+					});
 			}, 700);
 		});
 
@@ -82,8 +97,13 @@ function AuthCallback() {
 				) : (
 					<>
 						<h1 className="text-[20px] font-bold">Sign-in link failed</h1>
-						<p className="text-[13.5px] leading-relaxed text-muted">{state.reason}</p>
-						<a href="/" className="press mt-2 flex h-11 items-center rounded-full bg-gold px-5 text-[13.5px] font-bold text-black">
+						<p className="text-[13.5px] leading-relaxed text-muted">
+							{state.reason}
+						</p>
+						<a
+							href="/"
+							className="press mt-2 flex h-11 items-center rounded-full bg-gold px-5 text-[13.5px] font-bold text-black"
+						>
 							Back to sign in
 						</a>
 					</>

@@ -32,7 +32,10 @@ function ensureClickSuppressor(): void {
 	);
 }
 
-export function useLongPress(onLongPress: () => void, holdMs = DEFAULT_HOLD_MS) {
+export function useLongPress(
+	onLongPress: () => void,
+	holdMs = DEFAULT_HOLD_MS,
+) {
 	const timer = useRef<number | null>(null);
 	const origin = useRef<{ x: number; y: number } | null>(null);
 	const handler = useRef(onLongPress);
@@ -68,7 +71,11 @@ export function useLongPress(onLongPress: () => void, holdMs = DEFAULT_HOLD_MS) 
 			const touch = event.touches[0];
 			const start = origin.current;
 			if (!touch || !start) return;
-			if (Math.abs(touch.clientX - start.x) > MOVE_TOLERANCE_PX || Math.abs(touch.clientY - start.y) > MOVE_TOLERANCE_PX) clear();
+			if (
+				Math.abs(touch.clientX - start.x) > MOVE_TOLERANCE_PX ||
+				Math.abs(touch.clientY - start.y) > MOVE_TOLERANCE_PX
+			)
+				clear();
 		},
 		onTouchEnd: clear,
 		onTouchCancel: clear,

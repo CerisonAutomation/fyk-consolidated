@@ -8,18 +8,41 @@ import { rateBucket } from "./router";
  * because per-handler tests are exactly where such a rule gets forgotten.
  */
 
-const post = (path: string, init: RequestInit = {}) => new Request(`http://localhost${path}`, init);
+const post = (path: string, init: RequestInit = {}) =>
+	new Request(`http://localhost${path}`, init);
 
 describe("rateBucket", () => {
 	it("separates callers, tiers, verbs and routes", () => {
-		const a = rateBucket("message", "user-a", "10.0.0.1", "POST", "conversations/:id/messages");
-		const b = rateBucket("message", "user-b", "10.0.0.1", "POST", "conversations/:id/messages");
+		const a = rateBucket(
+			"message",
+			"user-a",
+			"10.0.0.1",
+			"POST",
+			"conversations/:id/messages",
+		);
+		const b = rateBucket(
+			"message",
+			"user-b",
+			"10.0.0.1",
+			"POST",
+			"conversations/:id/messages",
+		);
 		expect(a).not.toBe(b);
-		expect(rateBucket("read", "user-a", "10.0.0.1", "GET", "conversations/:id/messages")).not.toBe(a);
+		expect(
+			rateBucket(
+				"read",
+				"user-a",
+				"10.0.0.1",
+				"GET",
+				"conversations/:id/messages",
+			),
+		).not.toBe(a);
 	});
 
 	it("falls back to the IP for anonymous traffic", () => {
-		expect(rateBucket("read", null, "203.0.113.9", "GET", "discover")).toContain("ip:203.0.113.9");
+		expect(
+			rateBucket("read", null, "203.0.113.9", "GET", "discover"),
+		).toContain("ip:203.0.113.9");
 	});
 });
 
@@ -41,6 +64,18 @@ describe("handleApi without server configuration", () => {
 		expect(serialized).not.toMatch(/postgres(ql)?:\/\//);
 		expect(serialized).not.toMatch(/eyJ[A-Za-z0-9_-]{10,}/);
 	});
+	it("answers 404, not 503, for a path that was never a route", async () => {
+		// A retryable-looking 503 for a typo'd endpoint teaches clients to hammer an
+		// address that will never answer, so "nothing here" is said even when the
+		// server is unconfigured.
+		const { handleApi } = await import("./router");
+		const response = await handleApi(post("/api/definitely-not-a-route"));
+		expect(response.status).toBe(404);
+		const body = await response.json();
+		expect(body.error.code).toBe("not_found");
+		expect(body.error.message).toBe("That endpoint does not exist.");
+		expect(response.headers.get("x-request-id")).toMatch(/^fyk_/);
+	});
 });
 
 describe("handleApi dispatch rules", () => {
@@ -59,7 +94,9 @@ describe("handleApi dispatch rules", () => {
 
 	it("returns 404 for an unknown route, without echoing the raw path", async () => {
 		const { handleApi } = await import("./router");
-		const response = await handleApi(post("/api/definitely-not-a-route/../secret"));
+		const response = await handleApi(
+			post("/api/definitely-not-a-route/../secret"),
+		);
 		expect(response.status).toBe(404);
 		const body = await response.json();
 		expect(body.error.code).toBe("not_found");
@@ -71,7 +108,9 @@ describe("handleApi dispatch rules", () => {
 
 	it("refuses a verb the route does not implement", async () => {
 		const { handleApi } = await import("./router");
-		const response = await handleApi(post("/api/discover", { method: "DELETE" }));
+		const response = await handleApi(
+			post("/api/discover", { method: "DELETE" }),
+		);
 		expect(response.status).toBe(400);
 		expect((await response.json()).error.message).toContain("not allowed");
 	});
@@ -85,7 +124,9 @@ describe("handleApi dispatch rules", () => {
 
 	it("propagates the caller's request id so a bug report maps to a log line", async () => {
 		const { handleApi } = await import("./router");
-		const response = await handleApi(post("/api/discover", { headers: { "x-request-id": "trace-me-001" } }));
+		const response = await handleApi(
+			post("/api/discover", { headers: { "x-request-id": "trace-me-001" } }),
+		);
 		expect(response.headers.get("x-request-id")).toBe("trace-me-001");
 		expect((await response.json()).requestId).toBe("trace-me-001");
 	});
@@ -94,6 +135,8 @@ describe("handleApi dispatch rules", () => {
 		const { handleApi } = await import("./router");
 		const response = await handleApi(post("/api/discover"));
 		expect(response.headers.get("x-ratelimit-tier")).toBe("memory");
-		expect(Number(response.headers.get("x-ratelimit-limit"))).toBeGreaterThan(0);
+		expect(Number(response.headers.get("x-ratelimit-limit"))).toBeGreaterThan(
+			0,
+		);
 	});
 });
