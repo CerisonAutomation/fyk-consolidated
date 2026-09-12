@@ -588,10 +588,14 @@ export async function startIdleWatch(
 		timer = window.setTimeout(onIdle, threshold);
 	};
 	const events = ["pointerdown", "keydown", "scroll", "visibilitychange"];
-	events.forEach((e) => document.addEventListener(e, reset, { passive: true }));
+	events.forEach((e) => {
+		document.addEventListener(e, reset, { passive: true });
+	});
 	return () => {
 		clearTimeout(timer);
-		events.forEach((e) => document.removeEventListener(e, reset));
+		events.forEach((e) => {
+			document.removeEventListener(e, reset);
+		});
 	};
 }
 

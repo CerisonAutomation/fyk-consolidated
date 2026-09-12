@@ -107,7 +107,9 @@ export class VoiceRecorder {
     const seconds = Math.max(0.4, (Date.now() - this.startedAt) / 1000);
     const peaks = resample(this.peaks, BARS);
 
-    this.stream?.getTracks().forEach((t) => t.stop());
+    this.stream?.getTracks().forEach((t) => {
+      t.stop();
+    });
     void this.ctx?.close();
     this.stream = null;
     this.recorder = null;
@@ -130,7 +132,9 @@ export class VoiceRecorder {
     } catch {
       /* already stopped */
     }
-    this.stream?.getTracks().forEach((t) => t.stop());
+    this.stream?.getTracks().forEach((t) => {
+      t.stop();
+    });
     void this.ctx?.close();
     this.stream = null;
     this.recorder = null;

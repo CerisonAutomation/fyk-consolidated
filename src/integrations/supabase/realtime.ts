@@ -44,13 +44,15 @@ export class SupabaseRealtime {
         }, (payload: { eventType: string; new: Record<string, unknown>; old: Record<string, unknown>; schema: string; table: string }) => {
           const listeners = this.listeners.get(channelName);
           if (listeners) {
-            listeners.forEach((cb) => cb({
-              event: payload.eventType as RealtimeEvent["event"],
-              schema: payload.schema,
-              table: payload.table,
-              new: payload.new,
-              old: payload.old,
-            }));
+            listeners.forEach((cb) => {
+              cb({
+                event: payload.eventType as RealtimeEvent["event"],
+                schema: payload.schema,
+                table: payload.table,
+                new: payload.new,
+                old: payload.old,
+              });
+            });
           }
         })
         .subscribe();
@@ -105,13 +107,15 @@ export class SupabaseRealtime {
         }, (payload: { eventType: string; new: Record<string, unknown>; old: Record<string, unknown>; schema: string; table: string }) => {
           const listeners = this.listeners.get(messageChannelName);
           if (listeners) {
-            listeners.forEach((cb) => cb({
-              event: payload.eventType as RealtimeEvent["event"],
-              schema: payload.schema,
-              table: payload.table,
-              new: payload.new,
-              old: payload.old,
-            }));
+            listeners.forEach((cb) => {
+              cb({
+                event: payload.eventType as RealtimeEvent["event"],
+                schema: payload.schema,
+                table: payload.table,
+                new: payload.new,
+                old: payload.old,
+              });
+            });
           }
         })
         .subscribe();

@@ -271,7 +271,9 @@ export function buildCorpus(): Float32Array<ArrayBuffer> {
 	const data = new Float32Array(
 		new ArrayBuffer(richPeople.length * SEARCH_DIM * 4),
 	);
-	richPeople.forEach((p, i) => profileVector(p, data, i * SEARCH_DIM));
+	richPeople.forEach((p, i) => {
+		profileVector(p, data, i * SEARCH_DIM);
+	});
 	normaliseRows(data, richPeople.length, SEARCH_DIM);
 	corpusCache = data;
 	return data;

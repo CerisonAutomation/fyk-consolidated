@@ -157,7 +157,9 @@ class GpuEngine {
       readBuf.unmap();
       return out;
     } finally {
-      [corpusBuf, queryBuf, scoreBuf, readBuf, paramBuf].forEach((b) => b.destroy());
+      [corpusBuf, queryBuf, scoreBuf, readBuf, paramBuf].forEach((b) => {
+        b.destroy();
+      });
     }
   }
 

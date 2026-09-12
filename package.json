@@ -98,17 +98,19 @@
     "preview": "vite preview --host 0.0.0.0 --port 3000",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "verify": "pnpm typecheck && pnpm test && pnpm build && pnpm check:changed",
+    "verify": "pnpm typecheck && pnpm test && pnpm build && pnpm lint:code",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "node scripts/seed.mjs",
     "format": "biome format",
     "lint": "biome lint",
+    "lint:code": "biome check --formatter-enabled=false --assist-enabled=false src/lib src/routes/api src/integrations src/domains/auth src/middleware.ts src/db.ts src/schema.ts drizzle",
+    "lint:changed": "node scripts/lint-gate.mjs",
+    "lint:baseline": "node scripts/lint-gate.mjs --update-baseline",
     "check": "biome check",
     "clean": "rm -rf dist .tanstack node_modules/.cache .turbo playwright-report test-results",
     "test:e2e": "playwright test",
-    "db:migrate:sql": "for f in supabase/migrations/*.sql; do psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"$f\" || exit 1; done",
-    "check:changed": "biome check src/lib src/routes/api drizzle src/db.ts src/schema.ts"
+    "db:migrate:sql": "for f in supabase/migrations/*.sql; do psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"$f\" || exit 1; done"
   }
 }
