@@ -473,6 +473,12 @@ function SignInPage() {
 										<input
 											type="email"
 											placeholder="king@fyk.app"
+											name="email"
+											autoComplete="email"
+											inputMode="email"
+											autoCapitalize="none"
+											autoCorrect="off"
+											enterKeyHint="next"
 											value={email}
 											onChange={(e) => setEmail(e.target.value)}
 											className="w-full h-12 pl-11 pr-4 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"
@@ -501,6 +507,11 @@ function SignInPage() {
 										<input
 											type={showPassword ? "text" : "password"}
 											placeholder="Enter your password"
+											name="password"
+											autoComplete="current-password"
+											autoCapitalize="none"
+											autoCorrect="off"
+											enterKeyHint="go"
 											value={password}
 											onChange={(e) => setPassword(e.target.value)}
 											className="w-full h-12 pl-11 pr-11 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"
@@ -561,6 +572,10 @@ function SignInPage() {
 										<User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
 										<input
 											placeholder="Your name"
+											name="name"
+											autoComplete="name"
+											autoCapitalize="words"
+											enterKeyHint="next"
 											value={name}
 											onChange={(e) => setName(e.target.value)}
 											className="w-full h-12 pl-11 pr-4 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"
@@ -580,6 +595,12 @@ function SignInPage() {
 										<input
 											type="email"
 											placeholder="king@fyk.app"
+											name="email"
+											autoComplete="email"
+											inputMode="email"
+											autoCapitalize="none"
+											autoCorrect="off"
+											enterKeyHint="next"
 											value={email}
 											onChange={(e) => setEmail(e.target.value)}
 											className="w-full h-12 pl-11 pr-4 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"
@@ -600,6 +621,12 @@ function SignInPage() {
 										</span>
 										<input
 											placeholder="yourhandle"
+											name="handle"
+											autoComplete="username"
+											autoCapitalize="none"
+											autoCorrect="off"
+											spellCheck={false}
+											enterKeyHint="next"
 											value={handle}
 											onChange={(e) =>
 												setHandle(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))
@@ -621,6 +648,11 @@ function SignInPage() {
 										<input
 											type={showPassword ? "text" : "password"}
 											placeholder="Min 8 chars, upper + lower + number"
+											name="newPassword"
+											autoComplete="new-password"
+											autoCapitalize="none"
+											autoCorrect="off"
+											enterKeyHint="next"
 											value={password}
 											onChange={(e) => setPassword(e.target.value)}
 											className="w-full h-12 pl-11 pr-11 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"
@@ -702,6 +734,12 @@ function SignInPage() {
 										<input
 											type="email"
 											placeholder="king@fyk.app"
+											name="email"
+											autoComplete="email"
+											inputMode="email"
+											autoCapitalize="none"
+											autoCorrect="off"
+											enterKeyHint="next"
 											value={email}
 											onChange={(e) => setEmail(e.target.value)}
 											className="w-full h-12 pl-11 pr-4 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"
@@ -752,6 +790,11 @@ function SignInPage() {
 										<input
 											type={showPassword ? "text" : "password"}
 											placeholder="Min 8 chars"
+											name="newPassword"
+											autoComplete="new-password"
+											autoCapitalize="none"
+											autoCorrect="off"
+											enterKeyHint="next"
 											value={newPassword}
 											onChange={(e) => setNewPassword(e.target.value)}
 											className="w-full h-12 pl-11 pr-4 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"
@@ -796,6 +839,12 @@ function SignInPage() {
 										<input
 											type="email"
 											placeholder="king@fyk.app"
+											name="email"
+											autoComplete="email"
+											inputMode="email"
+											autoCapitalize="none"
+											autoCorrect="off"
+											enterKeyHint="next"
 											value={email}
 											onChange={(e) => setEmail(e.target.value)}
 											className="w-full h-12 pl-11 pr-4 rounded-xl text-white placeholder:text-white/25 transition-all duration-300 text-sm"

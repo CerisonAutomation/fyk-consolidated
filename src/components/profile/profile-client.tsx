@@ -837,6 +837,11 @@ export function ProfileClient() {
 								</label>
 								<input
 									value={form.pseudo}
+									name="pseudo"
+									autoComplete="nickname"
+									autoCapitalize="words"
+									autoCorrect="off"
+									enterKeyHint="next"
 									onChange={(e) =>
 										setForm((f) => ({ ...f, pseudo: e.target.value }))
 									}
@@ -856,6 +861,8 @@ export function ProfileClient() {
 								</div>
 								<textarea
 									value={form.description}
+									autoCapitalize="sentences"
+									enterKeyHint="done"
 									onChange={(e) =>
 										setForm((f) => ({ ...f, description: e.target.value }))
 									}
@@ -899,6 +906,8 @@ export function ProfileClient() {
 										<input
 											type="number"
 											value={(form[k] as number | null) ?? ""}
+											inputMode="numeric"
+											enterKeyHint="next"
 											onChange={(e) =>
 												setForm((f) => ({
 													...f,
@@ -916,6 +925,10 @@ export function ProfileClient() {
 								</label>
 								<input
 									value={form.occupation}
+									name="occupation"
+									autoComplete="organization-title"
+									autoCapitalize="words"
+									enterKeyHint="done"
 									onChange={(e) =>
 										setForm((f) => ({ ...f, occupation: e.target.value }))
 									}

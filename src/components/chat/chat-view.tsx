@@ -276,6 +276,9 @@ export function ChatView({
         <div className="border-b border-line py-2">
           <input
             value={search}
+            type="search"
+            enterKeyHint="search"
+            autoComplete="off"
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
             placeholder="Search this conversation…"
@@ -413,6 +416,9 @@ export function ChatView({
                     <div className="rounded-2xl border border-gold/40 bg-surface p-2">
                       <input
                         value={editText}
+                        enterKeyHint="done"
+                        autoCapitalize="sentences"
+                        autoCorrect="on"
                         onChange={(e) => setEditText(e.target.value)}
                         autoFocus
                         onKeyDown={(e) => {
@@ -591,6 +597,10 @@ export function ChatView({
         <input
           ref={inputRef}
           value={input}
+          enterKeyHint="send"
+          autoCapitalize="sentences"
+          autoCorrect="on"
+          name="message"
           onChange={(e) => {
             setInput(e.target.value);
             broadcastTypingState(e.target.value.length > 0);

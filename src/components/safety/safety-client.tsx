@@ -378,6 +378,10 @@ export function SafetyClient() {
           <div className="mb-3 space-y-1.5 rounded-xl border border-line bg-surface-2 p-2.5">
             <input
               value={contactForm.name}
+              name="name"
+              autoComplete="name"
+              autoCapitalize="words"
+              enterKeyHint="next"
               onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Name"
               className="w-full rounded-lg bg-surface px-2.5 py-1.5 text-xs text-white outline-none ring-1 ring-line placeholder:text-muted focus:ring-gold/60"
@@ -385,16 +389,26 @@ export function SafetyClient() {
             <div className="flex gap-1.5">
               <input
                 value={contactForm.phone}
+                type="tel"
+                name="phone"
+                autoComplete="tel"
+                inputMode="tel"
+                enterKeyHint="next"
                 onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))}
                 placeholder="Phone"
-                inputMode="tel"
                 className="min-w-0 flex-1 rounded-lg bg-surface px-2.5 py-1.5 text-xs text-white outline-none ring-1 ring-line placeholder:text-muted focus:ring-gold/60"
               />
               <input
                 value={contactForm.email}
+                type="email"
+                name="email"
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                enterKeyHint="next"
                 onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
                 placeholder="Email (optional)"
-                inputMode="email"
                 className="min-w-0 flex-1 rounded-lg bg-surface px-2.5 py-1.5 text-xs text-white outline-none ring-1 ring-line placeholder:text-muted focus:ring-gold/60"
               />
             </div>
@@ -575,6 +589,8 @@ export function SafetyClient() {
             </div>
             <textarea
               value={noteContent}
+              autoCapitalize="sentences"
+              enterKeyHint="done"
               onChange={(e) => setNoteContent(e.target.value)}
               rows={3}
               placeholder="Private note (only you can see it)..."
