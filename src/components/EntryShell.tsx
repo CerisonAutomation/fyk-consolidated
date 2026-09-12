@@ -1,1104 +1,1294 @@
+/**
+ * Auth boundary and boot sequence.
+ *
+ * Flow: resolve session → (unconfigured | signed out | onboarding | app).
+ *
+ * Everything about identity is decided here and nowhere else:
+ *   - The browser only ever talks to Supabase Auth (to obtain a session) and to
+ *     `/api/session` (to learn what that session can do).
+ *   - Whether a profile exists, whether onboarding is complete, and which
+ *     capabilities the schema supports all come from the server in one call,
+ *     replacing fourteen probe queries fired on every auth event.
+ *   - A route is never rendered "signed in" optimistically. If the session is not
+ *     confirmed, children are not mounted, so no component can render a half
+ *     state that looks like data.
+ */
+
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import {
-  ArrowRight,
-  Check,
-  Eye,
-  EyeOff,
-  Loader2,
-  LockKeyhole,
-  Mail,
-  MapPin,
-  KeyRound,
-  RefreshCw,
-  ShieldCheck,
+	AlertTriangle,
+	ArrowRight,
+	Check,
+	KeyRound,
+	Loader2,
+	LockKeyhole,
+	Mail,
+	RefreshCw,
+	ShieldCheck,
 } from "lucide-react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { z } from "zod";
+import { FormError } from "#/components/FormError";
+import { getSupabase } from "#/integrations/supabase/client";
+import { envMissing, isConfigured } from "#/integrations/supabase/env";
+import { ApiClientError, api } from "#/lib/client";
+import {
+	clearFieldError,
+	type FieldErrors,
+	fieldErrorProps,
+	fieldErrorsFrom,
+	fieldErrorsFromIssues,
+	hasFieldErrors,
+} from "#/lib/field-errors";
+import { cn } from "#/lib/utils";
+import type { SessionResponse } from "#/server/handlers/session";
+import { AppShell } from "./AppShell";
 import { LogoHorizontal } from "./Brand";
-import { cn } from "@/utils/cn";
-import { px } from "@/lib/data";
-import { envMissing, isConfigured } from "@/lib/supabase/env";
-import { getSupabase, toFailure } from "@/lib/supabase/client";
-import type { Profile } from "@/lib/supabase/types";
 
-/**
- * The signed-in profile as the shell knows it: whatever `PROFILE_COLUMNS`
- * selects. Every mirrored column exists in the database, but a partial select
- * is not a full `Profile`, and pretending it is let the shell hand out
- * `undefined` as if it were a value.
- */
-export type GateProfile = Partial<Profile> & { id: string };
+type Gate =
+	| { kind: "loading" }
+	| { kind: "setup"; reason: string; missing: string[] }
+	| { kind: "signed-out" }
+	| { kind: "onboarding"; session: SessionResponse }
+	| { kind: "app"; session: SessionResponse };
 
-// --- Zod schemas for form validation (per react-forms.md docs) ---
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i;
 
-const authSchema = z.object({
-  email: z.string().min(1, "Enter your email address.").email("Please enter a valid email address."),
-  password: z.string().min(10, "Use at least 10 characters for your password."),
-});
-
-const authForgotSchema = z.object({
-  email: z.string().min(1, "Enter your email address.").email("Please enter a valid email address."),
-});
-
-const authSignupSchema = z.object({
-  email: z.string().min(1, "Enter your email address.").email("Please enter a valid email address."),
-  password: z.string().min(10, "Use at least 10 characters for your password."),
-  adult: z.boolean().refine((v) => v === true, "You must confirm you are 18+."),
-  legal: z.boolean().refine((v) => v === true, "You must accept the Terms and Privacy Policy."),
-});
-
-const passwordUpdateSchema = z.object({
-  password: z.string().min(10, "Use at least 10 characters."),
-  confirm: z.string(),
-}).refine((data) => data.password === data.confirm, {
-  message: "The passwords do not match.",
-  path: ["confirm"],
-});
-
-type AuthState = {
-  user: User;
-  session: Session;
-  profile: GateProfile;
-  readiness: BackendReadiness;
-  updateProfile: (changes: Partial<Profile>) => Promise<{ ok: boolean; message?: string }>;
-  /** Kept so callers can be type-checked against the projection, not the row. */
-  signOut: () => Promise<void>;
-};
-
-export type BackendReadiness = {
-  coreProfile: boolean;
-  board: boolean;
-  social: boolean;
-  chat: boolean;
-  chatMediaStorage: boolean;
-  albumStorage: boolean;
-  avatarStorage: boolean;
-  missing: string[];
-};
-
-const AuthContext = createContext<AuthState | null>(null);
-
-export function useAuth() {
-  const value = useContext(AuthContext);
-  if (!value) throw new Error("useAuth must be used inside EntryShell");
-  return value;
-}
-
-type GateState =
-  | { kind: "loading" }
-  | { kind: "setup"; reason: string; missing: string[] }
-  | { kind: "signed-out" }
-  | { kind: "signed-in"; session: Session; profile: GateProfile | null; readiness: BackendReadiness };
-
-const PROFILE_COLUMNS =
-  "id,handle,display_name,avatar_url,bio,headline,age,age_verified_at,city,area,lat_coarse,lng_coarse,exposure_level,height_cm,body_type,position_role,pronouns,hide_distance,hide_online,incognito,is_demo,is_suspended,onboarding_completed_at,last_active_at,created_at,updated_at";
-
-/**
- * `profiles` column → the key `PUT /api/profile` validates. The projection
- * is named after what a card needs, the row underneath uses the legacy
- * vocabulary (`pseudo`, `nick`, `description`, `height`), and this is the one
- * place that translation is allowed to live.
- */
-const PROFILE_FIELD_TO_API: Record<string, string> = {
-  display_name: "pseudo",
-  handle: "nick",
-  bio: "description",
-  headline: "occupation",
-  occupation: "occupation",
-  age: "age",
-  height_cm: "height",
-  weight: "weight",
-  body_type: "body_type",
-  pronouns: "pronouns",
-  city: "city",
-  area: "area",
-  relationship_status: "relationship_status",
-  photos: "photos",
-  tribes: "tribes",
-  interests: "interests",
-  languages: "languages",
-  looking_for: "looking_for",
-  position: "position",
-  hide_distance: "hide_distance",
-  hide_online: "hide_online",
-};
-
-/** Tag bags are numeric ids on the row and untyped jsonb in the projection. */
-const NUMERIC_TAG_FIELDS = new Set(["tribes", "looking_for", "position"]);
-
-function profileChangesToApiBody(changes: Partial<Profile>): {
-  payload: Record<string, unknown>;
-  unsupported: string[];
-} {
-  const payload: Record<string, unknown> = {};
-  const unsupported: string[] = [];
-  for (const [key, value] of Object.entries(changes)) {
-    if (value === undefined || key === "id") continue;
-    const target = PROFILE_FIELD_TO_API[key];
-    if (!target) {
-      unsupported.push(key);
-      continue;
-    }
-    if (NUMERIC_TAG_FIELDS.has(key) && Array.isArray(value)) {
-      payload[target] = value
-        .map((item) => (typeof item === "string" ? Number(item) : item))
-        .filter((item) => Number.isInteger(item));
-      continue;
-    }
-    if (Array.isArray(value) || (value && typeof value === "object")) {
-      payload[target] = value;
-      continue;
-    }
-    payload[target] = value;
-  }
-  return { payload, unsupported };
-}
-
-function friendlySchemaError(message: string) {
-  if (/column|relation|schema cache|does not exist/i.test(message)) {
-    return "The Supabase project is connected, but the FYKING MVP schema has not been applied yet.";
-  }
-  return "FYKING can reach Supabase, but the data layer is not ready for authenticated use.";
-}
-
-async function inspectBackend(userId?: string): Promise<BackendReadiness> {
-  const client = getSupabase();
-  if (!client) {
-    return { coreProfile: false, board: false, social: false, chat: false, chatMediaStorage: false, albumStorage: false, avatarStorage: false, missing: ["Supabase client configuration"] };
-  }
-
-  const [profile, privateProfile, posts, comments, joins, likes, matches, conversations, messages, attachments, shares, reactions, albums, albumItems] = await Promise.all([
-    client.from("profiles").select("id,handle,age_verified_at,exposure_level,onboarding_completed_at").limit(1),
-    client.from("profile_private").select("id").limit(1),
-    client.from("board_posts").select("id,author_id,expires_at").limit(1),
-    client.from("board_comments").select("id,post_id,author_id").limit(1),
-    client.from("post_joins").select("post_id,profile_id").limit(1),
-    client.from("likes").select("id,from_id,to_id,kind").limit(1),
-    client.from("matches").select("id,user_a,user_b,unmatched_at").limit(1),
-    client.from("conversations").select("id,last_message_at").limit(1),
-    client.from("messages").select("id,conversation_id,album_share_id").limit(1),
-    client.from("message_attachments").select("id,message_id,access_policy,status").limit(1),
-    client.from("album_shares").select("id,album_id,access_policy,status").limit(1),
-    client.from("message_reactions").select("message_id,profile_id,emoji").limit(1),
-    client.from("private_albums").select("id,owner_id,default_access_policy").limit(1),
-    client.from("private_album_items").select("id,album_id,media_kind").limit(1),
-  ]);
-
-  const missing: string[] = [];
-  if (profile.error) missing.push("profiles columns from 001_schema.sql");
-  if (privateProfile.error) missing.push("profile_private table for date of birth");
-  if (posts.error) missing.push("board_posts table");
-  if (comments.error) missing.push("board_comments table");
-  if (joins.error) missing.push("post_joins table");
-  if (likes.error) missing.push("likes table or authenticated policies");
-  if (matches.error) missing.push("matches table or mutual-like trigger policies");
-  if (conversations.error) missing.push("conversations table or member policy");
-  if (messages.error) missing.push("messages.album_share_id from 004_chat_media.sql");
-  if (attachments.error) missing.push("message_attachments from 004_chat_media.sql");
-  if (shares.error) missing.push("album_shares from 004_chat_media.sql");
-  if (reactions.error) missing.push("message_reactions from 004_chat_media.sql");
-  if (albums.error) missing.push("private_albums from 004_chat_media.sql");
-  if (albumItems.error) missing.push("private_album_items album columns from 004_chat_media.sql");
-
-  let avatarStorage = false;
-  let chatMediaStorage = false;
-  let albumStorage = false;
-  if (userId) {
-    const [avatarBucket, chatBucket, albumBucket] = await Promise.all([
-      client.storage.from("avatars-public").list(userId, { limit: 1 }),
-      client.storage.from("chat-media-private").list("", { limit: 1 }),
-      client.storage.from("albums-private").list(userId, { limit: 1 }),
-    ]);
-    avatarStorage = !avatarBucket.error;
-    chatMediaStorage = !chatBucket.error;
-    albumStorage = !albumBucket.error;
-    if (avatarBucket.error) missing.push("avatars-public bucket or authenticated storage policy");
-    if (chatBucket.error) missing.push("chat-media-private bucket or fyk_chat_* policies");
-    if (albumBucket.error) missing.push("albums-private bucket or fyk_album_* policies");
-  }
-
-  return {
-    coreProfile: !profile.error && !privateProfile.error,
-    board: !posts.error && !comments.error && !joins.error,
-    social: !likes.error && !matches.error,
-    chat: !conversations.error && !messages.error && !attachments.error && !shares.error && !reactions.error && !albums.error && !albumItems.error,
-    chatMediaStorage: userId ? chatMediaStorage : true,
-    albumStorage: userId ? albumStorage : true,
-    avatarStorage: userId ? avatarStorage : true,
-    missing,
-  };
-}
-
-/**
- * Hard auth boundary for the existing SPA. When Supabase is configured there is
- * no seed-account fallback: signed-out users see auth, and incomplete projects
- * see an explicit setup state instead of a fake signed-in identity.
- */
 export function EntryShell({ children }: { children: ReactNode }) {
-  const [gate, setGate] = useState<GateState>({ kind: "loading" });
-  const [recovering, setRecovering] = useState(false);
+	const [gate, setGate] = useState<Gate>({ kind: "loading" });
+	const [recovering, setRecovering] = useState(false);
+	const inFlight = useRef(false);
 
-  const load = useCallback(async () => {
-    if (!isConfigured) {
-      setGate({ kind: "setup", reason: `Missing ${envMissing.join(" and ")}.`, missing: envMissing });
-      return;
-    }
+	const load = useCallback(async () => {
+		if (inFlight.current) return;
+		inFlight.current = true;
+		try {
+			if (!isConfigured) {
+				setGate({
+					kind: "setup",
+					reason: `Missing ${envMissing.join(" and ")}.`,
+					missing: envMissing,
+				});
+				return;
+			}
+			const client = getSupabase();
+			if (!client) {
+				setGate({
+					kind: "setup",
+					reason: "The Supabase browser client could not be created.",
+					missing: ["Supabase client"],
+				});
+				return;
+			}
 
-    const client = getSupabase();
-    if (!client) {
-      setGate({ kind: "setup", reason: "The Supabase browser client could not be created.", missing: ["Supabase client"] });
-      return;
-    }
+			// The local check only decides whether to bother the server; the server
+			// re-validates the token with GoTrue, so this can never grant access.
+			const { data } = await client.auth.getSession();
+			if (!data.session) {
+				setGate({ kind: "signed-out" });
+				return;
+			}
 
-    setGate({ kind: "loading" });
+			let session: SessionResponse;
+			try {
+				session = await api.get<SessionResponse>("session");
+			} catch (error) {
+				if (error instanceof ApiClientError && error.code === "unauthorized") {
+					await client.auth.signOut({ scope: "local" });
+					setGate({ kind: "signed-out" });
+					return;
+				}
+				setGate({
+					kind: "setup",
+					reason:
+						error instanceof ApiClientError &&
+						error.code === "dependency_unavailable"
+							? "The FYK server is not reachable or not configured."
+							: "Your session could not be verified. Try again.",
+					missing: ["Server session"],
+				});
+				return;
+			}
 
-    const publicReadiness = await inspectBackend();
-    if (!publicReadiness.coreProfile) {
-      setGate({
-        kind: "setup",
-        reason: "The Supabase project is connected, but the profile schema required for auth and onboarding is incomplete.",
-        missing: publicReadiness.missing,
-      });
-      return;
-    }
+			if (!session.configured) {
+				setGate({
+					kind: "setup",
+					reason:
+						"The server cannot reach Supabase. Check SUPABASE_URL / SUPABASE_ANON_KEY in the server environment.",
+					missing: ["Server Supabase config"],
+				});
+				return;
+			}
+			if (!session.signedIn) {
+				setGate({ kind: "signed-out" });
+				return;
+			}
+			setGate({
+				kind: session.needsOnboarding ? "onboarding" : "app",
+				session,
+			});
+		} finally {
+			inFlight.current = false;
+		}
+	}, []);
 
-    const { data, error } = await client.auth.getSession();
-    if (error) {
-      setGate({ kind: "setup", reason: "Session restore failed. Check the Supabase URL and anon key.", missing: ["Valid auth session"] });
-      return;
-    }
-    if (!data.session) {
-      setGate({ kind: "signed-out" });
-      return;
-    }
+	useEffect(() => {
+		void load();
+		const client = getSupabase();
+		if (!client) return;
+		const { data } = client.auth.onAuthStateChange((event) => {
+			if (event === "PASSWORD_RECOVERY") setRecovering(true);
+			// Deferred so it does not contend with Supabase's own auth-state lock.
+			window.setTimeout(() => void load(), 0);
+		});
+		return () => data.subscription.unsubscribe();
+	}, [load]);
 
-    const profileResult = await client
-      .from("profiles")
-      .select(PROFILE_COLUMNS)
-      .eq("id", data.session.user.id)
-      .maybeSingle();
+	const signOut = useCallback(async () => {
+		await getSupabase()?.auth.signOut({ scope: "local" });
+		setGate({ kind: "signed-out" });
+	}, []);
 
-    if (profileResult.error) {
-      setGate({ kind: "setup", reason: friendlySchemaError(profileResult.error.message), missing: ["Readable authenticated profile"] });
-      return;
-    }
+	const value = useMemo(
+		() => ({
+			refresh: load,
+			signOut,
+		}),
+		[load, signOut],
+	);
 
-    const readiness = await inspectBackend(data.session.user.id);
-    setGate({ kind: "signed-in", session: data.session, profile: profileResult.data, readiness });
-  }, []);
+	if (recovering) {
+		return (
+			<PasswordRecovery
+				onDone={async () => {
+					setRecovering(false);
+					await signOut();
+					void load();
+				}}
+			/>
+		);
+	}
+	if (gate.kind === "loading") return <BootLoading />;
+	if (gate.kind === "setup")
+		return (
+			<SetupRequired
+				reason={gate.reason}
+				missing={gate.missing}
+				onRetry={() => void load()}
+			/>
+		);
+	if (gate.kind === "signed-out")
+		return <AuthScreens onDone={() => void load()} />;
+	if (gate.kind === "onboarding")
+		return <Onboarding onDone={() => void load()} />;
 
-  useEffect(() => {
-    void load();
-    const client = getSupabase();
-    if (!client) return;
-    const { data } = client.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
-        setRecovering(true);
-        return;
-      }
-      // Defer the query so it never contends with Supabase's auth-state lock.
-      window.setTimeout(() => void load(), 0);
-    });
-    return () => data.subscription.unsubscribe();
-  }, [load]);
-
-  if (recovering) {
-    return (
-      <PasswordUpdate
-        onComplete={async () => {
-          setRecovering(false);
-          await getSupabase()?.auth.signOut({ scope: "local" });
-          await load();
-        }}
-      />
-    );
-  }
-  if (gate.kind === "loading") return <EntryLoading />;
-  if (gate.kind === "setup") return <SetupRequired reason={gate.reason} missing={gate.missing} onRetry={() => void load()} />;
-  if (gate.kind === "signed-out") return <SignedOut />;
-  if (!gate.profile?.onboarding_completed_at || !gate.profile.age_verified_at) {
-    return <Onboarding initial={gate.profile} onComplete={() => void load()} />;
-  }
-
-  const profile = gate.profile;
-  const session = gate.session;
-
-  return (
-    <AuthenticatedBoundary profile={profile} session={session} readiness={gate.readiness} onReload={load}>
-      {children}
-    </AuthenticatedBoundary>
-  );
+	return (
+		<AppShell
+			session={gate.session}
+			refresh={value.refresh}
+			signOut={value.signOut}
+		>
+			{children}
+		</AppShell>
+	);
 }
 
-function AuthenticatedBoundary({
-  profile,
-  session,
-  readiness,
-  onReload,
-  children,
+/* ------------------------------------------------------------------ boot ---- */
+
+function BootLoading() {
+	return (
+		<div className="grid min-h-[100svh] place-items-center bg-canvas px-6 text-ink">
+			<div className="flex flex-col items-center gap-5">
+				<LogoHorizontal className="w-52" />
+				<span className="inline-flex items-center gap-2 text-[13px] font-medium text-muted">
+					<Loader2 className="h-4 w-4 animate-spin text-gold" />
+					Checking your session
+				</span>
+			</div>
+		</div>
+	);
+}
+
+function SetupRequired({
+	reason,
+	missing,
+	onRetry,
 }: {
-  profile: GateProfile;
-  session: Session;
-  readiness: BackendReadiness;
-  onReload: () => Promise<void>;
-  children: ReactNode;
+	reason: string;
+	missing: string[];
+	onRetry: () => void;
 }) {
-  // `public.profiles` is a projection the database owns (0018 refuses direct
-  // writes to it), so the shell writes through PUT /api/profile and lets the
-  // mirror trigger push the change into the projection. Field names are
-  // translated back to the row's vocabulary; anything the API does not accept
-  // is reported instead of being dropped on the floor.
-  const updateProfile = useCallback(
-    async (changes: Partial<Profile>) => {
-      const body = profileChangesToApiBody(changes);
-      if (body.unsupported.length > 0) {
-        return {
-          ok: false,
-          message: `These fields are not editable here: ${body.unsupported.join(", ")}.`,
-        };
-      }
-      if (Object.keys(body.payload).length === 0) return { ok: true };
-      try {
-        const response = await fetch("/api/profile", {
-          method: "PUT",
-          credentials: "include",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body.payload),
-        });
-        if (!response.ok) {
-          const detail = (await response.json().catch(() => null)) as
-            | { error?: { message?: string }; message?: string }
-            | null;
-          return {
-            ok: false,
-            message:
-              detail?.error?.message ?? detail?.message ?? `Could not save (HTTP ${response.status}).`,
-          };
-        }
-      } catch {
-        return { ok: false, message: "Could not reach the server; nothing was saved." };
-      }
-      await onReload();
-      return { ok: true };
-    },
-    [onReload],
-  );
-
-  const signOut = useCallback(async () => {
-    const client = getSupabase();
-    if (!client) return;
-    await client.auth.signOut({ scope: "local" });
-  }, []);
-
-  const value = useMemo<AuthState>(
-    () => ({ user: session.user, session, profile, readiness, updateProfile, signOut }),
-    [profile, readiness, session, signOut, updateProfile],
-  );
-
-  // React 19: render <Context> directly as a provider instead of <Context.Provider>
-  return <AuthContext value={value}>{children}</AuthContext>;
+	return (
+		<div className="grid min-h-[100svh] place-items-center bg-canvas px-6 py-12 text-ink">
+			<div className="w-full max-w-xl rounded-3xl border border-line bg-surface p-6 shadow-[var(--shadow-pop)] sm:p-8">
+				<span className="inline-flex items-center gap-2 rounded-full border border-live/40 bg-live/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-live">
+					<AlertTriangle className="h-3.5 w-3.5" />
+					Setup required
+				</span>
+				<h1 className="mt-4 text-[26px] font-bold leading-tight tracking-[-0.02em]">
+					FYK is not connected yet
+				</h1>
+				<p className="mt-2 text-[14.5px] leading-relaxed text-muted">
+					{reason}
+				</p>
+				{missing.length > 0 && (
+					<ul className="mt-4 space-y-1.5 rounded-2xl border border-line bg-surface-2 p-4">
+						{missing.map((item) => (
+							<li
+								key={item}
+								className="flex items-start gap-2 text-[13px] text-ink-2"
+							>
+								<span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-live" />
+								<span className="font-mono text-[12.5px]">{item}</span>
+							</li>
+						))}
+					</ul>
+				)}
+				<ol className="mt-5 space-y-2 text-[13px] leading-relaxed text-muted">
+					<li>
+						1. Copy <code className="text-gold">.env.example</code> to{" "}
+						<code className="text-gold">.env.local</code> and fill in the
+						Supabase values (browser and server).
+					</li>
+					<li>
+						2. Apply <code className="text-gold">supabase/migrations</code> in
+						filename order — see the README there.
+					</li>
+					<li>
+						3. Retry. Nothing below this screen will render as a placeholder
+						while it waits.
+					</li>
+				</ol>
+				<button
+					type="button"
+					onClick={onRetry}
+					className="press mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2"
+				>
+					<RefreshCw className="h-4 w-4" /> Retry
+				</button>
+			</div>
+		</div>
+	);
 }
 
-function EntryLoading() {
-  return (
-    <div className="grid min-h-[100svh] place-items-center bg-canvas px-6 text-ink">
-      <div className="flex flex-col items-center gap-5">
-        <LogoHorizontal className="w-52" />
-        <span className="inline-flex items-center gap-2 text-[13px] font-medium text-muted">
-          <Loader2 className="h-4 w-4 animate-spin text-gold" />
-          Restoring your private session
-        </span>
-      </div>
-    </div>
-  );
+/* ------------------------------------------------------------- auth forms ---- */
+
+const signInSchema = z.object({
+	email: z
+		.string()
+		.trim()
+		.min(1)
+		.regex(EMAIL_RE, "Enter a valid email address."),
+	password: z.string().min(10, "Use at least 10 characters."),
+});
+
+const signUpSchema = z.object({
+	email: z
+		.string()
+		.trim()
+		.min(1)
+		.regex(EMAIL_RE, "Enter a valid email address."),
+	password: z.string().min(10, "Use at least 10 characters."),
+	adult: z
+		.boolean()
+		.refine((value) => value, "You must confirm you are 18 or older."),
+	terms: z
+		.boolean()
+		.refine((value) => value, "You must accept the community guidelines."),
+});
+
+function AuthScreens({ onDone }: { onDone: () => void }) {
+	const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [adult, setAdult] = useState(false);
+	const [terms, setTerms] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+	const [notice, setNotice] = useState("");
+	// Per-field copy, so a wrong email is fixed at the email box rather than at a
+	// sentence that may or may not be about the box the user is looking at.
+	const [fields, setFields] = useState<FieldErrors>({});
+
+	const submit = useCallback(
+		async (event: React.FormEvent) => {
+			event.preventDefault();
+			setError("");
+			setNotice("");
+			setFields({});
+			const client = getSupabase();
+			if (!client) return setError("Supabase is not configured.");
+			setBusy(true);
+			try {
+				if (mode === "signin") {
+					const parsed = signInSchema.safeParse({ email, password });
+					if (!parsed.success) {
+						const issues = fieldErrorsFromIssues(parsed.error.issues);
+						setFields(issues);
+						// A field without a box on this form still needs the summary line.
+						if (!hasFieldErrors(issues))
+							setError(parsed.error.issues[0].message);
+						return;
+					}
+					const { error: authError } = await client.auth.signInWithPassword({
+						email: parsed.data.email,
+						password: parsed.data.password,
+					});
+					if (authError) return setError(friendlyAuthError(authError.message));
+					onDone();
+				} else if (mode === "signup") {
+					const parsed = signUpSchema.safeParse({
+						email,
+						password,
+						adult,
+						terms,
+					});
+					if (!parsed.success) {
+						const issues = fieldErrorsFromIssues(parsed.error.issues);
+						setFields(issues);
+						// Anything the checkboxes failed is not a field on the page, so
+						// that one message still goes in the summary line.
+						setError(
+							issues.email || issues.password
+								? (issues.adult ?? issues.terms ?? "")
+								: parsed.error.issues[0].message,
+						);
+						return;
+					}
+					const { data, error: authError } = await client.auth.signUp({
+						email: parsed.data.email,
+						password: parsed.data.password,
+						options: {
+							emailRedirectTo: `${window.location.origin}/auth/callback`,
+						},
+					});
+					if (authError) return setError(friendlyAuthError(authError.message));
+					if (data.session) onDone();
+					else
+						setNotice(
+							`We sent a confirmation link to ${parsed.data.email}. Confirm it, then sign in.`,
+						);
+				} else {
+					if (!EMAIL_RE.test(email))
+						return setError("Enter a valid email address.");
+					const { error: authError } = await client.auth.resetPasswordForEmail(
+						email,
+						{
+							redirectTo: `${window.location.origin}/auth/callback?mode=recover`,
+						},
+					);
+					if (authError) return setError(friendlyAuthError(authError.message));
+					setNotice(
+						"If that address has an account, a reset link is on its way.",
+					);
+					setMode("signin");
+				}
+			} catch {
+				setError("Network error. Check your connection and try again.");
+			} finally {
+				setBusy(false);
+			}
+		},
+		[adult, email, mode, onDone, password, terms],
+	);
+
+	return (
+		<div className="relative grid min-h-[100svh] place-items-center overflow-hidden bg-canvas px-5 py-10 text-ink">
+			<div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,var(--color-gold-ghost),transparent)]" />
+			<div className="relative w-full max-w-[430px]">
+				<div className="mb-7 flex flex-col items-start gap-5">
+					<LogoHorizontal className="w-44" />
+					<div>
+						<h1 className="text-[30px] font-bold leading-[1.05] tracking-[-0.03em] sm:text-[36px]">
+							{mode === "signin"
+								? "Welcome back."
+								: mode === "signup"
+									? "Join the kingdom."
+									: "Reset your password."}
+						</h1>
+						<p className="mt-2 text-[14.5px] leading-relaxed text-muted">
+							Nearby people, a live Board, real conversations. Adults only, and
+							your location stays approximate by default.
+						</p>
+					</div>
+				</div>
+
+				<form
+					onSubmit={submit}
+					className="rounded-3xl border border-line bg-surface p-5 shadow-[var(--shadow-pop)] sm:p-6"
+					noValidate
+				>
+					<div className="space-y-4">
+						<Field label="Email" htmlFor="auth-email" error={fields.email}>
+							<div className="relative">
+								<Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+								<input
+									id="auth-email"
+									type="email"
+									inputMode="email"
+									autoComplete="email"
+									{...fieldErrorProps(fields, "email", "auth-email")}
+									value={email}
+									onChange={(event) => setEmail(event.target.value)}
+									placeholder="you@example.com"
+									className="entry-input pl-10"
+								/>
+							</div>
+						</Field>
+
+						{mode !== "reset" && (
+							<Field
+								label="Password"
+								htmlFor="auth-password"
+								error={fields.password}
+							>
+								<div className="relative">
+									<LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+									<input
+										id="auth-password"
+										type="password"
+										{...fieldErrorProps(fields, "password", "auth-password")}
+										autoComplete={
+											mode === "signin" ? "current-password" : "new-password"
+										}
+										value={password}
+										onChange={(event) => setPassword(event.target.value)}
+										placeholder="At least 10 characters"
+										className="entry-input pl-10"
+									/>
+								</div>
+							</Field>
+						)}
+
+						{mode === "signup" && (
+							<div className="space-y-2.5">
+								<CheckLine
+									checked={adult}
+									onChange={setAdult}
+									label="I am 18 or older."
+								/>
+								<CheckLine
+									checked={terms}
+									onChange={setTerms}
+									label="I accept the community guidelines: no harassment, no sharing other people's images, no underage content."
+								/>
+							</div>
+						)}
+					</div>
+
+					{error && (
+						<p
+							aria-live="assertive"
+							aria-atomic="true"
+							className="mt-4 rounded-xl border border-live/30 bg-live/10 px-3.5 py-2.5 text-[13px] text-live"
+						>
+							{error}
+						</p>
+					)}
+					{notice && (
+						<p
+							aria-live="polite"
+							aria-atomic="true"
+							className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 text-[13px] text-emerald-300"
+						>
+							{notice}
+						</p>
+					)}
+
+					<button
+						type="submit"
+						disabled={busy}
+						className="press mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-60"
+					>
+						{busy ? (
+							<Loader2 className="h-4 w-4 animate-spin" />
+						) : (
+							<ArrowRight className="h-4 w-4" />
+						)}
+						{mode === "signin"
+							? "Sign in"
+							: mode === "signup"
+								? "Create account"
+								: "Send reset link"}
+					</button>
+
+					<div className="mt-4 flex items-center justify-between text-[12.5px]">
+						{mode === "signin" ? (
+							<button
+								type="button"
+								onClick={() => setMode("signup")}
+								className="font-semibold text-gold hover:underline"
+							>
+								Create an account
+							</button>
+						) : (
+							<button
+								type="button"
+								onClick={() => setMode("signin")}
+								className="font-semibold text-gold hover:underline"
+							>
+								I already have an account
+							</button>
+						)}
+						{mode !== "reset" && (
+							<button
+								type="button"
+								onClick={() => setMode("reset")}
+								className="text-muted hover:text-ink"
+							>
+								Forgot password?
+							</button>
+						)}
+					</div>
+				</form>
+
+				<ul className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11.5px] text-faint">
+					<li className="inline-flex items-center gap-1.5">
+						<ShieldCheck className="h-3.5 w-3.5 text-gold/70" /> 18+ only, age
+						verified at sign-up
+					</li>
+					<li className="inline-flex items-center gap-1.5">
+						<KeyRound className="h-3.5 w-3.5 text-gold/70" /> Session in
+						cookies, not localStorage
+					</li>
+				</ul>
+			</div>
+		</div>
+	);
 }
 
-function SetupRequired({ reason, missing, onRetry }: { reason: string; missing: string[]; onRetry: () => void }) {
-  return (
-    <div className="relative min-h-[100svh] overflow-hidden bg-canvas text-ink">
-      <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_18%_18%,rgba(232,179,75,.18),transparent_34%),radial-gradient(circle_at_82%_80%,rgba(124,92,255,.12),transparent_32%)]" />
-      <main className="relative mx-auto flex min-h-[100svh] max-w-5xl items-center px-5 py-12 sm:px-8">
-        <div className="max-w-2xl">
-          <LogoHorizontal className="w-64 sm:w-80" />
-          <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.24em] text-gold">Setup required</p>
-          <h1 className="mt-3 text-[36px] font-bold leading-[1.04] tracking-[-0.035em] text-ink sm:text-[52px]">
-            The app is connected. The data layer is not ready yet.
-          </h1>
-          <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-ink-2">{reason}</p>
-          {missing.length > 0 && (
-            <div className="mt-5 rounded-2xl border border-line bg-surface p-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-faint">Missing or inaccessible</p>
-              <ul className="mt-2 space-y-1.5">
-                {missing.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-[13px] text-ink-2">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-live" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          <div className="mt-7 border-l-2 border-gold pl-5">
-            <p className="text-[14px] font-semibold text-ink">Run these in the Supabase SQL Editor, in order:</p>
-            <ol className="mt-2 space-y-1 font-mono text-[13px] text-muted">
-              <li>1. supabase/migrations/001_schema.sql</li>
-              <li>2. supabase/migrations/002_rls.sql</li>
-              <li>3. supabase/migrations/003_storage.sql</li>
-            </ol>
-          </div>
-          <div className="mt-8 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onRetry}
-              className="press inline-flex h-12 items-center gap-2 rounded-full bg-gold px-6 text-[14px] font-bold text-black hover:bg-gold-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Check again
-            </button>
-            <button
-              type="button"
-              onClick={() => void getSupabase()?.auth.signOut({ scope: "local" }).then(onRetry)}
-              className="press inline-flex h-12 items-center gap-2 rounded-full border border-line bg-surface px-5 text-[14px] font-semibold text-ink-2 hover:text-ink"
-            >
-              Clear local session
-            </button>
-          </div>
-          <p className="mt-5 max-w-xl text-[12.5px] leading-relaxed text-faint">
-            FYKING will not fall back to a demo account while Supabase is configured. This prevents sample profiles,
-            local paywalls and browser-only privacy controls from being mistaken for real user data.
-          </p>
-        </div>
-      </main>
-    </div>
-  );
-}
+/* ----------------------------------------------------------- onboarding ---- */
 
-type AuthMode = "signin" | "signup" | "forgot";
+const onboardingSchema = z
+	.object({
+		displayName: z
+			.string()
+			.trim()
+			.min(2, "Use at least 2 characters for your display name.")
+			.max(40),
+		handle: z
+			.string()
+			.trim()
+			.regex(
+				/^[a-z0-9_]{3,24}$/,
+				"Handle must be 3-24 letters, numbers or underscores.",
+			),
+		city: z.string().trim().min(1, "Enter your city.").max(80),
+		dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter your date of birth."),
+		interests: z.array(z.string()).max(15).default([]),
+		lookingFor: z.array(z.string()).max(6).default([]),
+		latitude: z.number().min(-90).max(90).optional(),
+		longitude: z.number().min(-180).max(180).optional(),
+	})
+	.refine((value) => {
+		const age = ageFromDob(value.dob);
+		return age !== null && age >= 18;
+	}, "FYK is for adults aged 18 and over.");
 
-/**
- * SignedOut component — now uses react-hook-form + zod for validation
- * per the react-forms.md docs: "use zodResolver for type-safe validation".
- */
-function SignedOut() {
-  const [mode, setMode] = useState<AuthMode>("signin");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
-  // Sign-in form
-  const signinForm = useForm<z.infer<typeof authSchema>>({
-    resolver: zodResolver(authSchema),
-    mode: "onBlur",
-  });
-
-  // Sign-up form
-  const signupForm = useForm<z.infer<typeof authSignupSchema>>({
-    resolver: zodResolver(authSignupSchema),
-    mode: "onBlur",
-    defaultValues: { adult: false, legal: false },
-  });
-
-  // Forgot form
-  const forgotForm = useForm<z.infer<typeof authForgotSchema>>({
-    resolver: zodResolver(authForgotSchema),
-    mode: "onBlur",
-  });
-
-  const [showPassword, setShowPassword] = useState(false);
-
-  const submitSignIn = async (data: z.infer<typeof authSchema>) => {
-    const client = getSupabase();
-    if (!client) return;
-    setError("");
-    setNotice("");
-    setBusy(true);
-    try {
-      const { error: authError } = await client.auth.signInWithPassword({ email: data.email.trim(), password: data.password });
-      if (authError) setError("We couldn't sign you in. Check your details or confirm your email first.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const submitSignUp = async (data: z.infer<typeof authSignupSchema>) => {
-    const client = getSupabase();
-    if (!client) return;
-    setError("");
-    setNotice("");
-    setBusy(true);
-    try {
-      const { data: result, error: authError } = await client.auth.signUp({
-        email: data.email.trim(),
-        password: data.password,
-        options: { emailRedirectTo: window.location.origin },
-      });
-      if (authError) setError(toFailure(authError).message);
-      else if (!result.session) setNotice("Check your inbox to confirm your email, then come back and sign in.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const submitForgot = async (data: z.infer<typeof authForgotSchema>) => {
-    const client = getSupabase();
-    if (!client) return;
-    setError("");
-    setNotice("");
-    setBusy(true);
-    try {
-      const { error: authError } = await client.auth.resetPasswordForEmail(data.email.trim(), {
-        redirectTo: window.location.origin,
-      });
-      if (authError) setError(toFailure(authError).message);
-      else setNotice("If that address has an account, a reset link is on its way.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="relative min-h-[100svh] overflow-hidden bg-[#07080a] text-white">
-      <img
-        src={px(15141201, 1900, 1300)}
-        alt=""
-        width={1900}
-        height={1300}
-        fetchPriority="high"
-        className="absolute inset-0 h-full w-full object-cover opacity-45"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,6,8,.96)_0%,rgba(5,6,8,.78)_48%,rgba(5,6,8,.42)_100%)]" />
-      <main className="relative mx-auto grid min-h-[100svh] max-w-7xl items-center gap-10 px-5 py-10 lg:grid-cols-[minmax(0,1fr)_410px] lg:px-10">
-        <section className="max-w-2xl pt-4 lg:pt-0">
-          <LogoHorizontal className="w-64 sm:w-[340px]" />
-          <h1 className="mt-9 text-[42px] font-bold leading-[1.01] tracking-[-0.045em] sm:text-[64px]">
-            Find the people who fit your night.
-          </h1>
-          <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/68 sm:text-[18px]">
-            Nearby, chat, private albums, events and spontaneous plans. One adults-only place for a date, a beach
-            day, a coffee or something more direct.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-x-7 gap-y-3 text-[13px] font-medium text-white/62">
-            <span className="inline-flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-gold" /> 18+ only</span>
-            <span className="inline-flex items-center gap-2"><MapPin className="h-4 w-4 text-gold" /> Approximate location by default</span>
-            <span className="inline-flex items-center gap-2"><LockKeyhole className="h-4 w-4 text-gold" /> Supabase session</span>
-          </div>
-        </section>
-
-        <section className="rounded-[24px] border border-white/12 bg-black/48 p-5 shadow-2xl backdrop-blur-xl sm:p-7">
-          <div className="mb-6 flex gap-1 rounded-full border border-white/10 bg-white/[0.05] p-1">
-            {(["signin", "signup"] as AuthMode[]).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => {
-                  setMode(item);
-                  setError("");
-                  setNotice("");
-                }}
-                className={cn(
-                  "press flex-1 rounded-full py-2.5 text-[13.5px] font-semibold",
-                  mode === item ? "bg-white text-black" : "text-white/60 hover:text-white",
-                )}
-              >
-                {item === "signin" ? "Sign in" : "Create account"}
-              </button>
-            ))}
-          </div>
-
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
-              {mode === "forgot" ? "Account recovery" : mode === "signin" ? "Welcome back" : "Private beta"}
-            </p>
-            <h2 className="mt-2 text-[27px] font-bold tracking-[-0.025em]">
-              {mode === "forgot" ? "Reset your password" : mode === "signin" ? "Your people are waiting" : "Start with the real you"}
-            </h2>
-          </div>
-
-          {/* Sign-in form with react-hook-form + zod */}
-          {mode === "signin" && (
-            <form onSubmit={signinForm.handleSubmit(submitSignIn)} className="mt-6 space-y-4" noValidate>
-              <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Email</span>
-                <span className="relative block">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    {...signinForm.register("email")}
-                    className={cn(
-                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-4 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
-                      signinForm.formState.errors.email ? "border-live/50" : "border-white/12",
-                    )}
-                    placeholder="you@example.com"
-                    aria-invalid={signinForm.formState.errors.email ? "true" : "false"}
-                  />
-                </span>
-                {signinForm.formState.errors.email && (
-                  <p className="mt-1 text-[12px] text-live" role="alert">{signinForm.formState.errors.email.message}</p>
-                )}
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Password</span>
-                <span className="relative block">
-                  <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
-                    {...signinForm.register("password")}
-                    className={cn(
-                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-11 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
-                      signinForm.formState.errors.password ? "border-live/50" : "border-white/12",
-                    )}
-                    placeholder="Your password"
-                    aria-invalid={signinForm.formState.errors.password ? "true" : "false"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="press absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-white/45 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </span>
-                {signinForm.formState.errors.password && (
-                  <p className="mt-1 text-[12px] text-live" role="alert">{signinForm.formState.errors.password.message}</p>
-                )}
-              </label>
-
-              {error && <p role="alert" className="rounded-xl border border-live/35 bg-live/12 px-3.5 py-3 text-[13px] text-[#ff9aa6]">{error}</p>}
-              {notice && <p role="status" className="rounded-xl border border-online/35 bg-online/10 px-3.5 py-3 text-[13px] text-[#8ee2b4]">{notice}</p>}
-
-              <button
-                type="submit"
-                disabled={busy}
-                className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                Sign in
-              </button>
-            </form>
-          )}
-
-          {/* Sign-up form with react-hook-form + zod */}
-          {mode === "signup" && (
-            <form onSubmit={signupForm.handleSubmit(submitSignUp)} className="mt-6 space-y-4" noValidate>
-              <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Email</span>
-                <span className="relative block">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    {...signupForm.register("email")}
-                    className={cn(
-                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-4 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
-                      signupForm.formState.errors.email ? "border-live/50" : "border-white/12",
-                    )}
-                    placeholder="you@example.com"
-                    aria-invalid={signupForm.formState.errors.email ? "true" : "false"}
-                  />
-                </span>
-                {signupForm.formState.errors.email && (
-                  <p className="mt-1 text-[12px] text-live" role="alert">{signupForm.formState.errors.email.message}</p>
-                )}
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Password</span>
-                <span className="relative block">
-                  <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    {...signupForm.register("password")}
-                    className={cn(
-                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-11 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
-                      signupForm.formState.errors.password ? "border-live/50" : "border-white/12",
-                    )}
-                    placeholder="10+ characters"
-                    aria-invalid={signupForm.formState.errors.password ? "true" : "false"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="press absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-white/45 hover:text-white"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </span>
-                {signupForm.formState.errors.password && (
-                  <p className="mt-1 text-[12px] text-live" role="alert">{signupForm.formState.errors.password.message}</p>
-                )}
-              </label>
-
-              <div className="space-y-2.5 rounded-xl border border-white/10 bg-white/[0.04] p-3.5">
-                <label className="flex cursor-pointer items-start gap-3 text-[12.5px] leading-relaxed text-white/68">
-                  <input
-                    type="checkbox"
-                    {...signupForm.register("adult")}
-                    className="mt-0.5 h-4 w-4 accent-[var(--c-gold)]"
-                  />
-                  I confirm I am at least 18 years old.
-                </label>
-                <label className="flex cursor-pointer items-start gap-3 text-[12.5px] leading-relaxed text-white/68">
-                  <input
-                    type="checkbox"
-                    {...signupForm.register("legal")}
-                    className="mt-0.5 h-4 w-4 accent-[var(--c-gold)]"
-                  />
-                  I accept the Terms and Privacy Policy.
-                </label>
-                {(signupForm.formState.errors.adult || signupForm.formState.errors.legal) && (
-                  <p className="text-[12px] text-live" role="alert">
-                    {signupForm.formState.errors.adult?.message || signupForm.formState.errors.legal?.message}
-                  </p>
-                )}
-              </div>
-
-              {error && <p role="alert" className="rounded-xl border border-live/35 bg-live/12 px-3.5 py-3 text-[13px] text-[#ff9aa6]">{error}</p>}
-              {notice && <p role="status" className="rounded-xl border border-online/35 bg-online/10 px-3.5 py-3 text-[13px] text-[#8ee2b4]">{notice}</p>}
-
-              <button
-                type="submit"
-                disabled={busy}
-                className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                Create account
-              </button>
-            </form>
-          )}
-
-          {/* Forgot password form with react-hook-form + zod */}
-          {mode === "forgot" && (
-            <form onSubmit={forgotForm.handleSubmit(submitForgot)} className="mt-6 space-y-4" noValidate>
-              <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-semibold text-white/72">Email</span>
-                <span className="relative block">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/38" />
-                  <input
-                    type="email"
-                    autoComplete="email"
-                    {...forgotForm.register("email")}
-                    className={cn(
-                      "h-12 w-full rounded-xl border bg-white/[0.06] pl-10 pr-4 text-[14px] outline-none transition-colors placeholder:text-white/30 focus:border-gold/70",
-                      forgotForm.formState.errors.email ? "border-live/50" : "border-white/12",
-                    )}
-                    placeholder="you@example.com"
-                    aria-invalid={forgotForm.formState.errors.email ? "true" : "false"}
-                  />
-                </span>
-                {forgotForm.formState.errors.email && (
-                  <p className="mt-1 text-[12px] text-live" role="alert">{forgotForm.formState.errors.email.message}</p>
-                )}
-              </label>
-
-              {error && <p role="alert" className="rounded-xl border border-live/35 bg-live/12 px-3.5 py-3 text-[13px] text-[#ff9aa6]">{error}</p>}
-              {notice && <p role="status" className="rounded-xl border border-online/35 bg-online/10 px-3.5 py-3 text-[13px] text-[#8ee2b4]">{notice}</p>}
-
-              <button
-                type="submit"
-                disabled={busy}
-                className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55"
-              >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                Send reset link
-              </button>
-            </form>
-          )}
-
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === "forgot" ? "signin" : "forgot");
-              setError("");
-              setNotice("");
-            }}
-            className="press mt-4 w-full text-center text-[12.5px] font-medium text-white/52 hover:text-white"
-          >
-            {mode === "forgot" ? "Back to sign in" : "Forgot your password?"}
-          </button>
-        </section>
-      </main>
-    </div>
-  );
-}
-
-function PasswordUpdate({ onComplete }: { onComplete: () => Promise<void> }) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<z.infer<typeof passwordUpdateSchema>>({
-    resolver: zodResolver(passwordUpdateSchema),
-    mode: "onBlur",
-  });
-  const [show, setShow] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-
-  const submit = async (data: z.infer<typeof passwordUpdateSchema>) => {
-    const client = getSupabase();
-    if (!client) return;
-    setBusy(true);
-    setError("");
-    const { error: updateError } = await client.auth.updateUser({ password: data.password });
-    setBusy(false);
-    if (updateError) {
-      setError(toFailure(updateError).message);
-      return;
-    }
-    await onComplete();
-  };
-
-  return (
-    <div className="grid min-h-[100svh] place-items-center bg-canvas px-5 py-10 text-ink">
-      <main className="w-full max-w-md rounded-[24px] border border-line bg-surface p-6 shadow-[var(--shadow-pop)] sm:p-8">
-        <LogoHorizontal className="w-52" />
-        <span className="mt-8 grid h-11 w-11 place-items-center rounded-2xl bg-gold-ghost text-gold">
-          <KeyRound className="h-5 w-5" />
-        </span>
-        <h1 className="mt-4 text-[29px] font-bold tracking-[-0.03em]">Choose a new password</h1>
-        <p className="mt-2 text-[14px] leading-relaxed text-muted">
-          This recovery session came from your Supabase email link. After updating, you will sign in again with the new password.
-        </p>
-        <form onSubmit={handleSubmit(submit)} className="mt-6 space-y-4" noValidate>
-          <Field label="New password" error={errors.password?.message}>
-            <div className="relative">
-              <input
-                type={show ? "text" : "password"}
-                autoComplete="new-password"
-                {...register("password")}
-                className={cn("entry-input pr-11", errors.password && "border-live/50")}
-                aria-invalid={errors.password ? "true" : "false"}
-              />
-              <button
-                type="button"
-                onClick={() => setShow((v) => !v)}
-                aria-label={show ? "Hide password" : "Show password"}
-                className="press absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-muted hover:text-ink"
-              >
-                {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </Field>
-          <Field label="Confirm password" error={errors.confirm?.message}>
-            <input
-              type={show ? "text" : "password"}
-              autoComplete="new-password"
-              {...register("confirm")}
-              className={cn("entry-input", errors.confirm && "border-live/50")}
-              aria-invalid={errors.confirm ? "true" : "false"}
-            />
-          </Field>
-          {error && <p role="alert" className="text-[13px] text-live">{error}</p>}
-          <button type="submit" disabled={busy} className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55">
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Update password
-          </button>
-        </form>
-      </main>
-    </div>
-  );
+export function ageFromDob(dob: string, now = new Date()): number | null {
+	const birth = new Date(`${dob}T00:00:00`);
+	if (Number.isNaN(birth.getTime())) return null;
+	let years = now.getFullYear() - birth.getFullYear();
+	const before =
+		now.getMonth() < birth.getMonth() ||
+		(now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate());
+	if (before) years -= 1;
+	return years;
 }
 
 /**
- * The two-step gate: identity, then the adult attestation. No session is
- * passed in — the write goes to `/api/profile`, which resolves the caller from
- * the cookie, so this component cannot save into someone else's row.
+ * The step-0 inputs render their own note under the field, so the form-level list
+ * skips exactly those names — one complaint per answer, never two. Interests and
+ * looking-for are chip groups with no single input to mark, so they stay in the list.
  */
-function Onboarding({ initial, onComplete }: { initial: GateProfile | null; onComplete: () => void }) {
-  const [step, setStep] = useState(1);
-  const [displayName, setDisplayName] = useState(initial?.display_name ?? "");
-  const [handle, setHandle] = useState(initial?.handle ?? "");
-  const [city, setCity] = useState(initial?.city ?? "Valletta");
-  const [dob, setDob] = useState("");
-  const [confirmed, setConfirmed] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+const INLINE_ONBOARD_FIELDS = ["displayName", "handle", "city", "dob"] as const;
+const CHIP_FIELDS = ["interests", "lookingFor"] as const;
 
-  const maxDob = useMemo(() => {
-    const date = new Date();
-    date.setFullYear(date.getFullYear() - 18);
-    return date.toISOString().slice(0, 10);
-  }, []);
-
-  const age = useMemo(() => {
-    if (!dob) return 0;
-    const birth = new Date(`${dob}T00:00:00`);
-    const today = new Date();
-    let years = today.getFullYear() - birth.getFullYear();
-    const beforeBirthday =
-      today.getMonth() < birth.getMonth() ||
-      (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate());
-    if (beforeBirthday) years -= 1;
-    return years;
-  }, [dob]);
-
-  const next = () => {
-    setError("");
-    if (displayName.trim().length < 2) return setError("Use at least 2 characters for your display name.");
-    if (!/^[a-z0-9_]{3,24}$/.test(handle.trim().toLowerCase())) return setError("Handle must be 3-24 letters, numbers or underscores.");
-    if (!dob || dob > maxDob || age < 18) return setError("FYKING is for adults aged 18 and over.");
-    if (!city.trim()) return setError("Choose your city.");
-    setStep(2);
-  };
-
-  const finish = async () => {
-    if (!confirmed) {
-      setError("Confirm the adult-content and privacy defaults before continuing.");
-      return;
-    }
-    // One API call, not two table writes. `profiles` is the projection the
-    // database owns (0018 refuses direct writes and revokes `users` from
-    // browser tokens), and the age is derived server-side from the birth date:
-    // an attestation a client could set to anything is not an age gate.
-    setBusy(true);
-    setError("");
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          pseudo: displayName.trim(),
-          nick: handle.trim().toLowerCase(),
-          city: city.trim(),
-          dob,
-          exposure_level: "clean",
-          incognito: false,
-          hide_distance: false,
-          hide_online: false,
-          onboarding_done: true,
-        }),
-      });
-      if (!response.ok) {
-        const detail = (await response.json().catch(() => null)) as
-          | { error?: { message?: string }; message?: string }
-          | null;
-        setBusy(false);
-        setError(
-          detail?.error?.message ??
-            detail?.message ??
-            `Could not save your profile (HTTP ${response.status}).`,
-        );
-        return;
-      }
-    } catch {
-      setBusy(false);
-      setError("Could not reach the server; nothing was saved.");
-      return;
-    }
-    setBusy(false);
-    onComplete();
-  };
-
-  return (
-    <div className="min-h-[100svh] bg-canvas text-ink">
-      <main className="mx-auto flex min-h-[100svh] max-w-6xl flex-col px-5 py-8 sm:px-8">
-        <div className="flex items-center justify-between gap-4">
-          <LogoHorizontal className="w-48 sm:w-60" />
-          <span className="text-[12px] font-semibold text-muted">Step {step} of 2</span>
-        </div>
-        <div className="mt-6 h-1 overflow-hidden rounded-full bg-surface-3">
-          <div className="h-full rounded-full bg-gold transition-[width] duration-300" style={{ width: `${step * 50}%` }} />
-        </div>
-
-        <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[minmax(0,1fr)_minmax(360px,470px)]">
-          <section className="max-w-xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-gold">Your space, your pace</p>
-            <h1 className="mt-3 text-[38px] font-bold leading-[1.04] tracking-[-0.04em] sm:text-[54px]">
-              {step === 1 ? "Start with what people should know." : "Privacy starts conservative."}
-            </h1>
-            <p className="mt-5 text-[16px] leading-relaxed text-muted">
-              {step === 1
-                ? "A real profile begins with a real age gate. Your date of birth stays private; the app derives and shows only your age."
-                : "Mature and explicit discovery starts off. Location stays approximate. You can change either later, but neither is enabled for you silently."}
-            </p>
-          </section>
-
-          <section className="rounded-[22px] border border-line bg-surface p-5 shadow-[var(--shadow-pop)] sm:p-7">
-            {step === 1 ? (
-              <div className="space-y-4">
-                <Field label="Display name">
-                  <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} autoComplete="name" placeholder="What people call you" className="entry-input" />
-                </Field>
-                <Field label="Handle">
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted">@</span>
-                    <input value={handle} onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))} placeholder="your_handle" className="entry-input pl-8" />
-                  </div>
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Date of birth">
-                    <input type="date" value={dob} max={maxDob} onChange={(e) => setDob(e.target.value)} className="entry-input" />
-                  </Field>
-                  <Field label="City">
-                    <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Valletta" className="entry-input" />
-                  </Field>
-                </div>
-                <p className="text-[12px] leading-relaxed text-faint">Your birth date is used for the 18+ gate. Other members see only your derived age.</p>
-                {error && <p role="alert" className="text-[13px] text-live">{error}</p>}
-                <button type="button" onClick={next} className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2">
-                  Continue <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="space-y-3">
-                  {[
-                    [ShieldCheck, "Content starts Clean", "Mature tags and media stay hidden until you opt in."],
-                    [MapPin, "Distance stays approximate", "The app stores only a deliberately coarsened location."],
-                    [LockKeyhole, "Your controls are yours", "Block, report and album access are designed for server policies."],
-                  ].map(([Icon, title, body]) => {
-                    const ItemIcon = Icon as typeof ShieldCheck;
-                    return (
-                      <div key={title as string} className="flex gap-3 border-b border-line-soft pb-3 last:border-0">
-                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gold-ghost text-gold"><ItemIcon className="h-4 w-4" /></span>
-                        <div><p className="text-[13.5px] font-semibold text-ink">{title as string}</p><p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{body as string}</p></div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface-2 p-3.5">
-                  <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--c-gold)]" />
-                  <span className="text-[12.5px] leading-relaxed text-ink-2">I confirm I am 18+ and understand that FYKING includes optional adult-oriented discovery and media controls.</span>
-                </label>
-                {error && <p role="alert" className="mt-3 text-[13px] text-live">{error}</p>}
-                <div className="mt-5 flex gap-2">
-                  <button type="button" onClick={() => setStep(1)} className="press h-12 rounded-full border border-line px-5 text-[14px] font-semibold text-ink-2 hover:text-ink">Back</button>
-                  <button type="button" onClick={() => void finish()} disabled={busy} className="press flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-55">
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Enter FYKING
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
-      </main>
-    </div>
-  );
+/**
+ * Which step owns a rejected answer, so the API's complaint can be shown next to
+ * the input it is about. Unknown names (location, `body`) stay where they are.
+ */
+function stepOwningField(path: string): number | null {
+	const head = path.split(".")[0];
+	if (head && (INLINE_ONBOARD_FIELDS as readonly string[]).includes(head))
+		return 0;
+	if (head && (CHIP_FIELDS as readonly string[]).includes(head)) return 1;
+	return null;
 }
 
-function Field({ label, children, error }: { label: string; children: ReactNode; error?: string }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">{label}</span>
-      {children}
-      {error && <p className="mt-1 text-[12px] text-live" role="alert">{error}</p>}
-    </label>
-  );
+const INTEREST_OPTIONS = [
+	"fitness",
+	"music",
+	"travel",
+	"film",
+	"gaming",
+	"art",
+	"food",
+	"reading",
+	"hiking",
+	"nightlife",
+	"sports",
+	"photography",
+];
+const LOOKING_FOR_OPTIONS = [
+	"dating",
+	"relationship",
+	"friends",
+	"hookup",
+	"networking",
+];
+
+function Onboarding({ onDone }: { onDone: () => void }) {
+	const [step, setStep] = useState(0);
+	const [displayName, setDisplayName] = useState("");
+	const [handle, setHandle] = useState("");
+	const [city, setCity] = useState("");
+	const [dob, setDob] = useState("");
+	const [interests, setInterests] = useState<string[]>([]);
+	const [lookingFor, setLookingFor] = useState<string[]>([]);
+	const [coords, setCoords] = useState<{
+		latitude?: number;
+		longitude?: number;
+		note?: string;
+	}>({});
+	const [locating, setLocating] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+	// This step's zod complaints and the server's `details.fields` both render
+	// through one list, so a rejected answer is named instead of summarised.
+	const [stepFields, setStepFields] = useState<FieldErrors>({});
+	const [serverError, setServerError] = useState<unknown>(null);
+
+	const maxDob = useMemo(() => {
+		const date = new Date();
+		date.setFullYear(date.getFullYear() - 18);
+		return date.toISOString().slice(0, 10);
+	}, []);
+
+	const askLocation = () => {
+		setLocating(true);
+		if (!("geolocation" in navigator)) {
+			setLocating(false);
+			setCoords({
+				note: "This browser has no location. You can still use FYK with your city.",
+			});
+			return;
+		}
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setLocating(false);
+				setCoords({
+					latitude: position.coords.latitude,
+					longitude: position.coords.longitude,
+				});
+			},
+			(reason) => {
+				setLocating(false);
+				setCoords({
+					note:
+						reason.code === 1
+							? "Location blocked in your browser. City-only search will be used."
+							: "No fix right now. City-only search will be used.",
+				});
+			},
+			{ timeout: 8000, maximumAge: 600_000, enableHighAccuracy: false },
+		);
+	};
+
+	const next = () => {
+		setError("");
+		setStepFields({});
+		setServerError(null);
+		// The whole form is validated at every step, so no answer can slip through to
+		// the API unchecked; only the complaints that belong to *this* step go on
+		// screen, because pointing at a chip group that is not rendered yet is how
+		// wizards make people re-read the page looking for a field that isn't there.
+		const parsed = onboardingSchema.safeParse({
+			displayName,
+			handle: handle.toLowerCase(),
+			city,
+			dob,
+			interests,
+			lookingFor,
+			latitude: coords.latitude,
+			longitude: coords.longitude,
+		});
+		if (!parsed.success) {
+			const issues = parsed.error.issues;
+			const mine = fieldErrorsFromIssues(
+				issues.filter((issue) => issue.path.length > 0),
+			);
+			// An object-level refine (the 18+ check) has no path, so it has no input to
+			// sit under: it must go in the summary line or it would vanish entirely.
+			const unattached = issues.find((issue) => issue.path.length === 0);
+			setStepFields(mine);
+			setError(
+				unattached?.message ??
+					(hasFieldErrors(mine) ? "" : "Some of those answers are not valid."),
+			);
+			return;
+		}
+		setStepFields({});
+		// Step 1 is the interests screen. It used to be skipped — `next()` jumped
+		// straight to the last step, so the chips could only be reached with Back.
+		setStep(1);
+	};
+
+	const finish = async () => {
+		setBusy(true);
+		setError("");
+		setStepFields({});
+		setServerError(null);
+		try {
+			await api.post("onboarding", {
+				displayName: displayName.trim(),
+				handle: handle.trim().toLowerCase(),
+				city: city.trim(),
+				dob,
+				interests,
+				lookingFor,
+				latitude: coords.latitude,
+				longitude: coords.longitude,
+			});
+			onDone();
+		} catch (submitError) {
+			// Keep the error itself, not just its sentence: the field list lives on
+			// `details.fields`, and that is what tells a user which answer to fix.
+			setServerError(submitError);
+			const serverFields = fieldErrorsFrom(submitError);
+			const owners = Object.keys(serverFields)
+				.map(stepOwningField)
+				.filter((value): value is number => value !== null);
+			if (owners.length > 0 && !owners.includes(step)) {
+				// The last step is the one that posts, so a refusal about an earlier
+				// answer has to send the user back to the input that caused it.
+				setStep(Math.min(...owners));
+				setStepFields(serverFields);
+				setError("");
+			} else {
+				setError(
+					submitError instanceof ApiClientError
+						? submitError.message
+						: "We could not save your profile. Try again.",
+				);
+			}
+		} finally {
+			setBusy(false);
+		}
+	};
+
+	return (
+		<div className="min-h-[100svh] bg-canvas px-5 py-8 text-ink">
+			<main className="mx-auto flex min-h-[calc(100svh-4rem)] w-full max-w-5xl flex-col">
+				<div className="flex items-center justify-between gap-4">
+					<LogoHorizontal className="w-40" />
+					<span className="text-[12px] font-semibold text-muted">
+						Step {step + 1} of 3
+					</span>
+				</div>
+				<div className="mt-5 h-1 overflow-hidden rounded-full bg-surface-3">
+					<div
+						className="h-full rounded-full bg-gold transition-[width] duration-300"
+						style={{ width: `${((step + 1) / 3) * 100}%` }}
+					/>
+				</div>
+
+				<div className="grid flex-1 items-center gap-8 py-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,470px)]">
+					<section className="max-w-xl">
+						<p className="text-[11px] font-bold uppercase tracking-[0.22em] text-gold">
+							{step === 0
+								? "The basics"
+								: step === 1
+									? "What you want"
+									: "Where you are"}
+						</p>
+						<h1 className="mt-3 text-[34px] font-bold leading-[1.05] tracking-[-0.035em] sm:text-[44px]">
+							{step === 0
+								? "Start with what people should know."
+								: step === 1
+									? "Be specific. It saves everyone time."
+									: "Approximate is enough."}
+						</h1>
+						<p className="mt-4 text-[15px] leading-relaxed text-muted">
+							{step === 0
+								? "Your date of birth is used for the 18+ gate and stored privately. Everyone else sees only the age we derive from it."
+								: step === 1
+									? "Interests drive what shows up on your cards. Looking-for is the one thing people most want to know."
+									: "FYK stores a coarsened position — about a 250 m square — never a precise fix. You can skip this and search by city instead."}
+						</p>
+					</section>
+
+					<section className="rounded-3xl border border-line bg-surface p-5 shadow-[var(--shadow-pop)] sm:p-6">
+						{step === 0 && (
+							<div className="space-y-4">
+								<label className="block">
+									<span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">
+										Display name
+									</span>
+									<input
+										value={displayName}
+										onChange={(event) => {
+											setDisplayName(event.target.value);
+											setStepFields(clearFieldError(stepFields, "displayName"));
+										}}
+										autoComplete="nickname"
+										placeholder="What people call you"
+										className="entry-input"
+									/>
+								</label>
+								<label className="block">
+									<span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">
+										Handle
+									</span>
+									<div className="relative">
+										<span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted">
+											@
+										</span>
+										<input
+											value={handle}
+											onChange={(event) => {
+												setHandle(
+													event.target.value
+														.toLowerCase()
+														.replace(/[^a-z0-9_]/g, ""),
+												);
+												setStepFields(clearFieldError(stepFields, "handle"));
+											}}
+											placeholder="your_handle"
+											className="entry-input pl-8"
+											aria-invalid={stepFields.handle ? true : undefined}
+										/>
+										<FieldNote message={stepFields.handle} />
+									</div>
+								</label>
+								<div className="grid gap-4 sm:grid-cols-2">
+									<label className="block">
+										<span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">
+											Date of birth
+										</span>
+										<input
+											type="date"
+											value={dob}
+											max={maxDob}
+											onChange={(event) => {
+												setDob(event.target.value);
+												setStepFields(clearFieldError(stepFields, "dob"));
+											}}
+											className="entry-input"
+											aria-invalid={stepFields.dob ? true : undefined}
+										/>
+										<FieldNote message={stepFields.dob} />
+									</label>
+									<label className="block">
+										<span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">
+											City
+										</span>
+										<input
+											value={city}
+											onChange={(event) => {
+												setCity(event.target.value);
+												setStepFields(clearFieldError(stepFields, "city"));
+											}}
+											placeholder="Valletta"
+											className="entry-input"
+											aria-invalid={stepFields.city ? true : undefined}
+										/>
+										<FieldNote message={stepFields.city} />
+									</label>
+								</div>
+								{ageFromDob(dob) !== null && (
+									<p className="text-[12px] text-faint">
+										Visible to others: {ageFromDob(dob)} years old. Nothing else
+										about your birth date.
+									</p>
+								)}
+								{error || hasFieldErrors(stepFields) || serverError ? (
+									<FormError
+										message={error}
+										fields={stepFields}
+										error={serverError}
+										inline={INLINE_ONBOARD_FIELDS}
+										className="text-[13px]"
+									/>
+								) : null}
+								<button
+									type="button"
+									onClick={next}
+									className="press flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2"
+								>
+									Continue <ArrowRight className="h-4 w-4" />
+								</button>
+							</div>
+						)}
+
+						{step === 1 && (
+							<div className="space-y-5">
+								<div>
+									<p className="mb-2 text-[12.5px] font-semibold text-ink-2">
+										Interests (up to 15)
+									</p>
+									<div className="flex flex-wrap gap-2">
+										{INTEREST_OPTIONS.map((option) => (
+											<button
+												key={option}
+												type="button"
+												aria-pressed={interests.includes(option)}
+												onClick={() =>
+													setInterests((current) =>
+														current.includes(option)
+															? current.filter((entry) => entry !== option)
+															: current.length >= 15
+																? current
+																: [...current, option],
+													)
+												}
+												className={cn(
+													"press h-9 rounded-full border px-3 text-[12.5px] font-medium",
+													interests.includes(option)
+														? "border-gold/60 bg-gold-ghost text-gold"
+														: "border-line bg-surface-2 text-ink-2",
+												)}
+											>
+												{option}
+											</button>
+										))}
+									</div>
+								</div>
+								<div>
+									<p className="mb-2 text-[12.5px] font-semibold text-ink-2">
+										Looking for
+									</p>
+									<div className="flex flex-wrap gap-2">
+										{LOOKING_FOR_OPTIONS.map((option) => (
+											<button
+												key={option}
+												type="button"
+												aria-pressed={lookingFor.includes(option)}
+												onClick={() =>
+													setLookingFor((current) =>
+														current.includes(option)
+															? current.filter((entry) => entry !== option)
+															: [...current, option],
+													)
+												}
+												className={cn(
+													"press h-9 rounded-full border px-3 text-[12.5px] font-medium",
+													lookingFor.includes(option)
+														? "border-gold/60 bg-gold-ghost text-gold"
+														: "border-line bg-surface-2 text-ink-2",
+												)}
+											>
+												{option}
+											</button>
+										))}
+									</div>
+								</div>
+								<div className="flex gap-2">
+									<button
+										type="button"
+										onClick={() => setStep(0)}
+										className="press h-12 rounded-full border border-line px-5 text-[14px] font-semibold text-ink-2 hover:text-ink"
+									>
+										Back
+									</button>
+									<button
+										type="button"
+										onClick={() => setStep(2)}
+										className="press flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2"
+									>
+										Continue <ArrowRight className="h-4 w-4" />
+									</button>
+								</div>
+							</div>
+						)}
+
+						{step === 2 && (
+							<div className="space-y-4">
+								<div className="space-y-3">
+									{[
+										[
+											ShieldCheck,
+											"Adults only",
+											"Your birth date is checked at sign-up and enforced in the database.",
+										],
+										[
+											LockKeyhole,
+											"Location stays coarse",
+											"We store a ~250 m grid cell so distance can be shown without tracking.",
+										],
+									].map(([Icon, title, body]) => {
+										const ItemIcon = Icon as typeof ShieldCheck;
+										return (
+											<div
+												key={title as string}
+												className="flex gap-3 border-b border-line-soft pb-3 last:border-0"
+											>
+												<span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gold-ghost text-gold">
+													<ItemIcon className="h-4 w-4" />
+												</span>
+												<div>
+													<p className="text-[13.5px] font-semibold text-ink">
+														{title as string}
+													</p>
+													<p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">
+														{body as string}
+													</p>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+
+								{coords.latitude != null ? (
+									<p
+										aria-live="polite"
+										aria-atomic="true"
+										className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 text-[13px] text-emerald-300"
+									>
+										Approximate location captured. It will be snapped to the
+										coarse grid before saving.
+									</p>
+								) : (
+									<button
+										type="button"
+										onClick={askLocation}
+										disabled={locating}
+										className="press flex h-12 w-full items-center justify-center gap-2 rounded-full border border-line bg-surface-2 text-[14px] font-semibold text-ink-2 hover:border-gold/40"
+									>
+										{locating ? (
+											<Loader2 className="h-4 w-4 animate-spin" />
+										) : (
+											<ArrowRight className="h-4 w-4" />
+										)}{" "}
+										Use my location
+									</button>
+								)}
+								{coords.note && (
+									<p className="text-[12.5px] text-muted">{coords.note}</p>
+								)}
+								{error || hasFieldErrors(stepFields) || serverError ? (
+									<FormError
+										message={error}
+										fields={stepFields}
+										error={serverError}
+										inline={INLINE_ONBOARD_FIELDS}
+										className="text-[13px]"
+									/>
+								) : null}
+
+								<div className="flex gap-2">
+									<button
+										type="button"
+										onClick={() => setStep(1)}
+										className="press h-12 rounded-full border border-line px-5 text-[14px] font-semibold text-ink-2 hover:text-ink"
+									>
+										Back
+									</button>
+									<button
+										type="button"
+										onClick={() => void finish()}
+										disabled={busy}
+										className="press flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black hover:bg-gold-2 disabled:opacity-60"
+									>
+										{busy ? (
+											<Loader2 className="h-4 w-4 animate-spin" />
+										) : (
+											<Check className="h-4 w-4" />
+										)}{" "}
+										Enter FYK
+									</button>
+								</div>
+								<button
+									type="button"
+									onClick={() => void finish()}
+									disabled={busy}
+									className="w-full text-center text-[12px] text-faint hover:text-muted"
+								>
+									Skip location — search by city instead
+								</button>
+							</div>
+						)}
+					</section>
+				</div>
+			</main>
+		</div>
+	);
+}
+
+function friendlyAuthError(message: string): string {
+	const lower = message.toLowerCase();
+	if (lower.includes("invalid login credentials"))
+		return "That email and password do not match an account.";
+	if (lower.includes("email not confirmed"))
+		return "Confirm your email first — the link is in your inbox.";
+	if (lower.includes("rate limit") || lower.includes("too many"))
+		return "Too many attempts. Wait a minute and try again.";
+	if (
+		lower.includes("already registered") ||
+		lower.includes("already been registered")
+	)
+		return "That email already has an account. Sign in instead.";
+	if (lower.includes("password"))
+		return "That password does not meet the minimum length.";
+	return "We couldn't complete that right now. Try again.";
+}
+
+function Field({
+	label,
+	htmlFor,
+	error,
+	children,
+}: {
+	label: string;
+	htmlFor: string;
+	error?: string;
+	children: ReactNode;
+}) {
+	return (
+		<label className="block" htmlFor={htmlFor}>
+			<span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">
+				{label}
+			</span>
+			{children}
+			{error ? (
+				<span
+					id={`${htmlFor}-error`}
+					className="mt-1 block text-[12px] font-medium text-live"
+				>
+					{error}
+				</span>
+			) : null}
+		</label>
+	);
+}
+
+/**
+ * One field's complaint, rendered inside the `<label>` that owns the input. The
+ * implicit association means no id plumbing is needed, and an invalid field is
+ * marked in three ways at once: the ring (CSS), the text, and `aria-invalid`.
+ */
+function FieldNote({ message }: { message?: string }) {
+	if (!message) return null;
+	return (
+		<span className="mt-1 block text-[12px] font-medium text-live">
+			{message}
+		</span>
+	);
+}
+
+function CheckLine({
+	checked,
+	onChange,
+	label,
+}: {
+	checked: boolean;
+	onChange: (value: boolean) => void;
+	label: string;
+}) {
+	return (
+		<label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface-2 p-3">
+			<input
+				type="checkbox"
+				checked={checked}
+				onChange={(event) => onChange(event.target.checked)}
+				className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-gold)]"
+			/>
+			<span className="text-[12.5px] leading-relaxed text-ink-2">{label}</span>
+		</label>
+	);
+}
+
+function PasswordRecovery({ onDone }: { onDone: () => Promise<void> | void }) {
+	const [password, setPassword] = useState("");
+	const [confirm, setConfirm] = useState("");
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState("");
+
+	const submit = async (event: React.FormEvent) => {
+		event.preventDefault();
+		setError("");
+		const parsed = z
+			.object({
+				password: z.string().min(10, "Use at least 10 characters."),
+				confirm: z.string(),
+			})
+			.refine((data) => data.password === data.confirm, {
+				message: "The passwords do not match.",
+				path: ["confirm"],
+			})
+			.safeParse({ password, confirm });
+		if (!parsed.success) return setError(parsed.error.issues[0].message);
+		const client = getSupabase();
+		if (!client) return setError("Supabase is not configured.");
+		setBusy(true);
+		const { error: updateError } = await client.auth.updateUser({
+			password: parsed.data.password,
+		});
+		setBusy(false);
+		if (updateError) return setError(friendlyAuthError(updateError.message));
+		await onDone();
+	};
+
+	return (
+		<div className="grid min-h-[100svh] place-items-center bg-canvas px-5 text-ink">
+			<form
+				onSubmit={submit}
+				className="w-full max-w-sm rounded-3xl border border-line bg-surface p-6"
+			>
+				<h1 className="text-[22px] font-bold tracking-[-0.02em]">
+					Choose a new password
+				</h1>
+				<p className="mt-1.5 text-[13px] text-muted">
+					You are signed in from the reset link. Set a password and continue.
+				</p>
+				<div className="mt-5 space-y-3">
+					<input
+						type="password"
+						autoComplete="new-password"
+						value={password}
+						onChange={(event) => setPassword(event.target.value)}
+						placeholder="New password"
+						className="entry-input"
+					/>
+					<input
+						type="password"
+						autoComplete="new-password"
+						value={confirm}
+						onChange={(event) => setConfirm(event.target.value)}
+						placeholder="Confirm password"
+						className="entry-input"
+					/>
+				</div>
+				{error && (
+					<p
+						aria-live="assertive"
+						aria-atomic="true"
+						className="mt-3 text-[13px] text-live"
+					>
+						{error}
+					</p>
+				)}
+				<button
+					type="submit"
+					disabled={busy}
+					className={cn(
+						"press mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-[14.5px] font-bold text-black",
+					)}
+				>
+					{busy ? (
+						<Loader2 className="h-4 w-4 animate-spin" />
+					) : (
+						<Check className="h-4 w-4" />
+					)}{" "}
+					Update password
+				</button>
+			</form>
+		</div>
+	);
 }

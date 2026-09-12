@@ -1,53 +1,31 @@
 import tailwindcss from "@tailwindcss/vite";
-import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-const port = Number(process.env.PORT ?? 3000);
-
-/**
- * Host binding.
- *
- * `host: true` (0.0.0.0) so the server is reachable from outside a container —
- * the previous config bound to localhost only, which made `docker run -p` and
- * every tunnel/preview environment silently 502.
- *
- * `allowedHosts` is relaxed **only outside production**: dev servers, tunnels
- * and the sandbox preview legitimately arrive with a foreign `Host` header, and
- * Vite's default host check blocks them (DNS-rebinding protection). In
- * production the check stays on; add the exact domains via
- * `ALLOWED_HOSTS=a.com,b.com` when the app sits behind a proxy that rewrites
- * `Host`.
- */
-const relaxedHosts = process.env.NODE_ENV !== "production";
-const allowedHosts = relaxedHosts
-	? true
-	: (process.env.ALLOWED_HOSTS ?? "")
-			.split(",")
-			.map((entry) => entry.trim())
-			.filter(Boolean);
-
 const config = defineConfig({
+	// The dev-only TanStack devtools plugin was removed along with its package: it
+	// existed to inspect a store that no longer exists, and a panel that shows
+	// nothing is worse than no panel.
 	resolve: {
 		tsconfigPaths: true,
 		dedupe: ["react", "react-dom", "react/jsx-runtime"],
 	},
-	plugins: [devtools(), tailwindcss(), tanstackStart({}), viteReact()],
+	plugins: [tailwindcss(), tanstackStart({}), viteReact()],
 	server: {
+		// Bind every interface so the dev server is reachable from outside the
+		// sandbox, and pin the port so a second `pnpm dev` fails loudly instead of
+		// silently moving to 3001 and leaving a stale preview pointed at nothing.
 		host: true,
-		port,
-		allowedHosts,
+		port: 3000,
+		strictPort: true,
 		fs: {
-			// The repo root is read for `docs/` assets in dev; `..` keeps Vite from
-			// refusing the parent directory while not exposing the filesystem.
 			allow: [".."],
 		},
-	},
-	preview: {
-		host: true,
-		port,
-		allowedHosts,
+		// Vite rejects unknown Host headers (DNS-rebinding protection). Previews and
+		// tunnels reach this server through a generated hostname, so the domain that
+		// fronts them has to be allowed explicitly rather than by disabling the check.
+		allowedHosts: [".e2b.app"],
 	},
 });
 

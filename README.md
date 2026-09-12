@@ -1,88 +1,110 @@
 # FYK — Find Your King
 
-Premium LGBTQ+ dating platform. Enterprise hexagonal architecture.
+A gay social and dating app for men: nearby discovery, a live Board, real 1:1 chat,
+member-hosted events, and a moderation queue that a human actually works through.
+Adults only. Dark, gold, dense-but-calm UI.
 
-## Quick Start
+This README describes the app that exists in this repository. Anything it does not
+mention does not exist — FYK has no feature flags hiding half-built systems, no
+mock data, and no "coming soon" copy.
+
+## Stack
+
+| Layer | What it is |
+|---|---|
+| App | TanStack Start (Vite + React 19 + file-based routing) |
+| Styling | Tailwind v4, tokens in `src/styles.css` |
+| Server API | One dispatcher: `src/server/router.ts`, entered through `src/routes/api/$.ts` |
+| Data/auth | Supabase Postgres + GoTrue via `@supabase/ssr`; session lives in cookies |
+| Authorization | Postgres row-level security + triggers. The API client is always caller-scoped |
+| Tests | Vitest (`src/server/**`, `src/lib/**`) |
+
+## Run it
 
 ```bash
-# Install
 pnpm install
-
-# Setup database — Supabase first, then the Drizzle schema
-cp .env.example .env.local
-# Edit .env.local: SUPABASE_URL / SUPABASE_ANON_KEY (browser), and
-# DATABASE_URL (the *API's* connection, via the transaction pooler, `prepare: false`).
-supabase db push                                  # applies supabase/migrations/*.sql
-pnpm db:migrate:sql                               # or: psql "$DATABASE_URL" -f each file
-pnpm db:generate                                  # Drizzle diff from drizzle/schema.ts, if you changed it
-pnpm db:seed                                      # demo rows only; the app works without them
-
-# Development
-pnpm dev
-
-# Build
-pnpm build
-
-# Test
-pnpm test
+cp .env.example .env.local          # fill in the Supabase URL + anon key (browser and server)
+pnpm db:push                        # or paste supabase/migrations/*.sql in filename order
+pnpm dev                            # http://localhost:3000
 ```
 
-## Architecture
+Verify everything:
 
-```
-drizzle/schema.ts   The API's schema: written from supabase/migrations, no codegen
-src/db.ts           postgres.js pool (`prepare: false`), created per process on first query
-src/schema.ts       server-only re-export of the above (`#/schema`)
-
-src/core/
-├── domain/      — Pure types + business logic (no I/O)
-├── ports/       — Interface contracts
-├── application/ — Use cases
-└── api/         — Unified HTTP client + the React Query hooks the screens use
-
-src/routes/api/  — JSON API (TanStack Start server routes): the only writer for
-                   money, privilege, presence and cross-user edges
-src/integrations/supabase/ — browser reads, guarded by row-level security
-src/components/  — UI components
-src/domains/     — AI, demo, grid, economy modules
-src/lib/         — Utilities (`economy.ts` is the shop/pricing/quota authority)
-supabase/migrations/ — the SQL that decides what a browser token may do
+```bash
+pnpm typecheck && pnpm test && pnpm build
 ```
 
-There is deliberately no ORM-side migration history for the tables the browser
-reads: `drizzle-kit push` would `drop` what this schema does not model, so
-`supabase/migrations` is the only place a column is created, and
-`drizzle/schema.ts` follows it. See `AUDIT.md`.
+If Supabase is not configured the app renders a setup screen naming the missing
+variables instead of booting into an empty shell.
 
-## Supabase Features
+## The core loop
 
-- Auth (JWT + custom claims + rate limiting)
-- Realtime (messages + notifications + typing + presence)
-- Vector Search (pgvector 384-dim)
-- Storage (6 buckets with RLS)
-- Edge Functions (AI, embedding, notify, moderate, cleanup)
+1. Sign in / create account (email + password, 18+ confirmed, cookie session).
+2. Onboarding: name, handle, birth date, city, interests, optional coarse location.
+3. **Nearby** (`/grid`) — profiles in your coarse area, tap or pass.
+4. **Profile** (`/profile/$id`) — photos, intent, report, block, favourite.
+5. **Chats** (`/chat`, `/chat/$id`) — text and photo/video messages with reply,
+   react, edit (15 min), recall (60 min), pin, report.
+6. **Board** (`/board`) — live "I'm around" invites with capacity and an expiry.
+7. **Events** (`/events`) — members host, others RSVP going/maybe.
+8. **Safety** (`/safety`) — your reports, your blocks, profile views, what FYK
+   does and does not enforce.
+9. **Settings** (`/settings`) — profile, photos, privacy, availability, session.
+10. **Moderation** (`/admin`) — queue, decision dialog, append-only log (role-gated).
 
-## Scripts
+## How requests work
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start dev server |
-| `pnpm build` | Production build |
-| `pnpm test` | Run tests |
-| `pnpm typecheck` | Type check |
-| `pnpm db:generate` | Generate a Drizzle SQL diff from `drizzle/schema.ts` |
-| `pnpm db:push` | Apply the Drizzle schema to `DATABASE_URL` |
-| `pnpm db:studio` | Browse the database (Drizzle Studio) |
-| `pnpm test:e2e` | Playwright suite in `e2e/` (boots the dev server) |
-| `pnpm db:seed` | Seed database |
+Every browser call goes through `src/lib/client.ts` (`api.get/post/patch/del`),
+which sends `credentials: "include"`, a generated `X-Request-Id`, unwraps the
+envelope, and throws an `ApiClientError` whose message is always safe to display.
+No bearer token is ever stored in the browser.
 
-## Tech Stack
+Server responses are shaped by `src/server/context.ts` + `src/server/errors.ts`:
 
-- React 19 + TypeScript 6
-- TanStack Start + Router + Query
-- Drizzle ORM over `postgres.js` (server) — no Prisma, no engine binaries at build time
-- Supabase (Auth, Realtime, Storage, Edge Functions) + row-level security
-- Tailwind CSS 4
-- Vite 8
-- Vitest + Playwright
-- Docker + GitHub Actions CI/CD
+```jsonc
+{ "ok": true,  "data": { … }, "requestId": "fyk_…" }
+{ "ok": false, "error": { "code": "rate_limited", "message": "…", "details": { … } }, "requestId": "fyk_…" }
+```
+
+`src/server/errors.ts` is the only place errors are converted, so a Postgres
+message, a JWT, a storage path or a stack frame cannot reach a client by accident.
+Rate limits are enforced before any database call, per tier, keyed by user id
+(or IP when anonymous).
+
+## What FYK deliberately does not do
+
+* No end-to-end encryption. Messages are stored so reports can be actioned.
+* No realtime sockets. Chat and the badge poll while the tab is visible; the UI
+  says so instead of implying a live connection.
+* No AI matching, no ranking model, no "compatible" percentages. Nearby is
+  distance + recency, and the only similarity shown is shared tags.
+* No wallet, no premium tier, no payments, no coins, no boosts. There is no
+  `premium_entitlements` table any more, because nothing could honour it.
+* No push notifications or email digests (no VAPID key, no mailer in this deploy).
+* No precise location. Coordinates are snapped to a ~250 m grid on the way in and
+  distances shown to a viewer are jittered per viewer/target pair.
+
+Each of those is a product decision, not a gap to paper over in copy.
+
+## Layout
+
+```
+src/
+  components/      EntryShell (auth gate), AppShell (nav), ReportDialog, ui/
+  routes/          __root, /, /grid, /board, /chat, /events, /profile, /safety,
+                   /settings, /notifications, /admin, /auth/callback, /api/$
+  server/          router.ts (dispatch), context.ts, errors.ts, rate-limit.ts,
+                   supabase-server.ts, handlers/*, data/profiles.ts
+  lib/             client.ts (transport), api-types.ts, geo.ts, toast.ts, utils.ts
+supabase/migrations/  0001…0007 — see its README before adding one
+```
+
+## Known limits of this build (checked against, not guessed)
+
+* **SQL is unexecuted.** No Postgres instance is available in this environment, so
+  the migrations are reviewed by hand and are not verified by running them.
+* **No authenticated end-to-end pass.** Without a Supabase project, sign-in, upload
+  and the moderation queue have not been exercised against live data; they are
+  type-checked, unit-tested and build clean.
+* Account deletion has no self-service path — Settings and Safety say so plainly
+  rather than showing a button that would do nothing.

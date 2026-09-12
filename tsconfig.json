@@ -1,11 +1,6 @@
 {
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": [
-    "src/generated/**",
-    "**/*.test.ts",
-    "vitest.config.ts",
-    "supabase/functions/**"
-  ],
+  "exclude": ["**/*.test.ts", "vitest.config.ts", "supabase/functions/**"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -17,7 +12,7 @@
       "date-fns": ["./node_modules/date-fns"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client", "vitest/globals", "@webgpu/types"],
+    "types": ["vite/client", "vitest/globals"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"
+     role="img" aria-labelledby="fyk-favicon-title" shape-rendering="geometricPrecision">
+  <title id="fyk-favicon-title">FY KING</title>
+  <desc>The square FY KING mark on the app background, for use as a favicon.</desc>
+  <rect width="1024" height="1024" rx="200" fill="#0B0D11"/>
+<title id="title">FYKING square logo</title>
+  <desc id="desc">Solid white F and transparent outlined white Y beside an outlined gold crown, above solid red KING with a white dot and underline, all on a transparent background.</desc>
+  <g id="f" transform="translate(-10 35)">
+    <path fill="#FFFFFF" d="m119 430h63.125v-79.6875H272.75v-49.6875h-90.625v-52.5H282.75v-50.9375H119Z"/>
+  </g>
+  <g id="y" transform="translate(10 35)">
+    <path fill="none" stroke="#FFFFFF" stroke-width="13" stroke-linejoin="miter" stroke-miterlimit="4" d="m371.90625 430h62.8125v-80.9375L518.9375 197.1875h-73.90625L413.625 267.5c-3.90625 8.59375-7.03125 17.1875-10 26.875-3.28125-9.6875-6.5625-18.28125-10.625-26.875l-33.59375-70.3125H285.1875l86.71875 151.875Z"/>
+  </g>
+  <path id="crown" d="M588 462 555 296 655 361 736 230 818 361 916 296 884 462Zm0-39h296" fill="none" stroke="#F7B500" stroke-width="24" stroke-linejoin="round" stroke-linecap="round"/>
+  <g id="king" transform="translate(-20 -35)" fill="#FF073A">
+    <path d="m107.5625 790h65.49219v-60.30469l29.82812-34.20508L259.45898 790h77.16407L247.625 652.36914l84.45898-103.91211h-77.65039l-47.98437 62.08789c-16.04883 20.91211-26.09961 35.66406-34.5293 51.22656l1.13477-61.43945v-51.875H107.5625Zm301.57227-241.54297h-65.49219V790h65.49219ZM424.25977 790h67.4375v-88.1875c0-15.88672-1.78321-42.47266-3.72852-70.19336 11.67187 27.07227 20.58789 45.55273 35.66406 70.19336L577.29102 790h71.32812V548.45703h-67.4375v88.51172c0 17.83203 2.10742 47.33594 3.72852 71.97656-9.88868-27.23437-19.61524-45.71484-31.77344-65.65429l-57.54883-94.83399h-71.32812Zm353.60937 3.24219c63.22266 0 108.61328-38.58203 108.61328-104.72266V655.125H779.49023v46.6875h43.76954c-.64844 21.07422-15.5625 34.36719-44.74219 34.36719-34.04297 0-51.55078-24.96485-51.55078-67.4375 0-41.82422 18.96679-66.46485 51.875-66.46485 20.58789 0 34.52929 9.40235 38.58203 25.9375h66.14062c-5.02539-48.4707-49.11914-83-106.01953-83-65.16797 0-118.01562 44.9043-118.01562 124.5 0 76.35352 47.82226 123.52735 118.33984 123.52735Z"/>
+  </g>
+  <circle id="dot" cx="910" cy="726" r="29" fill="#FFFFFF"/>
+  <path id="underline" d="M88 823H866" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="square"/>
+</svg>

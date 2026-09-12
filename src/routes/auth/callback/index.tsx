@@ -1,76 +1,114 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { requireSupabase } from "#/integrations/supabase/client";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getSupabase } from "#/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback/")({
 	component: AuthCallback,
 });
 
 /**
- * Auth callback route -- handles email confirmation, magic link, and OAuth redirects.
+ * Landing page for Supabase email links (confirm, magic link, password reset).
  *
- * Supabase's PKCE flow exchanges the code for a session via detectSessionInUrl.
- * Once the session is established, we navigate to "/" and let EntryShell
- * determine whether the user needs onboarding or can enter the main app.
+ * The browser client exchanges the `code` (PKCE) when it sees it in the URL, so
+ * this page only has to confirm the session landed and then hand control back to
+ * the gate. A failed exchange says so instead of bouncing to a blank screen.
  */
 function AuthCallback() {
-	const navigate = useNavigate();
+	const [state, setState] = useState<
+		{ kind: "working" } | { kind: "done" } | { kind: "failed"; reason: string }
+	>({ kind: "working" });
 
 	useEffect(() => {
-		const client = requireSupabase();
-		let cancelled = false;
-		let subscription: { unsubscribe: () => void } | null = null;
-
-		const handleAuth = async () => {
-			// getSession() triggers PKCE code exchange if a code is in the URL
-			const { data: { session }, error } = await client.auth.getSession();
-
-			if (cancelled) return;
-
-			if (session) {
-				// Session established -- navigate to root and let EntryShell route
-				navigate({ to: "/", replace: true });
-				return;
-			}
-
-			if (error) {
-				console.error("[auth/callback] Session restore failed:", error.message);
-				navigate({ to: "/", replace: true });
-				return;
-			}
-
-			// No session yet -- listen for auth state change (async PKCE exchange)
-			const { data: { subscription: sub } } = client.auth.onAuthStateChange((event, newSession) => {
-				if (cancelled) return;
-
-				if (event === "PASSWORD_RECOVERY") {
-					// EntryShell handles PASSWORD_RECOVERY via its own onAuthStateChange listener.
-					// Navigate to root so EntryShell picks up the recovery flow.
-					navigate({ to: "/", replace: true });
-				} else if (newSession) {
-					navigate({ to: "/", replace: true });
-				}
+		let alive = true;
+		const client = getSupabase();
+		if (!client) {
+			setState({
+				kind: "failed",
+				reason: "Supabase is not configured, so this link cannot be verified.",
 			});
+			return;
+		}
 
-			subscription = sub;
-		};
+		const url = new URL(window.location.href);
+		const errorDescription = url.searchParams.get("error_description");
+		if (errorDescription) {
+			setState({
+				kind: "failed",
+				reason: "That link is expired or already used.",
+			});
+			return;
+		}
 
-		void handleAuth();
+		const code = url.searchParams.get("code");
+		const exchange = (async () => {
+			if (code) {
+				const { error } = await client.auth.exchangeCodeForSession(code);
+				if (error) return "exchange";
+			}
+			const { data } = await client.auth.getSession();
+			return data.session ? "done" : "none";
+		})();
+
+		void exchange.then((result) => {
+			if (!alive) return;
+			if (result === "done") {
+				// Strip the one-time code so a refresh or a shared link cannot replay it.
+				window.history.replaceState({}, "", "/");
+				setState({ kind: "done" });
+				return;
+			}
+			if (result === "exchange") {
+				setState({
+					kind: "failed",
+					reason: "That link is expired or already used. Request a new one.",
+				});
+				return;
+			}
+			// Some providers return a hash fragment; let onAuthStateChange settle first.
+			window.setTimeout(async () => {
+				const { data } = await client.auth.getSession();
+				if (!alive) return;
+				if (data.session) setState({ kind: "done" });
+				else
+					setState({
+						kind: "failed",
+						reason: "We could not complete sign-in from that link.",
+					});
+			}, 700);
+		});
 
 		return () => {
-			cancelled = true;
-			subscription?.unsubscribe();
+			alive = false;
 		};
-	}, [navigate]);
+	}, []);
+
+	if (state.kind === "done") return <Navigate to="/" replace />;
 
 	return (
-		<main className="flex min-h-dvh items-center justify-center">
-			<div className="flex flex-col items-center gap-4">
-				<div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-neutral-800 dark:border-t-neutral-100" />
-				<p className="text-sm text-muted-foreground">
-					Verifying your account...
-				</p>
+		<div className="grid min-h-[100svh] place-items-center bg-canvas px-6 text-center text-ink">
+			<div className="flex max-w-sm flex-col items-center gap-4">
+				{state.kind === "working" ? (
+					<>
+						<Loader2 className="h-6 w-6 animate-spin text-gold" />
+						<p className="text-[14.5px] font-semibold">Verifying your link…</p>
+						<p className="text-[13px] text-muted">This only takes a moment.</p>
+					</>
+				) : (
+					<>
+						<h1 className="text-[20px] font-bold">Sign-in link failed</h1>
+						<p className="text-[13.5px] leading-relaxed text-muted">
+							{state.reason}
+						</p>
+						<a
+							href="/"
+							className="press mt-2 flex h-11 items-center rounded-full bg-gold px-5 text-[13.5px] font-bold text-black"
+						>
+							Back to sign in
+						</a>
+					</>
+				)}
 			</div>
-		</main>
+		</div>
 	);
 }

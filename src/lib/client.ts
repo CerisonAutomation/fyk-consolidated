@@ -1,134 +1,251 @@
-import { getSupabase } from "#/integrations/supabase/client";
-
 /**
- * Browser → `/api/*` JSON client.
+ * The browser's only door to the FYK backend.
  *
- * THE BUG THIS REPLACES
- * ---------------------
- * It used to read a bearer token from `localStorage["fyk:session-token"]` and
- * attach it as `Authorization: Bearer …`. Nothing in the app ever *wrote* that
- * key (the session lives in Supabase's own `fyk.auth` storage), so:
- *   - every request reached the API anonymous, and
- *   - `setSessionToken()`/`clearSessionToken()` were a standing invitation to
- *     store an auth token in a third localStorage key — which AI_RULES.md
- *     forbids precisely because it is readable by any XSS payload.
+ * There is no bearer token here on purpose: the session travels as an httpOnly-
+ * capable cookie set by `@supabase/ssr`, so a stolen XSS payload cannot exfiltrate
+ * an access token from localStorage, and `credentials: "include"` means every
+ * request is authorized the same way in the browser and in tests.
  *
- * Now the token is read from the one place that owns it (`supabase.auth`), is
- * never written to a new storage location, and is refreshed automatically
- * because supabase-js handles renewal.
+ * The response envelope is unwrapped here, so components deal with data or a
+ * thrown `ApiClientError` that is already safe to display.
  */
 
-export class ApiError extends Error {
-	constructor(
-		readonly status: number,
-		message: string,
-		readonly payload: unknown = null,
-	) {
-		super(message);
-		this.name = "ApiError";
+export type ApiErrorCode =
+	| "bad_request"
+	| "unauthorized"
+	| "forbidden"
+	| "not_found"
+	| "conflict"
+	| "rate_limited"
+	| "payload_too_large"
+	| "unsupported_media"
+	| "dependency_unavailable"
+	| "internal_error"
+	| "network_error";
+
+export class ApiClientError extends Error {
+	readonly status: number;
+	readonly code: ApiErrorCode;
+	readonly requestId: string | null;
+	readonly details?: Record<string, unknown>;
+	/** Set when the server said *when* to come back, so UI can say it out loud. */
+	readonly retryAfterSeconds: number | null;
+	/** 409/400-class problems should be surfaced inline, not as a toast. */
+	readonly retryable: boolean;
+
+	constructor(options: {
+		code: ApiErrorCode;
+		message: string;
+		status: number;
+		requestId?: string | null;
+		details?: Record<string, unknown>;
+		retryable?: boolean;
+		retryAfterSeconds?: number | null;
+	}) {
+		super(options.message);
+		this.name = "ApiClientError";
+		this.code = options.code;
+		this.status = options.status;
+		this.requestId = options.requestId ?? null;
+		this.details = options.details;
+		this.retryable = options.retryable ?? options.status >= 500;
+		this.retryAfterSeconds = options.retryAfterSeconds ?? null;
+	}
+
+	get isAuth(): boolean {
+		return this.code === "unauthorized";
+	}
+	get isBlocking(): boolean {
+		return (
+			this.code === "forbidden" ||
+			this.code === "conflict" ||
+			this.code === "bad_request"
+		);
 	}
 }
 
-export interface ApiOptions extends Omit<RequestInit, "body"> {
+interface Envelope<T> {
+	ok: boolean;
+	data?: T;
+	requestId?: string;
+	error?: {
+		code: ApiErrorCode;
+		message: string;
+		details?: Record<string, unknown>;
+	};
+}
+
+export interface ApiCallOptions {
+	method?: "GET" | "POST" | "PATCH" | "DELETE";
 	body?: unknown;
-	/** Extra milliseconds after which the request is aborted. Default 15s. */
+	form?: FormData;
+	signal?: AbortSignal;
+	/** A polling read can opt into a shorter timeout than a user-initiated write. */
 	timeoutMs?: number;
 }
 
-/**
- * The current Supabase access token, or `null` when signed out / unconfigured.
- * A failing `getSession()` must not turn into a failed API call, so errors
- * degrade to "anonymous".
- */
-async function accessToken(): Promise<string | null> {
-	const client = getSupabase();
-	if (!client) return null;
-	try {
-		const { data } = await client.auth.getSession();
-		return data.session?.access_token ?? null;
-	} catch {
-		return null;
-	}
+/** `Retry-After` in either of the two forms RFC 9110 allows. */
+function retryAfterSeconds(response: Response): number | null {
+	const header = response.headers.get("retry-after");
+	if (!header) return null;
+	const seconds = Number(header);
+	if (Number.isFinite(seconds)) return Math.max(0, Math.round(seconds));
+	const date = Date.parse(header);
+	if (Number.isNaN(date)) return null;
+	return Math.max(0, Math.round((date - Date.now()) / 1000));
 }
 
-export async function api<T>(
-	url: string,
-	options: ApiOptions = {},
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function newRequestId(): string {
+	const random = globalThis.crypto?.randomUUID?.();
+	if (random) return random.replace(/-/g, "").slice(0, 20);
+	return `c_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+}
+
+async function call<T>(
+	path: string,
+	options: ApiCallOptions,
+	retries = 1,
 ): Promise<T> {
-	const { body, timeoutMs = 15_000, ...rest } = options;
-	const token = await accessToken();
-
-	const headers = new Headers(rest.headers);
-	if (body !== undefined && !headers.has("content-type")) {
-		headers.set("content-type", "application/json");
-	}
-	if (token) headers.set("authorization", `Bearer ${token}`);
-
+	const requestId = newRequestId();
+	const isForm = options.form != null;
 	const controller = new AbortController();
-	const timer = setTimeout(() => controller.abort(), timeoutMs);
+	const timeout = setTimeout(
+		() => controller.abort(),
+		options.timeoutMs ?? 20_000,
+	);
+	const signal = options.signal
+		? AbortSignal.any([options.signal, controller.signal])
+		: controller.signal;
 
 	let response: Response;
 	try {
-		response = await fetch(url, {
-			...rest,
-			headers,
-			// Same-origin cookies are kept (useful for any future cookie session),
-			// but cross-origin credentials are never sent.
-			credentials: "same-origin",
-			body:
-				body === undefined
-					? null
-					: typeof body === "string"
-						? body
-						: JSON.stringify(body),
-			signal: rest.signal ?? controller.signal,
+		// Leading/trailing slashes are trimmed so `api.get("/board/")` and
+		// `api.get("board")` hit the same route: the server's matcher treats an empty
+		// segment as a mismatch, so an untrimmed slash would 404 in the client.
+		const normalized = path.replace(/^\/+/, "").replace(/\/+$/, "");
+		response = await fetch(`/api/${normalized}`, {
+			method: options.method ?? "GET",
+			credentials: "include",
+			headers: {
+				...(isForm ? {} : { "Content-Type": "application/json" }),
+				"X-Request-Id": requestId,
+			},
+			body: isForm
+				? options.form
+				: options.body != null
+					? JSON.stringify(options.body)
+					: undefined,
+			signal,
 		});
 	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") {
-			throw new ApiError(0, "The request timed out. Check your connection.");
-		}
-		throw new ApiError(0, "Network unreachable. Check your connection.");
-	} finally {
-		clearTimeout(timer);
+		clearTimeout(timeout);
+		const aborted =
+			error instanceof DOMException && error.name === "AbortError";
+		if (aborted && options.signal?.aborted)
+			throw new ApiClientError({
+				code: "network_error",
+				message: "Request cancelled.",
+				status: 0,
+				requestId,
+			});
+		// One retry for a transient network failure; never for a write that may have
+		// already landed, because that would duplicate messages.
+		if (retries > 0 && (options.method ?? "GET") === "GET")
+			return call<T>(path, options, retries - 1);
+		throw new ApiClientError({
+			code: "network_error",
+			message: aborted
+				? "That took too long. Check your connection and try again."
+				: "You appear to be offline. FYK needs a connection.",
+			status: 0,
+			requestId,
+			retryable: true,
+		});
 	}
+	clearTimeout(timeout);
 
-	if (response.status === 204) return undefined as T;
-
-	const payload: unknown = await response.json().catch(() => null);
-	if (!response.ok) {
-		const message =
-			extractMessage(payload) ?? `Request failed (${response.status})`;
-		// 401 on a token-authenticated call means the session died: ask supabase
-		// to refresh so the next attempt carries a fresh token.
-		if (response.status === 401) await refreshSession();
-		throw new ApiError(response.status, message, payload);
-	}
-	return payload as T;
-}
-
-function extractMessage(payload: unknown): string | null {
-	if (payload && typeof payload === "object") {
-		const candidate = (payload as { error?: unknown }).error;
-		if (typeof candidate === "string" && candidate.trim()) return candidate;
-	}
-	return null;
-}
-
-async function refreshSession(): Promise<void> {
-	const client = getSupabase();
-	if (!client) return;
+	const text = await response.text();
+	let payload: Envelope<T> | null = null;
 	try {
-		await client.auth.refreshSession();
+		payload = text ? (JSON.parse(text) as Envelope<T>) : null;
 	} catch {
-		/* the caller's next attempt will surface a real error */
+		payload = null;
 	}
+
+	if (!payload || typeof payload.ok !== "boolean") {
+		// A proxy or an unconfigured server answered with HTML. Never forward that.
+		throw new ApiClientError({
+			code: response.ok ? "internal_error" : "dependency_unavailable",
+			message: response.ok
+				? "The server returned something unexpected."
+				: `The server is unavailable (${response.status}).`,
+			status: response.status,
+			requestId,
+			retryable: true,
+		});
+	}
+
+	// A read that was throttled or hit a transient server fault is worth one
+	// bounded retry, on the server's own schedule. Writes never retry here: the
+	// request may already have landed, and a duplicate message is worse than a
+	// spinner.
+	if (
+		retries > 0 &&
+		(options.method ?? "GET") === "GET" &&
+		(response.status === 429 || response.status >= 500)
+	) {
+		const declared = retryAfterSeconds(response);
+		const holdMs = declared === null ? 400 : declared * 1000;
+		// Past two seconds it stops being a retry and becomes a wait; the caller
+		// gets the error, with `retryAfterSeconds` attached so it can say when.
+		if (holdMs <= 2_000) {
+			await wait(holdMs);
+			return call<T>(path, options, retries - 1);
+		}
+	}
+
+	if (!payload.ok) {
+		const error = payload.error ?? {
+			code: "internal_error" as const,
+			message: "Something went wrong on our side.",
+		};
+		// The server decides retryability (429 yes, 409/400 never); a client that
+		// guessed would re-send a message the server already stored.
+		const shouldRetry = response.headers.get("x-should-retry") === "true";
+		throw new ApiClientError({
+			code: error.code,
+			message: error.message,
+			status: response.status,
+			requestId: payload.requestId ?? requestId,
+			details: error.details,
+			retryable: shouldRetry || response.status >= 500,
+			retryAfterSeconds: retryAfterSeconds(response),
+		});
+	}
+
+	return payload.data as T;
 }
 
-/** POST helper mirroring `api()`'s JSON handling. */
-export function post<T>(
-	url: string,
-	body?: unknown,
-	options: ApiOptions = {},
-): Promise<T> {
-	return api<T>(url, { ...options, method: "POST", body });
-}
+export const api = {
+	get: <T>(path: string, options?: ApiCallOptions) =>
+		call<T>(path, { ...options, method: "GET" }),
+	post: <T>(
+		path: string,
+		body?: unknown,
+		options?: Omit<ApiCallOptions, "body" | "method">,
+	) => call<T>(path, { ...options, method: "POST", body }),
+	postForm: <T>(
+		path: string,
+		form: FormData,
+		options?: Omit<ApiCallOptions, "form" | "method">,
+	) => call<T>(path, { ...options, method: "POST", form }),
+	patch: <T>(
+		path: string,
+		body?: unknown,
+		options?: Omit<ApiCallOptions, "body" | "method">,
+	) => call<T>(path, { ...options, method: "PATCH", body }),
+	del: <T>(path: string, options?: ApiCallOptions) =>
+		call<T>(path, { ...options, method: "DELETE" }),
+};

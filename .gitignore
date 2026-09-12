@@ -12,5 +12,9 @@ dist-ssr
 __unconfig*
 todos.json
 .dyad/
-# pnpm is the declared package manager (package.json#packageManager); npm locks are stale by construction.
-package-lock.json
+# Tooling/session state, never app code (see AI_RULES.md).
+.mcp-cache/
+.agents/
+.playwright-mcp/
+.graph-it/
+supabase/.temp/
