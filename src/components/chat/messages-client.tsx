@@ -136,6 +136,9 @@ export function MessagesClient() {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <input
             value={search}
+            type="search"
+            enterKeyHint="search"
+            autoComplete="off"
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search conversations…"
             className="w-full rounded-xl border border-line bg-surface-2 py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
@@ -225,7 +228,9 @@ export function MessagesClient() {
                     <p className="truncate text-[11px] text-muted">
                       {c.otherUser?.online
                         ? <span className="text-emerald-400">● Online now</span>
-                        : `Active ${timeAgo(c.otherUser?.lastSeen ?? c.otherUser?.createdAt ?? "")}`}
+                        : c.otherUser?.lastSeen
+                          ? `Active ${timeAgo(c.otherUser.lastSeen)}`
+                          : "Offline"}
                     </p>
                   )}
                 </div>

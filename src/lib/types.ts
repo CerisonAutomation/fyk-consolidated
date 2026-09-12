@@ -80,13 +80,39 @@ export type Message = {
   readBy?: Array<{ user_id: string }>;
 };
 
+/**
+ * The person shown beside a conversation.
+ *
+ * This used to be `ProfileUser`, which is a lie the type told: `ProfileUser`
+ * requires `email`, `role`, `tier`, `trustScore` and the rest of the private row,
+ * while `/api/conversations` sends a card — so the screens were allowed to read
+ * fields no list endpoint may ever return, and nothing checked the fields they
+ * *did* read. This is that card, and `GET /api/conversations` is annotated with it
+ * (AUDIT §2.27), so the two cannot drift again.
+ */
+export type ChatPeer = {
+  id: string;
+  /** What both chat screens put in the name slot. */
+  pseudo: string;
+  name: string;
+  nick: string;
+  photo: string;
+  photos: string[];
+  online: boolean;
+  status: string;
+  verified: boolean;
+  /** Null when this person has hidden their last online — draw "Offline", never `timeAgo("")`. */
+  lastSeen: string | null;
+  createdAt?: string;
+};
+
 export type ConversationWithMeta = {
   id: string;
   type: string;
   name?: string;
   lastMessage?: { content?: string; created_at: string; sender_id: string };
   unread: number;
-  otherUser?: ProfileUser;
+  otherUser?: ChatPeer;
   lastMessageAt: string;
   memberCount?: number;
   avatar?: string;

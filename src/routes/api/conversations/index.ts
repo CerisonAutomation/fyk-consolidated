@@ -2,13 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { and, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "#/db";
 import {
+	cardSelection,
 	cleanText,
 	methodNotAllowed,
 	readJson,
 	requireCaller,
+	toProfileCard,
 	z,
 } from "#/lib/api-helpers";
 import { json, jsonError, withSecurity } from "#/middleware";
+import type { ChatPeer, ConversationWithMeta } from "#/lib/types";
 import { conversationMembers, conversations, messages, users } from "#/schema";
 
 /**
@@ -134,30 +137,31 @@ export const Route = createFileRoute("/api/conversations/")({
 							peerByConversation.set(row.conversationId, row.profileId);
 					}
 					const peerIds = [...new Set([...peerByConversation.values()])];
+					// `cardSelection`, not a hand-picked five columns: the select above published
+					// `users.online` raw, so a peer who had hidden their online status still got a
+					// live presence dot in this list, and it carried no `last_active_at`, so
+					// "online" could not be checked against staleness at all. Shaping through
+					// `toProfileCard` — the function discovery uses — is what stops the two
+					// screens disagreeing about what one privacy switch means.
 					const peerRows = peerIds.length
 						? await db
-								.select({
-									id: users.id,
-									displayName: users.displayName,
-									handle: users.handle,
-									avatar: users.avatar,
-									online: users.online,
-								})
+								.select(cardSelection)
 								.from(users)
 								.where(inArray(users.id, peerIds))
 						: [];
 					const peerProfiles = new Map(
-						peerRows.map((peer) => [
-							peer.id,
-							{
-								id: peer.id,
-								name:
-									cleanText(peer.displayName, 64) || peer.handle || "Someone",
-								nick: peer.handle ?? "",
-								avatar: peer.avatar ?? null,
-								online: peer.online ?? false,
-							},
-						]),
+						peerRows.map((peer) => {
+							const card = toProfileCard(peer, null);
+							return [
+								peer.id,
+								{
+									...card,
+									// `ConversationWithMeta.otherUser.pseudo` is the label both chat
+									// screens render; the card calls the same value `name`.
+									pseudo: card.name,
+								} satisfies ChatPeer,
+							] as const;
+						}),
 					);
 
 					const lastByConversation = new Map<
@@ -173,28 +177,73 @@ export const Route = createFileRoute("/api/conversations/")({
 						unreadCounts.map((row) => [row.conversationId, Number(row.total)]),
 					);
 
+					const list = mine
+						.filter((row) => row.archivedAt === null)
+						.map((row) => {
+							const peerId = peerByConversation.get(row.conversationId);
+							const last = lastByConversation.get(row.conversationId);
+							const preview = last?.body
+								? cleanText(last.body, 160)
+								: last?.type === "image"
+									? "Photo"
+									: "";
+							const otherUser = peerId ? peerProfiles.get(peerId) : undefined;
+							const lastMessageAt = (
+								last?.createdAt ??
+								row.lastMessageAt ??
+								new Date()
+							).toISOString();
+							return {
+								id: row.conversationId,
+								// Three vocabularies, deliberately. `participant` plus the snake_case
+								// trio is what this endpoint has always returned and what
+								// `user-profile-client` reads; `otherUser`/`lastMessage`/`unread`
+								// are what `ConversationWithMeta` — the type `messages-client` and
+								// `chat-view` are written against — reads. Sending the second set is
+								// what makes the inbox stop showing "User" and "Say hi 👋" on every
+								// row: the screens were reading keys this endpoint never sent, and
+								// their `??` fallbacks turned fully populated threads into
+								// placeholder copy. AUDIT §2.27.
+								participant: otherUser
+									? {
+											id: otherUser.id,
+											name: otherUser.name,
+											nick: otherUser.nick,
+											avatar: otherUser.photo,
+											online: otherUser.online,
+										}
+									: undefined,
+								type: "direct",
+								// No group threads exist in this schema — `conversations` has no
+								// `type`/`name` and `member_key` is a pair — so the screens' group
+								// branches stay unreachable rather than being fed a "group" label
+								// nothing backs. 2 is the truth for every row this query produces.
+								// The group-only `name` is therefore absent, not null: the screens reach it only
+								// on a branch no row can produce.
+								memberCount: 2,
+								otherUser,
+								lastMessage: last
+									? {
+											content: preview,
+											created_at: lastMessageAt,
+											sender_id: last.senderId,
+										}
+									: undefined,
+								unread: unread.get(row.conversationId) ?? 0,
+								lastMessageAt,
+								last_message: preview,
+								last_message_at: lastMessageAt,
+								unread_count: unread.get(row.conversationId) ?? 0,
+							};
+						});
+					// The annotation is the point of this shape: every field the two chat screens
+					// read is now checked by `tsc` against `ConversationWithMeta`, while the
+					// intersection keeps the snake_case keys other consumers read. Before it, the
+					// endpoint could — and did — answer with a payload that had nothing in common
+					// with the type the client claimed, because `api<T>()` only asserts.
+					type InboxRow = ConversationWithMeta & Record<string, unknown>;
 					return json(
-						{
-							conversations: mine
-								.filter((row) => row.archivedAt === null)
-								.map((row) => {
-									const peerId = peerByConversation.get(row.conversationId);
-									const last = lastByConversation.get(row.conversationId);
-									return {
-										id: row.conversationId,
-										participant: peerId ? peerProfiles.get(peerId) : undefined,
-										last_message: last?.body
-											? cleanText(last.body, 160)
-											: last?.type === "image"
-												? "Photo"
-												: "",
-										last_message_at:
-											(last?.createdAt ?? row.lastMessageAt)?.toISOString() ??
-											null,
-										unread_count: unread.get(row.conversationId) ?? 0,
-									};
-								}),
-						},
+						{ conversations: list satisfies InboxRow[] },
 						{ cache: "private" },
 					);
 				},
