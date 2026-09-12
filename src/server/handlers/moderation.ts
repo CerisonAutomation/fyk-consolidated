@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * The moderation queue. Minimal, but real: it reads what reporters filed, it
  * triages in urgency order, and every decision is one RPC that writes the report
@@ -39,7 +40,7 @@ export async function queue(ctx: RequestCtx) {
 		.limit(100);
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
 
-	const rows = (data ?? []) as unknown as Record<string, unknown>[];
+	const rows = asRows<Record<string, unknown>>(data);
 	const targetIds = [
 		...new Set(
 			rows
@@ -57,9 +58,7 @@ export async function queue(ctx: RequestCtx) {
 			.in("id", targetIds);
 		if (profiles.error)
 			throw dbFailure(profiles.error, "That did not save. Please try again.");
-		profileRows.push(
-			...((profiles.data ?? []) as unknown as Record<string, unknown>[]),
-		);
+		profileRows.push(...asRows<Record<string, unknown>>(profiles.data));
 	}
 	const profileMap = new Map(profileRows.map((row) => [String(row.id), row]));
 	// Reports about the same target are the strongest priority signal available
@@ -137,11 +136,11 @@ export async function resolve(ctx: RequestCtx) {
 	);
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
 
-	const rows = (data ?? []) as unknown as {
+	const rows = asRows<{
 		report_id: string;
 		report_status: string;
 		suspended: boolean;
-	}[];
+	}>(data);
 	if (!rows.length) throw notFound("That report no longer exists.");
 	return {
 		reportId: rows[0].report_id,

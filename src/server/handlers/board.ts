@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * The Board: live "I'm around / want to do X" posts with an expiry.
  *
@@ -59,7 +60,7 @@ export async function listBoard(ctx: RequestCtx) {
 	if (postsResult.error)
 		throw dbFailure(postsResult.error, "That did not save. Please try again.");
 
-	const rows = (postsResult.data ?? []) as unknown as Record<string, unknown>[];
+	const rows = asRows<Record<string, unknown>>(postsResult.data);
 	if (!rows.length)
 		return {
 			posts: [],
@@ -83,21 +84,15 @@ export async function listBoard(ctx: RequestCtx) {
 	]);
 
 	const profileMap = new Map(
-		((profilesResult.data ?? []) as unknown as ProfileRow[]).map((row) => [
-			row.id,
-			row,
-		]),
+		asRows<ProfileRow>(profilesResult.data).map((row) => [row.id, row]),
 	);
 	const joined = new Set(
-		((myJoinsResult.data ?? []) as unknown as { post_id: string }[]).map(
-			(row) => row.post_id,
-		),
+		asRows<{ post_id: string }>(myJoinsResult.data).map((row) => row.post_id),
 	);
 	const joiners = new Map<string, string[]>();
-	for (const row of (allJoinsResult.data ?? []) as unknown as {
-		post_id: string;
-		profile_id: string;
-	}[]) {
+	for (const row of asRows<{ post_id: string; profile_id: string }>(
+		allJoinsResult.data,
+	)) {
 		const list = joiners.get(row.post_id) ?? [];
 		list.push(row.profile_id);
 		joiners.set(row.post_id, list);

@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * Events: browse, detail, RSVP, host basics. Nothing more.
  *
@@ -98,7 +99,7 @@ export async function listEvents(ctx: RequestCtx) {
 
 	const { data, error } = await builder;
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
-	const rows = (data ?? []) as unknown as Record<string, unknown>[];
+	const rows = asRows<Record<string, unknown>>(data);
 	if (!rows.length) {
 		return {
 			events: [],
@@ -119,13 +120,13 @@ export async function listEvents(ctx: RequestCtx) {
 		client.from("profiles").select(PROFILE_LIST_COLUMNS).in("id", hostIds),
 	]);
 	const hostMap = new Map(
-		((hosts.data ?? []) as unknown as ProfileRow[]).map((row) => [row.id, row]),
+		asRows<ProfileRow>(hosts.data).map((row) => [row.id, row]),
 	);
-	const rsvpRows = (rsvps.data ?? []) as unknown as {
+	const rsvpRows = asRows<{
 		event_id: string;
 		profile_id: string;
 		status: string;
-	}[];
+	}>(rsvps.data);
 
 	return {
 		events: rows.map((row) => {
@@ -172,10 +173,7 @@ export async function getEvent(ctx: RequestCtx, eventId: string) {
 		.from("event_rsvps")
 		.select("profile_id,status")
 		.eq("event_id", eventId);
-	const rsvpRows = (rsvps.data ?? []) as unknown as {
-		profile_id: string;
-		status: string;
-	}[];
+	const rsvpRows = asRows<{ profile_id: string; status: string }>(rsvps.data);
 	const goingIds = rsvpRows
 		.filter((rsvp) => rsvp.status === "going")
 		.map((rsvp) => rsvp.profile_id);
@@ -191,8 +189,8 @@ export async function getEvent(ctx: RequestCtx, eventId: string) {
 		attending:
 			rsvpRows.find((rsvp) => rsvp.profile_id === caller.userId)?.status ??
 			null,
-		attendees: ((profiles.data ?? []) as unknown as ProfileRow[]).map(
-			(profile) => toPublicProfile(profile, { viewer: null, client }),
+		attendees: asRows<ProfileRow>(profiles.data).map((profile) =>
+			toPublicProfile(profile, { viewer: null, client }),
 		),
 		attendeeCount: goingIds.length,
 		isHost: row.host_id === caller.userId,

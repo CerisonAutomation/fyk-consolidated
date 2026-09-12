@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * Uploads go through the server so the storage path convention (which the bucket
  * policies read as the owner folder) cannot be forged, and so size/MIME limits are
@@ -113,14 +114,11 @@ export async function uploadPhotos(ctx: RequestCtx) {
 		.eq("id", caller.userId);
 
 	return {
-		photos: (
-			(insert.data ?? []) as unknown as {
-				storage_path: string;
-				bucket: string;
-			}[]
-		).map((row) => ({
-			url: publicUrl(client, row.bucket, row.storage_path),
-		})),
+		photos: asRows<{ storage_path: string; bucket: string }>(insert.data).map(
+			(row) => ({
+				url: publicUrl(client, row.bucket, row.storage_path),
+			}),
+		),
 	};
 }
 
@@ -281,7 +279,7 @@ export async function listMyPhotos(ctx: RequestCtx) {
 		.eq("owner_id", caller.userId)
 		.order("position", { ascending: true });
 	if (error) throw dbFailure(error, "We could not load your photos.");
-	const rows = (data ?? []) as unknown as {
+	const rows = asRows<{
 		id: string;
 		storage_path: string;
 		bucket: string | null;
@@ -290,7 +288,7 @@ export async function listMyPhotos(ctx: RequestCtx) {
 		width: number | null;
 		height: number | null;
 		created_at: string;
-	}[];
+	}>(data);
 	return {
 		photos: rows.map((row) => ({
 			id: row.id,
@@ -322,12 +320,12 @@ export async function deletePhotos(ctx: RequestCtx) {
 		.in("id", body.ids);
 	if (existing.error)
 		throw dbFailure(existing.error, "That did not save. Please try again.");
-	const rows = (existing.data ?? []) as unknown as {
+	const rows = asRows<{
 		id: string;
 		storage_path: string;
 		bucket: string | null;
 		is_primary: boolean;
-	}[];
+	}>(existing.data);
 	if (!rows.length) throw notFound("None of those photos are on your profile.");
 
 	const remove = await client

@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * 1:1 messaging.
  *
@@ -151,20 +152,17 @@ export async function listConversations(ctx: RequestCtx) {
 				.in("id", otherIds)
 		: { data: [] };
 	const profileMap = new Map(
-		((profiles.data ?? []) as unknown as ProfileRow[]).map((row) => [
-			row.id,
-			row,
-		]),
+		asRows<ProfileRow>(profiles.data).map((row) => [row.id, row]),
 	);
 
-	const allMessages = (latest.data ?? []) as unknown as {
+	const allMessages = asRows<{
 		conversation_id: string;
 		body: string | null;
 		type: string;
 		sender_id: string;
 		created_at: string;
 		unsent_at: string | null;
-	}[];
+	}>(latest.data);
 
 	const out = (conversations.data ?? []).map(
 		(conversation: {
@@ -304,9 +302,7 @@ export async function listMessages(ctx: RequestCtx, conversationId: string) {
 	if (result.error)
 		throw dbFailure(result.error, "That did not save. Please try again.");
 
-	const rows = (
-		(result.data ?? []) as unknown as Record<string, unknown>[]
-	).reverse();
+	const rows = asRows<Record<string, unknown>>(result.data).reverse();
 	const senderIds = [...new Set(rows.map((row) => String(row.sender_id)))];
 	const profiles = senderIds.length
 		? await client
@@ -315,7 +311,7 @@ export async function listMessages(ctx: RequestCtx, conversationId: string) {
 				.in("id", senderIds)
 		: { data: [] };
 	const names = new Map(
-		((profiles.data ?? []) as unknown as ProfileRow[]).map((row) => [
+		asRows<ProfileRow>(profiles.data).map((row) => [
 			row.id,
 			{
 				displayName: row.display_name ?? row.handle ?? "Someone",
@@ -332,11 +328,11 @@ export async function listMessages(ctx: RequestCtx, conversationId: string) {
 				.in("message_id", ids)
 		: { data: [] };
 	const reactionMap = new Map<string, { emoji: string; mine: boolean }[]>();
-	for (const reaction of (reactions.data ?? []) as unknown as {
+	for (const reaction of asRows<{
 		message_id: string;
 		profile_id: string;
 		emoji: string;
-	}[]) {
+	}>(reactions.data)) {
 		const list = reactionMap.get(reaction.message_id) ?? [];
 		list.push({
 			emoji: reaction.emoji,
@@ -401,14 +397,14 @@ export async function listMessages(ctx: RequestCtx, conversationId: string) {
 		};
 	});
 
-	const pinnedMessages = (
-		(pinned.data ?? []) as unknown as Record<string, unknown>[]
-	).map((row) => ({
-		id: row.id,
-		body: row.unsent_at ? null : row.body,
-		senderId: row.sender_id,
-		pinnedAt: row.pinned_at,
-	}));
+	const pinnedMessages = asRows<Record<string, unknown>>(pinned.data).map(
+		(row) => ({
+			id: row.id,
+			body: row.unsent_at ? null : row.body,
+			senderId: row.sender_id,
+			pinnedAt: row.pinned_at,
+		}),
+	);
 
 	// Opening a thread marks it read; unread counts come from this same write,
 	// so the badge and the thread cannot disagree.
@@ -438,7 +434,7 @@ export async function sendMessage(ctx: RequestCtx, conversationId: string) {
 		.from("conversation_members")
 		.select("profile_id")
 		.eq("conversation_id", conversationId);
-	const otherIds = ((members.data ?? []) as unknown as { profile_id: string }[])
+	const otherIds = asRows<{ profile_id: string }>(members.data)
 		.map((row) => row.profile_id)
 		.filter((id) => id !== caller.userId);
 	if (otherIds.length) {

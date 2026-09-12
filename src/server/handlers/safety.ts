@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * Report and block. Both are one-way doors that must behave identically no matter
  * which surface raises them, so there is exactly one implementation.
@@ -118,21 +119,19 @@ export async function myReports(ctx: RequestCtx) {
 		.limit(50);
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
 	return {
-		reports: ((data ?? []) as unknown as Record<string, unknown>[]).map(
-			(row) => ({
-				id: row.id,
-				targetType: row.target_type,
-				targetId: row.target_id,
-				reason: row.reason,
-				status: row.status,
-				severity: row.severity,
-				createdAt: row.created_at,
-				reviewedAt: row.reviewed_at ?? null,
-				// A resolution note is only shown once it exists; moderators are not
-				// obliged to leave one, and inventing a status would be a lie.
-				resolved: row.status === "resolved" || row.status === "dismissed",
-			}),
-		),
+		reports: asRows<Record<string, unknown>>(data).map((row) => ({
+			id: row.id,
+			targetType: row.target_type,
+			targetId: row.target_id,
+			reason: row.reason,
+			status: row.status,
+			severity: row.severity,
+			createdAt: row.created_at,
+			reviewedAt: row.reviewed_at ?? null,
+			// A resolution note is only shown once it exists; moderators are not
+			// obliged to leave one, and inventing a status would be a lie.
+			resolved: row.status === "resolved" || row.status === "dismissed",
+		})),
 	};
 }
 
@@ -172,18 +171,18 @@ export async function blockUser(ctx: RequestCtx) {
 		.from("conversation_members")
 		.select("conversation_id")
 		.eq("profile_id", caller.userId);
-	const ids = (
-		(conversations.data ?? []) as unknown as { conversation_id: string }[]
-	).map((row) => row.conversation_id);
+	const ids = asRows<{ conversation_id: string }>(conversations.data).map(
+		(row) => row.conversation_id,
+	);
 	if (ids.length) {
 		const others = await client
 			.from("conversation_members")
 			.select("conversation_id,profile_id")
 			.in("conversation_id", ids)
 			.eq("profile_id", body.targetId);
-		const toArchive = (
-			(others.data ?? []) as unknown as { conversation_id: string }[]
-		).map((row) => row.conversation_id);
+		const toArchive = asRows<{ conversation_id: string }>(others.data).map(
+			(row) => row.conversation_id,
+		);
 		if (toArchive.length) {
 			await client
 				.from("conversation_members")
@@ -221,7 +220,7 @@ export async function blockList(ctx: RequestCtx) {
 		.limit(200);
 	if (blocks.error)
 		throw dbFailure(blocks.error, "That did not save. Please try again.");
-	const ids = ((blocks.data ?? []) as unknown as { blocked_id: string }[]).map(
+	const ids = asRows<{ blocked_id: string }>(blocks.data).map(
 		(row) => row.blocked_id,
 	);
 	if (!ids.length) return { blocked: [] };
@@ -230,14 +229,12 @@ export async function blockList(ctx: RequestCtx) {
 		.select("id,display_name,handle,avatar_url")
 		.in("id", ids);
 	const map = new Map(
-		(
-			(profiles.data ?? []) as unknown as {
-				id: string;
-				display_name: string | null;
-				handle: string | null;
-				avatar_url: string | null;
-			}[]
-		).map((row) => [row.id, row]),
+		asRows<{
+			id: string;
+			display_name: string | null;
+			handle: string | null;
+			avatar_url: string | null;
+		}>(profiles.data).map((row) => [row.id, row]),
 	);
 	return {
 		blocked: ids.map((id) => ({
@@ -262,10 +259,7 @@ export async function whoViewedMe(ctx: RequestCtx) {
 		.order("viewed_at", { ascending: false })
 		.limit(60);
 	if (error) throw dbFailure(error, "We could not load that list.");
-	const visits = (data ?? []) as unknown as {
-		visitor_id: string;
-		viewed_at: string;
-	}[];
+	const visits = asRows<{ visitor_id: string; viewed_at: string }>(data);
 	if (!visits.length) return { views: [] };
 
 	const profiles = await client
@@ -282,7 +276,7 @@ export async function whoViewedMe(ctx: RequestCtx) {
 		age: number | null;
 	};
 	const byId = new Map(
-		((profiles.data ?? []) as unknown as Viewer[]).map((row) => [row.id, row]),
+		asRows<Viewer>(profiles.data).map((row) => [row.id, row]),
 	);
 
 	return {

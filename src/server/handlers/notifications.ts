@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * Notifications. Read from the `notifications` table that server-side triggers
  * write (a match creates two rows inside the same transaction as the match).
@@ -32,7 +33,7 @@ export async function list(ctx: RequestCtx) {
 	if (items.error)
 		throw dbFailure(items.error, "That did not save. Please try again.");
 
-	const rows = (items.data ?? []) as unknown as Record<string, unknown>[];
+	const rows = asRows<Record<string, unknown>>(items.data);
 	return {
 		notifications: rows.map((row) => ({
 			id: row.id,

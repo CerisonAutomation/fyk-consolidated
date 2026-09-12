@@ -1,3 +1,4 @@
+import { asRows } from "../data/typed-rows";
 /**
  * Nearby discovery, taps/favorites, and profile views.
  *
@@ -124,7 +125,7 @@ export async function listNearby(ctx: RequestCtx) {
 	const { data, error } = await builder;
 	if (error) throw dbFailure(error, "That did not save. Please try again.");
 
-	let rows = (data ?? []) as unknown as ProfileRow[];
+	let rows = asRows<ProfileRow>(data);
 
 	// Radius filtering needs the haversine on coarsened points, done after the
 	// index-narrowed fetch so we never compute distances for the whole table.
