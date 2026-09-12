@@ -3,11 +3,22 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { getSupabase, ok, toFailure, type Result } from "./client";
-import type { Fansite, User } from "./types";
+import type { Fansite } from "./types";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-export type FansiteOwner = Pick<User, "id" | "pseudo" | "nick" | "photos"> & {
+/**
+ * A fansite's owner as the screen needs it. The row is read from
+ * `public.profiles` — the projection a browser token is allowed to select
+ * (0018) — so the source columns are `display_name`/`handle`; the outgoing
+ * keys stay `pseudo`/`nick` because that is the contract every fansite card
+ * was written against.
+ */
+export type FansiteOwner = {
+  id: string;
+  pseudo: string | null;
+  nick: string | null;
+  photos: unknown;
   tier?: string;
 };
 
@@ -43,8 +54,8 @@ export async function listFansites(userId: string | undefined): Promise<Result<F
   // Fetch owner profiles
   const ownerIds = [...new Set(fansites.map((f) => f.user_id))];
   const ownersResult = await client
-    .from("users")
-    .select("id,pseudo,nick,photos,tier")
+    .from("profiles")
+    .select("id,display_name,handle,photos,tier")
     .in("id", ownerIds);
 
   if (ownersResult.error) return toFailure(ownersResult.error);
@@ -83,8 +94,8 @@ export async function listFansites(userId: string | undefined): Promise<Result<F
         owner: owner
           ? {
               id: owner.id,
-              pseudo: owner.pseudo,
-              nick: owner.nick,
+              pseudo: owner.display_name,
+              nick: owner.handle,
               photos,
               tier: owner.tier ?? "free",
             }

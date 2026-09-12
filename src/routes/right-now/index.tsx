@@ -26,6 +26,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { getSupabase } from "#/integrations/supabase/client";
 import { useSupabaseSession } from "#/integrations/supabase/session-provider";
+import { onlineUntil } from "#/lib/compatibility";
 import { useAppStore } from "#/lib/store";
 import { watchLocation, type GeoState } from "#/lib/geo";
 import { FYKMap, type MapPinItem } from "#/components/map/FYKMap";
@@ -158,11 +159,12 @@ function RightNowPage() {
 
 			// First try: online users in the city
 			let { data: rows } = await sb
-				.from("users")
-				.select("id, pseudo, nick, photos, city, area, online, last_active_at, visible, hidden")
+				.from("profiles")
+				.select("id, display_name, handle, photos, city, area, online, last_active_at, hide_online")
 				.eq("city", city)
-				.eq("visible", true)
-				.eq("hidden", false)
+				// One flag instead of the old `visible`/`hidden` pair: the mirror
+				// already folds in suspension and incognito mode (0018).
+				.eq("discoverable", true)
 				.neq("id", authUser.id)
 				.or(`online.eq.true,last_active_at.gt.${oneHourAgo}`)
 				.order("last_active_at", { ascending: false })
@@ -171,10 +173,9 @@ function RightNowPage() {
 			if (!rows || rows.length === 0) {
 				// Fallback: show recently active users anywhere
 				const result = await sb
-					.from("users")
-					.select("id, pseudo, nick, photos, city, area, online, last_active_at, visible, hidden")
-					.eq("visible", true)
-					.eq("hidden", false)
+					.from("profiles")
+					.select("id, display_name, handle, photos, city, area, online, last_active_at, hide_online")
+					.eq("discoverable", true)
 					.neq("id", authUser.id)
 					.or(`online.eq.true,last_active_at.gt.${fiveMinAgo}`)
 					.order("last_active_at", { ascending: false })
@@ -186,10 +187,17 @@ function RightNowPage() {
 				const photos = (row.photos as string[]) ?? [];
 				return {
 					id: row.id,
-					name: row.nick ?? row.pseudo ?? "Someone",
+					name: row.handle ?? row.display_name ?? "Someone",
 					avatar: photos[0] ?? "",
-					status: row.online ? "Online now" : "Active recently",
-					online: row.online ?? false,
+					// Presence is the shared rule, not the raw flag: `online` only
+					// counts while the activity window is open, and someone who
+					// hides their status is never shown as online.
+					status:
+						!row.hide_online &&
+						onlineUntil(row.last_active_at, row.online) !== null
+							? "Online now"
+							: "Active recently",
+					online: !row.hide_online && onlineUntil(row.last_active_at, row.online) !== null,
 					lastActiveAt: row.last_active_at,
 					city: row.city,
 				};

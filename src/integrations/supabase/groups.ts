@@ -213,8 +213,9 @@ export async function loadGroupMessages(
   // Fetch sender profiles
   const senderIds = [...new Set(messages.map((m) => m.sender_id))];
   const profilesResult = await client
-    .from("users")
-    .select("id,pseudo,nick,photos")
+    .from("profiles")
+    // Canonical projection names (0018): `display_name`/`handle`.
+    .select("id,display_name,handle,photos")
     .in("id", senderIds);
 
   if (profilesResult.error) return toFailure(profilesResult.error);
@@ -229,7 +230,7 @@ export async function loadGroupMessages(
       const photos = (sender?.photos as string[]) ?? [];
       return {
         ...m,
-        sender_name: sender?.pseudo ?? sender?.nick ?? "Anonymous",
+        sender_name: sender?.display_name ?? sender?.handle ?? "Anonymous",
         sender_avatar: photos[0] ?? null,
       };
     }),

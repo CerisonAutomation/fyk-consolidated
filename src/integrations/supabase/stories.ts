@@ -23,7 +23,10 @@ export type StoryRing = {
 
 const STORY_COLUMNS = "id, user_id, media_url, media_type, caption, background, expires_at, created_at";
 const VIEW_COLUMNS = "id, story_id, user_id, viewed_at";
-const USER_COLUMNS = "id, pseudo, nick, photos";
+// Author chips read the discoverable projection (0018), where the names are
+// `display_name`/`handle`; `public.users` is no longer selectable by a
+// browser token.
+const USER_COLUMNS = "id, display_name, handle, photos";
 
 /**
  * Loads story rings grouped by author for the current user.
@@ -73,7 +76,7 @@ export async function loadStoryRings(userId: string): Promise<Result<{ mine: Sto
 	// 4. Fetch unique authors for other stories
 	const authorIds = [...new Set((otherStories ?? []).map((s: any) => s.user_id))];
 	const { data: authors } = authorIds.length > 0
-		? await sb.from("users").select(USER_COLUMNS).in("id", authorIds)
+		? await sb.from("profiles").select(USER_COLUMNS).in("id", authorIds)
 		: { data: [] };
 
 	const authorMap = new Map<string, any>();
@@ -113,7 +116,7 @@ export async function loadStoryRings(userId: string): Promise<Result<{ mine: Sto
 			const photos = (author?.photos as string[]) ?? [];
 			ringMap.set(story.user_id, {
 				userId: story.user_id,
-				userName: author?.nick ?? author?.pseudo ?? "Someone",
+				userName: author?.handle ?? author?.display_name ?? "Someone",
 				userAvatar: photos[0] ?? "",
 				items: [storyItem],
 			});

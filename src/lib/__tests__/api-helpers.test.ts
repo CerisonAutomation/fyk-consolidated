@@ -27,9 +27,15 @@ describe("asStringArray", () => {
 		expect(asStringArray({ nope: true })).toEqual([]);
 	});
 
-	it("drops non-string entries instead of stringifying objects", () => {
-		expect(asStringArray([1, "ok", { a: 1 }, null, ["nested"]])).toEqual([
+	it("keeps numeric tags as text, and drops what has no text form", () => {
+		// `users.tribes` carries two vocabularies: numeric ids from the profile
+		// editor and names from `/tribes`. Dropping the numbers made a tagged user
+		// look untagged to the compatibility scorer, so finite numbers are textified
+		// while objects, nulls and nested arrays stay out.
+		expect(asStringArray([1, "ok", 3.5, { a: 1 }, null, ["nested"]])).toEqual([
+			"1",
 			"ok",
+			"3.5",
 		]);
 	});
 });

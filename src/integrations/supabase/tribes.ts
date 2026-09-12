@@ -22,6 +22,43 @@ export const MAX_TRIBES = 3;
 
 const TRIBE_COLUMNS = "id,name,description,icon,member_count,created_at";
 
+/**
+ * Tribe membership lives in `users.tribes`, which only the API may write.
+ * `PUT /api/profile` replaces the bag, so the whole list is sent, and it
+ * resolves whose row to write from the session cookie — which is exactly why
+ * this helper no longer takes a user id it cannot be trusted with.
+ */
+async function saveTribes(tribes: string[]): Promise<{ ok: true } | { ok: false; code: "server"; message: string }> {
+  try {
+    const response = await fetch("/api/profile", {
+      method: "PUT",
+      credentials: "include",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tribes }),
+    });
+    if (!response.ok) {
+      const detail = (await response.json().catch(() => null)) as
+        | { error?: string; message?: string }
+        | null;
+      return {
+        ok: false,
+        code: "server",
+        message:
+          detail?.error ??
+          detail?.message ??
+          `Could not save your tribes (HTTP ${response.status}).`,
+      };
+    }
+    return { ok: true };
+  } catch {
+    return {
+      ok: false,
+      code: "server",
+      message: "Could not reach the server; your tribes were not changed.",
+    };
+  }
+}
+
 // ─── Core Functions ──────────────────────────────────────────────────────────
 
 /**
@@ -38,7 +75,7 @@ export async function listTribes(userId: string | undefined): Promise<Result<Tri
       .select(TRIBE_COLUMNS)
       .order("member_count", { ascending: false }),
     client
-      .from("users")
+      .from("profiles")
       .select("tribes")
       .eq("id", userId)
       .single(),
@@ -73,7 +110,9 @@ export async function toggleTribe(
 
   // Get current user tribes
   const { data: user, error: userErr } = await client
-    .from("users")
+    // The projection carries `tribes` (0018) and is the only table a
+    // browser token may select from.
+    .from("profiles")
     .select("tribes")
     .eq("id", userId)
     .single();
@@ -95,12 +134,11 @@ export async function toggleTribe(
     }
 
     const newTribes = [...currentTribes, tribeName];
-    const { error: updateErr } = await client
-      .from("users")
-      .update({ tribes: newTribes })
-      .eq("id", userId);
-
-    if (updateErr) return toFailure(updateErr);
+    // `public.users` is server-owned: 0018 revoked browser writes and mirrors
+    // `profiles` from it, so membership is saved through the profile API, and
+    // `users_apply_projection()` republishes it to the projection.
+    const saved = await saveTribes(newTribes);
+    if (!saved.ok) return saved;
 
     // Increment tribe member_count
     const { data: tribe, error: tribeErr } = await client
@@ -112,10 +150,13 @@ export async function toggleTribe(
     if (tribeErr) return toFailure(tribeErr);
 
     const newCount = (tribe?.member_count ?? 0) + 1;
-    await client
+    const counted = await client
       .from("tribes")
       .update({ member_count: newCount })
       .eq("name", tribeName);
+    // A count that failed to move while the membership saved is a real
+    // inconsistency; it used to be discarded with the promise of a number.
+    if (counted.error) return toFailure(counted.error);
 
     return ok({ joined: true, member_count: newCount });
   } else {
@@ -124,12 +165,8 @@ export async function toggleTribe(
     }
 
     const newTribes = currentTribes.filter((t) => t !== tribeName);
-    const { error: updateErr } = await client
-      .from("users")
-      .update({ tribes: newTribes })
-      .eq("id", userId);
-
-    if (updateErr) return toFailure(updateErr);
+    const saved = await saveTribes(newTribes);
+    if (!saved.ok) return saved;
 
     // Decrement tribe member_count
     const { data: tribe, error: tribeErr } = await client
@@ -141,10 +178,11 @@ export async function toggleTribe(
     if (tribeErr) return toFailure(tribeErr);
 
     const newCount = Math.max(0, (tribe?.member_count ?? 1) - 1);
-    await client
+    const counted = await client
       .from("tribes")
       .update({ member_count: newCount })
       .eq("name", tribeName);
+    if (counted.error) return toFailure(counted.error);
 
     return ok({ joined: false, member_count: newCount });
   }

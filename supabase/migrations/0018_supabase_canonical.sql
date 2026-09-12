@@ -237,8 +237,15 @@ grant select, insert, delete on table public.hides to authenticated;
 select public.users_apply_projection(id) from public.users;
 
 -- The API owns `public.users`; a browser token must not touch it at all.
+-- `select` goes for `authenticated` too, and that is the point: `users` has
+-- no row-level-security policies, so a grant of `select` meant any signed-in
+-- account could read every other account's email, phone and precise
+-- `lat`/`lng`. Nothing in `src/` selects the table from the browser any
+-- more (`/grid`, `/right-now`, `/settings/profile`, `/tribes`, `/fansites`,
+-- `/groups` and the story rings all read `profiles` now), so the revoke is
+-- the end of a hole rather than the start of one.
 revoke insert, update, delete on table public.users from anon, authenticated;
-revoke select on table public.users from anon;
+revoke select on table public.users from anon, authenticated;
 
 -- `profiles` is the readable surface, still behind its 0000 RLS policies.
 grant select on table public.profiles to anon, authenticated;

@@ -186,12 +186,23 @@ export function publicProfile(row: PublicProfileRow | null | undefined) {
  * export that went through the old Prisma `String` mapping) hold a JSON
  * *string* or a comma-joined list. Rendering any of those directly put
  * `[object Object]` into chips. Always returns `string[]`.
+ *
+ * Numeric entries are kept as their text form: `users.tribes` holds tribe
+ * names for anyone who joined through `/tribes` and numeric ids for anyone
+ * who used the profile editor, so a comparison that dropped numbers would
+ * silently score half the app's users as having no tags at all.
  */
 export function asStringArray(value: unknown): string[] {
 	if (Array.isArray(value)) {
-		return value.filter(
-			(item): item is string => typeof item === "string" && item.length > 0,
-		);
+		return value
+			.map((item) =>
+				typeof item === "string"
+					? item
+					: typeof item === "number" && Number.isFinite(item)
+						? String(item)
+						: "",
+			)
+			.filter((item) => item.length > 0);
 	}
 	if (typeof value === "string") {
 		const trimmed = value.trim();

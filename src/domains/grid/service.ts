@@ -377,13 +377,22 @@ type ViewerContext = {
 	chattedRecently: Set<string>;
 };
 
-/** jsonb tag arrays arrive untyped; only non-empty strings are input. */
+/**
+ * jsonb tag arrays arrive untyped and in two vocabularies — tribe names from
+ * `/tribes`, numeric ids from the profile editor — so numbers are textified
+ * rather than dropped (the same rule `asStringArray` follows server-side).
+ */
 function asStrings(value: unknown): string[] {
 	return Array.isArray(value)
-		? value.filter(
-				(item): item is string =>
-					typeof item === "string" && item.trim() !== "",
-			)
+		? value
+				.map((item) =>
+					typeof item === "string"
+						? item.trim()
+						: typeof item === "number" && Number.isFinite(item)
+							? String(item)
+							: "",
+				)
+				.filter((item) => item !== "")
 		: [];
 }
 

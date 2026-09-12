@@ -9,7 +9,6 @@ import {
 } from "react";
 import { useAuthStore } from "#/domains/auth/store";
 import { getSupabase } from "#/integrations/supabase/client";
-import type { User } from "#/integrations/supabase/types";
 
 export const Route = createFileRoute("/settings/profile/")({
 	component: ProfileEditPage,
@@ -17,7 +16,6 @@ export const Route = createFileRoute("/settings/profile/")({
 
 interface ProfileForm {
 	first_name: string;
-	last_name: string;
 	about: string;
 	age: string;
 	height: string;
@@ -63,7 +61,6 @@ const RELATIONSHIP_STATUS_OPTIONS = [
 
 const INITIAL_FORM: ProfileForm = {
 	first_name: "",
-	last_name: "",
 	about: "",
 	age: "",
 	height: "",
@@ -78,18 +75,6 @@ const INITIAL_FORM: ProfileForm = {
 	pronouns: "",
 };
 
-/** Safely cast an `unknown` column (jsonb) to a string array. */
-function toStringArray(value: unknown): string[] {
-	if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
-	if (typeof value === "string") {
-		try {
-			const parsed = JSON.parse(value);
-			if (Array.isArray(parsed)) return parsed.filter((v: unknown): v is string => typeof v === "string");
-		} catch { /* not JSON */ }
-		return [value];
-	}
-	return [];
-}
 
 function ProfileEditPage() {
 	const { auth } = useAuthStore();
@@ -101,63 +86,89 @@ function ProfileEditPage() {
 	const [activeSection, setActiveSection] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [uploadingPhoto, setUploadingPhoto] = useState(false);
+	const [loadError, setLoadError] = useState<string | null>(null);
+	const [photos, setPhotos] = useState<string[]>([]);
 
-	// ── Load existing profile from Supabase on mount ────────────────────────
+	// The screen's own vocabulary (`first_name`, `about`) mapped onto the API's
+	// column aliases, in one place so load and save can never disagree.
+	const applyProfile = useCallback((profile: Record<string, unknown> | null) => {
+		if (!profile) return;
+		const tagList = (value: unknown) =>
+			Array.isArray(value)
+				? value
+							.map((item) => (typeof item === "string" ? item : String(item ?? "")))
+							.filter((item) => item !== "")
+					: [];
+		const nextPhotos = tagList(profile.photos);
+		setPhotos(nextPhotos);
+		setForm((prev) => ({
+			...prev,
+			first_name: String(profile.pseudo ?? ""),
+			about: String(profile.description ?? ""),
+			age: profile.age == null ? "" : String(profile.age),
+			height: profile.height == null ? "" : String(profile.height),
+			weight: profile.weight == null ? "" : String(profile.weight),
+			position: tagList(profile.position)[0] ?? "",
+			relationship_status: String(profile.relationship_status ?? ""),
+			looking_for: tagList(profile.looking_for),
+			body_type: String(profile.body_type ?? ""),
+			ethnicity: String(profile.ethnicity ?? ""),
+			pronouns: String(profile.pronouns ?? ""),
+		}));
+		const first = nextPhotos[0];
+		if (first) setPhotoPreview(first);
+	}, []);
+
+	// ── Load the caller's own row through the API ─────────────────────────
+	// `public.users` is not selectable with a browser token any more (0018),
+	// and never should have been for this screen: the API already shapes the
+	// row into exactly these keys, and it refuses fields it does not own.
 	useEffect(() => {
 		let cancelled = false;
 		async function loadProfile() {
-			const supabase = getSupabase();
-			if (!supabase || !auth?.user) {
+			if (!auth?.user) {
 				setLoading(false);
 				return;
 			}
-
-			// Load from the users table
-			const { data, error } = await supabase
-				.from("users")
-				.select("*")
-				.eq("id", auth.user.id)
-				.single();
-
-			if (error || !data || cancelled) {
-				setLoading(false);
-				return;
+			try {
+				const response = await fetch("/api/profile", {
+					credentials: "include",
+					headers: { accept: "application/json" },
+				});
+				if (!response.ok) {
+					if (!cancelled)
+						setLoadError(
+							response.status === 401
+								? "Your session expired; sign in again to edit your profile."
+								: `Could not load your profile (HTTP ${response.status}).`,
+						);
+					return;
+				}
+				const payload = (await response.json()) as {
+					profile?: Record<string, unknown> | null;
+				};
+				if (cancelled) return;
+				applyProfile(payload.profile ?? null);
+				// HIV status and the testing date have no column anywhere: they are
+				// stored on the auth record, which is the only place they exist.
+				const meta = auth.user.user_metadata ?? {};
+				setForm((prev) => ({
+					...prev,
+					hiv_status: String(meta.hiv_status ?? "prefer-not-to-say"),
+					last_tested: String(meta.last_tested ?? ""),
+				}));
+			} catch {
+				if (!cancelled)
+					setLoadError("Could not reach the server; your profile is not shown.");
+			} finally {
+				if (!cancelled) setLoading(false);
 			}
-
-			const user = data as User;
-
-			// Load hiv_status and last_tested from auth user metadata
-			// (these fields live in auth metadata, not the users table)
-			const authMeta = auth.user.user_metadata ?? {};
-
-			const displayName = user.pseudo ?? "";
-			const lookingFor = toStringArray(user.looking_for);
-			const photos = toStringArray(user.photos);
-			const photoUrl = photos.length > 0 ? photos[0] : null;
-
-			setForm({
-				first_name: displayName,
-				last_name: "",
-				about: user.description ?? "",
-				age: user.age != null ? String(user.age) : "",
-				height: user.height != null ? String(user.height) : "",
-				weight: user.weight != null ? String(user.weight) : "",
-				position: typeof user.position === "string" ? user.position : "",
-				relationship_status: user.relationship_status ?? "",
-				looking_for: lookingFor,
-				body_type: user.body_type ?? "",
-				ethnicity: user.ethnicity ?? "",
-				hiv_status: (authMeta.hiv_status as string) ?? "prefer-not-to-say",
-				last_tested: (authMeta.last_tested as string) ?? "",
-				pronouns: user.pronouns ?? "",
-			});
-
-			if (photoUrl) setPhotoPreview(photoUrl);
-			setLoading(false);
 		}
 		loadProfile();
-		return () => { cancelled = true; };
-	}, [auth?.user]);
+		return () => {
+			cancelled = true;
+		};
+	}, [applyProfile, auth?.user]);
 
 	const updateField = useCallback(
 		<K extends keyof ProfileForm>(field: K, value: ProfileForm[K]) => {
@@ -181,60 +192,81 @@ function ProfileEditPage() {
 	// ── Save profile to Supabase (users table + auth metadata) ───────────────
 	const handleSave = useCallback(async () => {
 		setSaving(true);
+		setLoadError(null);
 		try {
+			if (!auth?.user) throw new Error("Not authenticated");
+
+			// One write, in the API's vocabulary, with empty inputs omitted rather than
+			// sent as `null`: `age: null` fails the 18+ check instead of clearing it.
+			const payload: Record<string, unknown> = {};
+			const put = (key: string, value: string) => {
+				const trimmed = value.trim();
+				if (trimmed) payload[key] = trimmed;
+			};
+			put("pseudo", form.first_name);
+			put("description", form.about);
+			put("body_type", form.body_type);
+			put("ethnicity", form.ethnicity);
+			put("pronouns", form.pronouns);
+			put("relationship_status", form.relationship_status);
+			if (form.age) payload.age = Number(form.age);
+			if (form.height) payload.height = Number(form.height);
+			if (form.weight) payload.weight = Number(form.weight);
+			payload.looking_for = form.looking_for;
+			payload.position = form.position ? [form.position] : [];
+
+			const response = await fetch("/api/profile", {
+				method: "PUT",
+				credentials: "include",
+				headers: {
+					"content-type": "application/json",
+					accept: "application/json",
+				},
+				body: JSON.stringify(payload),
+			});
+			if (!response.ok) {
+				const detail = (await response.json().catch(() => null)) as
+					| { error?: string | { message?: string }; message?: string }
+					| null;
+				const message =
+					(typeof detail?.error === "string"
+						? detail.error
+						: detail?.error?.message) ??
+					detail?.message ??
+					`HTTP ${response.status}`;
+				throw new Error(message);
+			}
+			const saved = (await response.json().catch(() => null)) as {
+				profile?: Record<string, unknown> | null;
+			} | null;
+			applyProfile(saved?.profile ?? null);
+
+			// 2. HIV status and the testing date have no column anywhere — they were only
+			//    ever readable from the auth record, so that is where they are written,
+			//    and the failure is reported instead of being awaited into a void.
 			const supabase = getSupabase();
-			if (!supabase || !auth?.user) throw new Error("Not authenticated");
-
-			// 1. Write to the users table (the primary profile data store)
-			const { error: tableError } = await supabase
-				.from("users")
-				.update({
-					pseudo: form.first_name || null,
-					description: form.about || null,
-					age: form.age ? Number(form.age) : null,
-					height: form.height ? Number(form.height) : null,
-					weight: form.weight ? Number(form.weight) : null,
-					position: form.position || null,
-					relationship_status: form.relationship_status || null,
-					looking_for: form.looking_for,
-					body_type: form.body_type || null,
-					ethnicity: form.ethnicity || null,
-					pronouns: form.pronouns || null,
-					updated_at: new Date().toISOString(),
-				})
-				.eq("id", auth.user.id);
-
-			if (tableError) throw tableError;
-
-			// 2. Update Supabase auth metadata
-			//    hiv_status and last_tested live in auth metadata, not the users table
-			await supabase.auth.updateUser({
+			if (!supabase) throw new Error("Supabase is not configured.");
+			const { error: metaError } = await supabase.auth.updateUser({
 				data: {
-					display_name: form.first_name,
-					about: form.about,
-					age: form.age ? Number(form.age) : null,
-					height: form.height ? Number(form.height) : null,
-					weight: form.weight ? Number(form.weight) : null,
-					position: form.position || null,
-					relationship_status: form.relationship_status || null,
-					looking_for: form.looking_for,
-					body_type: form.body_type || null,
-					ethnicity: form.ethnicity || null,
 					hiv_status: form.hiv_status || null,
 					last_tested: form.last_tested || null,
-					pronouns: form.pronouns || null,
 				},
 			});
+			if (metaError) throw new Error(metaError.message);
 
 			setSaved(true);
 			setTimeout(() => setSaved(false), 3000);
 		} catch (err) {
 			console.error("Failed to save profile:", err);
-			alert("Failed to save profile. Please try again.");
+			setLoadError(
+				err instanceof Error
+					? `Could not save: ${err.message}`
+					: "Could not save your profile.",
+			);
 		} finally {
 			setSaving(false);
 		}
-	}, [auth, form]);
+	}, [applyProfile, auth?.user, form]);
 
 	// ── Photo upload to Supabase Storage ─────────────────────────────────────
 	const handlePhotoSelected = useCallback(
@@ -276,31 +308,44 @@ function ProfileEditPage() {
 
 				setPhotoPreview(urlData.publicUrl);
 
-				// Fetch current photos array and prepend the new avatar
-				const { data: currentUser } = await supabase
-					.from("users")
-					.select("photos")
-					.eq("id", auth.user.id)
-					.single();
+				// The uploaded object exists in Storage; the profile only *lists*
+				// photo paths, and that list belongs to `users.photos` — which a
+				// browser token cannot write. So the list in state is updated and
+				// saved through the API, which also caps it at 12 entries.
+				const updatedPhotos = [
+					urlData.publicUrl,
+					...photos.filter((path) => path !== urlData.publicUrl),
+				].slice(0, 12);
 
-				const currentPhotos = toStringArray(currentUser?.photos);
-				const updatedPhotos = [urlData.publicUrl, ...currentPhotos.filter((p) => p !== urlData.publicUrl)];
+				const photoSave = await fetch("/api/profile", {
+					method: "PUT",
+					credentials: "include",
+					headers: {
+						"content-type": "application/json",
+						accept: "application/json",
+					},
+					body: JSON.stringify({ photos: updatedPhotos }),
+				});
+				if (!photoSave.ok) {
+					throw new Error(
+						"The photo uploaded, but your profile could not be updated.",
+					);
+				}
 
-				await supabase
-					.from("users")
-					.update({ photos: updatedPhotos })
-					.eq("id", auth.user.id);
+				setPhotos(updatedPhotos);
 
 				setSaved(false);
 			} catch (err) {
 				console.error("Photo upload failed:", err);
-				alert("Photo upload failed. Please try again.");
+				setLoadError(
+					err instanceof Error ? err.message : "Photo upload failed. Please try again.",
+				);
 			} finally {
 				setUploadingPhoto(false);
 				event.target.value = "";
 			}
 		},
-		[auth],
+		[auth?.user, photos],
 	);
 
 	const sections = [
@@ -639,6 +684,15 @@ function ProfileEditPage() {
 							</div>
 						))}
 					</div>
+
+					{loadError ? (
+						<div
+							role="alert"
+							className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-200"
+						>
+							{loadError}
+						</div>
+					) : null}
 
 					{/* Save Button */}
 					<div className="sticky bottom-20 mt-8">

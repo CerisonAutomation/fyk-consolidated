@@ -19,6 +19,11 @@ product/schema decision and are documented instead of guessed at.
 | Command | Result |
 | --- | --- |
 | `npx tsc --noEmit` | 0 errors (baseline: 11 errors, plus 5 more introduced by the Next→Start import fixes) |
+| `npx tsc --noEmit`, §2.9–2.10 pass | 0 errors — after the projection revoke, `src/domains/grid`, `src/components/explore`, `EntryShell` and both repointed screens type-check against `profiles` |
+| `npx vitest run`, §2.9–2.10 pass | **149 passed** (11 files; +9 for `src/lib/compatibility.ts`. The count is lower than §2.8's 163 because the deleted Prisma-era domain modules took their unit tests with them — reported, not hidden) |
+| `npx vite build`, §2.9–2.10 pass | success; `dist/server/server.js` 64 kB |
+| `GET /api/settings`, `/api/settings?view=export`, `/api/profile`, `/api/conversations`, `/api/discover`, `/api/social`, `/api/boost` (anonymous) | `401 {"error":"Sign in to continue"}` — none of them answers with the SPA document |
+| `GET /api/taps` (anonymous) | `200 text/html` — TanStack has no handler for a method a route does not declare, so an unmatched verb on an API path falls through to the router. Known and recorded in §3.9 rather than papered over with a dead GET. |
 | `npx vitest run` | **163 passed** (baseline 123; +40 new tests for security headers, middleware, api-helpers, rate limiting) |
 | `npx vite build` | success (baseline: **failed**) — server chunk 682 kB → 176 kB after dropping Prisma from the SSR graph |
 | `npx biome check` on touched files | clean (repo-wide baseline: 851 errors / 234 warnings, left alone) |
@@ -329,6 +334,152 @@ which do not exist and must not be built (Supabase owns the session);
 `src/components/layout/topbar.tsx`; `/api/users` is only mentioned by
 `src/core/domain/__tests__/errors.test.ts` as a fixture URL.
 
+### 2.9 The browser stops being a database client: settings, profile, onboarding
+
+`settings-client.tsx`, `profile-client.tsx` and `EntryShell` each held a
+hand-built query layer over `public.users`: `select("*")`, a whole-row
+`update`, a refetch to confirm the write, and an export view that dumped every
+column — including `lat`, `lng`, `password_hash`'s successors, `role`, `tier`,
+`trust_score` and `is_suspended` — into a downloadable JSON file.
+
+Now:
+
+- **`GET /api/settings[?view=prefs|export]`** — prefs returns the twelve
+  preference columns in the snake_case the screen already mapped, and export
+  returns an explicit `EXPORT_COLUMNS` projection: a data-export of *what a
+  profile is*, not of the moderation and geo columns around it.
+- **`PUT /api/settings`** — a `.strict()` allow-list. The `notif_prefs` and
+  `ai_prefs` jsonb bags enumerate every key the UI can toggle, and the two
+  bags are **merged** with the stored row because the switch component sends
+  one key per toggle: replacing the column would have turned every other
+  switch off. `role`, `tier`, `verification`, `trust_score` and `is_suspended`
+  are rejected with a `400` naming the field, not silently dropped.
+- **Profile load/save** — `GET /api/profile` then one `PUT /api/profile`;
+  the `select("*") + update + refetch` trio is gone. Photo upload still calls
+  `supabase.storage` directly, which is the native path for Storage and was
+  never the problem.
+- **`EntryShell`** — `updateProfile` and the two-step onboarding write went
+  from `from("profiles").upsert(...)` to the API, because §2.10 makes
+  `profiles` a projection the database owns. `PUT /api/profile` gained
+  `dob`, `incognito` and `exposure_level`: the birth date is written to
+  `profile_private`, the age is *recomputed from it*, and `age_verified_at`
+  is stamped server-side, so an 18+ gate is not a value a client can assert.
+  Fields the API does not accept are reported back to the user instead of
+  being dropped in translation.
+- A latent bug surfaced on the way: the colour-blind preset wrote the
+  **string** `"protanopia"` into `colorblind_mode`, a boolean column — every
+  save of that setting threw, and the screen re-read the old value and looked
+  like it had worked. It now writes `id !== "off"`.
+
+The onboarding gate itself was a false deadlock: `onboarding_done` required
+`profile_complete >= 60`, i.e. a photo and a bio, while the gate that *shows*
+onboarding only needs name, handle, age and city — so a new account with no
+photos was told to finish onboarding by an endpoint that refused to let it.
+The completion rule now accepts the gate fields (the 60% score stays what it
+always measured: profile quality).
+
+---
+
+### 2.10 `profiles` is the browser's only table; nothing is invented any more
+
+`0018_supabase_canonical.sql` finishes the split that §3.2 describes:
+`auth.users ──1:1── public.users ──trigger── public.profiles`. The mirror
+computes `discoverable = visible AND NOT hidden AND NOT is_suspended AND NOT
+incognito`, derives a legal `handle`, clamps the age into the projection's
+18–120 check, projects only the coarsened fix, and `revoke insert, update,
+delete on table public.users from anon, authenticated` closes the side door.
+A guard function refuses direct writes to `profiles` unless the mirror trigger
+set its `fyk.profile_projection` flag, so no screen can quietly write the
+projection instead of the row.
+
+Because the revoke would otherwise break the last two browser readers, they
+moved in the same change set: `src/components/explore/explore-client.tsx`
+(city counts, profile list) and `src/domains/grid/service.ts` (both queries and
+both mappers) now read `profiles` with its canonical names — `display_name`
+and `handle` instead of `pseudo`/`nick`, `height_cm` instead of `height`, one
+`discoverable` flag instead of `visible`/`hidden`/`incognito`/`status`. Two
+columns were added to the projection to make that possible without a fallback
+read: `tag_codes` (the grid filters on it) and `weight` (see below).
+
+What those two files used to hand the UI, and what they hand it now:
+
+| Field | Before | After |
+| --- | --- | --- |
+| explore `distance` | `0.3` for every card, sorted "nearest first" | haversine between the two coarse fixes, `null` when either is missing or the owner hides distance (sorted last, not first) |
+| explore `verified` | `false` for everyone | `verification >= 2`, the same rule `/api/discover` uses |
+| explore pins `matchScore` | `p.verified ? 90 : undefined` | not passed; a boolean cannot imply a percentage |
+| grid `compatibilityScore` | `50` in both mappers | `src/lib/compatibility.ts` against the viewer's own tags, distance and recency — the function `/api/discover` ranks with, so the two screens cannot disagree |
+| grid `onlineUntil` | `Date.now() + 15 min` while `online` was true | expiry derived from `last_active_at` and the real 5-minute presence window; `null` otherwise |
+| grid `unread` | `null` (lazy cards) / ignored | the viewer's own thread list (`/api/conversations`, which owns the "only my member row counts" rule) |
+| grid `hasChattedInLast24Hrs` | `false` | last message within 24 h, same payload |
+| grid `isVisiting` | `false` | **deleted.** No column backs it in any migration (`geo_mode` exists in the hand-written types and nowhere else), and no screen reads it. Fabricating it was the stub; inventing a table for it would have been a bigger one |
+| grid weight filter | accepted by the query type, sent by the store, never applied | `weight` is projected and both bounds filter |
+
+The scorer moved out of `#/lib/api-helpers` (server-only: it imports the
+Drizzle schema) into `#/lib/compatibility`, imported by both sides.
+`RenderedGridProfile.compatibilityScore` became `number | null` and the grid's
+ring renders *nothing* when there is no viewer to compare against — the honest
+absence rather than a neutral-looking 50.
+
+Explore also revealed a silent outage worth recording: its profile query
+selected `headline` from `public.users`, a column that table never had, so
+PostgREST errored on every city and `if (error || !rows) return []` turned the
+whole screen into a permanent "no one matches your search". The projection has
+`headline`, and the error path now only empties when there genuinely are no
+profiles.
+
+**Prisma is gone outright**, not deprecated: `prisma/`, `prisma.config.ts`,
+`@prisma/client`, `@prisma/adapter-pg`, `bcryptjs`, `dotenv-cli`, the
+`db:migrate` script, the `prisma/seed.ts` entry in `tsconfig.json`, and
+`package-lock.json` (a second lockfile that contradicted
+`packageManager: pnpm` and still listed the removed packages). `pnpm db:seed`
+is now `scripts/seed.mjs`: it creates the demo logins through GoTrue's admin
+API *first* — because `users.id` has a foreign key to `auth.users` — and then
+inserts rows into `public.users`, letting the mirror build `profiles`. Without
+`SUPABASE_SERVICE_ROLE_KEY` it stops with an explanation instead of inserting
+logins that cannot sign in, which is precisely the defect §3.8 described.
+
+### 2.11 The revoke found six more readers, and one of them was a privacy hole
+
+`revoke select on table public.users from anon` would have been a half-measure:
+`public.users` has **no row-level-security policies at all** (0010 created it
+as an ordinary table), so `authenticated` could select every row — including
+`email`, `phone`, `lat`/`lng` and `notif_prefs`. The revoke now covers
+`authenticated` too, which meant finishing the repoint for everything the browser
+still read directly:
+
+| Module | Was | Now |
+| --- | --- | --- |
+| `integrations/supabase/stories.ts` | `users` for author chips (`pseudo`/`nick`) | `profiles` (`display_name`/`handle`) |
+| `integrations/supabase/fansites.ts` | `users` for the owner card, typed `Pick<User, …>` | `profiles`, with `FansiteOwner` documented as the *outgoing* contract (`pseudo`/`nick` keys kept, because the cards read them) |
+| `integrations/supabase/groups.ts` | `users` for message senders | `profiles` |
+| `integrations/supabase/tribes.ts` | `users` for the joined list, and `update({tribes})` on `users` — a write a browser token can no longer perform | reads `profiles`; membership goes through `PUT /api/profile` and the mirror republishes it |
+| `routes/right-now/index.tsx` | `users` with `visible`/`hidden` | `profiles` with `discoverable`, and presence from the shared window instead of the raw `online` flag — with `hide_online` finally honoured |
+| `routes/settings/profile/index.tsx` | `select("*")` + `update()` on `users`, then the *same payload written again* into auth metadata "for convenience" | `GET`/`PUT /api/profile`; only `hiv_status`/`last_tested` stay in auth metadata, because those two have no column anywhere and that is the only place they exist |
+
+The `/settings/profile` screen needed more than a URL swap. It sent
+`updated_at`, `position: "Top"` and `ethnicity` to a table it could not write, and
+any Postgres error was swallowed by `alert()` after the *auth-metadata* half had
+already succeeded — so it could report failure while having changed your account,
+or report success having changed nothing. It now saves once, through the API,
+surfaces the API's own message inline, keeps the photo list in state instead of
+re-fetching `users.photos`, and dropped the `last_name` field that was in the form
+type but never in the UI or the payload.
+
+Two schema consequences came out of that pass:
+
+- **`PUT /api/profile` accepts `ethnicity`.** The screen wrote the column all
+  along; the API simply had no field for it, so saving silently lost it.
+- **`tribes`, `looking_for` and `position` accept names *or* numeric ids.** They are
+  `jsonb` with a GIN index and no foreign key (`0010`), and the app already writes
+  both vocabularies: `/tribes` joins by name, the profile editor stores numeric tag
+  ids. Rejecting one would have made a working screen unable to save, so the API
+  matches the column and every comparison (`asStringArray` server-side, `asStrings`
+  in the grid) textifies numbers — `3` and `"3"` now match. The residual mess is
+  data, not code: see §3.10.
+
+---
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
 These need a product or schema decision. Inventing an implementation is how a
@@ -338,20 +489,21 @@ second, worse truth gets committed, so each entry says what to decide instead.
    `/api/auth/*` should ever exist (Supabase owns the session), and `/api/users`
    has no caller outside a test fixture. If `src/core/**` survives, its auth hooks
    must be pointed at `supabase.auth` rather than at endpoints that will not come.
-2. **Two user tables, no bridge.** `0000_profiles.sql` creates
+2. **~~Two user tables, no bridge.~~ Closed by §2.10.** The history, kept
+   because it explains the vocabulary: `0000_profiles.sql` created
    `public.profiles` (`pseudo`→`display_name`, RLS enabled, `age between 18 and
    120` DB check, `lat_coarse/lng_coarse` only) while `0010_remaining_tables.sql`
    creates `public.users` (`pseudo`/`nick`, `lat`/`lng` precise, no RLS) and
    points `taps`/`favorites`/`meetnow_posts`/`notifications`/`push_subscriptions`/
    `sessions` at *that*. `src/integrations/supabase/types.ts` declares both,
-   which is why `tsc` never complained. Consequences today: the browser and the
-   API read different rows for the same person, and nothing links `users.id` to
-   `auth.users.id`. `0015_server_canonical.sql` adds the missing FK
+   which is why `tsc` never complained. The consequence was that the browser and
+   the API read different rows for the same person, with nothing linking
+   `users.id` to `auth.users.id`. `0015_server_canonical.sql` added the FK
    (`users.id → auth.users(id) on delete cascade`, guarded so it is a no-op when
-   already present) plus the columns the API reads, but *choosing* the survivor
-   (and backfilling) is a migration with data loss risk: recommend making Drizzle
-   the single schema, generating diffs with `pnpm db:generate`, and retiring the
-   hand-written table SQL rather than maintaining both.
+   already present) and the columns the API reads; `0018` then chose the survivor
+   — `public.users` for writes, `public.profiles` as the read projection — and
+   closed the browser's direct access to the row. Diffing against the migrations
+   with `pnpm db:generate` is still the way to keep them aligned.
 3. **No SSR-level authorisation.** Auth is client-side (`AuthGate`, `auth-guard`)
    on purpose for now, so `/grid`, `/profile`, `/chat` etc. are protected only
    after hydration — the document and any `loader` data are reachable without a
@@ -388,11 +540,28 @@ second, worse truth gets committed, so each entry says what to decide instead.
    `src/domains/demo`, `src/core/**` (which *is* tested) and the `*-store.ts`
    modules are the interesting parts of that set: prune with the tests as the
    guide, not the graph alone.
-8. **Seeds write `password_hash` with bcryptjs** (`prisma/seed.ts`,
-   `prisma/seed-sql.ts`) for accounts that then cannot sign in, because Supabase
-   Auth — not `public.users` — verifies credentials. Seeding must go through
-   `supabase auth admin` (`POST /auth/v1/admin/users`) or the seed data is
-   decoration. `bcryptjs` is kept only for those scripts.
+8. **~~Seeds write `password_hash` with bcryptjs~~ — closed by §2.10.**
+   `scripts/seed.mjs` creates the login through `POST /auth/v1/admin/users`
+   before it inserts the row, and refuses to run at all when the service key is
+   missing. `public.users.password_hash` itself was dropped in 0018.
+9. **A user's tag bag can hold two vocabularies.** `users.tribes` gets tribe
+   **names** from `/tribes` and numeric **tag ids** from the profile editor, so a
+   user who used both ends up with `["hiking", 3]` and the compatibility score
+   counts one overlap where a person would see two. The columns are untyped jsonb
+   with no foreign key, so nothing is *wrong* at the database level; the fix is a
+   one-off normalisation (map every known name to its `tags`/`tribes` id, write the
+   array back) plus making `/tribes` send ids — not a check constraint added on top
+   of existing data. `tribes.member_count` is also a client-maintained counter, so
+   it drifts the moment a write fails halfway; deriving it from a join would remove
+   both the drift and the `update` the browser is no longer allowed to issue.
+10. **An API path with an undeclared method returns the SPA document.**
+   `GET /api/taps` answers `200 text/html`, because TanStack Start matches
+   routes by pathname and this route declares `POST`/`DELETE` only. No caller
+   is affected (the taps hooks use `/api/interest/*` for lists), and the fix is
+   not a per-route `GET` stub: it is one catch-all under `/api/$` that answers
+   `405`/`404` as JSON, which needs a check that it cannot shadow a declared
+   route's own method. Left open rather than papered over with ~20 dead
+   handlers.
 
 ## 4. Minimal assumptions
 
@@ -400,21 +569,25 @@ second, worse truth gets committed, so each entry says what to decide instead.
   (no separate Nitro/edge target is configured), so `vite preview` is a valid
   production command at this stage; `AUDIT.md` §3.3 and the Dockerfile comment
   record the tradeoff instead of inventing a hand-rolled Node listener.
-- Supabase Auth owns credentials; `public.users.password_hash` is legacy and is
-  never read or written by application code (`0015` relaxes its `NOT NULL` so the
-  sign-up flow can insert at all).
+- Supabase Auth owns credentials. `public.users.password_hash` (and
+  `apple_id`/`google_id`) were legacy columns that nothing read; `0018` drops
+  them rather than leaving a second, tempting way to authenticate.
 - `users.id` equals `auth.users.id` (the only way a token subject can key an app
   row) — `0015` turns that convention into a foreign key rather than assuming it.
 - Row Level Security stays the browser's boundary: nothing here adds a
   service-role call to a request path.
-- The Prisma schema remains only for the seed scripts; the API contract is
-  `drizzle/schema.ts`.
+- `drizzle/schema.ts` is the single schema: migrations, `src/schema.ts`, and
+  the seed script all describe the same columns. `src/integrations/supabase/types.ts`
+  remains hand-written — it is what the browser's `supabase-js` client type-checks
+  against, and `pnpm supabase gen types` should replace it verbatim as soon as a
+  real project URL is configured, at which point drift becomes impossible.
 
 ## 5. Suggested order for the next pass
 
-1. Decide §3.1 endpoint-by-endpoint (implement on Drizzle or delete the caller).
-2. Decide §3.2 (one user table), then regenerate `src/integrations/supabase/types.ts`
-   from the winning schema so the browser and API cannot drift again.
+1. ~~Decide §3.1 endpoint-by-endpoint~~ (done, §2.7–2.8) and ~~decide §3.2~~
+   (done, §2.10). Regenerate `src/integrations/supabase/types.ts` with
+   `pnpm supabase gen types` against a migrated project so the browser types are
+   derived, not maintained by hand.
 3. Cookie sessions (§3.3) → then an SSR guard, then tighten `Cache-Control` on
    documents that become personalised.
 4. CSP nonces (§3.4) and the map popup sinks (§3.5).

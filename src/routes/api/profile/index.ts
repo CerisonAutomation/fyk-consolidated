@@ -68,11 +68,30 @@ const profileSchema = z.object({
 	height: z.coerce.number().int().min(100).max(260).optional(),
 	weight: z.coerce.number().int().min(25).max(400).optional(),
 	body_type: z.string().max(32).optional(),
+	ethnicity: z.string().max(40).optional(),
 	occupation: z.string().max(120).optional(),
 	interests: z.array(z.string().max(60)).max(40).optional(),
-	tribes: z.array(z.number().int()).max(24).optional(),
-	looking_for: z.array(z.number().int()).max(24).optional(),
-	position: z.array(z.number().int()).max(8).optional(),
+	/**
+	 * `users.tribes`/`looking_for`/`position` are jsonb with a GIN index and no
+	 * foreign key (`0010`), and two vocabularies already exist in them: tribe
+	 * names (written by `/tribes`, which joins by name) and numeric tag ids
+	 * (written by the profile editor). The column accepts both, so so does the
+	 * API — rejecting one would have made a screen unable to save at all. Every
+	 * comparison on the server and in the grid textifies, so `3` and `"3"`
+	 * still match each other.
+	 */
+	tribes: z
+		.array(z.union([z.number().int(), z.string().max(40)]))
+		.max(24)
+		.optional(),
+	looking_for: z
+		.array(z.union([z.number().int(), z.string().max(40)]))
+		.max(24)
+		.optional(),
+	position: z
+		.array(z.union([z.number().int(), z.string().max(40)]))
+		.max(8)
+		.optional(),
 	languages: z.array(z.string().max(40)).max(12).optional(),
 	photos: z.array(z.string().max(2048)).max(12).optional(),
 	city: z.string().max(120).optional(),
@@ -110,6 +129,7 @@ const PROFILE_SELECT = {
 	height: users.height,
 	weight: users.weight,
 	bodyType: users.bodyType,
+	ethnicity: users.ethnicity,
 	position: users.position,
 	languages: users.languages,
 	lookingFor: users.lookingFor,
@@ -195,6 +215,8 @@ export const Route = createFileRoute("/api/profile/")({
 					if (body.weight !== undefined) set.weight = body.weight;
 					if (body.body_type !== undefined)
 						set.bodyType = cleanText(body.body_type, 32);
+					if (body.ethnicity !== undefined)
+						set.ethnicity = cleanText(body.ethnicity, 40);
 					if (body.occupation !== undefined)
 						set.occupation = cleanText(body.occupation, 120);
 					if (body.interests !== undefined)
@@ -308,6 +330,7 @@ function shape(row: Record<string, unknown>) {
 		height: row.height ?? null,
 		weight: row.weight ?? null,
 		body_type: row.bodyType ?? null,
+		ethnicity: row.ethnicity ?? null,
 		position: toArray(row.position),
 		languages: toArray(row.languages),
 		looking_for: toArray(row.lookingFor),
