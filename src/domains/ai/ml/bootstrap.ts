@@ -10,7 +10,6 @@
  *  - Proper error categorization for ML operations
  *  - Graceful degradation when CDN or GPU unavailable
  */
-import { raceTimeout } from "./race-timeout";
 
 // Pipeline type from Transformers.js — loaded via CDN at runtime, not npm
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -138,9 +137,15 @@ export async function loadClassifier(
   );
 
   try {
-    classifier = await raceTimeout(loadPromise, loadTimeout, () => {
-      throw { code: "TIMEOUT" as MLErrorCode, message: `Classifier load timed out after ${loadTimeout}ms` };
-    });
+    classifier = await Promise.race([
+      loadPromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject({ code: "TIMEOUT" as MLErrorCode, message: `Classifier load timed out after ${loadTimeout}ms` }),
+          loadTimeout,
+        ),
+      ),
+    ]);
   } catch (err) {
     // If WebGPU failed, retry with WASM
     if (device === "webgpu") {
@@ -202,9 +207,15 @@ export async function loadGenerator(
   );
 
   try {
-    generator = await raceTimeout(loadPromise, loadTimeout, () => {
-      throw { code: "TIMEOUT" as MLErrorCode, message: `Generator load timed out after ${loadTimeout}ms` };
-    });
+    generator = await Promise.race([
+      loadPromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject({ code: "TIMEOUT" as MLErrorCode, message: `Generator load timed out after ${loadTimeout}ms` }),
+          loadTimeout,
+        ),
+      ),
+    ]);
   } catch (err) {
     if (device === "webgpu") {
       try {
@@ -265,9 +276,15 @@ export async function loadExtractor(
   );
 
   try {
-    extractor = await raceTimeout(loadPromise, loadTimeout, () => {
-      throw { code: "TIMEOUT" as MLErrorCode, message: `Extractor load timed out after ${loadTimeout}ms` };
-    });
+    extractor = await Promise.race([
+      loadPromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject({ code: "TIMEOUT" as MLErrorCode, message: `Extractor load timed out after ${loadTimeout}ms` }),
+          loadTimeout,
+        ),
+      ),
+    ]);
   } catch (err) {
     if (device === "webgpu") {
       try {
@@ -328,9 +345,15 @@ export async function loadNsfwDetector(
   );
 
   try {
-    nsfwClassifier = await raceTimeout(loadPromise, loadTimeout, () => {
-      throw { code: "TIMEOUT" as MLErrorCode, message: `NSFW detector load timed out after ${loadTimeout}ms` };
-    });
+    nsfwClassifier = await Promise.race([
+      loadPromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject({ code: "TIMEOUT" as MLErrorCode, message: `NSFW detector load timed out after ${loadTimeout}ms` }),
+          loadTimeout,
+        ),
+      ),
+    ]);
   } catch (err) {
     if (device === "webgpu") {
       try {
@@ -391,9 +414,15 @@ export async function loadToxicityDetector(
   );
 
   try {
-    toxicityClassifier = await raceTimeout(loadPromise, loadTimeout, () => {
-      throw { code: "TIMEOUT" as MLErrorCode, message: `Toxicity detector load timed out after ${loadTimeout}ms` };
-    });
+    toxicityClassifier = await Promise.race([
+      loadPromise,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject({ code: "TIMEOUT" as MLErrorCode, message: `Toxicity detector load timed out after ${loadTimeout}ms` }),
+          loadTimeout,
+        ),
+      ),
+    ]);
   } catch (err) {
     if (device === "webgpu") {
       try {

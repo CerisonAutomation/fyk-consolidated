@@ -23,7 +23,6 @@
  */
 
 import { loadToxicityDetector, type MLError } from "../ml/bootstrap";
-import { raceTimeout } from "../ml/race-timeout";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -156,13 +155,17 @@ async function mlToxicityCheck(
   text: string,
 ): Promise<{ score: number; label: string } | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pipe: any = await raceTimeout(loadToxicityDetector(), 5_000, () => null);
+    const pipe = await Promise.race([
+      loadToxicityDetector(),
+      new Promise<null>((r) => setTimeout(() => r(null), 5_000)),
+    ]);
 
     if (!pipe) return null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = await raceTimeout(pipe(text), 3_000, () => null);
+    const result = await Promise.race([
+      pipe(text),
+      new Promise<null>((r) => setTimeout(() => r(null), 3_000)),
+    ]);
 
     if (!result?.length) return null;
 

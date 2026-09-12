@@ -1,5 +1,7 @@
-# Conventions live in AI_RULES.md — read that file; it is the source of truth.
-# This repo is TanStack Start + Vite + Tailwind v4 with hand-written primitives in
-# src/components/ui. There is no shadcn/Radix registry here (components.json was
-# deliberately removed), so do not run : it would install
-# a second parallel component system. Prune before you add.
+# shadcn instructions
+
+Use the latest version of Shadcn to install new components, like this command to add a button component:
+
+```bash
+pnpm dlx shadcn@latest add button
+```

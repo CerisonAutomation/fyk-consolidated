@@ -65,46 +65,26 @@ export type Profile = {
 	last_active_at: string;
 	created_at: string;
 	updated_at: string;
-	/** Moderation rights. Server-owned: a trigger blocks self-promotion. */
-	role: ModerationRole;
-	looking_for: string[];
-	interests: string[];
-	/** Set when the member says they are free right now; Board/availability. */
-	open_to_meet: boolean | null;
-	available_until: string | null;
-	/** Coarse ~4-9 char geohash of the coarsened location. Never a precise fix. */
-	geohash6: string | null;
-};
-
-export type ModerationRole = "user" | "moderator" | "admin";
-
-export type Notification = {
-	id: string;
-	user_id: string;
-	kind: "match" | "message" | "event" | "board" | "system" | "safety";
-	title: string;
-	body: string | null;
-	deep_link: string | null;
-	read: boolean;
-	read_at: string | null;
-	created_at: string;
-};
-
-export type Footprint = {
-	id: string;
-	visitor_id: string;
-	visited_id: string;
-	viewed_at: string;
-};
-
-export type ModerationAction = {
-	id: string;
-	report_id: string | null;
-	actor_id: string;
-	target_id: string;
-	action: "dismiss" | "warn" | "suspend" | "ban" | "reinstate";
-	note: string | null;
-	created_at: string;
+	/**
+	 * Mirrored from `public.users` by `users_apply_projection()` (0018). The
+	 * jsonb bags are untyped on purpose: PostgREST hands back `unknown` and each
+	 * caller narrows them with `asStringArray`-style helpers.
+	 */
+	photos: unknown;
+	tribes: unknown;
+	position: unknown;
+	languages: unknown;
+	interests: unknown;
+	looking_for: unknown;
+	tag_codes: unknown;
+	verification: number;
+	trust_score: number;
+	relationship_status: string | null;
+	occupation: string | null;
+	tier: string | null;
+	weight: number | null;
+	online: boolean;
+	discoverable: boolean;
 };
 
 export type ProfilePrivate = {
@@ -118,13 +98,8 @@ export type ProfilePhoto = {
 	id: string;
 	owner_id: string;
 	storage_path: string;
-	/** Bucket the object lives in; needed to sign/serve without guessing. */
-	bucket: string | null;
 	position: number;
 	is_primary: boolean;
-	blurhash: string | null;
-	nsfw_flag: boolean | null;
-	alt_text: string | null;
 	width: number | null;
 	height: number | null;
 	created_at: string;
@@ -222,8 +197,6 @@ export type Message = {
 	expires_at: string | null;
 	unsent_at: string | null;
 	edited_at: string | null;
-	pinned_at: string | null;
-	pinned_by: string | null;
 	created_at: string;
 };
 
@@ -331,31 +304,20 @@ export type PostJoin = {
 export type Report = {
 	id: string;
 	reporter_id: string;
-	target_type: "profile" | "message" | "board_post" | "event" | "album";
+	target_type: string;
 	target_id: string;
-	reason:
-		| "harassment"
-		| "spam"
-		| "fake_profile"
-		| "inappropriate_content"
-		| "underage"
-		| "threat"
-		| "doxxing"
-		| "other";
+	reason: string;
 	details: string | null;
 	status: ReportStatus;
-	/** Urgent is set by a trigger for underage/threat/doxxing and cannot be lowered. */
-	severity: "normal" | "urgent";
-	reviewed_by: string | null;
-	reviewed_at: string | null;
-	resolution:
-		| "no_action"
-		| "content_removed"
-		| "warning_issued"
-		| "temporarily_suspended"
-		| "permanently_banned"
-		| null;
 	created_at: string;
+};
+
+export type PremiumEntitlement = {
+	profile_id: string;
+	tier: PlanTier;
+	source: string;
+	expires_at: string | null;
+	updated_at: string;
 };
 
 export type Group = {
@@ -415,6 +377,18 @@ export type Shout = {
 	created_at: string;
 };
 
+export type Notification = {
+	id: string;
+	user_id: string;
+	type: string;
+	title: string;
+	body: string | null;
+	actor_id: string | null;
+	href: string | null;
+	read: boolean;
+	created_at: string;
+};
+
 export type Favorite = {
 	id: string;
 	user_id: string;
@@ -435,6 +409,14 @@ export type ShoutLike = {
 	id: string;
 	shout_id: string;
 	user_id: string;
+	created_at: string;
+};
+
+export type Footprint = {
+	id: string;
+	visitor_id: string;
+	visited_id: string;
+	preset: string | null;
 	created_at: string;
 };
 
@@ -545,20 +527,27 @@ export type StoryView = {
 	viewed_at: string;
 };
 
+/**
+ * `public.users` — the server-owned row. Browser code reads its own account
+ * through `/api/*` and everyone else's through `profiles`; direct selects are
+ * revoked in 0018, so this shape exists for the integrations that still write
+ * with a service token and for the Drizzle schema's naming to stay checkable.
+ * There is no `password_hash`, `apple_id` or `google_id` any more: Supabase
+ * owns credentials in `auth.users`.
+ */
 export type User = {
-	id: string;
-	email: string;
+	id: string | null;
+	email: string | null;
 	phone: string | null;
-	password_hash: string;
 	pseudo: string | null;
 	nick: string | null;
-	birthday: string | null;
-	age: number | null;
 	description: string | null;
-	headline: string | null;
 	occupation: string | null;
 	relationship_status: string | null;
 	ethnicity: string | null;
+	pronouns: string | null;
+	birthday: string | null;
+	age: number | null;
 	height: number | null;
 	weight: number | null;
 	body_type: string | null;
@@ -570,14 +559,15 @@ export type User = {
 	interests: unknown;
 	tribes: unknown;
 	photos: unknown;
+	avatar: string | null;
 	geo_mode: string | null;
 	h3_index: string | null;
 	lat: number | null;
 	lng: number | null;
-	city: string | null;
-	area: string | null;
 	lat_coarse: number | null;
 	lng_coarse: number | null;
+	city: string | null;
+	area: string | null;
 	status: string | null;
 	role: string | null;
 	tier: string | null;
@@ -603,13 +593,11 @@ export type User = {
 	language: string | null;
 	notif_prefs: unknown;
 	ai_prefs: unknown;
-	pronouns: string | null;
-	apple_id: string | null;
-	google_id: string | null;
 	last_cursor: string | null;
 	last_seen: string | null;
 	last_active_at: string;
 	onboarding_done: boolean | null;
+	boost_expires_at: string | null;
 	onboarding_completed_at: string | null;
 	created_at: string;
 	updated_at: string;
@@ -625,6 +613,7 @@ type Table<T> = {
 export type Database = {
 	public: {
 		Tables: {
+			users: Table<User>;
 			profiles: Table<Profile>;
 			profile_private: Table<ProfilePrivate>;
 			profile_photos: Table<ProfilePhoto>;
@@ -648,38 +637,51 @@ export type Database = {
 			board_comments: Table<BoardComment>;
 			post_joins: Table<PostJoin>;
 			reports: Table<Report>;
+			premium_entitlements: Table<PremiumEntitlement>;
+			groups: Table<Group>;
+			group_members: Table<GroupMember>;
+			group_messages: Table<GroupMessage>;
+			fansites: Table<Fansite>;
+			tribes: Table<Tribe>;
+			shouts: Table<Shout>;
 			notifications: Table<Notification>;
+			favorites: Table<Favorite>;
+			taps: Table<Tap>;
+			subscriptions: Table<Subscription>;
+			shout_likes: Table<ShoutLike>;
 			footprints: Table<Footprint>;
-			moderation_actions: Table<ModerationAction>;
+			user_notes: Table<UserNote>;
+			// Read-only here, and only because 0019 kept `*_select_own` for the browser:
+			// nothing in `src/**` queries these five directly any more (the writes moved to
+			// /api/wallet and /api/king-pet, and `#/integrations/supabase/{wallet,king-pet}.ts`
+			// are deleted). They stay in the type because `supabase gen types` would emit
+			// them; adding a *new* table here is a decision to let the browser read it, so
+			// `safety_checkins`, `safety_contacts` and `fansite_subscribers` are deliberately
+			// absent — they are reached through /api/safety/* and /api/fansites/* only.
+			king_pet: Table<KingPet>;
+			pet_items: Table<PetItem>;
+			pet_adventures: Table<PetAdventure>;
+			wallet: Table<WalletRow>;
+			wallet_transactions: Table<WalletTransaction>;
+			consumables_inventory: Table<ConsumablesInventory>;
+			stories: Table<Story>;
+			story_views: Table<StoryView>;
 		};
 		Views: Record<string, never>;
 		Functions: {
-			can_access_album: { Args: { target_album: string }; Returns: boolean };
-			can_access_chat_media: { Args: { path: string }; Returns: boolean };
+			// Both of these are real: `register_media_open`/`register_album_open` are
+			// defined in 0004_functions.sql, revoked from `anon`, granted to
+			// `authenticated`, and called from `#/integrations/supabase/chat.ts` with the
+			// error checked.
 			register_media_open: {
 				Args: { target: string };
 				Returns: MessageAttachment;
 			};
 			register_album_open: { Args: { target: string }; Returns: AlbumShare };
-			record_view: { Args: { target: string }; Returns: undefined };
-			unblock: { Args: { target: string }; Returns: undefined };
-			resolve_report: {
-				Args: { p_report_id: string; p_action: string; p_note?: string | null };
-				Returns: {
-					report_id: string;
-					report_status: ReportStatus;
-					suspended: boolean;
-				}[];
+			find_similar_messages: {
+				Args: { query_embedding: string; conv_id: string; match_count: number };
+				Returns: Record<string, unknown>[];
 			};
-			rate_limit_hit: {
-				Args: {
-					p_bucket_key: string;
-					p_window_seconds: number;
-					p_max_hits: number;
-				};
-				Returns: { hits: number; blocked: boolean }[];
-			};
-			expire_stale_rows: { Args: Record<string, never>; Returns: number };
 		};
 		Enums: Record<string, never>;
 		CompositeTypes: Record<string, never>;

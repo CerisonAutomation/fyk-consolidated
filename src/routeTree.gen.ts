@@ -10,16 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as ChatIndexRouteImport } from './routes/chat/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
+import { Route as FansitesIndexRouteImport } from './routes/fansites/index'
+import { Route as GamechangersIndexRouteImport } from './routes/gamechangers/index'
 import { Route as GridIndexRouteImport } from './routes/grid/index'
+import { Route as GroupsIndexRouteImport } from './routes/groups/index'
+import { Route as GuideIndexRouteImport } from './routes/guide/index'
+import { Route as KingPetIndexRouteImport } from './routes/king-pet/index'
+import { Route as MeetnowIndexRouteImport } from './routes/meetnow/index'
 import { Route as NotificationsIndexRouteImport } from './routes/notifications/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
+import { Route as PremiumIndexRouteImport } from './routes/premium/index'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as RightNowIndexRouteImport } from './routes/right-now/index'
 import { Route as SafetyIndexRouteImport } from './routes/safety/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as ShoutsIndexRouteImport } from './routes/shouts/index'
+import { Route as TribesIndexRouteImport } from './routes/tribes/index'
 import { Route as ApiAiIndexRouteImport } from './routes/api/ai/index'
 import { Route as ApiBoostIndexRouteImport } from './routes/api/boost/index'
 import { Route as ApiConversationsIndexRouteImport } from './routes/api/conversations/index'
@@ -38,8 +50,18 @@ import { Route as ApiSocialIndexRouteImport } from './routes/api/social/index'
 import { Route as ApiTapsIndexRouteImport } from './routes/api/taps/index'
 import { Route as ApiWalletIndexRouteImport } from './routes/api/wallet/index'
 import { Route as AuthCallbackIndexRouteImport } from './routes/auth/callback/index'
+import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
+import { Route as AuthSignUpIndexRouteImport } from './routes/auth/sign-up/index'
 import { Route as ChatConversationIdIndexRouteImport } from './routes/chat/$conversationId/index'
+import { Route as InterestTapsIndexRouteImport } from './routes/interest/taps/index'
+import { Route as InterestViewsIndexRouteImport } from './routes/interest/views/index'
 import { Route as ProfileProfileIdIndexRouteImport } from './routes/profile/$profileId/index'
+import { Route as SettingsAccountIndexRouteImport } from './routes/settings/account/index'
+import { Route as SettingsAppIndexRouteImport } from './routes/settings/app/index'
+import { Route as SettingsBlockedIndexRouteImport } from './routes/settings/blocked/index'
+import { Route as SettingsHiddenIndexRouteImport } from './routes/settings/hidden/index'
+import { Route as SettingsPrivacyIndexRouteImport } from './routes/settings/privacy/index'
+import { Route as SettingsProfileIndexRouteImport } from './routes/settings/profile/index'
 import { Route as ApiAuthMeIndexRouteImport } from './routes/api/auth/me/index'
 import { Route as ApiFansitesSubscribeIndexRouteImport } from './routes/api/fansites/subscribe/index'
 import { Route as ApiInterestTabIndexRouteImport } from './routes/api/interest/$tab/index'
@@ -60,9 +82,14 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscoverRoute = DiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
@@ -85,9 +112,39 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FansitesIndexRoute = FansitesIndexRouteImport.update({
+  id: '/fansites/',
+  path: '/fansites/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamechangersIndexRoute = GamechangersIndexRouteImport.update({
+  id: '/gamechangers/',
+  path: '/gamechangers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GridIndexRoute = GridIndexRouteImport.update({
   id: '/grid/',
   path: '/grid/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsIndexRoute = GroupsIndexRouteImport.update({
+  id: '/groups/',
+  path: '/groups/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideIndexRoute = GuideIndexRouteImport.update({
+  id: '/guide/',
+  path: '/guide/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KingPetIndexRoute = KingPetIndexRouteImport.update({
+  id: '/king-pet/',
+  path: '/king-pet/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeetnowIndexRoute = MeetnowIndexRouteImport.update({
+  id: '/meetnow/',
+  path: '/meetnow/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NotificationsIndexRoute = NotificationsIndexRouteImport.update({
@@ -100,6 +157,21 @@ const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   path: '/onboarding/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PremiumIndexRoute = PremiumIndexRouteImport.update({
+  id: '/premium/',
+  path: '/premium/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RightNowIndexRoute = RightNowIndexRouteImport.update({
+  id: '/right-now/',
+  path: '/right-now/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SafetyIndexRoute = SafetyIndexRouteImport.update({
   id: '/safety/',
   path: '/safety/',
@@ -108,6 +180,16 @@ const SafetyIndexRoute = SafetyIndexRouteImport.update({
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShoutsIndexRoute = ShoutsIndexRouteImport.update({
+  id: '/shouts/',
+  path: '/shouts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TribesIndexRoute = TribesIndexRouteImport.update({
+  id: '/tribes/',
+  path: '/tribes/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAiIndexRoute = ApiAiIndexRouteImport.update({
@@ -200,14 +282,64 @@ const AuthCallbackIndexRoute = AuthCallbackIndexRouteImport.update({
   path: '/auth/callback/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSignInIndexRoute = AuthSignInIndexRouteImport.update({
+  id: '/auth/sign-in/',
+  path: '/auth/sign-in/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignUpIndexRoute = AuthSignUpIndexRouteImport.update({
+  id: '/auth/sign-up/',
+  path: '/auth/sign-up/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatConversationIdIndexRoute = ChatConversationIdIndexRouteImport.update({
   id: '/chat/$conversationId/',
   path: '/chat/$conversationId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InterestTapsIndexRoute = InterestTapsIndexRouteImport.update({
+  id: '/interest/taps/',
+  path: '/interest/taps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterestViewsIndexRoute = InterestViewsIndexRouteImport.update({
+  id: '/interest/views/',
+  path: '/interest/views/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileProfileIdIndexRoute = ProfileProfileIdIndexRouteImport.update({
   id: '/profile/$profileId/',
   path: '/profile/$profileId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAccountIndexRoute = SettingsAccountIndexRouteImport.update({
+  id: '/settings/account/',
+  path: '/settings/account/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAppIndexRoute = SettingsAppIndexRouteImport.update({
+  id: '/settings/app/',
+  path: '/settings/app/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBlockedIndexRoute = SettingsBlockedIndexRouteImport.update({
+  id: '/settings/blocked/',
+  path: '/settings/blocked/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsHiddenIndexRoute = SettingsHiddenIndexRouteImport.update({
+  id: '/settings/hidden/',
+  path: '/settings/hidden/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsPrivacyIndexRoute = SettingsPrivacyIndexRouteImport.update({
+  id: '/settings/privacy/',
+  path: '/settings/privacy/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsProfileIndexRoute = SettingsProfileIndexRouteImport.update({
+  id: '/settings/profile/',
+  path: '/settings/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthMeIndexRoute = ApiAuthMeIndexRouteImport.update({
@@ -290,16 +422,28 @@ const ApiSafetyCheckInResolveIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/discover': typeof DiscoverRoute
   '/api/$': typeof ApiSplatRoute
-  '/admin/': typeof AdminIndexRoute
   '/board/': typeof BoardIndexRoute
   '/chat/': typeof ChatIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/fansites/': typeof FansitesIndexRoute
+  '/gamechangers/': typeof GamechangersIndexRoute
   '/grid/': typeof GridIndexRoute
+  '/groups/': typeof GroupsIndexRoute
+  '/guide/': typeof GuideIndexRoute
+  '/king-pet/': typeof KingPetIndexRoute
+  '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/premium/': typeof PremiumIndexRoute
+  '/profile/': typeof ProfileIndexRoute
+  '/right-now/': typeof RightNowIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/shouts/': typeof ShoutsIndexRoute
+  '/tribes/': typeof TribesIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/ai/': typeof ApiAiIndexRoute
   '/api/boost/': typeof ApiBoostIndexRoute
@@ -318,8 +462,18 @@ export interface FileRoutesByFullPath {
   '/api/taps/': typeof ApiTapsIndexRoute
   '/api/wallet/': typeof ApiWalletIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
+  '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/auth/sign-up/': typeof AuthSignUpIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
+  '/interest/taps/': typeof InterestTapsIndexRoute
+  '/interest/views/': typeof InterestViewsIndexRoute
   '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/settings/account/': typeof SettingsAccountIndexRoute
+  '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/privacy/': typeof SettingsPrivacyIndexRoute
+  '/settings/profile/': typeof SettingsProfileIndexRoute
   '/api/auth/me/': typeof ApiAuthMeIndexRoute
   '/api/fansites/subscribe/': typeof ApiFansitesSubscribeIndexRoute
   '/api/interest/$tab/': typeof ApiInterestTabIndexRoute
@@ -337,16 +491,28 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/discover': typeof DiscoverRoute
   '/api/$': typeof ApiSplatRoute
-  '/admin': typeof AdminIndexRoute
   '/board': typeof BoardIndexRoute
   '/chat': typeof ChatIndexRoute
   '/events': typeof EventsIndexRoute
+  '/fansites': typeof FansitesIndexRoute
+  '/gamechangers': typeof GamechangersIndexRoute
   '/grid': typeof GridIndexRoute
+  '/groups': typeof GroupsIndexRoute
+  '/guide': typeof GuideIndexRoute
+  '/king-pet': typeof KingPetIndexRoute
+  '/meetnow': typeof MeetnowIndexRoute
   '/notifications': typeof NotificationsIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/premium': typeof PremiumIndexRoute
+  '/profile': typeof ProfileIndexRoute
+  '/right-now': typeof RightNowIndexRoute
   '/safety': typeof SafetyIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/shouts': typeof ShoutsIndexRoute
+  '/tribes': typeof TribesIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/ai': typeof ApiAiIndexRoute
   '/api/boost': typeof ApiBoostIndexRoute
@@ -365,8 +531,18 @@ export interface FileRoutesByTo {
   '/api/taps': typeof ApiTapsIndexRoute
   '/api/wallet': typeof ApiWalletIndexRoute
   '/auth/callback': typeof AuthCallbackIndexRoute
+  '/auth/sign-in': typeof AuthSignInIndexRoute
+  '/auth/sign-up': typeof AuthSignUpIndexRoute
   '/chat/$conversationId': typeof ChatConversationIdIndexRoute
+  '/interest/taps': typeof InterestTapsIndexRoute
+  '/interest/views': typeof InterestViewsIndexRoute
   '/profile/$profileId': typeof ProfileProfileIdIndexRoute
+  '/settings/account': typeof SettingsAccountIndexRoute
+  '/settings/app': typeof SettingsAppIndexRoute
+  '/settings/blocked': typeof SettingsBlockedIndexRoute
+  '/settings/hidden': typeof SettingsHiddenIndexRoute
+  '/settings/privacy': typeof SettingsPrivacyIndexRoute
+  '/settings/profile': typeof SettingsProfileIndexRoute
   '/api/auth/me': typeof ApiAuthMeIndexRoute
   '/api/fansites/subscribe': typeof ApiFansitesSubscribeIndexRoute
   '/api/interest/$tab': typeof ApiInterestTabIndexRoute
@@ -385,16 +561,28 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/discover': typeof DiscoverRoute
   '/api/$': typeof ApiSplatRoute
-  '/admin/': typeof AdminIndexRoute
   '/board/': typeof BoardIndexRoute
   '/chat/': typeof ChatIndexRoute
   '/events/': typeof EventsIndexRoute
+  '/fansites/': typeof FansitesIndexRoute
+  '/gamechangers/': typeof GamechangersIndexRoute
   '/grid/': typeof GridIndexRoute
+  '/groups/': typeof GroupsIndexRoute
+  '/guide/': typeof GuideIndexRoute
+  '/king-pet/': typeof KingPetIndexRoute
+  '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/premium/': typeof PremiumIndexRoute
+  '/profile/': typeof ProfileIndexRoute
+  '/right-now/': typeof RightNowIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/shouts/': typeof ShoutsIndexRoute
+  '/tribes/': typeof TribesIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/ai/': typeof ApiAiIndexRoute
   '/api/boost/': typeof ApiBoostIndexRoute
@@ -413,8 +601,18 @@ export interface FileRoutesById {
   '/api/taps/': typeof ApiTapsIndexRoute
   '/api/wallet/': typeof ApiWalletIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
+  '/auth/sign-in/': typeof AuthSignInIndexRoute
+  '/auth/sign-up/': typeof AuthSignUpIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
+  '/interest/taps/': typeof InterestTapsIndexRoute
+  '/interest/views/': typeof InterestViewsIndexRoute
   '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/settings/account/': typeof SettingsAccountIndexRoute
+  '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/privacy/': typeof SettingsPrivacyIndexRoute
+  '/settings/profile/': typeof SettingsProfileIndexRoute
   '/api/auth/me/': typeof ApiAuthMeIndexRoute
   '/api/fansites/subscribe/': typeof ApiFansitesSubscribeIndexRoute
   '/api/interest/$tab/': typeof ApiInterestTabIndexRoute
@@ -434,16 +632,28 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
+    | '/discover'
     | '/api/$'
-    | '/admin/'
     | '/board/'
     | '/chat/'
     | '/events/'
+    | '/fansites/'
+    | '/gamechangers/'
     | '/grid/'
+    | '/groups/'
+    | '/guide/'
+    | '/king-pet/'
+    | '/meetnow/'
     | '/notifications/'
     | '/onboarding/'
+    | '/premium/'
+    | '/profile/'
+    | '/right-now/'
     | '/safety/'
     | '/settings/'
+    | '/shouts/'
+    | '/tribes/'
     | '/api/push/subscribe'
     | '/api/ai/'
     | '/api/boost/'
@@ -462,8 +672,18 @@ export interface FileRouteTypes {
     | '/api/taps/'
     | '/api/wallet/'
     | '/auth/callback/'
+    | '/auth/sign-in/'
+    | '/auth/sign-up/'
     | '/chat/$conversationId/'
+    | '/interest/taps/'
+    | '/interest/views/'
     | '/profile/$profileId/'
+    | '/settings/account/'
+    | '/settings/app/'
+    | '/settings/blocked/'
+    | '/settings/hidden/'
+    | '/settings/privacy/'
+    | '/settings/profile/'
     | '/api/auth/me/'
     | '/api/fansites/subscribe/'
     | '/api/interest/$tab/'
@@ -481,16 +701,28 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
+    | '/discover'
     | '/api/$'
-    | '/admin'
     | '/board'
     | '/chat'
     | '/events'
+    | '/fansites'
+    | '/gamechangers'
     | '/grid'
+    | '/groups'
+    | '/guide'
+    | '/king-pet'
+    | '/meetnow'
     | '/notifications'
     | '/onboarding'
+    | '/premium'
+    | '/profile'
+    | '/right-now'
     | '/safety'
     | '/settings'
+    | '/shouts'
+    | '/tribes'
     | '/api/push/subscribe'
     | '/api/ai'
     | '/api/boost'
@@ -509,8 +741,18 @@ export interface FileRouteTypes {
     | '/api/taps'
     | '/api/wallet'
     | '/auth/callback'
+    | '/auth/sign-in'
+    | '/auth/sign-up'
     | '/chat/$conversationId'
+    | '/interest/taps'
+    | '/interest/views'
     | '/profile/$profileId'
+    | '/settings/account'
+    | '/settings/app'
+    | '/settings/blocked'
+    | '/settings/hidden'
+    | '/settings/privacy'
+    | '/settings/profile'
     | '/api/auth/me'
     | '/api/fansites/subscribe'
     | '/api/interest/$tab'
@@ -528,16 +770,28 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/about'
+    | '/discover'
     | '/api/$'
-    | '/admin/'
     | '/board/'
     | '/chat/'
     | '/events/'
+    | '/fansites/'
+    | '/gamechangers/'
     | '/grid/'
+    | '/groups/'
+    | '/guide/'
+    | '/king-pet/'
+    | '/meetnow/'
     | '/notifications/'
     | '/onboarding/'
+    | '/premium/'
+    | '/profile/'
+    | '/right-now/'
     | '/safety/'
     | '/settings/'
+    | '/shouts/'
+    | '/tribes/'
     | '/api/push/subscribe'
     | '/api/ai/'
     | '/api/boost/'
@@ -556,8 +810,18 @@ export interface FileRouteTypes {
     | '/api/taps/'
     | '/api/wallet/'
     | '/auth/callback/'
+    | '/auth/sign-in/'
+    | '/auth/sign-up/'
     | '/chat/$conversationId/'
+    | '/interest/taps/'
+    | '/interest/views/'
     | '/profile/$profileId/'
+    | '/settings/account/'
+    | '/settings/app/'
+    | '/settings/blocked/'
+    | '/settings/hidden/'
+    | '/settings/privacy/'
+    | '/settings/profile/'
     | '/api/auth/me/'
     | '/api/fansites/subscribe/'
     | '/api/interest/$tab/'
@@ -576,16 +840,28 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  DiscoverRoute: typeof DiscoverRoute
   ApiSplatRoute: typeof ApiSplatRoute
-  AdminIndexRoute: typeof AdminIndexRoute
   BoardIndexRoute: typeof BoardIndexRoute
   ChatIndexRoute: typeof ChatIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
+  FansitesIndexRoute: typeof FansitesIndexRoute
+  GamechangersIndexRoute: typeof GamechangersIndexRoute
   GridIndexRoute: typeof GridIndexRoute
+  GroupsIndexRoute: typeof GroupsIndexRoute
+  GuideIndexRoute: typeof GuideIndexRoute
+  KingPetIndexRoute: typeof KingPetIndexRoute
+  MeetnowIndexRoute: typeof MeetnowIndexRoute
   NotificationsIndexRoute: typeof NotificationsIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
+  PremiumIndexRoute: typeof PremiumIndexRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
+  RightNowIndexRoute: typeof RightNowIndexRoute
   SafetyIndexRoute: typeof SafetyIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  ShoutsIndexRoute: typeof ShoutsIndexRoute
+  TribesIndexRoute: typeof TribesIndexRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
   ApiAiIndexRoute: typeof ApiAiIndexRoute
   ApiBoostIndexRoute: typeof ApiBoostIndexRoute
@@ -604,8 +880,18 @@ export interface RootRouteChildren {
   ApiTapsIndexRoute: typeof ApiTapsIndexRoute
   ApiWalletIndexRoute: typeof ApiWalletIndexRoute
   AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute
+  AuthSignInIndexRoute: typeof AuthSignInIndexRoute
+  AuthSignUpIndexRoute: typeof AuthSignUpIndexRoute
   ChatConversationIdIndexRoute: typeof ChatConversationIdIndexRoute
+  InterestTapsIndexRoute: typeof InterestTapsIndexRoute
+  InterestViewsIndexRoute: typeof InterestViewsIndexRoute
   ProfileProfileIdIndexRoute: typeof ProfileProfileIdIndexRoute
+  SettingsAccountIndexRoute: typeof SettingsAccountIndexRoute
+  SettingsAppIndexRoute: typeof SettingsAppIndexRoute
+  SettingsBlockedIndexRoute: typeof SettingsBlockedIndexRoute
+  SettingsHiddenIndexRoute: typeof SettingsHiddenIndexRoute
+  SettingsPrivacyIndexRoute: typeof SettingsPrivacyIndexRoute
+  SettingsProfileIndexRoute: typeof SettingsProfileIndexRoute
   ApiAuthMeIndexRoute: typeof ApiAuthMeIndexRoute
   ApiFansitesSubscribeIndexRoute: typeof ApiFansitesSubscribeIndexRoute
   ApiInterestTabIndexRoute: typeof ApiInterestTabIndexRoute
@@ -631,11 +917,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discover': {
+      id: '/discover'
+      path: '/discover'
+      fullPath: '/discover'
+      preLoaderRoute: typeof DiscoverRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/$': {
@@ -666,11 +959,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/fansites/': {
+      id: '/fansites/'
+      path: '/fansites'
+      fullPath: '/fansites/'
+      preLoaderRoute: typeof FansitesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gamechangers/': {
+      id: '/gamechangers/'
+      path: '/gamechangers'
+      fullPath: '/gamechangers/'
+      preLoaderRoute: typeof GamechangersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/grid/': {
       id: '/grid/'
       path: '/grid'
       fullPath: '/grid/'
       preLoaderRoute: typeof GridIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups/': {
+      id: '/groups/'
+      path: '/groups'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof GroupsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide/': {
+      id: '/guide/'
+      path: '/guide'
+      fullPath: '/guide/'
+      preLoaderRoute: typeof GuideIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/king-pet/': {
+      id: '/king-pet/'
+      path: '/king-pet'
+      fullPath: '/king-pet/'
+      preLoaderRoute: typeof KingPetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/meetnow/': {
+      id: '/meetnow/'
+      path: '/meetnow'
+      fullPath: '/meetnow/'
+      preLoaderRoute: typeof MeetnowIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notifications/': {
@@ -687,6 +1022,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/premium/': {
+      id: '/premium/'
+      path: '/premium'
+      fullPath: '/premium/'
+      preLoaderRoute: typeof PremiumIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/': {
+      id: '/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/right-now/': {
+      id: '/right-now/'
+      path: '/right-now'
+      fullPath: '/right-now/'
+      preLoaderRoute: typeof RightNowIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/safety/': {
       id: '/safety/'
       path: '/safety'
@@ -699,6 +1055,20 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shouts/': {
+      id: '/shouts/'
+      path: '/shouts'
+      fullPath: '/shouts/'
+      preLoaderRoute: typeof ShoutsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tribes/': {
+      id: '/tribes/'
+      path: '/tribes'
+      fullPath: '/tribes/'
+      preLoaderRoute: typeof TribesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/ai/': {
@@ -827,6 +1197,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/sign-in/': {
+      id: '/auth/sign-in/'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in/'
+      preLoaderRoute: typeof AuthSignInIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/sign-up/': {
+      id: '/auth/sign-up/'
+      path: '/auth/sign-up'
+      fullPath: '/auth/sign-up/'
+      preLoaderRoute: typeof AuthSignUpIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat/$conversationId/': {
       id: '/chat/$conversationId/'
       path: '/chat/$conversationId'
@@ -834,11 +1218,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatConversationIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/interest/taps/': {
+      id: '/interest/taps/'
+      path: '/interest/taps'
+      fullPath: '/interest/taps/'
+      preLoaderRoute: typeof InterestTapsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interest/views/': {
+      id: '/interest/views/'
+      path: '/interest/views'
+      fullPath: '/interest/views/'
+      preLoaderRoute: typeof InterestViewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/$profileId/': {
       id: '/profile/$profileId/'
       path: '/profile/$profileId'
       fullPath: '/profile/$profileId/'
       preLoaderRoute: typeof ProfileProfileIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/account/': {
+      id: '/settings/account/'
+      path: '/settings/account'
+      fullPath: '/settings/account/'
+      preLoaderRoute: typeof SettingsAccountIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/app/': {
+      id: '/settings/app/'
+      path: '/settings/app'
+      fullPath: '/settings/app/'
+      preLoaderRoute: typeof SettingsAppIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/blocked/': {
+      id: '/settings/blocked/'
+      path: '/settings/blocked'
+      fullPath: '/settings/blocked/'
+      preLoaderRoute: typeof SettingsBlockedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/hidden/': {
+      id: '/settings/hidden/'
+      path: '/settings/hidden'
+      fullPath: '/settings/hidden/'
+      preLoaderRoute: typeof SettingsHiddenIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/privacy/': {
+      id: '/settings/privacy/'
+      path: '/settings/privacy'
+      fullPath: '/settings/privacy/'
+      preLoaderRoute: typeof SettingsPrivacyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/profile/': {
+      id: '/settings/profile/'
+      path: '/settings/profile'
+      fullPath: '/settings/profile/'
+      preLoaderRoute: typeof SettingsProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/me/': {
@@ -944,16 +1384,28 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  DiscoverRoute: DiscoverRoute,
   ApiSplatRoute: ApiSplatRoute,
-  AdminIndexRoute: AdminIndexRoute,
   BoardIndexRoute: BoardIndexRoute,
   ChatIndexRoute: ChatIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
+  FansitesIndexRoute: FansitesIndexRoute,
+  GamechangersIndexRoute: GamechangersIndexRoute,
   GridIndexRoute: GridIndexRoute,
+  GroupsIndexRoute: GroupsIndexRoute,
+  GuideIndexRoute: GuideIndexRoute,
+  KingPetIndexRoute: KingPetIndexRoute,
+  MeetnowIndexRoute: MeetnowIndexRoute,
   NotificationsIndexRoute: NotificationsIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
+  PremiumIndexRoute: PremiumIndexRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
+  RightNowIndexRoute: RightNowIndexRoute,
   SafetyIndexRoute: SafetyIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  ShoutsIndexRoute: ShoutsIndexRoute,
+  TribesIndexRoute: TribesIndexRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,
   ApiAiIndexRoute: ApiAiIndexRoute,
   ApiBoostIndexRoute: ApiBoostIndexRoute,
@@ -972,8 +1424,18 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTapsIndexRoute: ApiTapsIndexRoute,
   ApiWalletIndexRoute: ApiWalletIndexRoute,
   AuthCallbackIndexRoute: AuthCallbackIndexRoute,
+  AuthSignInIndexRoute: AuthSignInIndexRoute,
+  AuthSignUpIndexRoute: AuthSignUpIndexRoute,
   ChatConversationIdIndexRoute: ChatConversationIdIndexRoute,
+  InterestTapsIndexRoute: InterestTapsIndexRoute,
+  InterestViewsIndexRoute: InterestViewsIndexRoute,
   ProfileProfileIdIndexRoute: ProfileProfileIdIndexRoute,
+  SettingsAccountIndexRoute: SettingsAccountIndexRoute,
+  SettingsAppIndexRoute: SettingsAppIndexRoute,
+  SettingsBlockedIndexRoute: SettingsBlockedIndexRoute,
+  SettingsHiddenIndexRoute: SettingsHiddenIndexRoute,
+  SettingsPrivacyIndexRoute: SettingsPrivacyIndexRoute,
+  SettingsProfileIndexRoute: SettingsProfileIndexRoute,
   ApiAuthMeIndexRoute: ApiAuthMeIndexRoute,
   ApiFansitesSubscribeIndexRoute: ApiFansitesSubscribeIndexRoute,
   ApiInterestTabIndexRoute: ApiInterestTabIndexRoute,

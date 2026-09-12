@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -585,5 +585,268 @@ describe("migration invariants", () => {
 			}
 		}
 		expect(offenders).toEqual([]);
+	});
+});
+
+/**
+ * Edge-function trust, and the tables a function's own caller owns.
+ *
+ * A Supabase Edge Function is an HTTP endpoint on a public hostname whose authentication is
+ * decided by configuration, not code — and this repository declared no `[functions.*]`
+ * section at all, so all five inherited the platform default `verify_jwt = true`. That
+ * default is correct for the two a signed-in browser calls with its access token, and fatal
+ * for the two whose caller cannot produce one: `notify` is invoked by `pg_net` from a trigger
+ * and `cron-cleanup` by an external scheduler, so both were 401-ing every attempt —
+ * "scheduled housekeeping" and "push delivery" were simultaneously true on paper and dead in
+ * production. The fix cannot be "turn the check off", because both of those functions hold
+ * the service role: one sends attacker-chosen text to another user's lock screen, the other
+ * deletes rows. So the invariant is the *pair* — an opened function must carry a shared
+ * secret — and this file is what keeps the pair from drifting apart again.
+ */
+describe("edge-function trust", () => {
+	const config = readFileSync(join(ROOT, "supabase", "config.toml"), "utf8");
+	const functionsDir = join(ROOT, "supabase", "functions");
+	const names = readdirSync(functionsDir, { withFileTypes: true })
+		.filter((d) => d.isDirectory())
+		.map((d) => d.name);
+	const functions = sources(functionsDir, [".ts"]).map((f) => ({
+		...f,
+		name: f.file.split(sep).slice(-2)[0] ?? "",
+	}));
+
+	/** The explicit `verify_jwt` for a function, or `null` when it declares nothing. */
+	function declaredVerify(name: string): boolean | null {
+		let inSection = false;
+		for (const raw of config.split("\n")) {
+			const line = raw.trim();
+			if (line.startsWith("[")) {
+				inSection = line === `[functions.${name}]`;
+				continue;
+			}
+			if (!inSection) continue;
+			const m = /^verify_jwt\s*=\s*(true|false)$/.exec(line);
+			if (m) return m[1] === "true";
+		}
+		return null;
+	}
+
+	it("declares a JWT posture for every function instead of inheriting one", () => {
+		const undeclared = names.filter((n) => declaredVerify(n) === null);
+		expect(undeclared).toEqual([]);
+	});
+
+	it("keeps the functions a browser calls behind the platform check", () => {
+		// `ai-chat` spends money and `moderate` spends a provider call, both keyed off the
+		// caller's identity; `verify_jwt = false` would leave the limiter with nothing
+		// anonymous to be limited by.
+		const mustVerify = ["ai-chat", "moderate"];
+		const offenders = mustVerify.filter((n) => declaredVerify(n) !== true);
+		expect(offenders).toEqual([]);
+	});
+
+	it("requires a shared secret of any unauthenticated function that holds privilege", () => {
+		const offenders: string[] = [];
+		for (const { name, src } of functions) {
+			if (declaredVerify(name) !== false) continue;
+			const privileged =
+				/SERVICE_ROLE_KEY/.test(src) ||
+				/\.from\(\s*"\w+"\s*\)\.(insert|update|delete)\(/.test(src) ||
+				/\.rpc\(\s*"\w+"/.test(src);
+			if (!privileged) continue;
+			const header = /headers\.get\(\s*"x-fyk-[a-z-]+-token"\s*\)/.test(src);
+			const secret = /Deno\.env\.get\(\s*"[A-Z0-9_]*TOKEN"\s*\)/.test(src);
+			// Refusing while unconfigured is the difference between "not yet deployed" and
+			// "open to the internet until somebody remembers".
+			const refuses =
+				/if\s*\(\s*![A-Za-z0-9_]*TOKEN\s*\)[\s\S]{0,260}?503/.test(src);
+			if (!header || !secret || !refuses) {
+				offenders.push(
+					`${name}: header=${header} secret=${secret} refusesUnset=${refuses}`,
+				);
+			}
+		}
+		expect(offenders).toEqual([]);
+	});
+
+	it("does not let a notification trigger call something that inserts notifications", () => {
+		// The self-amplification this prevents: 0023 §4 put an AFTER INSERT trigger on
+		// `public.notifications` that POSTs to `notify`, and `notify` wrote a row into
+		// `public.notifications`. Had the write been legal, every push would have re-fired
+		// the trigger that produced it. It was not legal — `push` is a transport, not a value
+		// in `notifications_type_check` — so the failure was *silent* instead: the function
+		// was rejected, and a user who enabled notifications received none, forever.
+		const stripped = ALL.map((m) => stripSql(m.src)).join("\n");
+		const notifyTriggers: { table: string; fn: string }[] = [];
+		for (const m of stripped.matchAll(
+			/create\s+trigger\b([\s\S]{0,420}?)execute\s+function\s+(?:public\.)?([a-z_0-9]+)\s*\(\s*\)/gi,
+		)) {
+			const table = /\bon\s+(?:public\.)?([a-z_0-9]+)/i.exec(m[1])?.[1];
+			if (!table) continue;
+			const body = new RegExp(
+				`create\\s+(?:or\\s+replace\\s+)?function\\s+(?:public\\.)?${m[2]}\\b[\\s\\S]{0,400}?\\$fn\\$([\\s\\S]*?)\\$fn\\$`,
+				"i",
+			).exec(stripped);
+			if (body && /net\.http_post/i.test(body[1])) {
+				notifyTriggers.push({ table, fn: m[2] });
+			}
+		}
+		// A "found nothing" result and a "found no violation" result are the same number,
+		// so the set the rule walks has to be non-empty or the guard is vacuous: an earlier
+		// version of this test captured the function's *header* (lazy `\\$fn\\$` stops at the
+		// opening delimiter) and passed because it had silently seen nothing.
+		expect(notifyTriggers).toContainEqual({
+			table: "notifications",
+			fn: "enqueue_push_notification",
+		});
+		const offenders: string[] = [];
+		for (const { name, src } of functions) {
+			for (const m of src.matchAll(/\.from\(\s*"(\w+)"\s*\)\.insert\(/g)) {
+				const hit = notifyTriggers.find((t) => t.table === m[1]);
+				if (hit) {
+					offenders.push(
+						`functions/${name}: inserts into ${m[1]}, which fires ${hit.fn}()`,
+					);
+				}
+			}
+		}
+		expect(offenders).toEqual([]);
+	});
+
+	it("keeps the push payload and the service worker in step", () => {
+		// `public/sw.js` is a static file in a different language, build and runtime from
+		// its producer, so nothing else joins them: a renamed field would mean every
+		// notification renders `undefined`, and no type error anywhere.
+		const notify = functions.find((f) => f.name === "notify");
+		expect(notify).toBeDefined();
+		expect(
+			/JSON\.stringify\(\s*\{\s*title,\s*body,\s*href\s*\}\s*\)/.test(
+				notify?.src ?? "",
+			),
+		).toBe(true);
+		const sw = readFileSync(join(ROOT, "public", "sw.js"), "utf8");
+		for (const key of ["title", "body", "href"]) {
+			expect(new RegExp(`\\b${key}\\b`).test(sw)).toBe(true);
+		}
+	});
+});
+
+describe("push delivery policy (0026)", () => {
+	/**
+	 * Every `$fn$`-delimited body of the delivery trigger, in the order the files apply.
+	 *
+	 * Collected across files rather than read from 0026 alone, because the trigger has
+	 * been redefined three times: what runs on a database is the *last* definition, and a
+	 * migration appended later that forgets the policy would silently delete it.
+	 */
+	function bodies(): { file: string; body: string }[] {
+		const out: { file: string; body: string }[] = [];
+		for (const m of ALL) {
+			const re =
+				/create or replace function public\.enqueue_push_notification\(\)[\s\S]*?\$fn\$([\s\S]*?)\$fn\$/g;
+			for (const match of m.src.matchAll(re)) {
+				out.push({ file: m.file, body: match[1] });
+			}
+		}
+		return out;
+	}
+
+	/** A missing file is a fact about the repository, so say it instead of `!`-ing past it. */
+	function orThrow<T>(value: T | undefined, label: string): T {
+		if (value === undefined) {
+			throw new Error(
+				`${label}: not found — the guard is reading a renamed file`,
+			);
+		}
+		return value;
+	}
+
+	it("ends with the definition that enforces the preferences", () => {
+		const found = bodies();
+		// 0023 introduced it, 0025 made it reachable, 0026 gave it a policy. Fewer
+		// than two definitions means this test is reading the wrong files.
+		expect(found.length).toBeGreaterThanOrEqual(2);
+		const last = found[found.length - 1];
+		expect(last.file).toBe("0026_privacy_controls.sql");
+		for (const key of [
+			"pushNotifications",
+			"matchNotifications",
+			"messageNotifications",
+			"eventNotifications",
+		]) {
+			expect(last.body, `notif_prefs.${key} is unread`).toContain(key);
+		}
+		expect(last.body).toContain("u.dnd_mode");
+		// A recipient with no row must not be invented into a suppression.
+		expect(last.body).toContain("if not found then");
+		// Absent means deliver: only an explicit JSON false may silence a type, so a
+		// user who never opened Settings keeps exactly the delivery they had before.
+		expect(last.body).toContain(
+			"lower(v_pref ->> 'pushNotifications') = 'false'",
+		);
+		expect(last.body).not.toMatch(/coalesce\(v_pref[^)]*'true'\)/);
+	});
+
+	it("decides, for every notification type, which switch may silence it", () => {
+		// `meetnow` is the precedent: 0019 widened the type list for two flows and left
+		// a third outside it, and the constraint turned "not wired up" into a rejected
+		// transaction. The same drift here would be worse, because the failure is that a
+		// push nobody decided anything about either always or never arrives.
+		const withCheck = orThrow(
+			[...ALL].reverse().find((m) => /notifications_type_check/.test(m.src)),
+			"a migration defining notifications_type_check",
+		);
+		const list = orThrow(
+			/add constraint notifications_type_check\s*\n?\s*check \(([^;]*)\)/i.exec(
+				withCheck.src.replace(/\s+/g, " "),
+			),
+			"the type list of the newest notifications_type_check",
+		);
+		const types = [
+			...(list[1].matchAll(/'([a-z_0-9]+)'/g) as Iterable<RegExpMatchArray>),
+		].map((m) => m[1]);
+		expect(types.length).toBeGreaterThanOrEqual(12);
+		const body = orThrow(bodies().at(-1), "the delivery trigger").body;
+		const exempt = /not in \(([^)]*)\)/.exec(body)?.[1] ?? "";
+		for (const type of types) {
+			const decided =
+				new RegExp(`when '${type}'\\s+then`).test(body) ||
+				exempt.includes(`'${type}'`);
+			expect(decided, `${type} is neither gated nor exempt`).toBe(true);
+		}
+	});
+
+	it("exempts the safety types from a mute, but not from an opt-out", () => {
+		const body = orThrow(bodies().at(-1), "the delivery trigger").body;
+		const exempt = /not in \(([^)]*)\)/.exec(body)?.[1] ?? "";
+		for (const type of ["check_in", "check_in_resolved", "check_in_overdue"]) {
+			expect(exempt, `${type} must be exempt from DND`).toContain(`'${type}'`);
+		}
+		// Ordering, which is the actual claim: the exemption sits on the DND gate, not
+		// on the master `pushNotifications` switch — a temporary mute may not swallow an
+		// alarm, while "no push on this device" is a decision about the transport.
+		const dnd = body.indexOf("v_dnd and new.type not in");
+		const master = body.indexOf("'pushNotifications'");
+		expect(dnd).toBeGreaterThan(-1);
+		expect(master).toBeGreaterThan(-1);
+		expect(body.slice(0, dnd)).toContain("pushNotifications");
+		expect(body.slice(0, master)).not.toContain("new.type not in");
+	});
+
+	it("adds the last-online column the privacy screen has always offered", () => {
+		const sql = ALL.map((m) => m.src).join("\n");
+		expect(sql).toMatch(
+			/alter table public\.users\s+add column if not exists hide_last_online boolean not null default false/,
+		);
+		// Three-way join, because the migration is only half of a switch: the schema
+		// needs the field, and a shaper that never selects it cannot honour it.
+		expect(readFileSync(join(ROOT, "drizzle/schema.ts"), "utf8")).toContain(
+			'hideLastOnline: boolean("hide_last_online")',
+		);
+		const helpers = readFileSync(
+			join(ROOT, "src/lib/api-helpers.ts"),
+			"utf8",
+		).replace(/\/\*[\s\S]*?\*\//g, "");
+		expect(helpers).toContain("hideLastOnline: users.hideLastOnline");
+		expect(helpers).toMatch(/lastSeen:\s*row\.hideLastOnline/);
 	});
 });

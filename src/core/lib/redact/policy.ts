@@ -1,0 +1,32 @@
+const verbatimKeys = new Set([
+	"automated",
+	"banSubReason",
+	"code",
+	"contentType",
+	"errorCode",
+	"format",
+	"height",
+	"isBanAutomated",
+	"kind",
+	"mimeType",
+	"reason",
+	"status",
+	"statusCode",
+	"subReason",
+	"type",
+	"width",
+]);
+
+const proseKeys = new Set(["detail", "error", "message", "title"]);
+
+const verbatimQueryParams = new Set([
+	"limit",
+	"offset",
+	"page",
+	"pageNumber",
+	"pageSize",
+]);
+
+const geohashQueryParams = new Set(["exploreGeoHash", "nearbyGeoHash"]);
+
+export { verbatimKeys, proseKeys, verbatimQueryParams, geohashQueryParams };

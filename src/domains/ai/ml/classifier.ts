@@ -11,7 +11,6 @@
  */
 
 import { loadClassifier as loadMLClassifier, type MLError } from "./bootstrap";
-import { raceTimeout } from "./race-timeout";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,16 +58,16 @@ export async function classifyIntent(
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pipe: any = await raceTimeout(loadMLClassifier(), 5_000, () => null);
+    const pipe = await Promise.race([
+      loadMLClassifier(),
+      new Promise<null>((r) => setTimeout(() => r(null), 5_000)),
+    ]);
 
     if (pipe) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: any = await raceTimeout(
+      const result = await Promise.race([
         pipe(text, { multi_label: false }),
-        3_000,
-        () => null,
-      );
+        new Promise<null>((r) => setTimeout(() => r(null), 3_000)),
+      ]);
 
       if (result?.labels?.length) {
         const labelMap: Record<string, Intent> = {

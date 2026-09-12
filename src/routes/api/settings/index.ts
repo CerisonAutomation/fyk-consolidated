@@ -74,6 +74,7 @@ const prefsSchema = z
 		incognito: z.boolean().nullish(),
 		hide_distance: z.boolean().nullish(),
 		hide_online: z.boolean().nullish(),
+		hide_last_online: z.boolean().nullish(),
 		visible: z.boolean().nullish(),
 	})
 	.strict();
@@ -170,6 +171,7 @@ export const Route = createFileRoute("/api/settings/")({
 							incognito: users.incognito,
 							hideDistance: users.hideDistance,
 							hideOnline: users.hideOnline,
+							hideLastOnline: users.hideLastOnline,
 							visible: users.visible,
 						})
 						.from(users)
@@ -195,6 +197,7 @@ export const Route = createFileRoute("/api/settings/")({
 								incognito: row.incognito ?? false,
 								hide_distance: row.hideDistance ?? false,
 								hide_online: row.hideOnline ?? false,
+								hide_last_online: row.hideLastOnline ?? false,
 								visible: row.visible ?? true,
 							},
 						},
@@ -264,6 +267,8 @@ export const Route = createFileRoute("/api/settings/")({
 					if (body.hide_distance !== undefined)
 						set.hideDistance = body.hide_distance;
 					if (body.hide_online !== undefined) set.hideOnline = body.hide_online;
+					if (body.hide_last_online !== undefined)
+						set.hideLastOnline = body.hide_last_online;
 					if (body.visible !== undefined) set.visible = body.visible;
 
 					try {

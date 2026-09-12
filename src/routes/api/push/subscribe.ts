@@ -69,10 +69,51 @@ export const Route = createFileRoute("/api/push/subscribe")({
 			 * unmatched-by-path-and-method and falls through to the document handler,
 			 * which answers `200 text/html` with the SPA bundle — a client parsing
 			 * JSON then blames the server instead of its own verb. AUDIT §3.10. */
-			GET: methodNotAllowed("POST"),
-			PUT: methodNotAllowed("POST"),
-			PATCH: methodNotAllowed("POST"),
-			DELETE: methodNotAllowed("POST"),
+			GET: methodNotAllowed("POST, DELETE"),
+			PUT: methodNotAllowed("POST, DELETE"),
+			PATCH: methodNotAllowed("POST, DELETE"),
+
+			/**
+			 * Forget this device.
+			 *
+			 * `PushSubscription.unsubscribe()` is browser-local: it stops the worker
+			 * receiving, and it leaves the row in `push_subscriptions` pointing at an
+			 * endpoint that still exists at the push service for a while. Without this
+			 * verb, "turn notifications off" on a shared or lost phone means "stop
+			 * listening for now", which for this app is not a safety property — so
+			 * `disablePush()` calls it before it drops the local subscription, and a
+			 * failure there is surfaced rather than swallowed.
+			 *
+			 * `?endpoint=` scopes it to one device (the common case, and the only one the
+			 * browser can authorise); without it every subscription of the caller goes,
+			 * which is what an account-deletion flow needs. Both forms are keyed on the
+			 * *caller's* id, so neither can touch anyone else's rows.
+			 */
+			DELETE: withSecurity(async ({ request, caller }) => {
+				const user = requireCaller(caller);
+				const endpoint = new URL(request.url).searchParams.get("endpoint");
+				if (endpoint !== null && endpoint.length > 512) {
+					return json({ error: "endpoint is too long" }, { status: 413 });
+				}
+
+				const where = endpoint
+					? and(
+							eq(pushSubscriptions.userId, user.id),
+							eq(pushSubscriptions.endpoint, endpoint),
+						)
+					: eq(pushSubscriptions.userId, user.id);
+
+				// `returning id` rather than a bare delete so the response says what
+				// actually happened: "removed: 0" for a re-typed endpoint is the answer
+				// that tells the caller it was already gone, and "removed: 3" says the
+				// device list was longer than expected.
+				const removed = await db
+					.delete(pushSubscriptions)
+					.where(where)
+					.returning({ id: pushSubscriptions.id });
+
+				return json({ ok: true, removed: removed.length });
+			}, { rateLimit: { limit: 30, key: ({ caller: user }) => `push-del:${user?.id ?? "anon"}` } }),
 
 			POST: withSecurity(
 				async ({ request, caller }) => {

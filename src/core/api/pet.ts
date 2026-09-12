@@ -89,9 +89,9 @@ export type PetActionResult = {
 };
 
 export function loadPetData(): Promise<PetPayload> {
-	return api.get<PetPayload>("/api/king-pet");
+	return api<PetPayload>("/api/king-pet");
 }
 
 export function performPetAction(action: PetAction): Promise<PetActionResult> {
-	return api.post("/api/king-pet", action);
+	return api("/api/king-pet", { method: "POST", body: action });
 }

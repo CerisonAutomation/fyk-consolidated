@@ -5,8 +5,7 @@
       "name": "fyk-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
-      "port": 5900,
-      "autoPort": true
+      "port": 3000
     }
   ]
 }

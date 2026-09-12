@@ -280,7 +280,10 @@ export const useAppStore = create<AppState>((set, _get) => ({
     // emergency contact, and if that write fails the user is told the contact was
     // *not* informed. It used to be a fire-and-forget with an empty catch, so a
     // missed check-in looked resolved to the person who was waiting about it.
-    api.post<{ contactNotified: boolean; warning: string | null }>("/api/safety/check-in/resolve", { checkInId: ci.checkInId, contactId: ci.contactId, safe })
+    api<{ contactNotified: boolean; warning: string | null }>("/api/safety/check-in/resolve", {
+      method: "POST",
+      body: { checkInId: ci.checkInId, contactId: ci.contactId, safe },
+    })
       .then((res) => {
         if (res.warning) _get().pushToast(res.warning, "warn");
         else if (!safe && !res.contactNotified) _get().pushToast("Could not reach your emergency contact", "error");
@@ -292,7 +295,10 @@ export const useAppStore = create<AppState>((set, _get) => ({
     set((s) => ({
       footprints: { ...s.footprints, [data.personId]: data.footprintId ?? data.id },
     }));
-    api.post("/api/social", { action: "footprint", targetId: data.personId, footprintId: data.footprintId }).catch(() => {});
+    api("/api/social", {
+      method: "POST",
+      body: { action: "footprint", targetId: data.personId, footprintId: data.footprintId },
+    }).catch(() => {});
   },
 
   // Social
@@ -302,7 +308,7 @@ export const useAppStore = create<AppState>((set, _get) => ({
     // sets `users.boost_expires_at`, which `/api/discover` ranks on. The result is
     // reported instead of discarded, so "no boosts left" is visible rather than a
     // button that quietly did nothing.
-    api.post<{ expiresAt: string; boostsLeft: number }>("/api/boost")
+    api<{ expiresAt: string; boostsLeft: number }>("/api/boost", { method: "POST" })
       .then((res) => {
         const until = new Date(res.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         _get().pushToast(`Boosted until ${until} · ${res.boostsLeft} left`, "success");

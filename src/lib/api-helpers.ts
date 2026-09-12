@@ -176,6 +176,15 @@ export const publicProfileSelection = {
 	lastActiveAt: users.lastActiveAt,
 	city: users.city,
 	area: users.area,
+	/**
+	 * Not decoration, and not optional: `publicProfile()` is used for *other*
+	 * people (an event's host, a MeetNow post's author), and it used to publish
+	 * `lastSeen` for all of them with no regard for either presence switch. A
+	 * shaper cannot honour a column its select list never asked for, so the two
+	 * flags travel with the fields they gate.
+	 */
+	hideOnline: users.hideOnline,
+	hideLastOnline: users.hideLastOnline,
 };
 
 /** Row shape produced by `publicProfileSelection`. */
@@ -201,9 +210,17 @@ export function publicProfile(row: PublicProfileRow | null | undefined) {
 		nick: row.handle ?? "",
 		avatar: row.avatar ?? null,
 		photos: row.avatar ? [row.avatar] : [],
-		online: row.online ?? false,
-		status: row.online ? ("online" as const) : ("offline" as const),
-		lastSeen: row.lastActiveAt?.toISOString() ?? null,
+		// `hide_online` covers live presence, `hide_last_online` covers the moment
+		// they were here. `lastActiveAt` is the same fact twice — an "offline"
+		// status beside a "last seen 4 minutes ago" reads straight through the
+		// switch, so both fields are gated by the row, not by the caller asking
+		// nicely.
+		online: (row.online ?? false) && !row.hideOnline,
+		status:
+			row.online && !row.hideOnline
+				? ("online" as const)
+				: ("offline" as const),
+		lastSeen: row.hideLastOnline ? null : (row.lastActiveAt?.toISOString() ?? null),
 		geo: row.city ? { city: row.city, area: row.area ?? null } : undefined,
 	};
 }
@@ -264,6 +281,7 @@ export const cardSelection = {
 	verification: users.verification,
 	hideDistance: users.hideDistance,
 	hideOnline: users.hideOnline,
+	hideLastOnline: users.hideLastOnline,
 	/**
 	 * Not a display field: `incognito` is what makes a profile invisible to
 	 * browse/deck queries, so every list endpoint needs the flag to honour it.
@@ -325,7 +343,12 @@ export function toProfileCard(
 	const shown =
 		row.online === true &&
 		Date.now() - (row.lastActiveAt?.getTime() ?? 0) < PRESENCE_WINDOW_MS;
-	const status: "online" | "active" | "offline" = row.hideOnline
+	// "Active recently" *is* last-online information: `status` is derived from the
+	// same timestamp the switch hides, so hiding `lastSeen` alone would leave the
+	// number on the screen in a different field. With either flag set, the strongest
+	// statement left is "offline".
+	const hideActivity = row.hideOnline || row.hideLastOnline;
+	const status: "online" | "active" | "offline" = hideActivity
 		? "offline"
 		: shown
 			? "online"
@@ -354,7 +377,9 @@ export function toProfileCard(
 		status,
 		online: shown && !row.hideOnline,
 		verified: (row.verification ?? 0) >= 2,
-		lastSeen: row.lastSeen?.toISOString(),
+		lastSeen: row.hideLastOnline
+			? null
+			: row.lastSeen?.toISOString() ?? null,
 	};
 }
 

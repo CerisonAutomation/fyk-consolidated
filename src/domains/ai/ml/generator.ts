@@ -12,7 +12,6 @@
 
 import { loadGenerator as loadMLGenerator, type MLError } from "./bootstrap";
 import { heuristicIntent } from "./classifier";
-import { raceTimeout } from "./race-timeout";
 
 // ---------------------------------------------------------------------------
 // Heuristic text banks (unchanged)
@@ -48,16 +47,16 @@ export async function generateReply(
   const prompt = `Reply to this message from ${fromName}: "${lastText}". Tone: warm, direct, a little playful. Max 12 words. Do not repeat the question.`;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pipe: any = await raceTimeout(loadMLGenerator(), 5_000, () => null);
+    const pipe = await Promise.race([
+      loadMLGenerator(),
+      new Promise<null>((r) => setTimeout(() => r(null), 5_000)),
+    ]);
 
     if (pipe) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: any = await raceTimeout(
+      const result = await Promise.race([
         pipe(prompt, { max_new_tokens: 42, do_sample: false }),
-        5_000,
-        () => null,
-      );
+        new Promise<null>((r) => setTimeout(() => r(null), 5_000)),
+      ]);
 
       const raw = result?.[0]?.generated_text ?? "";
       const t = raw.replace(/\s+/g, " ").trim();
@@ -112,16 +111,16 @@ export async function rewriteBio(
   const prompt = `Rewrite this dating bio in a ${tone} voice. Keep it under 35 words, first person, no hashtags: "${bio}"`;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pipe: any = await raceTimeout(loadMLGenerator(), 5_000, () => null);
+    const pipe = await Promise.race([
+      loadMLGenerator(),
+      new Promise<null>((r) => setTimeout(() => r(null), 5_000)),
+    ]);
 
     if (pipe) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: any = await raceTimeout(
+      const result = await Promise.race([
         pipe(prompt, { max_new_tokens: 48 }),
-        5_000,
-        () => null,
-      );
+        new Promise<null>((r) => setTimeout(() => r(null), 5_000)),
+      ]);
 
       const t = (result?.[0]?.generated_text ?? "").replace(/\s+/g, " ").trim();
 

@@ -17,10 +17,11 @@ import { profilePrivate, users } from "#/schema";
  * account becomes real.
  *
  * `src/routes/onboarding` PUTs here as its final step. The route did not exist,
- * so a fresh signup could authenticate, would be redirected to `/onboarding` by
- * `auth-gate`, would fill every field, and then fail to persist a single one —
- * its `users` row never got created and the gate looped. `PUT` therefore upserts
- * (create-or-update keyed on the auth id) instead of updating.
+ * so a fresh signup could authenticate, would be held at the entry gate (which
+ * shows its own inline onboarding step), would fill every field, and then fail to
+ * persist a single one — its `users` row never got created and the gate looped.
+ * `PUT` therefore upserts (create-or-update keyed on the auth id) instead of
+ * updating.
  *
  * Field names follow the client and the column it writes (`pseudo` → `pseudo`
  * column, `description` → `description`, …) — see the comment on each alias in
@@ -259,7 +260,7 @@ export const Route = createFileRoute("/api/profile/")({
 					if (body.hide_online !== undefined) set.hideOnline = body.hide_online;
 
 					// Completeness is derived here rather than trusted from the client:
-					// it is the number `auth-gate`, the progress ring and the premium
+					// it is the number the entry gate, the progress ring and the premium
 					// upsell all read, so a client-supplied 100 would be a lie that
 					// unlocks UI.
 					const after = await db
@@ -273,7 +274,7 @@ export const Route = createFileRoute("/api/profile/")({
 					>;
 					set.profileComplete = completeness(merged);
 					if (body.onboarding_done === true) {
-						// The gate in `EntryShell`/`auth-gate` only asks for four things
+						// The gate in `EntryShell` only asks for four things
 						// before it lets an account into the app; the 60% completeness
 						// score is a *profile quality* nudge, not an entry requirement, and
 						// conflating the two left a signed-up user with no photos stuck in

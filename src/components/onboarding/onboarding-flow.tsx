@@ -77,14 +77,17 @@ export function OnboardingFlow({ name }: { name: string }) {
 	}
 
 	async function generateBio() {
-		const r = await api.post<{ options: string[] }>("/api/ai", {
-			action: "bioWriter",
-			pseudo: name,
-			occupation: data.occupation,
-			interests: data.interests,
-			tribes: data.tribes,
-			looking_for: data.looking_for,
-			age: data.age,
+		const r = await api<{ options: string[] }>("/api/ai", {
+			method: "POST",
+			body: {
+				action: "bioWriter",
+				pseudo: name,
+				occupation: data.occupation,
+				interests: data.interests,
+				tribes: data.tribes,
+				looking_for: data.looking_for,
+				age: data.age,
+			},
 		});
 		setBioOptions(r.options);
 	}
@@ -92,28 +95,31 @@ export function OnboardingFlow({ name }: { name: string }) {
 	async function finish() {
 		setSaving(true);
 		try {
-			const res = await api.patch<{ profile: unknown }>("/api/profile", {
-				pseudo: name,
-				description: data.bio,
-				age: data.age,
-				height: data.height,
-				body_type: data.body_type,
-				occupation: data.occupation,
-				tribes: data.tribes,
-				interests: data.interests,
-				looking_for: data.looking_for,
-				position: data.position,
-				languages: data.languages,
-				photos: data.photos,
-				city: data.city,
-				onboarding_done: true,
+			const res = await api<{ profile: unknown }>("/api/profile", {
+				method: "PUT",
+				body: {
+					pseudo: name,
+					description: data.bio,
+					age: data.age,
+					height: data.height,
+					body_type: data.body_type,
+					occupation: data.occupation,
+					tribes: data.tribes,
+					interests: data.interests,
+					looking_for: data.looking_for,
+					position: data.position,
+					languages: data.languages,
+					photos: data.photos,
+					city: data.city,
+					onboarding_done: true,
+				},
 			});
 			void res;
 			pushToast("Welcome to FYK 👑");
-			await navigate({ to: "/grid" });
+			await navigate({ to: "/discover" });
 		} catch {
 			pushToast("Could not save — continuing anyway", "error");
-			await navigate({ to: "/grid" });
+			await navigate({ to: "/discover" });
 		} finally {
 			setSaving(false);
 		}

@@ -53,6 +53,36 @@ bind = "0.0.0.0"
 port = 54324
 ip_version = "IPv4"
 
+# ---------------------------------------------------------------------------
+# Edge functions — every one declares its JWT posture, because the platform default is
+# silent and both directions of getting it wrong are load-bearing here.
+#
+#   * `ai-chat` / `moderate` are called by a signed-in browser with its own access token:
+#     `verify_jwt = true` is what makes the platform reject a forged one before any model
+#     spend or moderation request happens, and `ai-chat` needs it as the identity its
+#     per-user limit keys off.
+#   * `notify` is invoked by Postgres through `pg_net` (0023 §4, 0025) and `cron-cleanup`
+#     by an external scheduler. Neither can present a user JWT, so both must be
+#     `verify_jwt = false` — and *both use the service role*, which is why each additionally
+#     requires a shared secret header (`x-fyk-push-token` / `x-fyk-cron-token`, compared in
+#     constant time, refusing when unset). `src/lib/migration-invariants.test.ts` enforces
+#     exactly that pairing: no service-role write path behind an unauthenticated URL.
+#   * There used to be a fifth, `embed-profile`: a public endpoint that read profiles with
+#     the service role, i.e. unusable with the JWT check and RLS-bypassing without it, with
+#     no caller in the app. It is deleted rather than configured (AUDIT §2.22).
+# ---------------------------------------------------------------------------
+[functions.ai-chat]
+verify_jwt = true
+
+[functions.moderate]
+verify_jwt = true
+
+[functions.notify]
+verify_jwt = false
+
+[functions.cron-cleanup]
+verify_jwt = false
+
 [extensions]
 pgvector = { enabled = true, schema = "extensions" }
 pgcrypto = { enabled = true, schema = "extensions" }

@@ -16,6 +16,7 @@ import {
 	messageReactions,
 	messageReads,
 	messages,
+	users,
 } from "#/schema";
 
 /**
@@ -147,7 +148,34 @@ export const Route = createFileRoute(
 								])
 							: [[], []];
 					const reactionsBy = groupByMessage(reactionRows);
-					const readsBy = groupByMessage(readRows);
+					// "Reveal Message Read" is the *reader's* disclosure, so the reader
+					// decides whether it is sent: `notif_prefs.readReceipts === false` drops
+					// that reader from every `readBy` list on somebody else's messages.
+					// Suppressed at read time rather than at insert time — the row in
+					// `message_reads` stays, so switching the option back on restores the
+					// history instead of leaving a hole in it, and "I read it" remains a
+					// fact the app can still use for its own safety and support purposes.
+					// Absent means sharing: nobody loses receipts they never opted out of.
+					const readerIds = [...new Set(readRows.map((row) => row.userId))];
+					const quietIds: string[] = [];
+					if (readerIds.length > 0) {
+						const rows = await db
+							.select({ id: users.id })
+							.from(users)
+							.where(
+								and(
+									inArray(users.id, readerIds),
+									sql`${users.notifPrefs} ->> 'readReceipts' = 'false'`,
+								),
+							);
+						quietIds.push(...rows.map((row) => row.id));
+					}
+					const quietReaders = new Set(quietIds);
+					const readsBy = groupByMessage(
+						quietReaders.size === 0
+							? readRows
+							: readRows.filter((row) => !quietReaders.has(row.userId)),
+					);
 
 					return json(
 						{
