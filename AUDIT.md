@@ -23,6 +23,7 @@ product/schema decision and are documented instead of guessed at.
 | `npx vitest run`, §2.9–2.10 pass | **149 passed** (11 files; +9 for `src/lib/compatibility.ts`. The count is lower than §2.8's 163 because the deleted Prisma-era domain modules took their unit tests with them — reported, not hidden) |
 | `npx vite build`, §2.9–2.10 pass | success; `dist/server/server.js` 64 kB |
 | `GET /api/settings`, `/api/settings?view=export`, `/api/profile`, `/api/conversations`, `/api/discover`, `/api/social`, `/api/boost` (anonymous) | `401 {"error":"Sign in to continue"}` — none of them answers with the SPA document |
+| `PUT`/`DELETE` on `/api/wallet`, `/api/safety/*` (anonymous) | `405 application/json` with `allow:` set; `GET /api/nope` → `404 application/json` since §2.14's splat, though an *undeclared verb on a declared route* still falls through (next row, and §3.10) |
 | `GET /api/taps` (anonymous) | `200 text/html` — TanStack has no handler for a method a route does not declare, so an unmatched verb on an API path falls through to the router. Known and recorded in §3.9 rather than papered over with a dead GET. |
 | `npx vitest run` | **163 passed** (baseline 123; +40 new tests for security headers, middleware, api-helpers, rate limiting) |
 | `npx vite build` | success (baseline: **failed**) — server chunk 682 kB → 176 kB after dropping Prisma from the SSR graph |
@@ -675,6 +676,131 @@ now reads short and true.
   `components/providers.tsx` are deleted, with the dead `go:platform` palette case.
 
 
+### 2.14 A safety check-in becomes a record with somebody attached to it (P1)
+
+`0019` + §2.13 made the check-in *writable*; this pass made it **mean something**.
+
+**What was measured first**
+
+- `safety-client.tsx` armed a check-in with `createCheckIn(userId, userId, …)`: the
+  emergency contact was the user themself, under copy reading "share your approximate
+  location with a trusted contact".
+- There was no emergency-contact concept in the schema at all — `grep -rn emergency
+  supabase/migrations/` returned nothing — so `POST /api/safety/check-in` validated
+  `contactId` against `public.users`, i.e. *any* account, including a stranger's,
+  could be named as someone's contact by whoever armed the timer.
+- The record itself was a `notifications` row whose text body carried
+  `{contact_id, place, due_at, status}`: no index on `due_at` ("who is overdue" is a
+  scan), the record deleted when the owner hides or deletes the inbox row, no column
+  for the coordinates the screen already collects, and `resolve` had to parse JSON to
+  update a status.
+- Nothing scheduled any work: no `pg_cron` in any migration, `UPSTASH_REDIS_REST_*` is
+  rate limiting, and the two edge functions that could run on a timer
+  (`supabase/functions/cron-cleanup`, `…/notify`) have no schedule or caller committed
+  anywhere in this repository.
+
+**What `0021_safety_checkins.sql` does**
+
+`safety_contacts` is the user's own list — the browser may write it under RLS
+(own rows only), because it is data about them, not privilege, which is the same line
+0019 §5 drew for `user_notes`. `safety_checkins` is the record: select-own for the
+browser and *no* client DML, because arming, confirming and marking overdue all notify
+a third party. Both halves have teeth in the DDL, not in a form:
+`safety_contacts_not_self` makes "your own account" a CHECK violation,
+`safety_checkins_contact_owner` is a composite foreign key on
+`(contact_id, user_id) → safety_contacts (id, user_id)`, so a guessed uuid cannot
+point a check-in at somebody else's contact, and `safety_checkins_resolution`
+guarantees `resolved_at` is present if and only if the row is no longer `armed`.
+`safety_checkins_one_armed` (partial unique) is what makes a second arm a 409 rather
+than a second running timer, and `safety_checkins_armed_due_idx` is the index the
+"who is overdue" question needs. A trigger nulls `notification_id` when the projection
+is deleted, so the record outlives its inbox mirror instead of the reverse.
+
+The overdue transition is lazy and single-winner: `sweepOverdue` runs at the top of
+`GET` and `POST`, and only the statement whose
+`UPDATE … WHERE status = 'armed' AND alerted_at IS null RETURNING` actually changed a
+row gets to write `check_in_overdue`. Two tabs, one alert. That is deliberate — with no
+scheduler in the repo, a *read-time* transition is honest, whereas a comment saying
+"the cron will handle it" would describe a job nobody configured. What it cannot do is
+page anybody who is not looking at the app; the copy in `#/lib/safety.server.ts` says
+so rather than the screen implying otherwise.
+
+`#/lib/safety.server.ts` holds the shared vocabulary (arm / resolve / sweep / contact
+CRUD) and takes a `DbLike` handle so the **route** owns the transaction — `DbLike`
+has no `transaction` member on purpose, and a helper that opened a nested one is how
+a partial commit slips past a rollback. Three routes sit on it: the rewritten
+`GET/POST /api/safety/check-in`, `POST /api/safety/check-in/resolve` (which kept the
+`{contactNotified, warning}` contract `#/lib/store.ts` already reads, so the HUD can
+say "your contact was not informed"), and the new `GET/POST /api/safety/contacts`.
+`safety.ts` lost its hand-rolled status strings, the client seeds the HUD from the
+server on mount (the timer now survives a reload, which is the sentence that describes
+the whole defect), and the card has a contact picker with an add form, an off-platform
+marker, and an "I'm safe" button.
+
+**Two derived-counter triggers that could not run at all**
+
+While writing 0022, both recount triggers were read end to end, and both are broken in
+the same way — which is also the way §2.13's own trigger work had to be fixed twice:
+
+1. `public.tribes_recount()` (0019 §7) opened with
+   `if tg_op <> 'DELETE' and new.tribes is not distinct from old.tribes`, which
+   references `OLD` in an **INSERT** row trigger, where plpgsql has no `OLD` record:
+   `record "old" is not assigned yet`. It is `after insert or update or delete` on
+   `public.users`, so the first signup after 0019 aborts — the insert and the
+   `handle_new_user` path both die on a *counting* trigger.
+2. Its `names` CTE was `select … union select …` with **the identical branch twice**, so
+   the old side of an update was never enumerated: leave a tribe and its
+   `member_count` stays where it was. The count only ever grows.
+3. `public.refresh_post_join_count()` (002_rls.sql:534) opens with
+   `target_id := coalesce(new.post_id, old.post_id)` and is registered on
+   `post_joins` for insert *and* delete — so joining a board post raises the same
+   unassigned-record error, because `coalesce` evaluates both arguments.
+
+All three are repaired in 0022 §0 with `case when tg_op …` branches, keeping the
+original names, security clauses and semantics. `src/lib/schema-coverage.test.ts` and
+`economy.test.ts` still cannot catch these: they read DDL, and no Postgres has executed
+any of it here (§3.13).
+
+**One vocabulary, resolved on write**
+
+`0022_tribes_vocabulary.sql` normalises `users.tribes` onto canonical `tribes.name`
+values (case- and whitespace-insensitive, order-preserving, deduped) and recounts the
+catalogue; `#/lib/tribes.server.ts` does the same resolution on every write from
+`PUT /api/profile`, so the column converges instead of re-splitting. Unresolvable
+tokens are **kept, not deleted** — the array is user-entered, there is no `tags` table
+for those numbers to have ever meant anything, and emptying part of someone's profile
+during a formatting fix is a change an audit should not make on its own authority. The
+audit line worth keeping: a token that resolves to nothing is inert in `tagOverlap`,
+in the GIN filter *and* in the counter trigger, so the migration's job was to make the
+matching work, not to adjudicate what `3` used to mean.
+
+**`/api/$`, and the boundary of what a route can fix**
+
+`src/routes/api/$.tsx` answers unknown `/api/**` paths with `404` JSON
+(`route_not_found`, echoing `path` and `method`) instead of `200 text/html` containing
+the SPA bundle. Static segments outrank a splat in TanStack Router, so the declared
+routes keep their handlers — verified after creating it: `/api/health` `200`,
+`/api/wallet` `401`, `PUT /api/wallet` `405 allow: GET, POST`, `/api/nope`
+`404 application/json`. What it *cannot* cover is a known path with an undeclared verb
+(`/api/taps` matched by the `taps` route, no GET handler → SPA fallthrough): that needs
+a `requestMiddleware` on the start instance, and this app has no `src/start.ts(x)` of
+its own — creating one to change boot-wide request handling is the kind of change the
+design review has already rejected once. So the six routes that move money, privilege or
+another user's rows keep explicit `methodNotAllowed()` lists, and §3.10 records the rest.
+
+**`types.ts` and the env template, corrected to the code**
+
+`src/integrations/supabase/types.ts` still declared `find_similar_profiles`, an RPC no
+migration has ever defined, for a client module deleted in §2.13: deleted, with the
+surviving three documented as the ones 0004/0006 define and `chat.ts` calls with the
+error checked. `.env.example` gained `VITE_VAPID_PUBLIC_KEY` (read by
+`notifications-client.tsx`; without it the app never *asks* for push permission, which
+is the intended default rather than a bug), the six `VITE_ENABLE_*` flags
+`#/integrations/supabase/env.ts` actually parses, `SUPABASE_DB_URL`/`FYK_SEED_PASSWORD`
+(`scripts/seed.mjs` refuses to run without a database URL and seeds nine accounts under
+one shared password), and `PORT`.
+
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
 These need a product or schema decision. Inventing an implementation is how a
@@ -714,6 +840,11 @@ second, worse truth gets committed, so each entry says what to decide instead.
    hashed-per-response payload) is the follow-up; until then a stored XSS in a
    bio can execute inline. `style-src 'unsafe-inline'` is likewise forced by
    runtime-injected styles and is not a comparable risk.
+   **Checked, and already right:** `'unsafe-eval'` is dev-only —
+   `src/lib/security.ts:46` emits it when `!isProduction()` (HMR needs it) and omits
+   it otherwise, and `src/lib/__tests__/security.test.ts` pins both halves. Do not
+   "remove unsafe-eval" a second time; the open part of this item is only the inline
+   script/`style-src` noncing.
 5. **Three `innerHTML` assignments — verified static, not sinks.** An earlier
    version of this entry claimed `src/components/map/FYKMap.tsx:273`, `:303` and
    `src/components/map/MapPicker.tsx:87` "interpolate strings into `innerHTML`".
@@ -732,7 +863,10 @@ second, worse truth gets committed, so each entry says what to decide instead.
    named by an earlier pass, no longer exist. Still open: `src/utils/cn.ts`
    duplicates `cn()` from `src/lib/utils.ts` and 26 files import the former, so
    removing it is a 26-file mechanical change best done alone (nothing else in
-   `src/` should be in the same diff); `src/core/ui/organisms/*` is unreachable
+   `src/` should be in the same diff — and, re-read: it is not a duplicate
+   implementation at all, `src/utils/cn.ts` is a one-line re-export of `cn` from
+   `src/lib/utils.ts`, so there is nothing to merge and 26 files should be left alone.
+   `src/core/ui/organisms/*` is unreachable
    from any route but is the design system's own surface, and needs an owner's
    decision rather than mine.
 
@@ -769,20 +903,25 @@ second, worse truth gets committed, so each entry says what to decide instead.
    privilege or another user's rows (`/api/wallet`, `/api/king-pet`,
    `/api/fansites/subscribe`, `/api/safety/check-in`, plus `/api/boost` and the
    others with a `methodNotAllowed()` verb list) answer 405 with an `Allow` header
-   — verified by `curl -X PUT /api/wallet` → `405 application/json, allow: GET, POST`.
-   A global `/api/$` catch-all for the remaining routes is still the right fix and
-   still needs the shadowing check.
+   — verified by `curl -X PUT /api/wallet` → `405 application/json, allow: GET, POST` —
+   and `src/routes/api/$.tsx` (§2.14) now answers every *unknown* `/api/**` path with
+   `404 application/json` instead of the SPA document, which was the half of this
+   finding a route can fix at all. What is left is a known path with an undeclared
+   verb on the ~50 routes that do not carry a verb list; the only global fix is a
+   `requestMiddleware` on the start instance, and this app has no `src/start.ts(x)` of
+   its own — creating one changes boot for everything to service a status code, so it
+   stays a decision rather than a diff.
 
-11. **A safety check-in is stored inside a notification body.** `0019` made the
-    type legal and `POST /api/safety/check-in` made the write server-side, so the
-    feature now works — but the *record* is still `{contact_id, place, due_at,
-    status}` as JSON in `notifications.body`, which means there is no index on
-    `due_at`, no way to answer "who is overdue right now" without a scan, and no
-    history once a notification is hidden. The honest shape is a
-    `public.safety_checkins (user_id, contact_id, place, armed_at, due_at, resolved_at,
-    status)` table with the notification as a projection of it. Deliberately not
-    done here: inventing a table while `resolve` still parses the JSON would leave
-    two writers of one fact.
+11. **A check-in can be overdue without anybody being paged.** §2.14 replaced the
+    notification-shaped record with `safety_checkins` + `safety_contacts` (0021), so the
+    timer survives a reload, the contact is the user's own chosen row rather than
+    themselves, and `missed` is materialised with exactly-once alerting. What is still
+    missing is the delivery half: the only channel this app has is a row in the
+    contact's `notifications`, so a contact who is not in the app learns nothing —
+    which is what `phone`/`email` on `safety_contacts` are *stored for* but not yet
+    used by. A sender (the `notify` edge function, an email job, SMS) has to exist
+    before this can be closed, and §3.15 is the reason it does not run today. The
+    screen says "off-platform" on such a contact rather than promising a notification.
 12. **Premium is one enforced perk wide.** `plus` = unlimited taps, `gold`/`platinum`
     = boosts a month. That is what this codebase can actually grant, and everything
     else the tier cards used to advertise has been removed from `TIER_PERKS` rather
@@ -799,7 +938,51 @@ second, worse truth gets committed, so each entry says what to decide instead.
     (`supabase db push`, or `pnpm db:migrate:sql` now that it loops the files) and
     re-check `pg_policies` for the tables in §2.13 before shipping. `pnpm db:seed`
     has likewise never been run here; §2.13's §9 seeding is what the product needs,
-    and it is in the migration where it belongs.
+    and it is in the migration where it belongs. The sandbox did change once mid-pass,
+    and the recovery is worth recording because it was not obvious: the workspace was
+    re-provisioned (a fresh clone whose `main` is a squashed Prisma-era snapshot with no
+    merge base, `node_modules` deleted, and this branch's `HEAD` sitting on the
+    *pre-work* commit while the working tree still held 20 turns of files). Everything
+    was recovered with `git fetch origin <branch>` + `git reset --mixed FETCH_HEAD`,
+    which moved the branch back onto the pushed tip and left the tree alone — after
+    which `git status` showed the true delta (three new files) instead of 309. That
+    reset, not a merge of `main`, is the right way to reconcile this branch: `main`'s
+    single commit predates the Drizzle/Supabase conversion entirely (`prisma/schema.prisma`
+    present, 5 API routes, no `drizzle/`, no `AUDIT.md`), so merging it would revert the
+    work rather than extend it.
+
+14. **35 live tables have no Drizzle model.** `drizzle/schema.ts` declares 34 of the
+    69 tables the migrations create, and §4 of this file used to claim the schema was
+    "the single schema … all describe the same columns" — that was measured wrong, and
+    the claim is corrected here rather than quietly rewritten. The gap is concentrated
+    where routes still speak SQL directly (`profiles`, `shouts`, `groups`,
+    `group_messages`, `stories`, `board_posts`, `reports`, `sessions`, `site_config`,
+    the `ai_*` and `*_embeddings` tables), which works and is type-checked nowhere.
+    `src/lib/schema-coverage.test.ts` now pins both directions: a model may not exist
+    for a table no migration creates, and the list of unmodelled tables may only shrink.
+    Closing it is one table per commit against the DDL (`profiles` first: it is the
+    projection 0018 exists to publish), *not* a bulk translation — inventing a column
+    name is the exact defect class this file keeps finding.
+15. **Two edge functions that nothing invokes.** `supabase/functions/notify` (web-push
+    delivery, VAPID-signed) and `supabase/functions/cron-cleanup` (expired sessions,
+    stories, meetnow posts) are complete Deno files, and no migration, trigger,
+    schedule or client call reaches either: `grep -rn "functions/v1" src
+    supabase/migrations` finds only the comment in `api/push/subscribe.ts` that points
+    at the first one. Consequences that are visible in the product: a push subscription
+    is stored and never used (`notifications-client.tsx` asks for permission,
+    `push_subscriptions` accumulates rows, nobody sends), and expired stories/meetnow
+    posts are filtered at read time forever instead of being cleaned. Either wire them
+    (a `net.http_post` trigger on `notifications` insert for the first; the dashboard's
+    scheduler or a pg_cron job for the second — `cron-cleanup` calls
+    `cleanup_expired_sessions()`, which *is* defined, in 0007) or delete the functions
+    and say the scheduler is out of scope. Leaving them in the tree looking deployed is
+    the worst of the three, because a reviewer reads the directory as a feature.
+16. **`pnpm-lock.yaml` still resolves the Prisma-era optional peers.** `prisma` is gone
+    from `package.json`, but `drizzle-orm`'s optional peer graph in the lockfile keeps
+    `@prisma/client@7.10.0`/`prisma@7.10.0` installable, so `pnpm install` prints
+    "Ignored build scripts: … prisma" and materialises `node_modules/prisma`. Fixing it
+    means `pnpm install --lockfile-only`, which re-resolves every transitive
+    dependency in a 1300-line diff — deliberately not done as part of a security pass.
 
 ## 4. Minimal assumptions
 
@@ -814,11 +997,17 @@ second, worse truth gets committed, so each entry says what to decide instead.
   row) — `0015` turns that convention into a foreign key rather than assuming it.
 - Row Level Security stays the browser's boundary: nothing here adds a
   service-role call to a request path.
-- `drizzle/schema.ts` is the single schema: migrations, `src/schema.ts`, and
-  the seed script all describe the same columns. `src/integrations/supabase/types.ts`
-  remains hand-written — it is what the browser's `supabase-js` client type-checks
-  against, and `pnpm supabase gen types` should replace it verbatim as soon as a
-  real project URL is configured, at which point drift becomes impossible.
+- `drizzle/schema.ts` is the *server's* schema — every table it declares is a table a
+  migration creates, and `src/schema.ts` plus `scripts/seed.mjs` describe the same
+  columns. It is **not** yet complete: 35 of the 69 live tables have no model (§3.14),
+  and the routes that touch those use `sql\`\`` directly, which is why the phrase "the
+  single schema" was wrong and is corrected here. `src/lib/schema-coverage.test.ts` is
+  the guard that keeps the claim honest in both directions from now on.
+  `src/integrations/supabase/types.ts` remains hand-written — it is what the browser's
+  `supabase-js` client type-checks against, and `pnpm supabase gen types` should replace
+  it verbatim as soon as a real project URL is configured, at which point drift becomes
+  impossible. Its `find_similar_profiles` entry (an RPC no migration defines) is deleted
+  in §2.14 for exactly the reason that generator exists.
 
 ## 5. Suggested order for the next pass
 
@@ -833,9 +1022,14 @@ second, worse truth gets committed, so each entry says what to decide instead.
 5. Prune §3.6 (one file at a time) and §3.7. `pnpm-workspace.yaml`'s 269-line
    `allowBuilds` block is between `dyad-default-allow-builds begin/end` markers —
    tool-managed, so it must be pruned by its generator, not by hand.
-6. Apply §2.13's SQL against a real database (§3.13), then decide §3.11 and §3.12
-   with the product, in that order: the migration is what makes the rest of the
-   surface honest.
+6. ~~§3.11's storage half~~ (done, §2.14: `safety_contacts` + `safety_checkins`,
+   the picker, the lazy exactly-once overdue sweep). What is left of §3.11 is the
+   delivery half, which needs §3.15 wired.
+7. Apply §2.13's and §2.14's SQL against a real database (§3.13) before anything else:
+   `0022` §0 fixes a trigger that aborts every signup after `0019`, and that claim is
+   reading-derived until someone runs it. Then decide §3.12 (the Premium ladder) and
+   §3.15 (invoke or delete the two orphan edge functions), in that order: the migration
+   is what makes the rest of the surface honest.
 
 Run `pnpm verify` (typecheck → tests → build → `biome check` on the API/lib
 surface) before and after each step; `pnpm test:e2e` now boots its own server.

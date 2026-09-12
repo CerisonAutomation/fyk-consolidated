@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 import { db } from "#/db";
 import { cleanText, readJson, requireCaller, z } from "#/lib/api-helpers";
+import { normaliseTribeTokens } from "#/lib/tribes.server";
 import { json, jsonError, withSecurity } from "#/middleware";
 import { profilePrivate, users } from "#/schema";
 
@@ -221,7 +222,10 @@ export const Route = createFileRoute("/api/profile/")({
 						set.occupation = cleanText(body.occupation, 120);
 					if (body.interests !== undefined)
 						set.interests = dedupe(body.interests);
-					if (body.tribes !== undefined) set.tribes = body.tribes;
+					if (body.tribes !== undefined)
+						// Resolved against `public.tribes` so the column holds one vocabulary and the
+						// GIN filter plus `tagOverlap` can actually match it (0022 documents the split).
+						set.tribes = await normaliseTribeTokens(db, body.tribes);
 					if (body.looking_for !== undefined) set.lookingFor = body.looking_for;
 					if (body.position !== undefined) set.position = body.position;
 					if (body.languages !== undefined)
