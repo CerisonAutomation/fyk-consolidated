@@ -66,6 +66,7 @@ import { redirect } from "@tanstack/react-router";
 import { getRequest } from "@tanstack/react-start/server";
 import { demoEnabled } from "#/domains/demo";
 import { logError } from "#/lib/logger";
+import { type Provisioning, profileRowExists } from "#/lib/provisioning.server";
 import {
 	type Caller,
 	isAuthConfigured,
@@ -79,9 +80,46 @@ export type DocumentSession = {
 	/** The verified caller, or `null` for anything that is not a signed-in user. */
 	caller: Caller | null;
 	status: Verification["status"];
+	/** Whether the caller's `public.users` row exists — see `#/lib/provisioning.server`. */
+	provisioned: Provisioning;
+	/** What the render does about it. */
+	action: DocumentAction;
 	/** True when the render may show the signed-in surface. */
 	render: boolean;
 };
+
+export type DocumentAction = "render" | "sign-in" | "onboarding";
+
+/**
+ * The decision, apart from the I/O, so that the redirect table is readable in one screen
+ * and testable without a request, a database or a Supabase project. The rules, in order:
+ *
+ *   - a verified id with **no profile row** goes to `/onboarding` rather than to an empty
+ *     screen — the account cannot use anything here yet and the form that fixes it is
+ *     there;
+ *   - a verified id with a row renders, and so does an **unknown** answer, because a
+ *     database that will not answer is not evidence that somebody is new;
+ *   - an anonymous or unverifiable credential goes to `/auth/sign-in`;
+ *   - `expired`, `unreachable` and `unconfigured` render, per the header of this file.
+ *
+ * `/onboarding` is deliberately *not* guarded: a redirect from a private screen to a public
+ * one is a fix, and the same rule at the destination is a loop.
+ */
+export function documentDecision(input: {
+	status: Verification["status"];
+	provisioned: Provisioning;
+}): { action: DocumentAction; render: boolean } {
+	if (input.status === "authenticated") {
+		if (input.provisioned === "missing") {
+			return { action: "onboarding", render: false };
+		}
+		return { action: "render", render: true };
+	}
+	if (input.status === "anonymous" || input.status === "rejected") {
+		return { action: "sign-in", render: false };
+	}
+	return { action: "render", render: true };
+}
 
 /**
  * Who is asking for this document, according to the cookies it carried.
@@ -97,31 +135,31 @@ export async function documentSession(): Promise<DocumentSession> {
 		// No request context: a prerender, a test, or a call from outside a
 		// handler. There is no credential to check and nobody to bounce.
 		logError(SCOPE, error, { stage: "no-request-context" });
-		return { caller: null, status: "unconfigured", render: true };
+		return finish("unconfigured", null, "unknown");
 	}
 
-	if (demoEnabled)
-		return { caller: null, status: "unconfigured", render: true };
-	if (!isAuthConfigured()) {
-		return { caller: null, status: "unconfigured", render: true };
-	}
+	if (demoEnabled) return finish("unconfigured", null, "unknown");
+	if (!isAuthConfigured()) return finish("unconfigured", null, "unknown");
 
 	const verification = await verifyRequest(request);
-	switch (verification.status) {
-		case "authenticated":
-			return {
-				caller: verification.caller,
-				status: "authenticated",
-				render: true,
-			};
-		case "expired":
-		case "unreachable":
-		case "unconfigured":
-			return { caller: null, status: verification.status, render: true };
-		default:
-			// "anonymous" | "rejected"
-			return { caller: null, status: verification.status, render: false };
+	if (verification.status !== "authenticated") {
+		return finish(verification.status, null, "unknown");
 	}
+	// One indexed select on the primary key, per guarded document. It is what turns
+	// "signed in, no row" from an empty settings screen into a redirect to the screen
+	// that creates the row — and it is the reason `/onboarding` has a caller at all
+	// (§3.18: the route existed, and nothing navigated to it).
+	const provisioned = await profileRowExists(verification.caller.id);
+	return finish("authenticated", verification.caller, provisioned);
+}
+
+function finish(
+	status: Verification["status"],
+	caller: Caller | null,
+	provisioned: Provisioning,
+): DocumentSession {
+	const { action, render } = documentDecision({ status, provisioned });
+	return { caller, status, provisioned, action, render };
 }
 
 /**
@@ -137,6 +175,7 @@ export async function requireDocumentSession(): Promise<DocumentSession> {
 	// Deliberately not logged: every stranger who types the URL would be an error
 	// line, and the same request is already refused with a 401 one hop away, in the
 	// place that has the rate limiter and the caller id to make it meaningful.
-	if (!session.render) throw redirect({ to: "/auth/sign-in" });
+	if (session.action === "sign-in") throw redirect({ to: "/auth/sign-in" });
+	if (session.action === "onboarding") throw redirect({ to: "/onboarding" });
 	return session;
 }

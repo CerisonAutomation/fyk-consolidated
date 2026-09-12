@@ -10,14 +10,21 @@ import { users } from "#/schema";
  * `GET /api/auth/me` — "who am I, and is my profile provisioned?"
  *
  * Who calls it, honestly: nothing in the browser does today. `EntryShell` reads the
- * same facts by querying `profiles` through supabase-js directly, so this endpoint
- * is the *contract* — the server-side mapping to `ProfileUser`, and the
- * `{ user: null }`-rather-than-401 distinction — rather than a live dependency, and
- * AUDIT §3.18 records the choice that has to be made (move the shell onto it, or
- * delete it). Its former caller, `src/components/auth-gate.tsx`, was imported by
- * nothing and is deleted; the server-side equivalent for documents is now
- * `#/lib/document-auth.server`, which answers the same question without a round
- * trip and without trusting the browser's word about its own session.
+ * same facts by querying `profiles` through supabase-js directly, so this endpoint is
+ * the *contract* — the server-side mapping to `ProfileUser`, and the
+ * `{ user: null }`-rather-than-401 distinction — rather than a live dependency.
+ *
+ * The decision AUDIT §3.18 posed has been taken, and it is "keep, and share the
+ * predicate": the document guard now asks the same question through
+ * `#/lib/provisioning.server` (three-valued, because an unreachable database must not be
+ * read as "new account"), and redirects an authenticated id with no row to `/onboarding`
+ * instead of rendering an empty private screen. That is also what finally gives
+ * `/onboarding` a caller — the route existed and nothing navigated to it. What remains in
+ * §3.18 is the smaller question of whether `EntryShell` should stop re-deriving this in
+ * the browser and use this endpoint; deleting the endpoint was rejected because the
+ * mapping and the two-state answer are exactly what a shell needs and should not be
+ * re-implemented per screen. Its former caller, `src/components/auth-gate.tsx`, was
+ * imported by nothing and is deleted.
  *
  * Answers `200 { user: null }` for anonymous traffic rather than `401`: the
  * caller has to distinguish "not signed in" (redirect to sign-in) from "signed

@@ -7,6 +7,7 @@
  * everything that only *looks* like one.
  */
 import { describe, expect, it } from "vitest";
+import { documentDecision } from "#/lib/document-auth.server";
 import { tokenFromCookieHeader } from "#/lib/supabase-auth.server";
 
 /** The JSON supabase-js persists, base64url-encoded the way `@supabase/ssr` does. */
@@ -70,5 +71,53 @@ describe("tokenFromCookieHeader", () => {
 		// comment in `#/integrations/supabase/client` documents the shape: a
 		// deployment that stores the access token directly must still verify.
 		expect(tokenFromCookieHeader(`fyk.auth=${JWT}`)).toBe(JWT);
+	});
+});
+
+/**
+ * The navigation table. Every row here is a bug that would be invisible in a screenshot
+ * and expensive in production: a loop, a lockout during an outage, or a stranger shown a
+ * private screen.
+ */
+describe("documentDecision", () => {
+	it("sends an authenticated id with no profile row to onboarding", () => {
+		expect(
+			documentDecision({ status: "authenticated", provisioned: "missing" }),
+		).toEqual({ action: "onboarding", render: false });
+	});
+
+	it("renders for a provisioned account", () => {
+		expect(
+			documentDecision({ status: "authenticated", provisioned: "present" }),
+		).toEqual({ action: "render", render: true });
+	});
+
+	it("never reads a database outage as a new account", () => {
+		// `unknown` is what `profileRowExists` returns when there is no DATABASE_URL or
+		// the pooler refused. Treating it as `missing` would redirect every signed-in
+		// user to onboarding during a DB blip — and onboarding is where a form writes a
+		// profile row, so it would write one over a healthy account.
+		expect(
+			documentDecision({ status: "authenticated", provisioned: "unknown" }),
+		).toEqual({ action: "render", render: true });
+	});
+
+	it("sends anonymous and unverifiable credentials to sign-in", () => {
+		for (const status of ["anonymous", "rejected"] as const) {
+			expect(documentDecision({ status, provisioned: "unknown" })).toEqual({
+				action: "sign-in",
+				render: false,
+			});
+		}
+	});
+
+	it("renders for the fail-open states, and never redirects them to onboarding", () => {
+		for (const status of ["expired", "unreachable", "unconfigured"] as const) {
+			const decision = documentDecision({ status, provisioned: "missing" });
+			expect(decision).toEqual({ action: "render", render: true });
+		}
+		// `provisioned` is only consulted for an authenticated caller: without a verified
+		// id there is nobody to look up, and a stranger must not be sent into the flow that
+		// creates rows.
 	});
 });
