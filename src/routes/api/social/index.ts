@@ -55,6 +55,22 @@ export const Route = createFileRoute("/api/social/")({
 					const sizes = new Map(
 						counts.map((row) => [row.albumId, Number(row.total)]),
 					);
+					// Real cover = the lowest-positioned item of each album. Nothing is
+					// invented when an album is empty.
+					const coverRows = await db
+						.select({
+							albumId: privateAlbumItems.albumId,
+							storagePath: privateAlbumItems.storagePath,
+						})
+						.from(privateAlbumItems)
+						.where(eq(privateAlbumItems.ownerId, user.id))
+						.orderBy(asc(privateAlbumItems.position));
+					const covers = new Map<string, string>();
+					for (const row of coverRows) {
+						if (row.albumId && row.storagePath && !covers.has(row.albumId)) {
+							covers.set(row.albumId, row.storagePath);
+						}
+					}
 					return json(
 						{
 							albums: albums.map((album) => ({
@@ -64,7 +80,9 @@ export const Route = createFileRoute("/api/social/")({
 								maxOpens: album.maxOpens,
 								durationSeconds: album.durationSeconds,
 								itemCount: album.id ? (sizes.get(album.id) ?? 0) : 0,
-								coverUrl: null,
+								// First item by position — an album with no items has no
+								// cover, which is different from a made-up one.
+								coverUrl: covers.get(album.id) ?? null,
 								createdAt: (album.createdAt ?? new Date()).toISOString(),
 							})),
 						},

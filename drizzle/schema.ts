@@ -49,12 +49,20 @@ import {
 
 export const users = pgTable("users", {
 	id: uuid("id").primaryKey().defaultRandom(),
-	email: text("email").notNull().unique(),
+	/**
+	 * Unique, and nullable since `0017`: Supabase also issues phone-only sessions,
+	 * and a NOT NULL email made `PUT /api/profile` unable to create the row for
+	 * those accounts. Never exposed through any response payload.
+	 */
+	email: text("email").unique(),
 	phone: text("phone"),
 
-	// Supabase Auth owns credentials. The column is kept for pre- Supabase
-	// rows only and is never read or written by the API — see AUDIT.md.
-	passwordHash: text("password_hash").notNull(),
+	/**
+	 * Legacy: Supabase Auth owns credentials, so this column is never read or
+	 * written by the API. Nullable since `0015` (it used to be NOT NULL, which
+	 * made a Supabase-only signup impossible).
+	 */
+	passwordHash: text("password_hash"),
 
 	displayName: text("pseudo"),
 	handle: text("nick"),
@@ -127,6 +135,12 @@ export const users = pgTable("users", {
 	lastSeen: timestamp("last_seen", { withTimezone: true, precision: 6 }).defaultNow(),
 	lastActiveAt: timestamp("last_active_at", { withTimezone: true, precision: 6 }).defaultNow(),
 	onboardingDone: boolean("onboarding_done").default(false),
+	/**
+	 * Set by `POST /api/boost` when a `consumables_inventory` boost is consumed.
+	 * Discovery orders on it (`is boosted AND not expired` first), so a boost has
+	 * a visible effect instead of being a flag nobody reads.
+	 */
+	boostExpiresAt: timestamp("boost_expires_at", { withTimezone: true, precision: 6 }),
 	onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true, precision: 6 }),
 
 	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
@@ -200,6 +214,22 @@ export const taps = pgTable(
 	},
 	(table) => [unique("taps_tapper_id_tapped_id_key").on(table.tapperId, table.tappedId)],
 );
+
+/**
+ * Granted consumables (boosters, super likes). `POST /api/boost` decrements one
+ * row per call, so a boost always has a cost recorded in the same table the shop
+ * writes to — it cannot be minted by an API caller.
+ */
+export const consumablesInventory = pgTable("consumables_inventory", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	type: text("type").notNull(),
+	quantity: integer("quantity").default(1),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+});
 
 /* ------------------------- social graph (0010 + 0000) ----------------------- */
 
@@ -314,8 +344,41 @@ export const messages = pgTable("messages", {
 	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }),
 	unsentAt: timestamp("unsent_at", { withTimezone: true, precision: 6 }),
 	editedAt: timestamp("edited_at", { withTimezone: true, precision: 6 }),
+	/** Real columns from `0017_message_actions.sql` — the pin button needs them. */
+	isPinned: boolean("is_pinned").notNull().default(false),
+	pinnedAt: timestamp("pinned_at", { withTimezone: true, precision: 6 }),
 	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
 });
+
+/** One reaction per (message, member): the `emoji` CHECK is the allowed set. */
+export const messageReactions = pgTable(
+	"message_reactions",
+	{
+		messageId: uuid("message_id")
+			.notNull()
+			.references(() => messages.id, { onDelete: "cascade" }),
+		profileId: uuid("profile_id").notNull(),
+		emoji: text("emoji").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
+	},
+	(table) => [primaryKey({ columns: [table.messageId, table.profileId] })],
+);
+
+/** Read receipts, per message and member (the `readBy` the chat shows). */
+export const messageReads = pgTable(
+	"message_reads",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		messageId: uuid("message_id")
+			.notNull()
+			.references(() => messages.id, { onDelete: "cascade" }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		readAt: timestamp("read_at", { withTimezone: true, precision: 6 }).defaultNow(),
+	},
+	(table) => [unique("message_reads_message_id_user_id_key").on(table.messageId, table.userId)],
+);
 
 /* ---------------------------------- albums ---------------------------------- */
 

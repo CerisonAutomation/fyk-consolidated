@@ -190,8 +190,23 @@ export const useAppStore = create<AppState>((set, _get) => ({
   setVoiceTranscript: (t) => set({ voiceTranscript: t }),
 
   // AI
+  // The palette command is "Load the on-device AI model", so this really does
+  // load it: `#/domains/ai/ml/bootstrap` caches one Transformers.js pipeline
+  // (WebGPU, WASM fallback) and the dynamic import keeps the loader out of the
+  // main chunk. It used to POST /api/ai/warmup, an endpoint that never existed,
+  // and swallow the rejection — a button with no effect.
   warmUpAi: () => {
-    api("/api/ai/warmup").catch(() => {});
+    const notify = (message: string, type: string) => _get().pushToast(message, type);
+    notify("Loading all-MiniLM-L6-v2 on this device…", "info");
+    return import("#/domains/ai/ml/bootstrap")
+      .then((m) => m.loadExtractor({}))
+      .then(() => notify("On-device model ready — search and safety run locally", "success"))
+      .catch((error: { message?: string; code?: string }) => {
+        // A CDN or GPU failure is not the user's fault, but it must be said: the
+        // feature degrades to the server heuristics instead of pretending to work.
+        const reason = error?.message || error?.code || "model unavailable";
+        notify(`On-device model unavailable (${reason}) — using server heuristics`, "warn");
+      });
   },
 
   // Media
@@ -257,7 +272,24 @@ export const useAppStore = create<AppState>((set, _get) => ({
   // Check-in / Footprints
   checkIn: null,
   setCheckIn: (data) => set({ checkIn: data }),
-  resolveCheckIn: (safe: boolean) => { const ci = _get().checkIn; if (ci) { api("/api/safety/check-in/resolve", { method: "POST", body: { checkInId: ci.checkInId, contactId: ci.contactId, safe } }).catch(() => {}); } set({ checkIn: null }); },
+  resolveCheckIn: (safe: boolean) => {
+    const ci = _get().checkIn;
+    set({ checkIn: null });
+    if (!ci) return;
+    // The HUD must not lie: the server updates the check-in row and notifies the
+    // emergency contact, and if that write fails the user is told the contact was
+    // *not* informed. It used to be a fire-and-forget with an empty catch, so a
+    // missed check-in looked resolved to the person who was waiting about it.
+    api<{ contactNotified: boolean; warning: string | null }>("/api/safety/check-in/resolve", {
+      method: "POST",
+      body: { checkInId: ci.checkInId, contactId: ci.contactId, safe },
+    })
+      .then((res) => {
+        if (res.warning) _get().pushToast(res.warning, "warn");
+        else if (!safe && !res.contactNotified) _get().pushToast("Could not reach your emergency contact", "error");
+      })
+      .catch(() => _get().pushToast(safe ? "Check-in not recorded — your contact was not notified" : "Missed check-in not raised", "error"));
+  },
   footprints: {},
   leaveFootprint: (data) => {
     set((s) => ({
@@ -272,7 +304,16 @@ export const useAppStore = create<AppState>((set, _get) => ({
   // Social
   likesReceived: 0,
   boost: () => {
-    api("/api/boost", { method: "POST" }).catch(() => {});
+    // `/api/boost` now exists: it consumes one `consumables_inventory` boost and
+    // sets `users.boost_expires_at`, which `/api/discover` ranks on. The result is
+    // reported instead of discarded, so "no boosts left" is visible rather than a
+    // button that quietly did nothing.
+    api<{ expiresAt: string; boostsLeft: number }>("/api/boost", { method: "POST" })
+      .then((res) => {
+        const until = new Date(res.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        _get().pushToast(`Boosted until ${until} · ${res.boostsLeft} left`, "success");
+      })
+      .catch((error: { message?: string }) => _get().pushToast(error?.message || "Boost failed", "error"));
   },
   queued: false,
 

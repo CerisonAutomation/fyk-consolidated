@@ -1,10 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "#/db";
 import { moderateContent } from "#/domains/ai/heuristic";
 import { cleanText, readJson, requireCaller, z } from "#/lib/api-helpers";
 import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, conversations, messages } from "#/schema";
+import {
+	conversationMembers,
+	conversations,
+	messageReactions,
+	messageReads,
+	messages,
+} from "#/schema";
 
 /**
  * `GET|POST /api/conversations/{conversationId}/messages`
@@ -81,13 +87,15 @@ export const Route = createFileRoute(
 							replyToId: messages.replyToId,
 							expiresAt: messages.expiresAt,
 							editedAt: messages.editedAt,
+							isPinned: messages.isPinned,
+							pinnedAt: messages.pinnedAt,
+							unsentAt: messages.unsentAt,
 							createdAt: messages.createdAt,
 						})
 						.from(messages)
 						.where(
 							and(
 								eq(messages.conversationId, conversationId),
-								isNull(messages.unsentAt),
 								// A row that has outlived its ephemeral window is gone for
 								// everyone, not "hidden until refresh".
 								sql`(${messages.expiresAt} is null or ${messages.expiresAt} > now())`,
@@ -101,6 +109,30 @@ export const Route = createFileRoute(
 
 					const hasMore = rows.length > PAGE_SIZE;
 					const page = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
+					const ids = page.map((row) => row.id);
+
+					const [reactionRows, readRows] =
+						ids.length > 0
+							? await Promise.all([
+									db
+										.select({
+											messageId: messageReactions.messageId,
+											emoji: messageReactions.emoji,
+											profileId: messageReactions.profileId,
+										})
+										.from(messageReactions)
+										.where(inArray(messageReactions.messageId, ids)),
+									db
+										.select({
+											messageId: messageReads.messageId,
+											userId: messageReads.userId,
+										})
+										.from(messageReads)
+										.where(inArray(messageReads.messageId, ids)),
+								])
+							: [[], []];
+					const reactionsBy = groupByMessage(reactionRows);
+					const readsBy = groupByMessage(readRows);
 
 					return json(
 						{
@@ -109,15 +141,34 @@ export const Route = createFileRoute(
 								conversation_id: row.conversationId,
 								sender_id: row.senderId,
 								type: row.type,
-								content: row.body ?? "",
-								media_url: row.storagePath ?? null,
+								// A recalled message keeps its row (safety needs the
+								// history) and loses its body: `content` is empty and
+								// `is_recalled` tells the UI to draw the placeholder.
+								content: row.unsentAt ? "" : (row.body ?? ""),
+								// `media_url` is deliberately absent. Every attachment
+								// policy in this schema (`media_access_policy`:
+								// standard|timed|view_once|open_count) needs a signed
+								// URL, and signing plus the revoke/opens-used lifecycle
+								// lives in #/integrations/supabase/chat.ts — returning a
+								// raw storage path as if it were a URL would render a
+								// broken image and silently bypass those expiry rules.
+								storage_path: row.storagePath ?? null,
 								reply_to_id: row.replyToId ?? null,
 								is_edited: row.editedAt !== null,
-								is_pinned: false,
-								is_recalled: false,
+								is_pinned: row.isPinned,
+								pinned_at: row.pinnedAt?.toISOString() ?? null,
+								is_recalled: row.unsentAt !== null,
+								recalled_at: row.unsentAt?.toISOString() ?? null,
 								is_ephemeral: row.expiresAt !== null,
 								ephemeral_expires_at: row.expiresAt?.toISOString() ?? null,
 								created_at: (row.createdAt ?? new Date()).toISOString(),
+								reactions: (reactionsBy.get(row.id) ?? []).map((reaction) => ({
+									emoji: reaction.emoji,
+									user_id: reaction.profileId,
+								})),
+								readBy: (readsBy.get(row.id) ?? []).map((read) => ({
+									user_id: read.userId,
+								})),
 							})),
 							nextCursor: hasMore
 								? (page[0]?.createdAt?.toISOString() ?? null)
@@ -201,6 +252,19 @@ export const Route = createFileRoute(
 		},
 	},
 });
+
+/** Group a side query by message id without N+1 round trips. */
+function groupByMessage<T extends { messageId: string }>(
+	rows: T[],
+): Map<string, T[]> {
+	const map = new Map<string, T[]>();
+	for (const row of rows) {
+		const bucket = map.get(row.messageId);
+		if (bucket) bucket.push(row);
+		else map.set(row.messageId, [row]);
+	}
+	return map;
+}
 
 async function isMember(
 	profileId: string,

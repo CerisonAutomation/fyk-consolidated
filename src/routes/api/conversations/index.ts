@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { and, count, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "#/db";
 import { cleanText, readJson, requireCaller, z } from "#/lib/api-helpers";
 import { json, jsonError, withSecurity } from "#/middleware";
@@ -60,6 +60,11 @@ export const Route = createFileRoute("/api/conversations/")({
 						return json({ conversations: [] }, { cache: "private" });
 					const ids = mine.map((row) => row.conversationId);
 
+					// Unread = messages from somebody else, after *this member's*
+					// `last_read_at`, that have not been recalled. Counting "not from me"
+					// (as this did before the join) turned a fully-read thread back into
+					// a badge the moment you reopened it, because the whole history still
+					// matches. `or(isNull(...))` keeps brand-new members' unread state.
 					const [peers, lastMessages, unreadCounts] = await Promise.all([
 						db
 							.select({
@@ -88,18 +93,24 @@ export const Route = createFileRoute("/api/conversations/")({
 							.limit(LIST_LIMIT * 4),
 						db
 							.select({
-								conversationId: messages.conversationId,
+								conversationId: conversationMembers.conversationId,
 								total: count(),
 							})
-							.from(messages)
+							.from(conversationMembers)
+							.innerJoin(
+								messages,
+								eq(messages.conversationId, conversationMembers.conversationId),
+							)
 							.where(
 								and(
-									inArray(messages.conversationId, ids),
+									eq(conversationMembers.profileId, user.id),
+									inArray(conversationMembers.conversationId, ids),
 									ne(messages.senderId, user.id),
 									isNull(messages.unsentAt),
+									sql`${messages.createdAt} > coalesce(${conversationMembers.lastReadAt}, to_timestamp(0))`,
 								),
 							)
-							.groupBy(messages.conversationId),
+							.groupBy(conversationMembers.conversationId),
 					]);
 
 					const peerByConversation = new Map<string, string>();
