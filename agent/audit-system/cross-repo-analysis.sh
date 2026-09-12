@@ -1,0 +1,85 @@
+#!/bin/bash
+# =============================================================================
+# Cross-Repo Pattern Analysis
+# =============================================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/config.sh"
+
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+REPORT_FILE="$REPORT_DIR/cross-repo-$TIMESTAMP.md"
+
+echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════${NC}"
+echo -e "${BOLD}${CYAN}  CROSS-REPO PATTERN ANALYSIS${NC}"
+echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════${NC}"
+
+cat > "$REPORT_FILE" << 'HEADER'
+# Cross-Repo Pattern Analysis
+
+## Shared Patterns Between FYK & Sunbird
+
+### 1. Frontend Architecture
+- Both use React + Vite + TypeScript
+- Both use Tailwind CSS
+- Both deploy to Vercel
+
+### 2. Code Quality Opportunities
+- Shared linting rules (Biome config)
+- Shared TypeScript configuration
+- Shared testing patterns
+
+### 3. Performance Patterns
+- Bundle analysis comparison
+- Build time optimization
+- Asset optimization strategies
+
+### 4. Deployment Patterns
+- Vercel configuration
+- Environment variable management
+- CI/CD pipeline patterns
+
+---
+
+## Recommendations
+
+### Immediate
+1. Share Biome config between repos
+2. Create shared TypeScript base config
+3. Standardize testing patterns
+
+### Medium-term
+1. Create shared component library
+2. Unify deployment pipeline
+3. Cross-pollinate security patterns
+
+### Long-term
+1. Monorepo migration (if warranted)
+2. Shared design system
+3. Unified monitoring/alerting
+
+---
+
+## Arena.ai Prompt: Cross-Repo Optimization
+
+Use this prompt with arena.ai agents to get expert advice:
+
+```
+We have two repos:
+1. FYK Consolidated — React + Vite + TanStack Router + Supabase (dating platform)
+2. Sunbird — React + Vite + Three.js (browser game)
+
+Both use React, Vite, TypeScript, and Tailwind CSS.
+
+Analyze:
+1. What shared infrastructure should we build?
+2. What patterns should we standardize?
+3. What performance wins can we share?
+4. What security practices should be unified?
+5. What testing strategies work for both?
+
+Provide specific, actionable recommendations with code examples.
+```
+HEADER
+
+echo -e "${GREEN}✓ Cross-repo report generated: $REPORT_FILE${NC}"
