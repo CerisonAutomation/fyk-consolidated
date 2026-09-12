@@ -34,9 +34,18 @@ import {
 	useState,
 } from "react";
 import { z } from "zod";
+import { FormError } from "#/components/FormError";
 import { getSupabase } from "#/integrations/supabase/client";
 import { envMissing, isConfigured } from "#/integrations/supabase/env";
 import { ApiClientError, api } from "#/lib/client";
+import {
+	clearFieldError,
+	type FieldErrors,
+	fieldErrorProps,
+	fieldErrorsFrom,
+	fieldErrorsFromIssues,
+	hasFieldErrors,
+} from "#/lib/field-errors";
 import { cn } from "#/lib/utils";
 import type { SessionResponse } from "#/server/handlers/session";
 import { AppShell } from "./AppShell";
@@ -303,19 +312,30 @@ function AuthScreens({ onDone }: { onDone: () => void }) {
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
 	const [notice, setNotice] = useState("");
+	// Per-field copy, so a wrong email is fixed at the email box rather than at a
+	// sentence that may or may not be about the box the user is looking at.
+	const [fields, setFields] = useState<FieldErrors>({});
 
 	const submit = useCallback(
 		async (event: React.FormEvent) => {
 			event.preventDefault();
 			setError("");
 			setNotice("");
+			setFields({});
 			const client = getSupabase();
 			if (!client) return setError("Supabase is not configured.");
 			setBusy(true);
 			try {
 				if (mode === "signin") {
 					const parsed = signInSchema.safeParse({ email, password });
-					if (!parsed.success) return setError(parsed.error.issues[0].message);
+					if (!parsed.success) {
+						const issues = fieldErrorsFromIssues(parsed.error.issues);
+						setFields(issues);
+						// A field without a box on this form still needs the summary line.
+						if (!hasFieldErrors(issues))
+							setError(parsed.error.issues[0].message);
+						return;
+					}
 					const { error: authError } = await client.auth.signInWithPassword({
 						email: parsed.data.email,
 						password: parsed.data.password,
@@ -329,7 +349,18 @@ function AuthScreens({ onDone }: { onDone: () => void }) {
 						adult,
 						terms,
 					});
-					if (!parsed.success) return setError(parsed.error.issues[0].message);
+					if (!parsed.success) {
+						const issues = fieldErrorsFromIssues(parsed.error.issues);
+						setFields(issues);
+						// Anything the checkboxes failed is not a field on the page, so
+						// that one message still goes in the summary line.
+						setError(
+							issues.email || issues.password
+								? (issues.adult ?? issues.terms ?? "")
+								: parsed.error.issues[0].message,
+						);
+						return;
+					}
 					const { data, error: authError } = await client.auth.signUp({
 						email: parsed.data.email,
 						password: parsed.data.password,
@@ -394,7 +425,7 @@ function AuthScreens({ onDone }: { onDone: () => void }) {
 					noValidate
 				>
 					<div className="space-y-4">
-						<Field label="Email" htmlFor="auth-email">
+						<Field label="Email" htmlFor="auth-email" error={fields.email}>
 							<div className="relative">
 								<Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
 								<input
@@ -402,6 +433,7 @@ function AuthScreens({ onDone }: { onDone: () => void }) {
 									type="email"
 									inputMode="email"
 									autoComplete="email"
+									{...fieldErrorProps(fields, "email", "auth-email")}
 									value={email}
 									onChange={(event) => setEmail(event.target.value)}
 									placeholder="you@example.com"
@@ -411,12 +443,17 @@ function AuthScreens({ onDone }: { onDone: () => void }) {
 						</Field>
 
 						{mode !== "reset" && (
-							<Field label="Password" htmlFor="auth-password">
+							<Field
+								label="Password"
+								htmlFor="auth-password"
+								error={fields.password}
+							>
 								<div className="relative">
 									<LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
 									<input
 										id="auth-password"
 										type="password"
+										{...fieldErrorProps(fields, "password", "auth-password")}
 										autoComplete={
 											mode === "signin" ? "current-password" : "new-password"
 										}
@@ -565,6 +602,26 @@ export function ageFromDob(dob: string, now = new Date()): number | null {
 	return years;
 }
 
+/**
+ * The step-0 inputs render their own note under the field, so the form-level list
+ * skips exactly those names — one complaint per answer, never two. Interests and
+ * looking-for are chip groups with no single input to mark, so they stay in the list.
+ */
+const INLINE_ONBOARD_FIELDS = ["displayName", "handle", "city", "dob"] as const;
+const CHIP_FIELDS = ["interests", "lookingFor"] as const;
+
+/**
+ * Which step owns a rejected answer, so the API's complaint can be shown next to
+ * the input it is about. Unknown names (location, `body`) stay where they are.
+ */
+function stepOwningField(path: string): number | null {
+	const head = path.split(".")[0];
+	if (head && (INLINE_ONBOARD_FIELDS as readonly string[]).includes(head))
+		return 0;
+	if (head && (CHIP_FIELDS as readonly string[]).includes(head)) return 1;
+	return null;
+}
+
 const INTEREST_OPTIONS = [
 	"fitness",
 	"music",
@@ -603,6 +660,10 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 	const [locating, setLocating] = useState(false);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState("");
+	// This step's zod complaints and the server's `details.fields` both render
+	// through one list, so a rejected answer is named instead of summarised.
+	const [stepFields, setStepFields] = useState<FieldErrors>({});
+	const [serverError, setServerError] = useState<unknown>(null);
 
 	const maxDob = useMemo(() => {
 		const date = new Date();
@@ -642,6 +703,12 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 
 	const next = () => {
 		setError("");
+		setStepFields({});
+		setServerError(null);
+		// The whole form is validated at every step, so no answer can slip through to
+		// the API unchecked; only the complaints that belong to *this* step go on
+		// screen, because pointing at a chip group that is not rendered yet is how
+		// wizards make people re-read the page looking for a field that isn't there.
 		const parsed = onboardingSchema.safeParse({
 			displayName,
 			handle: handle.toLowerCase(),
@@ -652,13 +719,32 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 			latitude: coords.latitude,
 			longitude: coords.longitude,
 		});
-		if (!parsed.success) return setError(parsed.error.issues[0].message);
-		setStep(2);
+		if (!parsed.success) {
+			const issues = parsed.error.issues;
+			const mine = fieldErrorsFromIssues(
+				issues.filter((issue) => issue.path.length > 0),
+			);
+			// An object-level refine (the 18+ check) has no path, so it has no input to
+			// sit under: it must go in the summary line or it would vanish entirely.
+			const unattached = issues.find((issue) => issue.path.length === 0);
+			setStepFields(mine);
+			setError(
+				unattached?.message ??
+					(hasFieldErrors(mine) ? "" : "Some of those answers are not valid."),
+			);
+			return;
+		}
+		setStepFields({});
+		// Step 1 is the interests screen. It used to be skipped — `next()` jumped
+		// straight to the last step, so the chips could only be reached with Back.
+		setStep(1);
 	};
 
 	const finish = async () => {
 		setBusy(true);
 		setError("");
+		setStepFields({});
+		setServerError(null);
 		try {
 			await api.post("onboarding", {
 				displayName: displayName.trim(),
@@ -672,11 +758,26 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 			});
 			onDone();
 		} catch (submitError) {
-			setError(
-				submitError instanceof ApiClientError
-					? submitError.message
-					: "We could not save your profile. Try again.",
-			);
+			// Keep the error itself, not just its sentence: the field list lives on
+			// `details.fields`, and that is what tells a user which answer to fix.
+			setServerError(submitError);
+			const serverFields = fieldErrorsFrom(submitError);
+			const owners = Object.keys(serverFields)
+				.map(stepOwningField)
+				.filter((value): value is number => value !== null);
+			if (owners.length > 0 && !owners.includes(step)) {
+				// The last step is the one that posts, so a refusal about an earlier
+				// answer has to send the user back to the input that caused it.
+				setStep(Math.min(...owners));
+				setStepFields(serverFields);
+				setError("");
+			} else {
+				setError(
+					submitError instanceof ApiClientError
+						? submitError.message
+						: "We could not save your profile. Try again.",
+				);
+			}
 		} finally {
 			setBusy(false);
 		}
@@ -732,7 +833,10 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 									</span>
 									<input
 										value={displayName}
-										onChange={(event) => setDisplayName(event.target.value)}
+										onChange={(event) => {
+											setDisplayName(event.target.value);
+											setStepFields(clearFieldError(stepFields, "displayName"));
+										}}
 										autoComplete="nickname"
 										placeholder="What people call you"
 										className="entry-input"
@@ -748,16 +852,19 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 										</span>
 										<input
 											value={handle}
-											onChange={(event) =>
+											onChange={(event) => {
 												setHandle(
 													event.target.value
 														.toLowerCase()
 														.replace(/[^a-z0-9_]/g, ""),
-												)
-											}
+												);
+												setStepFields(clearFieldError(stepFields, "handle"));
+											}}
 											placeholder="your_handle"
 											className="entry-input pl-8"
+											aria-invalid={stepFields.handle ? true : undefined}
 										/>
+										<FieldNote message={stepFields.handle} />
 									</div>
 								</label>
 								<div className="grid gap-4 sm:grid-cols-2">
@@ -769,9 +876,14 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 											type="date"
 											value={dob}
 											max={maxDob}
-											onChange={(event) => setDob(event.target.value)}
+											onChange={(event) => {
+												setDob(event.target.value);
+												setStepFields(clearFieldError(stepFields, "dob"));
+											}}
 											className="entry-input"
+											aria-invalid={stepFields.dob ? true : undefined}
 										/>
+										<FieldNote message={stepFields.dob} />
 									</label>
 									<label className="block">
 										<span className="mb-1.5 block text-[12.5px] font-semibold text-ink-2">
@@ -779,10 +891,15 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 										</span>
 										<input
 											value={city}
-											onChange={(event) => setCity(event.target.value)}
+											onChange={(event) => {
+												setCity(event.target.value);
+												setStepFields(clearFieldError(stepFields, "city"));
+											}}
 											placeholder="Valletta"
 											className="entry-input"
+											aria-invalid={stepFields.city ? true : undefined}
 										/>
+										<FieldNote message={stepFields.city} />
 									</label>
 								</div>
 								{ageFromDob(dob) !== null && (
@@ -791,15 +908,15 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 										about your birth date.
 									</p>
 								)}
-								{error && (
-									<p
-										aria-live="assertive"
-										aria-atomic="true"
-										className="text-[13px] text-live"
-									>
-										{error}
-									</p>
-								)}
+								{error || hasFieldErrors(stepFields) || serverError ? (
+									<FormError
+										message={error}
+										fields={stepFields}
+										error={serverError}
+										inline={INLINE_ONBOARD_FIELDS}
+										className="text-[13px]"
+									/>
+								) : null}
 								<button
 									type="button"
 									onClick={next}
@@ -955,15 +1072,15 @@ function Onboarding({ onDone }: { onDone: () => void }) {
 								{coords.note && (
 									<p className="text-[12.5px] text-muted">{coords.note}</p>
 								)}
-								{error && (
-									<p
-										aria-live="assertive"
-										aria-atomic="true"
-										className="text-[13px] text-live"
-									>
-										{error}
-									</p>
-								)}
+								{error || hasFieldErrors(stepFields) || serverError ? (
+									<FormError
+										message={error}
+										fields={stepFields}
+										error={serverError}
+										inline={INLINE_ONBOARD_FIELDS}
+										className="text-[13px]"
+									/>
+								) : null}
 
 								<div className="flex gap-2">
 									<button
@@ -1025,10 +1142,12 @@ function friendlyAuthError(message: string): string {
 function Field({
 	label,
 	htmlFor,
+	error,
 	children,
 }: {
 	label: string;
 	htmlFor: string;
+	error?: string;
 	children: ReactNode;
 }) {
 	return (
@@ -1037,7 +1156,29 @@ function Field({
 				{label}
 			</span>
 			{children}
+			{error ? (
+				<span
+					id={`${htmlFor}-error`}
+					className="mt-1 block text-[12px] font-medium text-live"
+				>
+					{error}
+				</span>
+			) : null}
 		</label>
+	);
+}
+
+/**
+ * One field's complaint, rendered inside the `<label>` that owns the input. The
+ * implicit association means no id plumbing is needed, and an invalid field is
+ * marked in three ways at once: the ring (CSS), the text, and `aria-invalid`.
+ */
+function FieldNote({ message }: { message?: string }) {
+	if (!message) return null;
+	return (
+		<span className="mt-1 block text-[12px] font-medium text-live">
+			{message}
+		</span>
 	);
 }
 

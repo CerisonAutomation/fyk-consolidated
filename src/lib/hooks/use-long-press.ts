@@ -85,5 +85,12 @@ export function useLongPress(
 		},
 		onMouseUp: clear,
 		onMouseLeave: clear,
+		// Right-click is the desktop equivalent of the hold, and the menu it opens is
+		// the same one — without this the docstring above would be a claim about a
+		// gesture the code never handled.
+		onContextMenu: (event: React.MouseEvent) => {
+			event.preventDefault();
+			fire();
+		},
 	};
 }

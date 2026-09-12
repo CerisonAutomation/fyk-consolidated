@@ -1995,47 +1995,6 @@
   }
 }
 
-/* ================================================================== */
-/*  ACCESSIBILITY OVERRIDES                                            */
-/* ================================================================== */
-
-:root {
-  --a11y-font-size: 1rem;
-}
-
-html.a11y-large-tap-targets button,
-html.a11y-large-tap-targets a,
-html.a11y-large-tap-targets [role="button"],
-html.a11y-large-tap-targets input[type="checkbox"],
-html.a11y-large-tap-targets input[type="radio"] {
-  min-height: 48px !important;
-  min-width: 48px !important;
-}
-
-html.a11y-high-contrast {
-  --accent-primary: #ffd700 !important;
-  --accent-secondary: #ff4444 !important;
-  --accent-success: #00ff00 !important;
-  --accent-cyan: #00ffff !important;
-  --accent-neon: #00ff00 !important;
-  --accent-fire: #ff6600 !important;
-  --accent-purple: #cc66ff !important;
-  --accent-rose: #ff6699 !important;
-}
-
-html.a11y-reduced-motion *,
-html.a11y-reduced-motion *::before,
-html.a11y-reduced-motion *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  scroll-behavior: auto !important;
-}
-
-html.a11y-focus-visible *:focus-visible {
-  outline: 3px solid var(--accent-primary) !important;
-  outline-offset: 2px !important;
-}
 
 /* ================================================================== */
 /*  FYK APP PRIMITIVES                                                 */
@@ -2083,6 +2042,15 @@ html.a11y-focus-visible *:focus-visible {
   .entry-input:focus {
     border-color: color-mix(in oklab, var(--color-gold) 60%, transparent);
     box-shadow: 0 0 0 3px var(--color-gold-ghost);
+  }
+  /* An error has to be seen as well as announced: the attribute the form sets for
+     assistive tech drives the ring here, so the two can never disagree. */
+  .entry-input[aria-invalid="true"] {
+    border-color: color-mix(in oklab, var(--color-live) 55%, transparent);
+  }
+  .entry-input[aria-invalid="true"]:focus {
+    border-color: color-mix(in oklab, var(--color-live) 70%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-live) 20%, transparent);
   }
   .entry-input:disabled {
     opacity: 0.55;

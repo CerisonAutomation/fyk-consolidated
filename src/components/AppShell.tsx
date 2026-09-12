@@ -86,7 +86,7 @@ export function AppShell({
 	children: ReactNode;
 }) {
 	const pathname = useLocation({ select: (location) => location.pathname });
-	const unread = useUnreadBadge();
+	const unread = useUnreadBadge(session.capabilities.chat !== false);
 	const value = useMemo<ShellApi>(
 		() => ({
 			session,
@@ -103,6 +103,14 @@ export function AppShell({
 	return (
 		<ShellContext.Provider value={value}>
 			<div className="flex min-h-[100svh] flex-col bg-canvas text-ink">
+				{/* Keyboard users land on the nav before the page otherwise; this lets
+				    them jump straight to the content. It is invisible until focused. */}
+				<a
+					href="#fyk-main"
+					className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:flex focus:h-11 focus:items-center focus:rounded-full focus:bg-gold focus:px-4 focus:text-[13px] focus:font-bold focus:text-black"
+				>
+					Skip to content
+				</a>
 				<header className="sticky top-0 z-30 border-b border-line/70 bg-canvas/85 backdrop-blur-xl">
 					<div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4">
 						{isDetail ? (
@@ -113,9 +121,9 @@ export function AppShell({
 							</span>
 						)}
 						{title && !isDetail ? (
-							<span className="text-[13px] font-medium text-muted">
-								{title}
-							</span>
+							// The nav label *is* the page title: one h1 per screen, no
+							// visually-hidden duplicate to drift out of sync with it.
+							<h1 className="text-[13px] font-medium text-muted">{title}</h1>
 						) : null}
 						<div className="ml-auto flex items-center gap-1.5">
 							<Link
@@ -141,7 +149,11 @@ export function AppShell({
 					</div>
 				</header>
 
-				<main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 md:pb-10 md:pt-6">
+				<main
+					id="fyk-main"
+					tabIndex={-1}
+					className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-4 outline-none md:pb-10 md:pt-6"
+				>
 					{children}
 				</main>
 
@@ -310,34 +322,75 @@ function BackButton() {
 }
 
 /**
- * The badge is polled rather than pushed. Saying "live" would be a claim this
- * build cannot support; 45 s is frequent enough to be useful and cheap enough to
- * run from every open tab.
+ * The badge is polled rather than pushed — there is no push channel in this build,
+ * and calling it "live" would be a claim we cannot support.
+ *
+ * Three rules that only matter when they are missing:
+ *   - it stops polling while the tab is hidden, so a backgrounded phone is not
+ *     waking every few seconds to ask a question nobody will read;
+ *   - it refreshes the moment the tab comes back, so the badge is current when the
+ *     user returns instead of up to 45 s stale;
+ *   - a failing endpoint backs off exponentially rather than hammering whatever is
+ *     already down, and returns to the normal cadence on the first success.
+ *
+ * `enabled` tracks the `chat` capability: the unread count is unread messages, so
+ * asking for it when chat tables are absent would only produce 503s.
  */
-function useUnreadBadge(): number {
+function useUnreadBadge(enabled: boolean): number {
 	const [unread, setUnread] = useState(0);
 	const pathname = useLocation({ select: (location) => location.pathname });
 
-	// `pathname` is not read inside the effect: it is the reason to re-poll, so the
+	// `pathname` is not read inside the effect; it is the reason to re-poll, so the
 	// badge reflects the conversation the user just left rather than a stale one.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: see the note above.
 	useEffect(() => {
+		if (!enabled) return;
 		let alive = true;
-		const load = async () => {
+		let timer: number | null = null;
+		let failures = 0;
+
+		const schedule = (delay: number) => {
+			timer = window.setTimeout(tick, delay);
+		};
+
+		async function tick() {
+			let failed = false;
 			try {
-				const data = await api.get<{ unread: number }>("notifications");
+				const data = await api.get<{ unread: number }>("notifications", {
+					timeoutMs: 8_000,
+				});
 				if (alive) setUnread(data.unread);
 			} catch {
 				// A failed badge poll must never surface as an error toast.
+				failed = true;
 			}
+			if (!alive) return;
+			// Back off while the endpoint is failing, and hand the timing back to the
+			// caller rather than to a `finally` that could swallow a cancellation.
+			failures = failed ? failures + 1 : 0;
+			// While the tab is hidden nothing is scheduled at all: the visibility
+			// handler restarts the loop the moment polling is worth doing.
+			if (document.visibilityState !== "visible") return;
+			schedule(
+				failures === 0 ? 45_000 : Math.min(45_000 * 2 ** failures, 600_000),
+			);
+		}
+
+		const onVisibility = () => {
+			if (document.visibilityState !== "visible") return;
+			if (timer !== null) window.clearTimeout(timer);
+			tick();
 		};
-		void load();
-		const interval = window.setInterval(load, 45_000);
+
+		document.addEventListener("visibilitychange", onVisibility);
+		tick();
+
 		return () => {
 			alive = false;
-			window.clearInterval(interval);
+			if (timer !== null) window.clearTimeout(timer);
+			document.removeEventListener("visibilitychange", onVisibility);
 		};
-	}, [pathname]);
+	}, [pathname, enabled]);
 
 	return unread;
 }

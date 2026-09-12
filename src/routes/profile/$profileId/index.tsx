@@ -41,7 +41,7 @@ function ProfilePage() {
 	const [reportOpen, setReportOpen] = useState(false);
 	const [photoIndex, setPhotoIndex] = useState(0);
 
-	const { data, isPending, error } = useQuery({
+	const { data, isPending, error, refetch } = useQuery({
 		queryKey: ["profile", profileId],
 		queryFn: () => api.get<ProfileView>(`profile/${profileId}`),
 	});
@@ -105,13 +105,31 @@ function ProfilePage() {
 					"It may have been removed, suspended, or its privacy settings hide it from you."
 				}
 				action={
-					<button
-						type="button"
-						onClick={() => void navigate({ to: "/grid" })}
-						className="press h-11 rounded-full bg-gold px-4 text-[13.5px] font-bold text-black"
-					>
-						Back to Nearby
-					</button>
+					// A transient failure gets a retry; a refusal (blocked, hidden by
+					// their privacy settings) gets an exit, because retrying it can only
+					// ever fail again.
+					<div className="flex flex-wrap items-center justify-center gap-2">
+						{failure?.retryable ? (
+							<button
+								type="button"
+								onClick={() => void refetch()}
+								className="press h-11 rounded-full bg-gold px-4 text-[13.5px] font-bold text-black"
+							>
+								Try again
+							</button>
+						) : null}
+						<button
+							type="button"
+							onClick={() => void navigate({ to: "/grid" })}
+							className={
+								failure?.retryable
+									? "h-11 rounded-full border border-line px-4 text-[13.5px] font-semibold text-ink-2 transition-colors hover:text-ink"
+									: "press h-11 rounded-full bg-gold px-4 text-[13.5px] font-bold text-black"
+							}
+						>
+							{failure?.retryable ? "Back to Nearby" : "Browse nearby instead"}
+						</button>
+					</div>
 				}
 			/>
 		);

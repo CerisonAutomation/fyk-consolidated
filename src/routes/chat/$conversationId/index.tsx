@@ -24,7 +24,14 @@ import { ReportDialog } from "#/components/ReportDialog";
 import { Avatar } from "#/components/ui/Avatar";
 import { MediaImage } from "#/components/ui/MediaImage";
 import { describeFailure, StateBlock } from "#/components/ui/StateBlock";
-import type { MessagePage, MessageRow, PublicProfile } from "#/lib/api-types";
+import type {
+	MessageActionAck,
+	MessageEditAck,
+	MessagePage,
+	MessageRow,
+	PublicProfile,
+	SendMessageAck,
+} from "#/lib/api-types";
 import { ApiClientError, api } from "#/lib/client";
 import { useLongPress } from "#/lib/hooks/use-long-press";
 import { useToasts } from "#/lib/toast";
@@ -57,6 +64,9 @@ type Pending = {
 
 const draftKey = (id: string) => `fyk:draft:${id}`;
 
+/** One definition of the cache key, so a write cannot patch a page nobody reads. */
+const MESSAGES_KEY = (id: string) => ["messages", id] as const;
+
 function ConversationPage() {
 	const { conversationId } = Route.useParams();
 	const { session, capable } = useShell();
@@ -82,7 +92,7 @@ function ConversationPage() {
 	const fileRef = useRef<HTMLInputElement | null>(null);
 
 	const messages = useQuery({
-		queryKey: ["messages", conversationId],
+		queryKey: MESSAGES_KEY(conversationId),
 		queryFn: () =>
 			api.get<MessagePage>(`conversations/${conversationId}/messages`),
 		enabled: capable("chat"),
@@ -94,6 +104,40 @@ function ConversationPage() {
 
 	const list = messages.data?.messages ?? [];
 	const me = session.userId;
+
+	/**
+	 * Every write below goes through the cache first. Two rules keep that honest:
+	 * the optimistic value must be exactly what the server's own projection will
+	 * answer (so the row does not change again a second later), and the previous
+	 * page is restored if the request fails. Where the server answer carries
+	 * information the client cannot invent — who else reacted, whether the pin limit
+	 * was hit — a settle-time invalidation reconciles after the paint.
+	 */
+	const patchMessage = (
+		id: string,
+		patch: (message: MessageRow) => MessageRow,
+	) =>
+		queryClient.setQueryData<MessagePage>(
+			MESSAGES_KEY(conversationId),
+			(current) =>
+				current
+					? {
+							...current,
+							messages: current.messages.map((message) =>
+								message.id === id ? patch(message) : message,
+							),
+						}
+					: current,
+		);
+	const snapshotPage = () =>
+		queryClient.getQueryData<MessagePage>(MESSAGES_KEY(conversationId));
+	const restorePage = (page: MessagePage | undefined) => {
+		if (page) queryClient.setQueryData(MESSAGES_KEY(conversationId), page);
+	};
+	const invalidateMessages = () =>
+		void queryClient.invalidateQueries({
+			queryKey: MESSAGES_KEY(conversationId),
+		});
 
 	const loadOlder = async () => {
 		const oldest = list[0];
@@ -110,8 +154,8 @@ function ConversationPage() {
 				(current) =>
 					current
 						? {
+								...current,
 								messages: [...page.messages, ...current.messages],
-								pinned: current.pinned,
 								hasMore: page.hasMore,
 							}
 						: page,
@@ -146,23 +190,18 @@ function ConversationPage() {
 
 	const send = useMutation({
 		mutationFn: (payload: Pending) =>
-			api.post<{ message: MessageRow }>(
-				`conversations/${conversationId}/messages`,
-				{
-					body: payload.body || undefined,
-					mediaPath: payload.mediaPath,
-					mediaKind: payload.mediaKind,
-					replyToId: payload.replyToId ?? undefined,
-					idempotencyKey: payload.key,
-				},
-			),
+			api.post<SendMessageAck>(`conversations/${conversationId}/messages`, {
+				body: payload.body || undefined,
+				mediaPath: payload.mediaPath,
+				mediaKind: payload.mediaKind,
+				replyToId: payload.replyToId ?? undefined,
+				idempotencyKey: payload.key,
+			}),
 		onSuccess: (_result, payload) => {
 			setPending((current) =>
 				current.filter((entry) => entry.key !== payload.key),
 			);
-			void queryClient.invalidateQueries({
-				queryKey: ["messages", conversationId],
-			});
+			invalidateMessages();
 			void queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		},
 		onError: (error, payload) => {
@@ -182,19 +221,30 @@ function ConversationPage() {
 
 	const edit = useMutation({
 		mutationFn: ({ id, value }: { id: string; value: string }) =>
-			api.patch<{ ok: boolean }>(`messages/${id}`, {
+			api.patch<MessageEditAck>(`messages/${id}`, {
 				action: "edit",
 				value: value.slice(0, 4000),
 			}),
-		onSuccess: () =>
-			void queryClient.invalidateQueries({
-				queryKey: ["messages", conversationId],
-			}),
-		onError: (error) =>
+		onMutate: ({ id, value }) => {
+			const previous = snapshotPage();
+			patchMessage(id, (message) => ({
+				...message,
+				body: value,
+				// The projection the list uses sets both of these from the row, and a
+				// second edit is refused — so the optimistic row must already say so.
+				edited: true,
+				editedAt: new Date().toISOString(),
+				canEdit: false,
+			}));
+			return { previous };
+		},
+		onError: (error, _variables, context) => {
+			restorePage(context?.previous);
 			push(
 				error instanceof Error ? error.message : "That edit did not save.",
 				"error",
-			),
+			);
+		},
 	});
 
 	const submit = useCallback(() => {
@@ -233,35 +283,86 @@ function ConversationPage() {
 		}: {
 			id: string;
 			action: "recall" | "pin" | "unpin";
-		}) =>
-			api.patch<{ ok: boolean; expiresAt?: string | null }>(`messages/${id}`, {
-				action,
-			}),
-		onSuccess: (_result, variables) => {
-			void queryClient.invalidateQueries({
-				queryKey: ["messages", conversationId],
-			});
-			if (variables.action === "recall") push("Message recalled.", "success");
+		}) => api.patch<MessageActionAck>(`messages/${id}`, { action }),
+		onMutate: ({ id, action }) => {
+			const previous = snapshotPage();
+			if (action === "recall") {
+				// Mirrors the read projection exactly, including the file: a recalled
+				// photo has its signed URL dropped server-side, so the cache must not
+				// keep showing it while the server has stopped handing it out.
+				patchMessage(id, (message) => ({
+					...message,
+					recalled: true,
+					body: null,
+					mediaUrl: null,
+					mediaExpiresIn: null,
+					canEdit: false,
+					canRecall: false,
+				}));
+			} else {
+				const pinnedAt = action === "pin" ? new Date().toISOString() : null;
+				patchMessage(id, (message) => ({ ...message, pinnedAt }));
+			}
+			return { previous };
 		},
-		onError: (error) =>
+		onSuccess: (_result, variables) => {
+			if (variables.action === "recall") push("Message recalled.", "success");
+			// The pinned strip at the top of the thread is a separate list in the same
+			// page, so it is reconciled from the server rather than guessed at here.
+			invalidateMessages();
+		},
+		onError: (error, _variables, context) => {
+			restorePage(context?.previous);
 			push(
 				error instanceof Error ? error.message : "That did not work.",
 				"error",
-			),
+			);
+		},
 	});
 
 	const react = useMutation({
 		mutationFn: ({ id, emoji }: { id: string; emoji: string }) =>
 			api.post<{ active: boolean }>(`messages/${id}/react`, { emoji }),
-		onSuccess: () =>
-			void queryClient.invalidateQueries({
-				queryKey: ["messages", conversationId],
-			}),
-		onError: (error) =>
+		onMutate: ({ id, emoji }) => {
+			const previous = snapshotPage();
+			patchMessage(id, (message) => {
+				const existing = message.reactions.find(
+					(reaction) => reaction.emoji === emoji,
+				);
+				// The endpoint toggles and answers `{ active }`; the only part of the
+				// row that is ours to change is our own vote, so that is all this guesses.
+				const mine = !(existing?.mine ?? false);
+				const count = (existing?.count ?? 0) + (mine ? 1 : -1);
+				if (count <= 0)
+					return {
+						...message,
+						reactions: message.reactions.filter(
+							(reaction) => reaction.emoji !== emoji,
+						),
+					};
+				return {
+					...message,
+					reactions: existing
+						? message.reactions.map((reaction) =>
+								reaction.emoji === emoji
+									? { ...reaction, mine, count }
+									: reaction,
+							)
+						: [...message.reactions, { emoji, count, mine }],
+				};
+			});
+			return { previous };
+		},
+		onError: (error, _variables, context) => {
+			restorePage(context?.previous);
 			push(
 				error instanceof Error ? error.message : "That reaction did not save.",
 				"error",
-			),
+			);
+		},
+		// No invalidation on success: the toggle above is the server's own answer for
+		// my vote, and refetching would blink the row the user just tapped. Anyone
+		// else's reactions arrive with the next poll.
 	});
 
 	const block = useMutation({
@@ -269,9 +370,7 @@ function ConversationPage() {
 			api.post<{ blocked: boolean }>("blocks", { targetId: otherId }),
 		onSuccess: () => {
 			push("Blocked. They can no longer see you or message you.", "success");
-			void queryClient.invalidateQueries({
-				queryKey: ["messages", conversationId],
-			});
+			invalidateMessages();
 			void queryClient.invalidateQueries({ queryKey: ["conversations"] });
 		},
 		onError: (error) =>
@@ -372,12 +471,18 @@ function ConversationPage() {
 					online={otherProfile?.presence === "online"}
 				/>
 				<div className="min-w-0 flex-1">
-					<p className="truncate text-[14.5px] font-semibold">
+					{/* The peer's name is the page title: detail screens get no heading from
+					    the shell, so without this one a screen reader lands on a bare list. */}
+					<h1 className="truncate text-[14.5px] font-semibold">
 						{otherProfile?.displayName ?? "This conversation"}
-					</p>
+					</h1>
 					<p className="text-[11.5px] text-muted">
 						{otherProfile
-							? `${otherProfile.presence === "online" ? "Online now" : `Last seen ${timeAgo(list[list.length - 1]?.createdAt ?? new Date().toISOString())}`} · refreshed while open`
+							? `${
+									otherProfile.presence === "online"
+										? "Online now"
+										: `Last seen ${timeAgo(otherProfile.lastActiveAt)}`
+								} · refreshed while open`
 							: "Membership only"}
 					</p>
 				</div>
@@ -871,7 +976,12 @@ function MessageBubble({
 										? "border-gold/60 bg-gold/10 text-gold"
 										: "border-line bg-surface-2 text-muted",
 								)}
-								aria-label={`${reaction.count} ${reaction.emoji} reaction${reaction.count === 1 ? "" : "s"}`}
+								aria-label={`${reaction.count} ${
+									EMOJI.find((entry) => entry.id === reaction.emoji)?.label ??
+									"reaction"
+								}${reaction.count === 1 ? "" : "s"}${
+									reaction.mine ? " — yours, tap to remove" : ""
+								}`}
 							>
 								<span>
 									{EMOJI.find((entry) => entry.id === reaction.emoji)?.glyph ??
@@ -929,9 +1039,54 @@ function MessageMenu({
 	onBlock: () => void;
 }) {
 	const mine = message.senderId === meId;
+	const containerRef = useRef<HTMLDivElement | null>(null);
+
+	// A context menu opened by long-press or right-click has no keyboard story
+	// unless it builds one: focus arrives, Arrow keys walk the items, Escape and a
+	// click anywhere outside dismiss it. `tabIndex={-1}` on the items keeps Tab
+	// leaving the menu instead of trapping a keyboard user inside a popover.
+	useEffect(() => {
+		const container = containerRef.current;
+		const items = () =>
+			[
+				...(container?.querySelectorAll<HTMLElement>("[data-menu-item]") ?? []),
+			].filter((node) => !node.hasAttribute("disabled"));
+
+		items()[0]?.focus({ preventScroll: true });
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				event.stopPropagation();
+				onClose();
+				return;
+			}
+			if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+			const list = items();
+			if (list.length === 0) return;
+			event.preventDefault();
+			const at = list.indexOf(document.activeElement as HTMLElement);
+			const step = event.key === "ArrowDown" ? 1 : -1;
+			const next = (at + step + list.length) % list.length;
+			list[next]?.focus({ preventScroll: true });
+		};
+		const onPointerDown = (event: PointerEvent) => {
+			if (container?.contains(event.target as Node)) return;
+			onClose();
+		};
+
+		document.addEventListener("keydown", onKeyDown, true);
+		document.addEventListener("pointerdown", onPointerDown, true);
+		return () => {
+			document.removeEventListener("keydown", onKeyDown, true);
+			document.removeEventListener("pointerdown", onPointerDown, true);
+		};
+	}, [onClose]);
+
 	return (
 		<div
+			ref={containerRef}
 			role="menu"
+			aria-label="Message actions"
 			className="absolute top-full z-30 mt-1 w-52 rounded-2xl border border-line bg-surface p-1.5 shadow-[var(--shadow-pop)]"
 			onClick={(event) => event.stopPropagation()}
 			onKeyDown={(event) => event.stopPropagation()}
@@ -941,6 +1096,9 @@ function MessageMenu({
 					<button
 						key={emoji.id}
 						type="button"
+						role="menuitem"
+						tabIndex={-1}
+						data-menu-item
 						title={emoji.label}
 						onClick={() => {
 							onReact(emoji.id);
@@ -952,12 +1110,22 @@ function MessageMenu({
 					</button>
 				))}
 			</div>
-			<button type="button" className="menu-item" onClick={onReply}>
+			<button
+				type="button"
+				role="menuitem"
+				tabIndex={-1}
+				data-menu-item
+				className="menu-item"
+				onClick={onReply}
+			>
 				<Reply className="h-4 w-4" /> Reply
 			</button>
 			{message.body ? (
 				<button
 					type="button"
+					role="menuitem"
+					tabIndex={-1}
+					data-menu-item
 					className="menu-item"
 					onClick={() => {
 						// Copying is only offered when there is text; an attachment alone
@@ -971,6 +1139,9 @@ function MessageMenu({
 			) : null}
 			<button
 				type="button"
+				role="menuitem"
+				tabIndex={-1}
+				data-menu-item
 				className="menu-item"
 				onClick={() => {
 					onPin();
@@ -987,6 +1158,9 @@ function MessageMenu({
 				<>
 					<button
 						type="button"
+						role="menuitem"
+						tabIndex={-1}
+						data-menu-item
 						className="menu-item"
 						disabled={!message.canEdit}
 						onClick={() => {
@@ -1002,6 +1176,9 @@ function MessageMenu({
 					</button>
 					<button
 						type="button"
+						role="menuitem"
+						tabIndex={-1}
+						data-menu-item
 						className="menu-item text-live"
 						disabled={!message.canRecall}
 						onClick={() => {
@@ -1019,6 +1196,9 @@ function MessageMenu({
 			) : (
 				<button
 					type="button"
+					role="menuitem"
+					tabIndex={-1}
+					data-menu-item
 					className="menu-item"
 					onClick={() => {
 						onReport();
@@ -1030,6 +1210,9 @@ function MessageMenu({
 			{!mine && canBlock && (
 				<button
 					type="button"
+					role="menuitem"
+					tabIndex={-1}
+					data-menu-item
 					className="menu-item"
 					onClick={() => {
 						onBlock();

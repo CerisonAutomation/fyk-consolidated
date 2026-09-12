@@ -62,7 +62,7 @@ describe("api", () => {
 	});
 
 	it("throws a readable error built from the server envelope", async () => {
-		stubFetch(() =>
+		const calls = stubFetch(() =>
 			json(
 				{
 					ok: false,
@@ -86,6 +86,41 @@ describe("api", () => {
 		expect(error.status).toBe(429);
 		expect(error.retryable).toBe(true);
 		expect(error.requestId).toBe("srv_9");
+		// The server said 31 s. Sleeping that long inside a request would freeze the
+		// screen, so the delay is handed to the caller and nothing is retried here.
+		expect(error.retryAfterSeconds).toBe(31);
+		expect(calls()).toBe(1);
+	});
+
+	it("retries a briefly throttled read on the server's own schedule", async () => {
+		const calls = stubFetch((call) =>
+			call === 1
+				? json(
+						{
+							ok: false,
+							error: { code: "rate_limited", message: "Hold on a second." },
+						},
+						{ status: 429, headers: { "retry-after": "1" } },
+					)
+				: json(envelope({ posts: [] })),
+		);
+		await expect(api.get("board")).resolves.toEqual({ posts: [] });
+		expect(calls()).toBe(2);
+	});
+
+	it("never re-sends a write that a 500 may have already applied", async () => {
+		const calls = stubFetch(() =>
+			json(
+				{ ok: false, error: { code: "internal_error", message: "Try again." } },
+				{ status: 500, headers: { "x-should-retry": "true" } },
+			),
+		);
+		const error = (await api
+			.post("board", { body: "hi" })
+			.catch((caught) => caught)) as ApiClientError;
+		expect(error.status).toBe(500);
+		expect(error.retryable).toBe(true);
+		expect(calls()).toBe(1);
 	});
 
 	it("treats a conflict as final, not retryable", async () => {

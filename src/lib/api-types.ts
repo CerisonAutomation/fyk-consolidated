@@ -81,6 +81,17 @@ export interface ReactionRow {
 	mine: boolean;
 }
 
+/**
+ * Chat write responses, re-exported from the handler that answers them. Importing the
+ * server type is deliberate: this file is the browser's copy of the API, and the
+ * copy stays true by being the same declaration.
+ */
+export type {
+	MessageActionAck,
+	MessageEditAck,
+	SendMessageAck,
+} from "#/server/handlers/chat";
+
 export interface MessageRow {
 	id: string;
 	senderId: string;

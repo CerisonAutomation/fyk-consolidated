@@ -23,6 +23,17 @@ import {
 	notFound,
 } from "../errors";
 
+/**
+ * The three small acknowledgements the chat UI is allowed to know about. They are
+ * declared next to the code that produces them and mirrored by
+ * `src/lib/api-types.ts` as types rather than restated by hand: a hand-copied
+ * response shape is how a client ends up reading a field the server stopped
+ * sending, and no compiler can catch that.
+ */
+export type SendMessageAck = { id: string; createdAt: string };
+export type MessageEditAck = { edited: boolean };
+export type MessageActionAck = { recalled?: boolean; pinned?: boolean };
+
 export const EDIT_WINDOW_MINUTES = 15;
 export const RECALL_WINDOW_MINUTES = 60;
 export const MAX_PINS_PER_CONVERSATION = 5;
@@ -337,7 +348,9 @@ export async function listMessages(ctx: RequestCtx, conversationId: string) {
 	// Media is served as a short signed URL minted per read, never as a stored
 	// public link, because the bucket is private.
 	const mediaPaths = rows
-		.map((row) => (row.storage_path ? String(row.storage_path) : null))
+		.map((row) =>
+			row.unsent_at || !row.storage_path ? null : String(row.storage_path),
+		)
 		.filter(Boolean) as string[];
 	const signed = new Map<string, string>();
 	if (mediaPaths.length) {
@@ -353,7 +366,11 @@ export async function listMessages(ctx: RequestCtx, conversationId: string) {
 	}
 
 	const messages = rows.map((row) => {
-		const path = row.storage_path ? String(row.storage_path) : null;
+		// A recalled message's file is not handed out either. Minting a signed URL for
+		// content the sender took back would leak it for the URL's whole ten-minute
+		// life, which is exactly what recall is supposed to prevent.
+		const path =
+			row.unsent_at || !row.storage_path ? null : String(row.storage_path);
 		return {
 			id: row.id,
 			senderId: row.sender_id,
@@ -488,7 +505,18 @@ export async function sendMessage(ctx: RequestCtx, conversationId: string) {
 		.update({ last_message_at: new Date().toISOString() })
 		.eq("id", conversationId);
 
-	return { message: insert.data };
+	// Deliberately small. `insert.data` is the raw row — snake_case columns, a
+	// `storage_path`, an `album_share_id` — and none of it is the client's to know.
+	// The thread itself arrives on the next read, projected.
+	return sendMessageAck(insert.data);
+}
+
+/**
+ * The answer a sender needs: it landed, and here is when. Extracted so the shape is
+ * testable rather than an accident of whatever `.select()` happened to ask for.
+ */
+export function sendMessageAck(row: Record<string, unknown>): SendMessageAck {
+	return { id: String(row.id), createdAt: String(row.created_at) };
 }
 
 export async function messageAction(ctx: RequestCtx, messageId: string) {
@@ -538,7 +566,7 @@ export async function messageAction(ctx: RequestCtx, messageId: string) {
 			.single();
 		if (update.error)
 			throw dbFailure(update.error, "That did not save. Please try again.");
-		return { message: update.data };
+		return { edited: true };
 	}
 
 	if (body.action === "recall") {

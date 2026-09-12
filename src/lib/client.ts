@@ -28,6 +28,8 @@ export class ApiClientError extends Error {
 	readonly code: ApiErrorCode;
 	readonly requestId: string | null;
 	readonly details?: Record<string, unknown>;
+	/** Set when the server said *when* to come back, so UI can say it out loud. */
+	readonly retryAfterSeconds: number | null;
 	/** 409/400-class problems should be surfaced inline, not as a toast. */
 	readonly retryable: boolean;
 
@@ -38,6 +40,7 @@ export class ApiClientError extends Error {
 		requestId?: string | null;
 		details?: Record<string, unknown>;
 		retryable?: boolean;
+		retryAfterSeconds?: number | null;
 	}) {
 		super(options.message);
 		this.name = "ApiClientError";
@@ -46,6 +49,7 @@ export class ApiClientError extends Error {
 		this.requestId = options.requestId ?? null;
 		this.details = options.details;
 		this.retryable = options.retryable ?? options.status >= 500;
+		this.retryAfterSeconds = options.retryAfterSeconds ?? null;
 	}
 
 	get isAuth(): boolean {
@@ -76,9 +80,22 @@ export interface ApiCallOptions {
 	body?: unknown;
 	form?: FormData;
 	signal?: AbortSignal;
-	/** Polling reads opt out of the default 15s timeout. */
+	/** A polling read can opt into a shorter timeout than a user-initiated write. */
 	timeoutMs?: number;
 }
+
+/** `Retry-After` in either of the two forms RFC 9110 allows. */
+function retryAfterSeconds(response: Response): number | null {
+	const header = response.headers.get("retry-after");
+	if (!header) return null;
+	const seconds = Number(header);
+	if (Number.isFinite(seconds)) return Math.max(0, Math.round(seconds));
+	const date = Date.parse(header);
+	if (Number.isNaN(date)) return null;
+	return Math.max(0, Math.round((date - Date.now()) / 1000));
+}
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function newRequestId(): string {
 	const random = globalThis.crypto?.randomUUID?.();
@@ -170,6 +187,25 @@ async function call<T>(
 		});
 	}
 
+	// A read that was throttled or hit a transient server fault is worth one
+	// bounded retry, on the server's own schedule. Writes never retry here: the
+	// request may already have landed, and a duplicate message is worse than a
+	// spinner.
+	if (
+		retries > 0 &&
+		(options.method ?? "GET") === "GET" &&
+		(response.status === 429 || response.status >= 500)
+	) {
+		const declared = retryAfterSeconds(response);
+		const holdMs = declared === null ? 400 : declared * 1000;
+		// Past two seconds it stops being a retry and becomes a wait; the caller
+		// gets the error, with `retryAfterSeconds` attached so it can say when.
+		if (holdMs <= 2_000) {
+			await wait(holdMs);
+			return call<T>(path, options, retries - 1);
+		}
+	}
+
 	if (!payload.ok) {
 		const error = payload.error ?? {
 			code: "internal_error" as const,
@@ -185,6 +221,7 @@ async function call<T>(
 			requestId: payload.requestId ?? requestId,
 			details: error.details,
 			retryable: shouldRetry || response.status >= 500,
+			retryAfterSeconds: retryAfterSeconds(response),
 		});
 	}
 
