@@ -392,8 +392,6 @@ export function VoiceLayer() {
 					return go("guide");
 				case "go:benchmark":
 					return go("benchmark");
-				case "go:platform":
-					return go("platform");
 				case "boost":
 					return store.boost();
 				case "party":

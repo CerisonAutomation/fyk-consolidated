@@ -8,12 +8,14 @@ Premium LGBTQ+ dating platform. Enterprise hexagonal architecture.
 # Install
 pnpm install
 
-# Setup database
+# Setup database — Supabase first, then the Drizzle schema
 cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
-DATABASE_URL="postgresql://..." npx prisma generate   # only the seed scripts need this
-pnpm db:push
-pnpm db:seed
+# Edit .env.local: SUPABASE_URL / SUPABASE_ANON_KEY (browser), and
+# DATABASE_URL (the *API's* connection, via the transaction pooler, `prepare: false`).
+supabase db push                                  # applies supabase/migrations/*.sql
+pnpm db:migrate:sql                               # or: psql "$DATABASE_URL" -f each file
+pnpm db:generate                                  # Drizzle diff from drizzle/schema.ts, if you changed it
+pnpm db:seed                                      # demo rows only; the app works without them
 
 # Development
 pnpm dev
@@ -28,22 +30,29 @@ pnpm test
 ## Architecture
 
 ```
+drizzle/schema.ts   The API's schema: written from supabase/migrations, no codegen
+src/db.ts           postgres.js pool (`prepare: false`), created per process on first query
+src/schema.ts       server-only re-export of the above (`#/schema`)
+
 src/core/
 ├── domain/      — Pure types + business logic (no I/O)
 ├── ports/       — Interface contracts
 ├── application/ — Use cases
-└── api/         — Unified HTTP client
+└── api/         — Unified HTTP client + the React Query hooks the screens use
 
-src/adapters/
-├── prisma/      — Seed scripts (+ legacy schema)
-├── drizzle/     — Canonical Drizzle schema for the JSON API
-└── browser/     — Browser API implementations
-
+src/routes/api/  — JSON API (TanStack Start server routes): the only writer for
+                   money, privilege, presence and cross-user edges
+src/integrations/supabase/ — browser reads, guarded by row-level security
 src/components/  — UI components
-src/routes/      — TanStack Router routes
-src/domains/     — AI, economy, pet, social modules
-src/lib/         — Utilities
+src/domains/     — AI, demo, grid, economy modules
+src/lib/         — Utilities (`economy.ts` is the shop/pricing/quota authority)
+supabase/migrations/ — the SQL that decides what a browser token may do
 ```
+
+There is deliberately no ORM-side migration history for the tables the browser
+reads: `drizzle-kit push` would `drop` what this schema does not model, so
+`supabase/migrations` is the only place a column is created, and
+`drizzle/schema.ts` follows it. See `AUDIT.md`.
 
 ## Supabase Features
 
@@ -71,8 +80,8 @@ src/lib/         — Utilities
 
 - React 19 + TypeScript 6
 - TanStack Start + Router + Query
-- Prisma 7 + PostgreSQL
-- Supabase (Auth, Realtime, Storage, Edge Functions)
+- Drizzle ORM over `postgres.js` (server) — no Prisma, no engine binaries at build time
+- Supabase (Auth, Realtime, Storage, Edge Functions) + row-level security
 - Tailwind CSS 4
 - Vite 8
 - Vitest + Playwright

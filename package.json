@@ -108,7 +108,7 @@
     "check": "biome check",
     "clean": "rm -rf dist .tanstack node_modules/.cache .turbo playwright-report test-results",
     "test:e2e": "playwright test",
-    "db:migrate:sql": "psql \"$DATABASE_URL\" -f supabase/migrations",
+    "db:migrate:sql": "for f in supabase/migrations/*.sql; do psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"$f\" || exit 1; done",
     "check:changed": "biome check src/lib src/routes/api drizzle src/db.ts src/schema.ts"
   }
 }

@@ -517,6 +517,164 @@ look finished.
 
 ---
 
+### 2.13 The economy, the inbox and the social graph stop being client-owned (P0)
+
+`0018` made `users` server-owned; this pass applied the same test to everything
+else and the app split into three kinds of broken.
+
+**What the audit measured, before changing anything**
+
+| Measurement | Result |
+|---|---|
+| Tables a browser token could write | 20 tables, 53 call sites, all in `src/integrations/supabase/*.ts` |
+| Money/privilege writes among them | `wallet.balance` ×6, `wallet_transactions` ×5, `premium_entitlements` ×3, `subscriptions` ×3, `consumables_inventory` ×2, `king_pet` ×2 |
+| Tables with RLS **enabled and zero policies** (reads `[]`, writes 0 rows, no error) | `wallet`, `notifications`, `king_pet`, `subscriptions` — i.e. exactly the four the premium, pet and inbox screens depend on |
+| Tables with RLS **off** and browser usage | 16, including `user_notes` (every private note about you, world-readable), `wallet_transactions`, `shouts`, `groups`, `group_messages`, `favorites`, `footprints` |
+| Rows the database would never accept | `wallet_transactions.type` `'credit'`/`'debit'` vs `wallet_tx_type_check` (0013); `consumables_inventory.type` `'tap_boost'`/`'gift_*'` vs `consumables_type_check`; `notifications.type` `'check_in'`/`'fansite_subscribe'` vs `notifications_type_check`; `subscriptions.status='superseded'`; `subscriptions.tier='gold'`; `premium_entitlements.tier='gold'` where `plan_tier` was `('free','plus')` |
+| Receipts | `receipt_id = "RCP-" + Date.now() + "-" + userId.slice(0,8)` |
+| Balances per account | three (`wallet.balance`, the ledger's implied sum, `king_pet.bones`) |
+
+The row that matters most is the fourth: those writes did not fail loudly, they
+failed *silently*, because `insert().select()` with a rejected row returns an error
+object nobody read, and every caller in `wallet.ts`/`king-pet.ts`/`safety.ts`/
+`fansites.ts` used `await client.from(...).insert(...)` without checking it. So the
+shop took money (`wallet.update` was allowed — no CHECK on that one), granted no
+item (the `consumables_inventory` insert was CHECKed), and toasted "Purchased!".
+`wallet.ts` also called `client.rpc('wallet_credit_and_log')`, a Postgres function
+no migration has ever created: guaranteed failure, with a fallback that wrote the
+balance by hand — the fallback *was* the design.
+
+**What `0019_server_owned_economy.sql` does**
+
+1. **The wallet becomes a ledger.** `wallet.balance` is derived by a trigger from
+   `wallet_transactions`, `wallet_transactions` is append-only (an `UPDATE`/`DELETE`
+   raises unless the write carries the transaction-local `fyk.server_write` flag the
+   trigger itself sets), a debit that would go below zero raises `P0001`, and
+   `amount` becomes signed with `CHECK (amount <> 0)` replacing `CHECK (amount > 0)`
+   — the unsigned-plus-a-direction-tag layout is what let `balance + amount` credit
+   an account on a purchase. `source` and a partial-unique `idempotency_key` land on
+   the table so a retry cannot mint twice and every entry says which product wrote it.
+2. **Privilege becomes server-only.** `revoke insert, update, delete` on
+   `wallet`, `wallet_transactions`, `premium_entitlements`, `subscriptions`,
+   `consumables_inventory`, `king_pet`, `pet_items`, `pet_adventures`, `tribes`,
+   `taps`, `site_config`, the embedding tables and the `ai_*` tables; the browser
+   keeps *select-own* where a screen reads (`wallet_select_own`,
+   `entitlements_select_own`, `subscriptions_select_own`,
+   `consumables_select_own`, `king_pet_select_own`, `wallet_tx_select_own`).
+   `premium_entitlements.tier` becomes `text` with a four-value CHECK (an enum
+   cannot be extended and then used inside the same transaction `db push` wraps a
+   file in), and `subscriptions.tier` agrees with it; legacy `'premium'` rows are
+   normalised to `'plus'`, which is what the only-Plus era meant.
+3. **The inbox stops being writable by its reader.** `notifications`: own select,
+   own update, **no client insert or delete**, and a column guard so an update may
+   change `read`/`read_at`/`hidden` and nothing else — a client that can edit `title`
+   can plant "You matched with a celebrity" in its own inbox, and the inbox is what a
+   screenshot shows.
+4. **`user_notes` gets its first-ever RLS** (author-only; the table had none) and
+   `taps` becomes read-only for the browser, because a tap is the edge that creates
+   a `matches` row inside the API's transaction.
+5. **Social tables get real policies instead of none**: `shouts` (public read except
+   blocked, own write, 1–500 chars enforced in `with check` and not in a `maxLength`
+   a curl ignores), `shout_likes`, `groups` (private groups readable only by members),
+   `group_members` (join yourself, leave yourself, kick only as the leader),
+   `group_messages` (member read, member write), `fansites`, `stories`,
+   `story_views`, `typing_indicators`, `message_reads`, `push_subscriptions`,
+   `event_waitlist`, `meetnow_posts`, `saved_filters`, `saved_phrases`,
+   `favorites`, `footprints`, `hides`.
+6. **Counters are derived, so §3.9's other half is gone**: `shouts.likes_count` from
+   `shout_likes`, `groups.member_count` from `group_members`,
+   `fansites.subscriber_count` from a new `fansite_subscribers` edge (the app had been
+   *counting notification rows as followers* — clearing your inbox deleted your
+   audience), `tribes.member_count` from a `users.tribes` trigger. Each parent column
+   gets a guard that refuses a hand-written value, which is the same mechanism the
+   wallet uses.
+7. **§8 repairs drift** (balance := sum of ledger; a wallet with no history gets an
+   `opening_balance` row instead of being overwritten; counters recomputed from
+   edges) and **§9 seeds the catalogues the product needed and never had**: the five
+   `pet_items` whose names `king-pet-client.tsx` already draws as 👑 🕶️ 🧣 👟 🦸,
+   six adventures, and the 19 tribes `/tribes` and onboarding both speak. They were
+   empty in every environment, so three screens were permanently "nothing here yet"
+   while `scripts/seed.mjs` (demo data, never executed) was the only thing that
+   could fill them.
+8. **`0014_security_rls.sql` became `0020_security_rls.sql`.** Two files shared
+   version `0014`, which Supabase keys migrations by — `supabase migration list`
+   reports a duplicate and `db push` picks one in filesystem order. The second also
+   used bare `CREATE POLICY`, so re-applying it aborted; both problems are fixed in
+   the renamed file, with the reason recorded in its header.
+
+**What replaced the browser's authority**
+
+`src/integrations/supabase/{wallet,king-pet}.ts` (855 lines) are gone. In their
+place: `#/lib/economy` (the shop, the packs, the tier ladder, the XP curve, the
+quotas — pure, 19 tests), `#/lib/wallet.server` (`ensureWallet`, `postLedger`,
+`upsertConsumable`, `currentTier`, `setTier`), `GET/POST /api/wallet`, `GET/POST
+/api/king-pet`, `POST /api/fansites/subscribe`, `GET/POST /api/safety/check-in`, and
+two thin clients (`#/core/api/wallet`, `#/core/api/pet`) that keep the names the
+screens already called. `POST /api/taps` gained the free-tier allowance
+(`50 taps a day`, counted in `taps`, which is what `TIER_PERKS` had been promising
+without an enforcer), and `/api/boost` now spends what the shop sells.
+
+Deliberately *not* implemented, because nothing redeems it: `tap_boost`, `super_like`,
+`profile_spotlight`, `read_receipt`, `incognito` and the three gifts are not for sale
+(`SHOP_ITEMS` has one row, and `economy.test.ts` fails if an entry appears without a
+redeeming route). The old shop sold five. `src/lib/economy.ts` also stopped
+advertising perks this build cannot enforce ("48 AI features", "No ads", "Video
+calls", "Travel mode", "Priority support", "Who viewed me"), which is why the ladder
+now reads short and true.
+
+**Also found and fixed in the same pass**
+
+- The `media` bucket never existed: `profile-client.tsx` and `/settings/profile`
+  upload to `storage.from("media")` and `resolveMediaUrl()` reads from it, while
+  `003_storage.sql` created five *other* buckets. Every profile-photo upload failed
+  with "Bucket not found"; the reader produced a URL to nowhere and the card rendered
+  an empty frame. `0019` §10a creates the bucket with `fyk_media_*` policies matched
+  to the `avatars/<uid>/…` paths the code writes (003's convention is
+  `<uid>/<file>`, and the code is what the data already follows).
+- The pet's `randomMood()` picked a mood with 40% probability *client-side*, and
+  `last_fed_at`/`last_played_at`/`last_adventure_at` were never written by anything,
+  so `feed` could be tapped without limit for +20 XP each time. Cooldowns now come
+  from those columns, and an adventure takes its `duration_minutes` and pays on
+  return (`GET` collects a bones trip; an XP trip is applied by the next action, in
+  the same transaction, so one code path owns progression).
+- `safety.ts` armed a check-in by inserting a `notifications` row of type `'check_in'`
+  — CHECKed away — and read the id back from a row that did not exist, so the "4
+  hours to confirm safe" timer lived only in `#/lib/store.ts` and vanished on reload.
+  `POST /api/safety/check-in` now writes it (and refuses to arm a second on top of a
+  running one); the CHECK gained `check_in`/`check_in_resolved`/`check_in_overdue`,
+  which `POST /api/safety/check-in/resolve` has been trying to write all along.
+- `discover-client.tsx` ranked the deck with `generateHashEmbedding()`: a bag of my
+  own profile's words hashed into 384 buckets, stored in a pgvector column, compared
+  by cosine distance, and advertised as "Vector search boosted 30 profiles". Its own
+  comment said "produces low-quality vectors" — the module, the hook and the badge are
+  deleted, and `profile_embeddings`/`message_embeddings` are revoked from browser
+  roles so a future real embedder starts on the server. The AI-pick badge in the
+  screen that remains is the documented 5-dimension `matchScore` at 80+, which is the
+  number the filter slider already means.
+  **One correction to make while writing this:** that screen is not the live one.
+  `/discover` renders `ExploreClient` (`src/components/explore/explore-client.tsx`),
+  which has never contained embedding code — it reads `profiles` for city counts and
+  candidate cards, computes distances from the viewer's own `lat_coarse`, and writes
+  nothing. The entire `src/components/discover/` cluster (its client, `profile-card`,
+  `profile-modal`, `stories-rail`) is reachable only from itself. So no user ever saw
+  the vector badge; the honest description is dead code, not a live lie. Deleting it
+  still stands on its own terms — a dead file is a copy-paste source, and §2.13's
+  revokes would have broken it the moment someone revived it — and `ExploreClient`
+  was audited in full rather than assumed clean. What is *not* fixed here: the deck
+  still ranks with `#/lib/compatibility` in the browser, because that is the one
+  scoring function this app documents (5 dimensions, deterministic, no model).
+- The premium screen rendered `t.type === "credit"` for a signed `+`/`−`, a value no
+  row has ever held under the new convention; it reads the sign now, and both screens
+  that used `if (isLoading || !data) return <Skeleton/>` answer a failed query with a
+  retry instead of an infinite skeleton.
+- `README.md` still told people to run `npx prisma generate`, described a
+  `src/adapters/` tree that does not exist, listed "Prisma 7" in the stack, and
+  pointed `pnpm db:migrate:sql` at a directory (`psql -f` takes a file). All four are
+  corrected; `test.tsx`, `platform/index.tsx` ("Crypto/WebGPU demo coming soon"),
+  `domains/auth/test-accounts.ts` (with `TestPass123!`) and the orphaned
+  `components/providers.tsx` are deleted, with the dead `go:platform` palette case.
+
+
 ## 3. Open findings — real defects, deliberately not "fixed" by invention
 
 These need a product or schema decision. Inventing an implementation is how a
@@ -556,21 +714,28 @@ second, worse truth gets committed, so each entry says what to decide instead.
    hashed-per-response payload) is the follow-up; until then a stored XSS in a
    bio can execute inline. `style-src 'unsafe-inline'` is likewise forced by
    runtime-injected styles and is not a comparable risk.
-5. **Three static `innerHTML` sinks**: `src/components/map/FYKMap.tsx:273`,
-   `:303` and `src/components/map/MapPicker.tsx:87` interpolate strings into
-   `innerHTML`. They are map *popups*, currently fed by mapbox feature fields, and
-   `src/integrations/supabase/client.ts` explicitly asserts "no HTML injection
-   sinks" in a comment — an invariant a future contributor will trust and break.
-   Either build the popups with `textContent`/elements, or route the strings
-   through DOMPurify (already a dependency, currently imported by nothing) and
-   delete that comment.
-6. **`src/routes/test.tsx`, `src/routes/platform/index.tsx`,
-   `src/lib/r2-upload.ts`, `src/components/providers.tsx`, `src/utils/cn.ts`,
-   `src/domains/auth/test-accounts.ts`, `src/lib/crypto.ts`** are reachable
-   modules with production consequences (public debug routes, an R2 uploader with
-   credentials from env, a hand-rolled `crypto.ts` next to `node:crypto` usage)
-   and no owner. They need an explicit "delete or finish" decision; a route file
-   named `test.tsx` is also a live URL.
+5. **Three `innerHTML` assignments — verified static, not sinks.** An earlier
+   version of this entry claimed `src/components/map/FYKMap.tsx:273`, `:303` and
+   `src/components/map/MapPicker.tsx:87` "interpolate strings into `innerHTML`".
+   Re-checked in full: one clears a node (`= ""`), the other two assign fixed
+   markup (a pulse `<span>`, an inline SVG pin) with no substitution anywhere, and
+   `grep -rnE "innerHTML\s*=\s*[\'`"][^\'`"]*\$\{" src/` finds nothing, as does
+   `dangerouslySetInnerHTML`. So the invariant `src/integrations/supabase/client.ts`
+   asserts is currently true, and the work left is to keep it true — the map popup
+   markup should be built with `textContent`/elements so that a future contributor
+   cannot break it by pasting a template literal. DOMPurify remains a dependency
+   imported by nothing.
+
+6. **Unowned modules — mostly resolved.** Deleted in §2.13: `src/routes/test.tsx`,
+   `src/routes/platform/index.tsx`, `src/domains/auth/test-accounts.ts`,
+   `src/components/providers.tsx`. `src/lib/r2-upload.ts` and `src/lib/crypto.ts`,
+   named by an earlier pass, no longer exist. Still open: `src/utils/cn.ts`
+   duplicates `cn()` from `src/lib/utils.ts` and 26 files import the former, so
+   removing it is a 26-file mechanical change best done alone (nothing else in
+   `src/` should be in the same diff); `src/core/ui/organisms/*` is unreachable
+   from any route but is the design system's own surface, and needs an owner's
+   decision rather than mine.
+
 7. **~57% of `src/` is unreachable from any route** (212 of 370 files by import
    graph, computed during the audit) and `pnpm-workspace.yaml` carries ~900 lines
    of `allowBuilds` noise. Both make every review slower than the code deserves.
@@ -588,17 +753,53 @@ second, worse truth gets committed, so each entry says what to decide instead.
    with no foreign key, so nothing is *wrong* at the database level; the fix is a
    one-off normalisation (map every known name to its `tags`/`tribes` id, write the
    array back) plus making `/tribes` send ids — not a check constraint added on top
-   of existing data. `tribes.member_count` is also a client-maintained counter, so
-   it drifts the moment a write fails halfway; deriving it from a join would remove
-   both the drift and the `update` the browser is no longer allowed to issue.
+   of existing data. `0019` §7 removed the *other* half of this finding:
+   `tribes.member_count`, `groups.member_count`, `fansites.subscriber_count` and
+   `shouts.likes_count` are now derived by triggers, and a hand-written value on
+   any of them raises. The vocabulary itself is still two-vocabulary, and the
+   recount trigger has to match on both spellings (`t.name` or `t.id::text`)
+   because the data already disagrees.
 10. **An API path with an undeclared method returns the SPA document.**
    `GET /api/taps` answers `200 text/html`, because TanStack Start matches
    routes by pathname and this route declares `POST`/`DELETE` only. No caller
    is affected (the taps hooks use `/api/interest/*` for lists), and the fix is
    not a per-route `GET` stub: it is one catch-all under `/api/$` that answers
    `405`/`404` as JSON, which needs a check that it cannot shadow a declared
-   route's own method. Left open rather than papered over with ~20 dead
-   handlers.
+   route's own method. **Partly closed in §2.13**: the six routes that touch money,
+   privilege or another user's rows (`/api/wallet`, `/api/king-pet`,
+   `/api/fansites/subscribe`, `/api/safety/check-in`, plus `/api/boost` and the
+   others with a `methodNotAllowed()` verb list) answer 405 with an `Allow` header
+   — verified by `curl -X PUT /api/wallet` → `405 application/json, allow: GET, POST`.
+   A global `/api/$` catch-all for the remaining routes is still the right fix and
+   still needs the shadowing check.
+
+11. **A safety check-in is stored inside a notification body.** `0019` made the
+    type legal and `POST /api/safety/check-in` made the write server-side, so the
+    feature now works — but the *record* is still `{contact_id, place, due_at,
+    status}` as JSON in `notifications.body`, which means there is no index on
+    `due_at`, no way to answer "who is overdue right now" without a scan, and no
+    history once a notification is hidden. The honest shape is a
+    `public.safety_checkins (user_id, contact_id, place, armed_at, due_at, resolved_at,
+    status)` table with the notification as a projection of it. Deliberately not
+    done here: inventing a table while `resolve` still parses the JSON would leave
+    two writers of one fact.
+12. **Premium is one enforced perk wide.** `plus` = unlimited taps, `gold`/`platinum`
+    = boosts a month. That is what this codebase can actually grant, and everything
+    else the tier cards used to advertise has been removed from `TIER_PERKS` rather
+    than implemented half-way. Turning Premium into a product (advanced filters,
+    read-receipt toggles, incognito, per-tier AI budget, `users.tier` in the deck's
+    ranking) is a sequence of product decisions, each of which is small once the
+    decision exists — see `#/lib/economy.ts` for where each one plugs in.
+13. **Nothing in this sandbox has ever run the SQL.** There is no Postgres in the
+    image (no `initdb`, no Docker, no root for `apt`), so `0019` and `0020` are
+    reviewed and cross-checked against the DDL of every table and constraint they
+    touch — column names, CHECK vocabularies, trigger ordering, the
+    `new`-in-`DELETE` trap in row-level triggers, and statement order around the
+    append-only guard — but they are not *executed*. Apply them in front of traffic
+    (`supabase db push`, or `pnpm db:migrate:sql` now that it loops the files) and
+    re-check `pg_policies` for the tables in §2.13 before shipping. `pnpm db:seed`
+    has likewise never been run here; §2.13's §9 seeding is what the product needs,
+    and it is in the migration where it belongs.
 
 ## 4. Minimal assumptions
 
@@ -627,9 +828,14 @@ second, worse truth gets committed, so each entry says what to decide instead.
    derived, not maintained by hand.
 3. Cookie sessions (§3.3) → then an SSR guard, then tighten `Cache-Control` on
    documents that become personalised.
-4. CSP nonces (§3.4) and the map popup sinks (§3.5).
-5. Prune §3.6–3.7, and replace `pnpm-workspace.yaml` noise with a real
-   `onlyBuiltDependencies` list.
+4. CSP nonces (§3.4). §3.5 is re-checked and closed as a non-finding (the three
+   `innerHTML` sites are static); the follow-up there is a lint rule, not a fix.
+5. Prune §3.6 (one file at a time) and §3.7. `pnpm-workspace.yaml`'s 269-line
+   `allowBuilds` block is between `dyad-default-allow-builds begin/end` markers —
+   tool-managed, so it must be pruned by its generator, not by hand.
+6. Apply §2.13's SQL against a real database (§3.13), then decide §3.11 and §3.12
+   with the product, in that order: the migration is what makes the rest of the
+   surface honest.
 
 Run `pnpm verify` (typecheck → tests → build → `biome check` on the API/lib
 surface) before and after each step; `pnpm test:e2e` now boots its own server.

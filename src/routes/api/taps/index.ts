@@ -9,15 +9,23 @@ import { taps } from "#/schema";
 /**
  * `POST /api/taps` — the tap itself.
  *
- * `discover-client.tsx` and `profile/user-profile-client.tsx` both post here and
- * read `{ isMatch }`; the route did not exist, so every tap was a `404` that the
- * optimistic UI still painted as "Tap sent" — the tap was never recorded and no
- * match could ever happen from it. The decision logic lives in
- * `#/lib/tap.server` so `/api/discover` and this endpoint cannot disagree.
+ * Two screens reach this: `/interest/taps` (the deck) and a user's profile card,
+ * and both go through `#/integrations/supabase/interest.ts`, which prefers
+ * `/api/interest/like` — the same engine, reached by the name the design system
+ * already uses. `DELETE` and `action: "unswipe"` both remove the row; nothing here
+ * flips `taps.type` to undo a tap, which is what the removed client-side version
+ * did and why an unswiped like could come back as a "hi".
  *
- * `DELETE /api/taps?targetId=` (also `POST { action: "unswipe" }`, which the chat
- * sheet can call) removes a tap *before* it became a match — a real undo, not a
- * client-side state reset.
+ * The decision logic lives in `#/lib/tap.server`, which `/api/discover` uses too,
+ * so a tap and the `myTap` the deck shows are the same row read the same way. The
+ * free allowance is enforced there rather than counted by the client that benefits
+ * from miscounting it: 50 taps a day for a `free` account, unlimited on `plus` and
+ * above (`tapLimitFor`), and a 429 with `retry_after_seconds` once it is spent.
+ *
+ * Match detection is deliberately on this side of the network: a mutual tap
+ * creates the `matches` row and both `match` notifications in one transaction, and
+ * a `blocks` row in either direction vetoes it, so a block can never produce a
+ * "It's a match!" the other person did not agree to.
  */
 const tapSchema = z.object({
 	targetId: z.uuid(),
