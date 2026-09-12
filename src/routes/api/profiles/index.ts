@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { db } from "#/db";
-import { cardSelection, requireCaller, toProfileCard, z } from "#/lib/api-helpers";
+import {
+	cardSelection,
+	requireCaller,
+	toProfileCard,
+	z,
+} from "#/lib/api-helpers";
 import { json, jsonError, withSecurity } from "#/middleware";
 import { blocks, hides as hidesTable, users } from "#/schema";
-import { or } from "drizzle-orm";
 
 /**
  * `GET /api/profiles?ids=…` — several public profiles in one round trip.
@@ -28,12 +32,21 @@ export const Route = createFileRoute("/api/profiles/")({
 					const parsed = z
 						.array(z.uuid())
 						.max(MAX_IDS)
-						.safeParse(raw.split(",").map((value) => value.trim()).filter(Boolean));
+						.safeParse(
+							raw
+								.split(",")
+								.map((value) => value.trim())
+								.filter(Boolean),
+						);
 					if (!parsed.success) {
-						return jsonError(`ids must be up to ${MAX_IDS} uuids, comma separated`, 400);
+						return jsonError(
+							`ids must be up to ${MAX_IDS} uuids, comma separated`,
+							400,
+						);
 					}
 					const ids = [...new Set(parsed.data)].filter((id) => id !== user.id);
-					if (ids.length === 0) return json({ profiles: [], total: 0 }, { cache: "private" });
+					if (ids.length === 0)
+						return json({ profiles: [], total: 0 }, { cache: "private" });
 
 					const rows = await db
 						.select(cardSelection)
@@ -42,18 +55,31 @@ export const Route = createFileRoute("/api/profiles/")({
 
 					const [blockRows, hideRows] = await Promise.all([
 						db
-							.select({ blockerId: blocks.blockerId, blockedId: blocks.blockedId })
+							.select({
+								blockerId: blocks.blockerId,
+								blockedId: blocks.blockedId,
+							})
 							.from(blocks)
-							.where(or(inArray(blocks.blockedId, ids), inArray(blocks.blockerId, ids))),
+							.where(
+								or(
+									inArray(blocks.blockedId, ids),
+									inArray(blocks.blockerId, ids),
+								),
+							),
 						db
-							.select({ hiderId: hidesTable.hiderId, hiddenId: hidesTable.hiddenId })
+							.select({
+								hiderId: hidesTable.hiderId,
+								hiddenId: hidesTable.hiddenId,
+							})
 							.from(hidesTable)
 							.where(eq(hidesTable.hiderId, user.id)),
 					]);
 					const cut = new Set<string>();
 					for (const row of blockRows) {
 						if (row.blockerId === user.id || row.blockedId === user.id) {
-							cut.add(row.blockerId === user.id ? row.blockedId : row.blockerId);
+							cut.add(
+								row.blockerId === user.id ? row.blockedId : row.blockerId,
+							);
 						}
 					}
 					for (const row of hideRows) if (row.hiddenId) cut.add(row.hiddenId);
@@ -67,9 +93,17 @@ export const Route = createFileRoute("/api/profiles/")({
 							return { ...card, profileId: card.id, displayName: card.name };
 						});
 
-					return json({ profiles, total: profiles.length }, { cache: "private" });
+					return json(
+						{ profiles, total: profiles.length },
+						{ cache: "private" },
+					);
 				},
-				{ rateLimit: { limit: 120, key: ({ caller }) => `profiles:list:${caller?.id ?? "anon"}` } },
+				{
+					rateLimit: {
+						limit: 120,
+						key: ({ caller }) => `profiles:list:${caller?.id ?? "anon"}`,
+					},
+				},
 			),
 		},
 	},

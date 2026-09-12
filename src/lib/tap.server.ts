@@ -1,5 +1,7 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq, gte, or, sql } from "drizzle-orm";
 import { db } from "#/db";
+import { tapLimitFor } from "#/lib/economy";
+import { currentTier } from "#/lib/wallet.server";
 import { blocks, matches, notifications, taps, users } from "#/schema";
 
 /**
@@ -9,14 +11,43 @@ import { blocks, matches, notifications, taps, users } from "#/schema";
  * same action; keeping two copies meant they drifted (the profile modal also
  * wanted `isMatch`, and neither checked whether a block existed). Everything
  * that decides "did we just match" happens inside one transaction, so two
- * people tapping at the same moment cannot both miss the match.
+ * people tapping at the same moment cannot both miss the match. The daily
+ * allowance is decided here too, for the same reason: `Free` means "50 taps a day"
+ * on `/premium`, and a limit only one of the two entry points enforced was a
+ * limit in name only.
  */
 export type TapKind = "like" | "woof";
 
 export type TapOutcome =
 	| { status: "blocked" }
 	| { status: "not_found" }
+	/** Free accounts tap `DAILY_TAP_LIMIT_FREE` times a UTC day; paid ones do not hit this. */
+	| { status: "quota"; limit: number; used: number }
 	| { status: "ok"; matched: boolean; firstTap: boolean; kind: TapKind };
+
+/**
+ * The one place the daily tap allowance is checked, so the deck and the profile
+ * modal cannot disagree about who has taps left (they used to be two entry points
+ * with two copies of the decision). `TIER_PERKS` advertises "50 taps a day" on
+ * Free and "Unlimited taps" on Plus; before that promise had an enforcer, the
+ * tiers differed only in what the premium screen *said*.
+ */
+export async function tapQuota(
+	userId: string,
+): Promise<{ used: number; limit: number }> {
+	const [row] = await db
+		.select({ used: sql<number>`count(*)::int` })
+		.from(taps)
+		.where(
+			and(
+				eq(taps.tapperId, userId),
+				gte(taps.createdAt, sql`date_trunc('day', now() at time zone 'utc')`),
+			),
+		);
+	const used = Number(row?.used ?? 0);
+	const tier = await currentTier(userId);
+	return { used, limit: tapLimitFor(tier) };
+}
 
 /** A block in either direction ends the interaction, silently and permanently. */
 export async function isBlocked(a: string, b: string): Promise<boolean> {
@@ -48,6 +79,10 @@ export async function recordTap(params: {
 		.limit(1);
 	if (!target) return { status: "not_found" };
 	if (await isBlocked(userId, target.id)) return { status: "blocked" };
+
+	const quota = await tapQuota(userId);
+	if (quota.used >= quota.limit)
+		return { status: "quota", limit: quota.limit, used: quota.used };
 
 	const result = await db.transaction(async (tx) => {
 		const inserted = await tx

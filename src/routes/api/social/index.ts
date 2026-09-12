@@ -41,7 +41,13 @@ const ALBUM_LIMIT = 24;
 const LIST_LIMIT = 50;
 const FOOTPRINT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-const VIEWS = ["albums", "blocks", "hides", "favourites", "footprints"] as const;
+const VIEWS = [
+	"albums",
+	"blocks",
+	"hides",
+	"favourites",
+	"footprints",
+] as const;
 const ACTIONS = [
 	"favourite",
 	"unfavourite",
@@ -65,9 +71,13 @@ export const Route = createFileRoute("/api/social/")({
 			GET: withSecurity(
 				async ({ request, caller }) => {
 					const user = requireCaller(caller);
-					const view = new URL(request.url).searchParams.get("view") ?? "albums";
+					const view =
+						new URL(request.url).searchParams.get("view") ?? "albums";
 					if (!VIEWS.includes(view as (typeof VIEWS)[number])) {
-						return jsonError(`Unknown view. Expected one of: ${VIEWS.join(", ")}`, 400);
+						return jsonError(
+							`Unknown view. Expected one of: ${VIEWS.join(", ")}`,
+							400,
+						);
 					}
 
 					if (view === "albums") {
@@ -92,7 +102,9 @@ export const Route = createFileRoute("/api/social/")({
 								.groupBy(privateAlbumItems.albumId),
 						]);
 
-						const sizes = new Map(counts.map((row) => [row.albumId, Number(row.total)]));
+						const sizes = new Map(
+							counts.map((row) => [row.albumId, Number(row.total)]),
+						);
 						// Cover = the lowest-positioned item of that album. An empty album
 						// has no cover, which is a different fact from a made-up one.
 						const coverRows = await db
@@ -120,7 +132,9 @@ export const Route = createFileRoute("/api/social/")({
 									durationSeconds: album.durationSeconds,
 									itemCount: album.id ? (sizes.get(album.id) ?? 0) : 0,
 									// Signed by the browser per `media_access_policy`, never here.
-									coverStoragePath: album.id ? (covers.get(album.id) ?? null) : null,
+									coverStoragePath: album.id
+										? (covers.get(album.id) ?? null)
+										: null,
 									createdAt: (album.createdAt ?? new Date()).toISOString(),
 								})),
 							},
@@ -163,7 +177,9 @@ export const Route = createFileRoute("/api/social/")({
 							.limit(LIST_LIMIT);
 					})();
 
-					const ids = [...new Set(relation.map((row) => row.id))].filter(Boolean);
+					const ids = [...new Set(relation.map((row) => row.id))].filter(
+						Boolean,
+					);
 					// An incognito visitor is not named in `footprints`; a blocked or
 					// suspended account is not named anywhere.
 					const rows = ids.length
@@ -174,7 +190,9 @@ export const Route = createFileRoute("/api/social/")({
 									and(
 										inArray(users.id, ids),
 										eq(users.isSuspended, false),
-										...(view === "footprints" ? [eq(users.incognito, false)] : []),
+										...(view === "footprints"
+											? [eq(users.incognito, false)]
+											: []),
 									),
 								)
 						: [];
@@ -210,7 +228,10 @@ export const Route = createFileRoute("/api/social/")({
 					);
 				},
 				{
-					rateLimit: { limit: 120, key: ({ caller }) => `social:GET:${caller?.id ?? "anon"}` },
+					rateLimit: {
+						limit: 120,
+						key: ({ caller }) => `social:GET:${caller?.id ?? "anon"}`,
+					},
 				},
 			),
 
@@ -225,13 +246,18 @@ export const Route = createFileRoute("/api/social/")({
 					const [target] = await db
 						.select({ id: users.id })
 						.from(users)
-						.where(and(eq(users.id, body.targetId), eq(users.isSuspended, false)))
+						.where(
+							and(eq(users.id, body.targetId), eq(users.isSuspended, false)),
+						)
 						.limit(1);
 					if (!target) return jsonError("Profile not found", 404);
 
 					// Un-do actions stay available when a block exists: being blocked by
 					// someone must not strand you in their hide list forever.
-					const reversible = body.action === "unblock" || body.action === "unhide" || body.action === "unfavourite";
+					const reversible =
+						body.action === "unblock" ||
+						body.action === "unhide" ||
+						body.action === "unfavourite";
 					if (!reversible && (await isBlocked(user.id, target.id))) {
 						return jsonError("This profile is not available", 403);
 					}
@@ -248,18 +274,40 @@ export const Route = createFileRoute("/api/social/")({
 							case "unfavourite": {
 								const removed = await db
 									.delete(favorites)
-									.where(and(eq(favorites.userId, user.id), eq(favorites.targetId, target.id)))
+									.where(
+										and(
+											eq(favorites.userId, user.id),
+											eq(favorites.targetId, target.id),
+										),
+									)
 									.returning({ id: favorites.id });
-								return json({ ok: true, favorited: false, isFavourite: false, removed: removed.length > 0 });
+								return json({
+									ok: true,
+									favorited: false,
+									isFavourite: false,
+									removed: removed.length > 0,
+								});
 							}
 							case "block": {
 								const [already] = await db
 									.select({ id: blocks.id })
 									.from(blocks)
-									.where(and(eq(blocks.blockerId, user.id), eq(blocks.blockedId, target.id)))
+									.where(
+										and(
+											eq(blocks.blockerId, user.id),
+											eq(blocks.blockedId, target.id),
+										),
+									)
 									.limit(1);
-								if (already) return json({ ok: true, blocked: true, alreadyBlocked: true });
-								await db.insert(blocks).values({ blockerId: user.id, blockedId: target.id });
+								if (already)
+									return json({
+										ok: true,
+										blocked: true,
+										alreadyBlocked: true,
+									});
+								await db
+									.insert(blocks)
+									.values({ blockerId: user.id, blockedId: target.id });
 								// A block cuts the interaction both ways: the favourite edge and
 								// any "we matched" flag would otherwise keep glowing.
 								await db
@@ -275,9 +323,18 @@ export const Route = createFileRoute("/api/social/")({
 							case "unblock": {
 								const removed = await db
 									.delete(blocks)
-									.where(and(eq(blocks.blockerId, user.id), eq(blocks.blockedId, target.id)))
+									.where(
+										and(
+											eq(blocks.blockerId, user.id),
+											eq(blocks.blockedId, target.id),
+										),
+									)
 									.returning({ id: blocks.id });
-								return json({ ok: true, blocked: false, removed: removed.length > 0 });
+								return json({
+									ok: true,
+									blocked: false,
+									removed: removed.length > 0,
+								});
 							}
 							case "hide": {
 								await db
@@ -289,9 +346,18 @@ export const Route = createFileRoute("/api/social/")({
 							case "unhide": {
 								const removed = await db
 									.delete(hides)
-									.where(and(eq(hides.hiderId, user.id), eq(hides.hiddenId, target.id)))
+									.where(
+										and(
+											eq(hides.hiderId, user.id),
+											eq(hides.hiddenId, target.id),
+										),
+									)
 									.returning({ id: hides.id });
-								return json({ ok: true, hidden: false, removed: removed.length > 0 });
+								return json({
+									ok: true,
+									hidden: false,
+									removed: removed.length > 0,
+								});
 							}
 							case "footprint": {
 								// One visit per visitor per 24 h: looking at the same profile
@@ -308,10 +374,17 @@ export const Route = createFileRoute("/api/social/")({
 										),
 									)
 									.limit(1);
-								if (recent) return json({ ok: true, recorded: false, reason: "already_recorded_24h" });
-								await db
-									.insert(footprints)
-									.values({ visitorId: user.id, visitedId: target.id, preset: body.preset ?? null });
+								if (recent)
+									return json({
+										ok: true,
+										recorded: false,
+										reason: "already_recorded_24h",
+									});
+								await db.insert(footprints).values({
+									visitorId: user.id,
+									visitedId: target.id,
+									preset: body.preset ?? null,
+								});
 								return json({ ok: true, recorded: true }, { status: 201 });
 							}
 						}

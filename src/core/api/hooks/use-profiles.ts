@@ -19,7 +19,8 @@ export type ProfileCard = Profile & { id: string };
 
 export const profileKeys = {
 	all: ["profiles"] as const,
-	detail: (profileId: string) => [...profileKeys.all, "detail", profileId] as const,
+	detail: (profileId: string) =>
+		[...profileKeys.all, "detail", profileId] as const,
 	list: (profileIds: readonly string[]) =>
 		[...profileKeys.all, "list", profileIds.join(",")] as const,
 	me: () => [...profileKeys.all, "me"] as const,
@@ -30,9 +31,9 @@ export function useProfile(profileId: string | null | undefined) {
 	return useQuery<Profile, Error>({
 		queryKey: profileKeys.detail(profileId ?? ""),
 		queryFn: () =>
-			api<{ profile: Profile }>(`/api/profile/${encodeURIComponent(profileId ?? "")}`).then(
-				(response) => response.profile,
-			),
+			api<{ profile: Profile }>(
+				`/api/profile/${encodeURIComponent(profileId ?? "")}`,
+			).then((response) => response.profile),
 		enabled: Boolean(profileId),
 		staleTime: 30_000,
 		retry: false,
@@ -45,9 +46,9 @@ export function useProfiles(profileIds: readonly string[]) {
 	return useQuery<ProfileCard[], Error>({
 		queryKey: profileKeys.list(ids),
 		queryFn: () =>
-			api<{ profiles: ProfileCard[] }>(`/api/profiles?ids=${ids.join(",")}`).then(
-				(response) => response.profiles,
-			),
+			api<{ profiles: ProfileCard[] }>(
+				`/api/profiles?ids=${ids.join(",")}`,
+			).then((response) => response.profiles),
 		enabled: ids.length > 0,
 		staleTime: 60_000,
 		retry: false,

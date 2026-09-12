@@ -3,47 +3,48 @@
 // and nothing else), and every route these hooks call is a `/api/*` handler in
 // this repository. The old `/v1`–`/v7` REST surface and the `localStorage`
 // bearer-token client were deleted with `0018_supabase_canonical.sql`.
+
 export {
-	useProfile,
-	useProfiles,
-	useUpdateProfile,
-	usePatchProfile,
-	profileKeys,
-	type Profile,
-	type ProfileCard,
-} from "./hooks/use-profiles";
+	accountScoped,
+	clearAccountCaches,
+	registerAccountCache,
+} from "./account-caches";
+export { ApiError, type ApiErrorKind, apiErrorKinds } from "./client/api-error";
 export {
+	type BlockedUser,
+	blockKeys,
 	useBlockedUsers,
 	useBlockUser,
 	useUnblockUser,
-	blockKeys,
-	type BlockedUser,
 } from "./hooks/use-blocks";
 export {
+	favoriteKeys,
+	useAddFavorite,
+	useFavorites,
+	useRemoveFavorite,
+} from "./hooks/use-favorites";
+export {
+	type HiddenUser,
+	hideKeys,
 	useHiddenUsers,
 	useHideUser,
 	useUnhideUser,
-	hideKeys,
-	type HiddenUser,
 } from "./hooks/use-hides";
 export {
-	useFavorites,
-	useAddFavorite,
-	useRemoveFavorite,
-	favoriteKeys,
-} from "./hooks/use-favorites";
+	type Profile,
+	type ProfileCard,
+	profileKeys,
+	usePatchProfile,
+	useProfile,
+	useProfiles,
+	useUpdateProfile,
+} from "./hooks/use-profiles";
 export {
-	useReceivedTaps,
-	useTapsSent,
-	useSendTap,
-	useUndoTap,
-	tapKeys,
 	type TapType,
+	tapKeys,
+	useReceivedTaps,
+	useSendTap,
+	useTapsSent,
+	useUndoTap,
 } from "./hooks/use-taps";
-export { useViews, useRecordView, viewKeys } from "./hooks/use-views";
-export { ApiError, apiErrorKinds, type ApiErrorKind } from "./client/api-error";
-export {
-	accountScoped,
-	registerAccountCache,
-	clearAccountCaches,
-} from "./account-caches";
+export { useRecordView, useViews, viewKeys } from "./hooks/use-views";

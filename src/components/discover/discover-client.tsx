@@ -6,7 +6,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { Compass, Sparkles, SlidersHorizontal, LayoutGrid, Map as MapIcon, RotateCcw, X } from "lucide-react";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";
-import { useVectorSearch } from "@/hooks/use-vector-search";
 import type { Candidate } from "@/lib/types";
 import { Skeleton, EmptyState, Button } from "@/components/ui/primitives";
 import { ProfileCard } from "@/components/discover/profile-card";
@@ -14,6 +13,9 @@ import { ProfileModal } from "@/components/discover/profile-modal";
 import { StoriesRail } from "@/components/discover/stories-rail";
 import { cn } from "@/lib/utils";
 import { TRIBES, LOOKING_FOR, BODY_TYPES, MEETNOW } from "@/lib/constants";
+
+/** `filters.minMatch` is the same threshold, so the badge and the slider agree. */
+const AI_PICK_MIN_SCORE = 80;
 
 type Filters = {
   tribe: string; looking: string; body: string; intent: string;
@@ -37,30 +39,17 @@ export function DiscoverClient() {
   const [selected, setSelected] = useState<Candidate | null>(null);
   const [tapped, setTapped] = useState<string[]>([]);
 
-  // --- Vector search: GPU-accelerated similarity for profile ranking ---
-  const vectorQuery = useMemo(() => {
-    if (!me) return "";
-    const parts = [
-      me.pseudo, me.description, me.city, me.occupation,
-      ...(me.interests || []), ...(me.tribes || []), ...(me.lookingFor || []),
-    ].filter(Boolean);
-    return parts.join(" ");
-  }, [me]);
-
-  const vectorResults = useVectorSearch(vectorQuery, {
-    enabled: vectorQuery.length >= 2,
-    matchCount: 30,
-    threshold: 0.3,
-  });
-
-  // Build a Map of profile_id -> similarity score from vector results
-  const vectorScores = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of vectorResults.data) {
-      map.set(r.profile_id, r.similarity);
-    }
-    return map;
-  }, [vectorResults.data]);
+  // "AI smart defaults" used to be a *hash* embedding: `generateHashEmbedding()`
+  // in `src/integrations/supabase/vector.ts` bagged the words of my own profile
+  // into 384 float buckets, stored them in a pgvector column and ranked the deck
+  // by cosine distance over them. Its own comment said "produces low-quality
+  // vectors" and asked for a real model; the badge it drove ("Vector search
+  // boosted 30 profiles") was noise dressed as a feature. The deck is ranked by
+  // the documented 5-dimension compatibility score in `GET /api/discover`, and
+  // the "AI pick" badge is that score at 80+, which is the number the filter
+  // slider already means. The fake vector path, its hook and its module are gone;
+  // `profile_embeddings`/`message_embeddings` are now revoked from browser roles
+  // (0019) and belong to the server if a real model ever lands.
 
   const { data, isLoading } = useQuery({
     queryKey: ["discover"],
@@ -111,16 +100,11 @@ export function DiscoverClient() {
         if (c.matchScore < filters.minMatch) return false;
         return true;
       })
-      .map((c) => {
-        const similarity = vectorScores.get(c.id);
-        // Similarity >= 0.6 from cosine distance = strong semantic match
-        const isAiRecommended = similarity != null && similarity >= 0.6;
-        return { ...c, vectorSimilarity: similarity, isAiRecommended } as Candidate & {
-          vectorSimilarity?: number;
-          isAiRecommended: boolean;
-        };
-      });
-  }, [all, filters, vectorScores]);
+      .map((c) => ({
+        ...c,
+        isAiRecommended: c.matchScore >= AI_PICK_MIN_SCORE,
+      }))
+  }, [all, filters]);
 
   const activeFilterCount =
     (filters.tribe !== "All" ? 1 : 0) + (filters.looking !== "All" ? 1 : 0) +
@@ -167,9 +151,6 @@ export function DiscoverClient() {
         <p className="text-xs leading-relaxed text-foreground/80">
           <span className="font-semibold text-gold-soft">AI smart defaults active.</span>{" "}
           Showing {candidates.length} kings ranked by 5-dimension compatibility.
-          {vectorScores.size > 0 && (
-            <> <span className="text-purple-300">Vector search boosted {vectorScores.size} profiles.</span></>
-          )}
           {meta && meta.newCount > 0 && <> <span className="text-foreground">{meta.newCount} are new to you.</span></>}
         </p>
       </div>

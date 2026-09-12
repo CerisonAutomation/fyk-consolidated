@@ -211,13 +211,20 @@ export const Route = createFileRoute("/api/interest/$tab/")({
 					// with their card, while someone browsing incognito becomes a
 					// "secret admirer" preview — counted, but with no id, no handle and no
 					// distance, because their privacy setting outranks the list.
-					if (tab !== "visitors") return json({ profiles, previews: [] }, { cache: "private" });
+					if (tab !== "visitors")
+						return json({ profiles, previews: [] }, { cache: "private" });
 					const previews = cards
 						.filter((card) => card.incognito)
-						.map((card) => ({ age: card.age ?? null, city: card.city ?? null, photo: card.photo ?? "" }));
+						.map((card) => ({
+							age: card.age ?? null,
+							city: card.city ?? null,
+							photo: card.photo ?? "",
+						}));
 					return json(
 						{
-							profiles: cards.filter((card) => !card.incognito).map(({ incognito, ...card }) => card),
+							profiles: cards
+								.filter((card) => !card.incognito)
+								.map(({ incognito, ...card }) => card),
 							previews,
 							anonymousCount: previews.length,
 						},

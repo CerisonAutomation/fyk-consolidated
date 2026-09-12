@@ -22,7 +22,9 @@ export function useHiddenUsers() {
 	return useQuery<HiddenUser[], Error>({
 		queryKey: hideKeys.list(),
 		queryFn: () =>
-			api<{ hides: { profile: { id: string } }[] }>("/api/social?view=hides").then((response) =>
+			api<{ hides: { profile: { id: string } }[] }>(
+				"/api/social?view=hides",
+			).then((response) =>
 				response.hides.map((entry) => ({ profileId: entry.profile.id })),
 			),
 		staleTime: 5_000,
@@ -35,7 +37,10 @@ function hideMutation(action: "hide" | "unhide") {
 		const queryClient = useQueryClient();
 		return useMutation<void, Error, { profileId: string }>({
 			mutationFn: async ({ profileId }) => {
-				await api("/api/social", { method: "POST", body: { targetId: profileId, action } });
+				await api("/api/social", {
+					method: "POST",
+					body: { targetId: profileId, action },
+				});
 			},
 			onSuccess: () => {
 				queryClient.invalidateQueries({ queryKey: hideKeys.all });

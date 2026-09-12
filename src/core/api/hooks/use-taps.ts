@@ -67,9 +67,12 @@ export function useUndoTap() {
 	const queryClient = useQueryClient();
 	return useMutation<{ undone: boolean }, Error, { recipientId: string }>({
 		mutationFn: ({ recipientId }) =>
-			api<{ undone: boolean }>(`/api/taps?targetId=${encodeURIComponent(recipientId)}`, {
-				method: "DELETE",
-			}),
+			api<{ undone: boolean }>(
+				`/api/taps?targetId=${encodeURIComponent(recipientId)}`,
+				{
+					method: "DELETE",
+				},
+			),
 		onSuccess: () => queryClient.invalidateQueries({ queryKey: tapKeys.all }),
 	});
 }

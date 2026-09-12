@@ -58,6 +58,11 @@ export const Route = createFileRoute("/api/taps/")({
 						targetId: body.targetId,
 						kind: body.type,
 					});
+					if (outcome.status === "quota")
+						return jsonError(
+							`${outcome.limit} taps a day on Free — you have used all ${outcome.used}. Upgrade for unlimited taps.`,
+							429,
+						);
 					if (outcome.status === "not_found")
 						return jsonError("Profile not found", 404);
 					if (outcome.status === "blocked")

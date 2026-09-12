@@ -101,6 +101,19 @@ export const db: PostgresJsDatabase<typeof schema> = new Proxy(
 
 export { schema };
 
+/**
+ * `db` and the transaction handle a `db.transaction(tx => …)` callback receives.
+ *
+ * Helpers that can run either standalone or inside a caller's transaction take
+ * this type: the query-builder methods are structurally identical on both, while
+ * `transaction` itself is deliberately absent, because a helper that opens a
+ * nested transaction is how a partial commit slips past a rollback.
+ */
+export type DbLike = Pick<
+	PostgresJsDatabase<typeof schema>,
+	"select" | "insert" | "update" | "delete" | "execute"
+>;
+
 /** Readiness probe: used by `GET /api/health?deep=1`. */
 export async function pingDatabase(): Promise<void> {
 	await getDb().execute(sql`select 1`);

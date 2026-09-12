@@ -26,15 +26,20 @@ import {
 import {
 	loadPetData,
 	performPetAction,
-} from "@/integrations/supabase/king-pet";
+	type PetAction,
+} from "@/core/api/pet";
 import { useSupabaseSession } from "@/integrations/supabase/session-provider";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
+// `elder` is a real stage in `king_pet_stage_check` and the server's curve can
+// reach it at level 16, so it needs a face: `STAGE_EMOJI[stage]` used to render
+// `undefined` (an empty pet in a gradient circle) for anything past `adult`.
 const STAGE_EMOJI: Record<string, string> = {
 	baby: "🐣",
 	juvenile: "🐥",
 	adult: "👑",
+	elder: "🦁",
 };
 const MOOD_EMOJI: Record<string, string> = {
 	happy: "😊",
@@ -44,6 +49,9 @@ const MOOD_EMOJI: Record<string, string> = {
 	sad: "😢",
 };
 
+// `as const`, because the mutation takes a closed union now: the server refuses
+// an action it does not implement, and this list is what it implements
+// (`PET_ACTIONS` in `#/lib/economy` holds the XP and cooldowns shown here).
 const ACTIONS = [
 	{
 		key: "feed",
@@ -54,7 +62,7 @@ const ACTIONS = [
 	{ key: "play", label: "Play", icon: Play, desc: "+25 XP" },
 	{ key: "rest", label: "Rest", icon: Armchair, desc: "+10 XP" },
 	{ key: "dress", label: "Dress up", icon: Shirt, desc: "+15 XP" },
-];
+] as const;
 
 export function KingPetClient() {
 	const qc = useQueryClient();
@@ -69,28 +77,25 @@ export function KingPetClient() {
 	const [renaming, setRenaming] = useState(false);
 	const [name, setName] = useState("");
 
-	const { data, isLoading } = useQuery({
+	const { data, isLoading, isError, error, refetch } = useQuery({
 		queryKey: ["pet", userId],
 		queryFn: async () => {
 			if (!userId) throw new Error("Not authenticated");
-			const result = await loadPetData(userId);
-			if (!result.ok) throw new Error(result.message);
-			return result.data;
+			// The pet belongs to the session the API verified, so no id is passed:
+			// `GET /api/king-pet` also collects a finished trip on the way in, which
+			// is why there is no "claim" button to forget to press.
+			return loadPetData();
 		},
 		enabled: !!userId,
 	});
 
 	const act = useMutation({
-		mutationFn: async (vars: {
-			action: string;
-			name?: string;
-			itemId?: string;
-			adventureId?: string;
-		}) => {
+		mutationFn: async (vars: PetAction) => {
 			if (!userId) throw new Error("Not authenticated");
-			const result = await performPetAction(userId, vars.action, vars);
-			if (!result.ok) throw new Error(result.message);
-			return result.data;
+			// `api()` throws `ApiError(status, message)`, so the reasons the server
+			// gives — a cooldown, "Not enough bones", "You have not bought Cape yet" —
+			// reach the toast instead of a generic "Failed".
+			return performPetAction(vars);
 		},
 		onSuccess: (res, vars) => {
 			qc.setQueryData(["pet", userId], (old: typeof data) => {
@@ -106,6 +111,15 @@ export function KingPetClient() {
 				pushToast(
 					`${res.reward.theme} complete! +${res.reward.amount} ${res.reward.type === "bones" ? "🦴" : "XP"}`,
 				);
+			} else if (res.pending) {
+				// An adventure takes its `duration_minutes` and pays on return; the old
+				// client module awarded the reward the instant the button was pressed,
+				// which made "Night Market, 60 minutes" a click.
+				const backAt = new Date(res.pending.endsAt).toLocaleTimeString([], {
+					hour: "2-digit",
+					minute: "2-digit",
+				});
+				pushToast(`${res.pending.emoji} ${res.pending.theme} — back at ${backAt}`);
 			} else {
 				const a = vars.action;
 				pushToast(
@@ -118,6 +132,28 @@ export function KingPetClient() {
 	});
 
 	if (isLoading || !data) {
+		// Same fix as the premium screen: a failed read must not look like a
+		// skeleton forever, because "the pet is not loading" and "the pet could not
+		// be read" need different answers from a user.
+		if (isError)
+			return (
+				<div className="mx-auto max-w-md">
+					<EmptyState
+						icon={<PawPrint className="h-6 w-6 text-gold" />}
+						title="Your pet is asleep"
+						description={
+							error instanceof Error
+								? error.message
+								: "We could not reach the pet service."
+						}
+						action={
+							<Button size="sm" onClick={() => refetch()}>
+								Wake them up
+							</Button>
+						}
+					/>
+				</div>
+			);
 		return (
 			<div className="mx-auto max-w-md">
 				<Skeleton className="mb-4 h-8 w-40" />

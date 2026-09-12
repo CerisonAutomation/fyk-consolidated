@@ -6,5 +6,5 @@
  * from either location.
  */
 
-export { ApiError, apiErrorKinds } from "./client/api-error";
 export type { ApiErrorKind } from "./client/api-error";
+export { ApiError, apiErrorKinds } from "./client/api-error";

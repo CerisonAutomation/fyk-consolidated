@@ -3,16 +3,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Crown, Gift, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Button, Skeleton } from "@/components/ui/primitives";
+import { Button, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { useSupabaseSession } from "@/integrations/supabase/session-provider";
 import {
-	loadWalletData,
-	performWalletAction,
-} from "@/integrations/supabase/wallet";
+loadWalletData,
+performWalletAction,
+type WalletAction,
+} from "@/core/api/wallet";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const BONE_EMOJI = "\u{1F9B4}";
+/** Toast copy only; the server decides what a claim actually pays. */
+const DAILY_REWARD_TOAST = 15;
 const CROWN_EMOJI = "\u{1F451}";
 
 export function PremiumClient() {
@@ -22,40 +25,39 @@ export function PremiumClient() {
 	const userId = user?.id;
 	const [tab, setTab] = useState<"tiers" | "wallet">("tiers");
 
-	const { data, isLoading } = useQuery({
+	const { data, isLoading, isError, error, refetch } = useQuery({
 		queryKey: ["wallet", userId],
 		queryFn: async () => {
 			if (!userId) throw new Error("Not authenticated");
-			const result = await loadWalletData(userId);
-			if (!result.ok) throw new Error(result.message);
-			return result.data;
+			// No `userId` argument: the wallet belongs to the session the API verifies,
+			// and passing an id here would hint that the client gets to choose whose
+			// wallet it reads.
+			return loadWalletData();
 		},
 		enabled: !!userId,
 	});
 
 	const act = useMutation({
-		mutationFn: async (vars: {
-			action: string;
-			tier?: string;
-			type?: string;
-			packId?: string;
-		}) => {
+		mutationFn: async (vars: WalletAction) => {
 			if (!userId) throw new Error("Not authenticated");
-			const result = await performWalletAction(userId, vars.action, vars);
-			if (!result.ok) throw new Error(result.message);
-			return result.data;
+			// `api()` throws `ApiError(status, message)`, so the server's reason —
+			// "Already claimed today", "Not enough bones for that — it costs 120",
+			// "Checkout is not configured on this deployment" — is what the toast shows.
+			// The module this replaced reported success for writes the database had
+			// rejected, which is how "Bones added" was ever possible without a payment.
+			return performWalletAction(vars);
 		},
-		onSuccess: (_res, vars) => {
+		onSuccess: (res, vars) => {
 			const a = vars.action;
 			pushToast(
 				a === "subscribe"
 					? `Subscription active ${CROWN_EMOJI} Welcome to premium.`
 					: a === "daily"
-						? `Daily reward claimed! +15 ${BONE_EMOJI}`
+						? `Daily reward claimed! +${DAILY_REWARD_TOAST} ${BONE_EMOJI}`
 						: a === "topup"
-							? "Bones added"
+							? `+${res.amount ?? 0} ${BONE_EMOJI} added`
 							: a === "buy"
-								? "Purchased! Check your inventory."
+								? `${res.label ?? "Item"} purchased`
 								: "Subscription cancelled",
 				"success",
 			);
@@ -69,6 +71,28 @@ export function PremiumClient() {
 	});
 
 	if (isLoading || !data) {
+		// `isError` used to fall into the skeleton branch, so a wallet that could
+		// not be read (signed out, API down) looked like a load in progress forever
+		// and offered no way to retry.
+		if (isError)
+			return (
+				<div className="mx-auto max-w-2xl">
+					<EmptyState
+						icon={<Crown className="h-6 w-6 text-gold" />}
+						title="Wallet unavailable"
+						description={
+							error instanceof Error
+								? error.message
+								: "We could not read your balance."
+						}
+						action={
+							<Button size="sm" onClick={() => refetch()}>
+								Try again
+							</Button>
+						}
+					/>
+				</div>
+			);
 		return (
 			<div className="mx-auto max-w-2xl">
 				<Skeleton className="mb-4 h-40 rounded-3xl" />
@@ -88,8 +112,9 @@ export function PremiumClient() {
 				<h1 className="text-xl font-bold text-white">Premium</h1>
 			</div>
 			<p className="mb-4 text-sm text-muted">
-				Unlock the full FYK experience — unlimited taps, 48 AI features,
-				incognito and more.
+				Unlock the full FYK experience: unlimited taps, and boosts every month.
+				Everything listed below is enforced by the server — a perk this build cannot
+				enforce is not offered.
 			</p>
 
 			<div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-surface-2 p-1">
@@ -193,7 +218,10 @@ export function PremiumClient() {
 										variant={isCurrent ? "secondary" : "primary"}
 										disabled={isCurrent}
 										onClick={() =>
-											act.mutate({ action: "subscribe", tier: key })
+											act.mutate({
+									action: "subscribe",
+									tier: key as "plus" | "gold" | "platinum",
+								})
 										}
 									>
 										{isCurrent
@@ -322,12 +350,12 @@ export function PremiumClient() {
 										<span
 											className={cn(
 												"flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
-												t.type === "credit"
+												t.amount > 0
 													? "bg-emerald-500/15 text-emerald-400"
 													: "bg-rose-500/15 text-rose-400",
 											)}
 										>
-											{t.type === "credit" ? "+" : "-"}
+												{t.amount > 0 ? "+" : "-"}
 										</span>
 										<div className="min-w-0 flex-1">
 											<p className="truncate text-xs text-white">
@@ -338,7 +366,7 @@ export function PremiumClient() {
 											</p>
 										</div>
 										<span className="text-xs font-semibold text-white">
-											{t.amount} {BONE_EMOJI}
+												{Math.abs(t.amount)} {BONE_EMOJI}
 										</span>
 									</div>
 								))}

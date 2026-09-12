@@ -41,6 +41,34 @@ export function isDuplicateError(error: unknown): boolean {
 	return (error as { code?: string } | null)?.code === "23505";
 }
 
+/**
+ * A `405` that says which verbs exist, for the methods a route does not declare.
+ *
+ * TanStack Start answers an undeclared method on a declared path with the SPA
+ * shell: `PUT /api/wallet` used to return `200 text/html`, and any caller that
+ * only checks `res.ok` reads that as success. `OPTIONS` is deliberately not
+ * declared here — the CORS middleware owns preflight, and shadowing it would
+ * break every browser call to the route.
+ */
+export function methodNotAllowed(allowed: string) {
+	return async ({ request }: { request: Request }): Promise<Response> => {
+		const path = new URL(request.url).pathname;
+		return new Response(
+			JSON.stringify({
+				error: `${request.method} is not supported on ${path}`,
+				allowed: allowed.split(", "),
+			}),
+			{
+				status: 405,
+				headers: {
+					allow: allowed,
+					"content-type": "application/json; charset=utf-8",
+				},
+			},
+		);
+	};
+}
+
 export function unexpected(context: string, error: unknown): Response {
 	logError(`api/${context}`, error);
 	return new Response(

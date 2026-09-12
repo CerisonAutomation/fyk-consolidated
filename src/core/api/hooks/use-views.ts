@@ -14,14 +14,18 @@ export const viewKeys = {
 };
 
 export function useViews() {
-	return useQuery<{ profiles: Record<string, unknown>[]; previews: Record<string, unknown>[] }, Error>(
+	return useQuery<
 		{
-			queryKey: viewKeys.list(),
-			queryFn: () => api("/api/interest/visitors"),
-			staleTime: 60_000,
-			retry: false,
+			profiles: Record<string, unknown>[];
+			previews: Record<string, unknown>[];
 		},
-	);
+		Error
+	>({
+		queryKey: viewKeys.list(),
+		queryFn: () => api("/api/interest/visitors"),
+		staleTime: 60_000,
+		retry: false,
+	});
 }
 
 export function useRecordView() {

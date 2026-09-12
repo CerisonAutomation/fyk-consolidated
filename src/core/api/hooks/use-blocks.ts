@@ -18,13 +18,14 @@ export function useBlockedUsers() {
 	return useQuery<BlockedUser[], Error>({
 		queryKey: blockKeys.list(),
 		queryFn: () =>
-			api<{ blocks: { profile: { id: string }; blockedAt?: string; at?: string }[] }>(
-				"/api/social?view=blocks",
-			).then((response) =>
+			api<{
+				blocks: { profile: { id: string }; blockedAt?: string; at?: string }[];
+			}>("/api/social?view=blocks").then((response) =>
 				response.blocks.map((entry) => ({
 					profileId: entry.profile.id,
 					// Milliseconds, because the screen formats `new Date(blockedTime)`.
-					blockedTime: Date.parse(entry.at ?? entry.blockedAt ?? "") || Date.now(),
+					blockedTime:
+						Date.parse(entry.at ?? entry.blockedAt ?? "") || Date.now(),
 				})),
 			),
 		staleTime: 5_000,
@@ -37,7 +38,10 @@ function blockMutation(action: "block" | "unblock") {
 		const queryClient = useQueryClient();
 		return useMutation<void, Error, { profileId: string }>({
 			mutationFn: async ({ profileId }) => {
-				await api("/api/social", { method: "POST", body: { targetId: profileId, action } });
+				await api("/api/social", {
+					method: "POST",
+					body: { targetId: profileId, action },
+				});
 			},
 			onSuccess: () => {
 				queryClient.invalidateQueries({ queryKey: blockKeys.all });

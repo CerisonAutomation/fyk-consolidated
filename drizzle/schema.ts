@@ -503,3 +503,159 @@ export const pushSubscriptions = pgTable(
 	},
 	(table) => [unique("push_subscriptions_user_id_endpoint_key").on(table.userId, table.endpoint)],
 );
+
+/* --------------------------------- economy ---------------------------------- */
+
+/**
+ * One row per account, created on first read by `GET /api/wallet`.
+ *
+ * `balance` is not writable by application code since `0019`: a trigger derives
+ * it from `wallet_transactions`, and `wallet_balance_is_derived()` raises if
+ * anything but the ledger trigger changes it. That is the fix for three separate
+ * balances (`wallet.balance`, the ledger and `king_pet.bones`) disagreeing about
+ * how many bones an account owns.
+ */
+export const wallet = pgTable(
+	"wallet",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.unique()
+			.references(() => users.id, { onDelete: "cascade" }),
+		balance: integer("balance").notNull().default(0),
+		currency: text("currency").notNull().default("bones"),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+		updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	},
+);
+
+/**
+ * The append-only ledger: the only way a balance moves.
+ *
+ * `amount` is SIGNED (0019) — positive credits, negative debits — because the
+ * old "always positive + a credit/debit tag" convention is what let
+ * `balance + amount` credit the wallet on a purchase. `source` names the product
+ * that moved the money; `idempotencyKey` makes a retried request a no-op instead
+ * of a second mint.
+ */
+export const walletTransactions = pgTable(
+	"wallet_transactions",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		walletId: uuid("wallet_id")
+			.notNull()
+			.references(() => wallet.id, { onDelete: "cascade" }),
+		type: text("type").notNull(),
+		amount: integer("amount").notNull(),
+		description: text("description").notNull(),
+		source: text("source").notNull().default("server"),
+		idempotencyKey: text("idempotency_key"),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	},
+);
+
+/**
+ * What the payment provider thinks the account is paying for. Since 0019 this is
+ * the *provider record*: `premium_entitlements` is the answer to "is this account
+ * premium", because a subscription row can be `past_due` while the entitlement is
+ * still valid until `expires_at`.
+ */
+export const subscriptions = pgTable("subscriptions", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	tier: text("tier").notNull().default("free"),
+	stripeSubscriptionId: text("stripe_subscription_id"),
+	status: text("status").notNull().default("active"),
+	currentPeriodEnd: timestamp("current_period_end", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+/** The privilege row. Written only by the API, and only after a payment exists. */
+export const premiumEntitlements = pgTable("premium_entitlements", {
+	profileId: uuid("profile_id")
+		.primaryKey()
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	tier: text("tier").notNull().default("free"),
+	source: text("source").notNull().default("none"),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+/** King Pet state. Progression columns are server-owned (0019 trigger). */
+export const kingPet = pgTable("king_pet", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id")
+		.notNull()
+		.unique()
+		.references(() => users.id, { onDelete: "cascade" }),
+	name: text("name").default("Kingsley"),
+	stage: text("stage").default("baby"),
+	mood: text("mood").default("happy"),
+	experience: integer("experience").default(0),
+	level: integer("level").default(1),
+	streak: integer("streak").default(0),
+	wardrobe: jsonb("wardrobe").default(sql`'[]'::jsonb`),
+	equipped: jsonb("equipped").default(sql`'[]'::jsonb`),
+	adventures: jsonb("adventures").default(sql`'[]'::jsonb`),
+	moodLog: jsonb("mood_log").default(sql`'[]'::jsonb`),
+	lastFedAt: timestamp("last_fed_at", { withTimezone: true, precision: 6 }),
+	lastPlayedAt: timestamp("last_played_at", { withTimezone: true, precision: 6 }),
+	pendingAdventure: jsonb("pending_adventure"),
+	lastAdventureAt: timestamp("last_adventure_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+
+export const petItems = pgTable("pet_items", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull(),
+	type: text("type").notNull(),
+	emoji: text("emoji"),
+	boneCost: integer("bone_cost").notNull(),
+	stageRequired: text("stage_required").default("baby"),
+});
+
+export const petAdventures = pgTable("pet_adventures", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	theme: text("theme").notNull(),
+	description: text("description"),
+	emoji: text("emoji"),
+	durationMinutes: integer("duration_minutes").default(30),
+	boneCost: integer("bone_cost").notNull(),
+	rewardType: text("reward_type").default("xp"),
+	rewardAmount: integer("reward_amount").default(40),
+});
+
+/** Fansites: a creator's page, and the subscriber edge that replaced the "count notification rows" fiction. */
+export const fansites = pgTable("fansites", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id")
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+	name: text("name").notNull(),
+	description: text("description"),
+	coverUrl: text("cover_url"),
+	subscriberCount: integer("subscriber_count").default(0),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const fansiteSubscribers = pgTable(
+	"fansite_subscribers",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		fansiteId: uuid("fansite_id")
+			.notNull()
+			.references(() => fansites.id, { onDelete: "cascade" }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	},
+	(table) => [unique("fansite_subscribers_fansite_id_user_id_key").on(table.fansiteId, table.userId)],
+);

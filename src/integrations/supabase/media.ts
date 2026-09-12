@@ -19,7 +19,16 @@ import { demoMediaUrl } from "#/domains/demo";
 import { demoEnabled } from "#/domains/demo/config";
 import { getSupabase } from "./client";
 
-/** The bucket every profile photo, chat image and album item lives in. */
+/**
+ * The bucket profile photo and gallery uploads live in.
+ *
+ * It existed only in this constant until `0019_server_owned_economy.sql` §10a
+ * created it with `fyk_media_*` policies: `supabase.storage.from("media").upload()`
+ * was answering "Bucket not found" for every upload, while `getPublicUrl()` below
+ * happily produced a URL to the same non-existent bucket. Chat and album media are
+ * *not* here — `chat-media-private` and `albums-private` (0003) own those, and
+ * their rows store a bucket-qualified path.
+ */
 export const MEDIA_BUCKET = "media";
 
 const ABSOLUTE = /^(https?:|blob:|data:)/i;

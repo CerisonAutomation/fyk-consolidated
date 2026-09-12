@@ -21,8 +21,10 @@ export function useFavorites() {
 	return useQuery<{ profileId: string }[], Error>({
 		queryKey: favoriteKeys.list(),
 		queryFn: () =>
-			api<{ favourites: { profile: { id: string } }[] }>("/api/social?view=favourites").then(
-				(response) => response.favourites.map((entry) => ({ profileId: entry.profile.id })),
+			api<{ favourites: { profile: { id: string } }[] }>(
+				"/api/social?view=favourites",
+			).then((response) =>
+				response.favourites.map((entry) => ({ profileId: entry.profile.id })),
 			),
 		staleTime: 30_000,
 		retry: false,
