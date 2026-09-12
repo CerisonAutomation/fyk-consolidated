@@ -150,7 +150,7 @@ function ConversationPage() {
 			// Merging into the cache keeps scroll position instead of jumping to the
 			// bottom the way a naive refetch would.
 			queryClient.setQueryData<MessagePage>(
-				["messages", conversationId],
+				MESSAGES_KEY(conversationId),
 				(current) =>
 					current
 						? {
@@ -1040,11 +1040,19 @@ function MessageMenu({
 }) {
 	const mine = message.senderId === meId;
 	const containerRef = useRef<HTMLDivElement | null>(null);
+	// The caller passes an inline arrow, so `onClose` is a new function on every
+	// render — including the ones a background poll causes. Depending on it would
+	// re-run the effect and yank focus back to the first item mid-keypress.
+	const closeRef = useRef(onClose);
+	closeRef.current = onClose;
 
 	// A context menu opened by long-press or right-click has no keyboard story
 	// unless it builds one: focus arrives, Arrow keys walk the items, Escape and a
 	// click anywhere outside dismiss it. `tabIndex={-1}` on the items keeps Tab
 	// leaving the menu instead of trapping a keyboard user inside a popover.
+	// Once per open on purpose: the callbacks are read through refs, so re-running on
+	// a parent render (every poll) would reset the caret and the focus.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: see the note above.
 	useEffect(() => {
 		const container = containerRef.current;
 		const items = () =>
@@ -1057,7 +1065,7 @@ function MessageMenu({
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key === "Escape") {
 				event.stopPropagation();
-				onClose();
+				closeRef.current();
 				return;
 			}
 			if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -1071,7 +1079,7 @@ function MessageMenu({
 		};
 		const onPointerDown = (event: PointerEvent) => {
 			if (container?.contains(event.target as Node)) return;
-			onClose();
+			closeRef.current();
 		};
 
 		document.addEventListener("keydown", onKeyDown, true);
