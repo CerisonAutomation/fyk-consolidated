@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { TribesClient } from '../../components/tribes/tribes-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/tribes/')({
-  component: TribesClient,
-})
+  component: lazyRouteComponent(() => import("../../components/tribes/tribes-client").then((m) => ({ default: m.TribesClient }))),
+});

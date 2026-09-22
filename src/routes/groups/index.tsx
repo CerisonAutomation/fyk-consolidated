@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { GroupsClient } from '../../components/groups/groups-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/groups/')({
-  component: GroupsClient,
-})
+  component: lazyRouteComponent(() => import("../../components/groups/groups-client").then((m) => ({ default: m.GroupsClient }))),
+});

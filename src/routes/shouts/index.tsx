@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ShoutsClient } from '../../components/shouts/shouts-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/shouts/')({
-  component: ShoutsClient,
-})
+  component: lazyRouteComponent(() => import("../../components/shouts/shouts-client").then((m) => ({ default: m.ShoutsClient }))),
+});

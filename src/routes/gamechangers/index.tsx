@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { GamechangersClient } from '../../components/gamechangers/gamechangers-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/gamechangers/')({
-  component: GamechangersClient,
-})
+  component: lazyRouteComponent(() => import("../../components/gamechangers/gamechangers-client").then((m) => ({ default: m.GamechangersClient }))),
+});
