@@ -70,7 +70,6 @@ const UNMODELLED = new Set([
 	"ai_match_scores",
 	"ai_memory",
 	"ai_safety_flags",
-	"ai_suggestions",
 	"album_grants",
 	"album_shares",
 	"audit_events",
@@ -97,10 +96,13 @@ const UNMODELLED = new Set([
 	"shout_likes",
 	"shouts",
 	"site_config",
-	"stories",
 	"story_views",
 	"tag_embeddings",
 	"typing_indicators",
+	// 0027 tables are now modelled in drizzle/schema.ts:
+	// verification_requests, content_ratings, stories (now modelled), live_rooms,
+	// gift_transactions, referrals, vouchers, polls, spotlights, saved_searches,
+	// chat_themes, appeals, emergency_contacts, data_exports, roulette_sessions
 ]);
 
 describe("drizzle schema coverage", () => {

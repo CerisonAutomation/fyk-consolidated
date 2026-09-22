@@ -788,3 +788,669 @@ export const tribes = pgTable("tribes", {
 	}).defaultNow(),
 });
 
+/* --------------------------- complete features (0027) ------------------------ */
+
+export const verificationRequests = pgTable("verification_requests", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	pose: text("pose").notNull(),
+	selfieUrl: text("selfie_url").notNull(),
+	status: text("status").notNull().default("pending"),
+	confidence: doublePrecision("confidence"),
+	reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+	reviewedAt: timestamp("reviewed_at", { withTimezone: true, precision: 6 }),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const contentRatings = pgTable("content_ratings", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	mediaId: text("media_id").notNull(),
+	ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	url: text("url").notNull(),
+	rating: text("rating").notNull().default("UNPROCESSED"),
+	confidence: doublePrecision("confidence").notNull().default(0),
+	reasons: jsonb("reasons").notNull().default(sql`'[]'::jsonb`),
+	requiresHumanReview: boolean("requires_human_review").notNull().default(false),
+	cdnToken: text("cdn_token"),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const stories = pgTable("stories", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	type: text("type").notNull(),
+	mediaUrl: text("media_url"),
+	text: text("text"),
+	viewCount: integer("view_count").notNull().default(0),
+	viewers: jsonb("viewers").notNull().default(sql`'[]'::jsonb`),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull(),
+	viewOnce: boolean("view_once").notNull().default(false),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const liveRooms = pgTable("live_rooms", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	hostId: uuid("host_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	title: text("title").notNull(),
+	description: text("description"),
+	type: text("type").notNull().default("video"),
+	status: text("status").notNull().default("live"),
+	viewerCount: integer("viewer_count").notNull().default(0),
+	peakViewers: integer("peak_viewers").notNull().default(0),
+	totalCoins: integer("total_coins").notNull().default(0),
+	startedAt: timestamp("started_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	endedAt: timestamp("ended_at", { withTimezone: true, precision: 6 }),
+});
+
+export const giftTransactions = pgTable("gift_transactions", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	fromId: uuid("from_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	toId: uuid("to_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	giftId: text("gift_id").notNull(),
+	cost: integer("cost").notNull(),
+	creatorReceives: integer("creator_receives").notNull(),
+	context: text("context").notNull().default("profile"),
+	contextId: text("context_id"),
+	message: text("message"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const referrals = pgTable("referrals", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	referrerId: uuid("referrer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	refereeId: uuid("referee_id").references(() => users.id, { onDelete: "set null" }),
+	code: text("code").notNull(),
+	clicks: integer("clicks").notNull().default(0),
+	conversions: integer("conversions").notNull().default(0),
+	rewardDays: integer("reward_days").notNull().default(7),
+	rewardCoins: integer("reward_coins").notNull().default(100),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const vouchers = pgTable("vouchers", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	code: text("code").notNull().unique(),
+	discountPercent: integer("discount_percent"),
+	freeDays: integer("free_days"),
+	tier: text("tier"),
+	maxUses: integer("max_uses").notNull().default(100),
+	usedCount: integer("used_count").notNull().default(0),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull(),
+	createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const polls = pgTable("polls", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	messageId: uuid("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+	conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	question: text("question").notNull(),
+	options: jsonb("options").notNull(),
+	totalVotes: integer("total_votes").notNull().default(0),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull(),
+	createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const spotlights = pgTable("spotlights", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	startsAt: timestamp("starts_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	endsAt: timestamp("ends_at", { withTimezone: true, precision: 6 }).notNull(),
+	active: boolean("active").notNull().default(true),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const savedSearches = pgTable("saved_searches", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	name: text("name").notNull(),
+	filters: jsonb("filters").notNull(),
+	alertsEnabled: boolean("alerts_enabled").notNull().default(false),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const chatThemes = pgTable(
+	"chat_themes",
+	{
+		conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+		userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+		background: text("background"),
+		bubbleColor: text("bubble_color"),
+		wallpaper: text("wallpaper"),
+		updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	},
+	(table) => [primaryKey({ columns: [table.conversationId, table.userId] })],
+);
+
+export const appeals = pgTable("appeals", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	targetType: text("target_type").notNull(),
+	targetId: text("target_id").notNull(),
+	reason: text("reason").notNull(),
+	status: text("status").notNull().default("pending"),
+	reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+	reviewedAt: timestamp("reviewed_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const emergencyContacts = pgTable("emergency_contacts", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	name: text("name").notNull(),
+	phone: text("phone").notNull(),
+	relationship: text("relationship").notNull(),
+	isPrimary: boolean("is_primary").notNull().default(false),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const dataExports = pgTable("data_exports", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	includes: jsonb("includes").notNull().default(sql`'[]'::jsonb`),
+	status: text("status").notNull().default("pending"),
+	downloadUrl: text("download_url"),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }),
+	requestedAt: timestamp("requested_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	completedAt: timestamp("completed_at", { withTimezone: true, precision: 6 }),
+});
+
+export const rouletteSessions = pgTable("roulette_sessions", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	status: text("status").notNull().default("waiting"),
+	matchedWith: uuid("matched_with").references(() => users.id, { onDelete: "set null" }),
+	startedAt: timestamp("started_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	matchedAt: timestamp("matched_at", { withTimezone: true, precision: 6 }),
+	endedAt: timestamp("ended_at", { withTimezone: true, precision: 6 }),
+});
+
+/* --------------------------- divine complete (0028) -------------------------- */
+
+export const userAppConfigs = pgTable("user_app_configs", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+	discreetIcon: text("discreet_icon").notNull().default("default"),
+	discreetEnabled: boolean("discreet_enabled").notNull().default(false),
+	appLockEnabled: boolean("app_lock_enabled").notNull().default(false),
+	appLockPinHash: text("app_lock_pin_hash"),
+	appLockBiometric: boolean("app_lock_biometric").notNull().default(false),
+	appLockTimeoutSec: integer("app_lock_timeout_sec").notNull().default(60),
+	pauseMode: jsonb("pause_mode"),
+	widgetConfig: jsonb("widget_config").notNull().default(sql`'{"enabled":true}'::jsonb`),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const multiAccountTokens = pgTable("multi_account_tokens", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	ownerUserId: uuid("owner_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	accountId: uuid("account_id").notNull(),
+	email: text("email").notNull(),
+	displayName: text("display_name").notNull(),
+	accessTokenHash: text("access_token_hash").notNull(),
+	refreshTokenHash: text("refresh_token_hash").notNull(),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull(),
+	lastUsedAt: timestamp("last_used_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const scheduledMessages = pgTable("scheduled_messages", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	senderId: uuid("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	type: text("type").notNull().default("text"),
+	body: text("body").notNull(),
+	scheduledAt: timestamp("scheduled_at", { withTimezone: true, precision: 6 }).notNull(),
+	status: text("status").notNull().default("scheduled"),
+	sentAt: timestamp("sent_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const wishlists = pgTable("wishlists", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	participantId: uuid("participant_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	title: text("title").notNull().default("Our Wishlist"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const wishlistItems = pgTable("wishlist_items", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	wishlistId: uuid("wishlist_id").notNull().references(() => wishlists.id, { onDelete: "cascade" }),
+	text: text("text").notNull(),
+	category: text("category").notNull().default("general"),
+	addedBy: uuid("added_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+	votes: jsonb("votes").notNull().default(sql`'[]'::jsonb`),
+	voteCount: integer("vote_count").notNull().default(0),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const hotPicsRequests = pgTable("hot_pics_requests", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	requesterId: uuid("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	status: text("status").notNull().default("pending"),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	resolvedAt: timestamp("resolved_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const photoScores = pgTable("photo_scores", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	url: text("url").notNull(),
+	quality: integer("quality").notNull(),
+	lighting: integer("lighting").notNull(),
+	blur: integer("blur").notNull(),
+	smile: integer("smile").notNull(),
+	background: integer("background").notNull(),
+	appeal: integer("appeal").notNull(),
+	issues: jsonb("issues").notNull().default(sql`'[]'::jsonb`),
+	suggestions: jsonb("suggestions").notNull().default(sql`'[]'::jsonb`),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const photoEnhancements = pgTable("photo_enhancements", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	originalUrl: text("original_url").notNull(),
+	enhancedUrl: text("enhanced_url"),
+	adjustments: jsonb("adjustments").notNull().default(sql`'{}'::jsonb`),
+	allowed: boolean("allowed").notNull().default(true),
+	blockedReason: text("blocked_reason"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const aiConversations = pgTable("ai_conversations", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+	type: text("type").notNull(),
+	input: jsonb("input").notNull(),
+	output: jsonb("output").notNull(),
+	model: text("model").notNull().default("heuristic"),
+	tokensUsed: integer("tokens_used").notNull().default(0),
+	latencyMs: integer("latency_ms").notNull().default(0),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const aiUsage = pgTable("ai_usage", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	feature: text("feature").notNull(),
+	count: integer("count").notNull().default(1),
+	date: date("date").notNull().defaultNow(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const aiSuggestions = pgTable("ai_suggestions", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
+	type: text("type").notNull(),
+	suggestions: jsonb("suggestions").notNull(),
+	selectedIndex: integer("selected_index"),
+	selectedAt: timestamp("selected_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const translationCache = pgTable("translation_cache", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	sourceText: text("source_text").notNull(),
+	sourceLang: text("source_lang").notNull(),
+	targetLang: text("target_lang").notNull(),
+	translatedText: text("translated_text").notNull(),
+	model: text("model").notNull().default("on_device"),
+	confidence: doublePrecision("confidence").notNull().default(0.8),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const payPerReadUnlocks = pgTable("pay_per_read_unlocks", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	messageId: uuid("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+	cost: integer("cost").notNull(),
+	unlockedAt: timestamp("unlocked_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const chatPinned = pgTable("chat_pinned", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	messageId: uuid("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+	pinnedBy: uuid("pinned_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+	pinnedAt: timestamp("pinned_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const chatEphemeralSettings = pgTable("chat_ephemeral_settings", {
+	conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	durationSec: integer("duration_sec").notNull().default(0),
+	enabled: boolean("enabled").notNull().default(false),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.conversationId, t.userId] })]);
+
+export const screenshotLogs = pgTable("screenshot_logs", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	reporterId: uuid("reporter_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	detectedAt: timestamp("detected_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	platform: text("platform").notNull().default("unknown"),
+});
+
+export const groupRoles = pgTable("group_roles", {
+	groupId: uuid("group_id").notNull(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	role: text("role").notNull().default("member"),
+	grantedBy: uuid("granted_by").references(() => users.id, { onDelete: "set null" }),
+	grantedAt: timestamp("granted_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+}, (t) => [primaryKey({ columns: [t.groupId, t.userId] })]);
+
+export const groupBroadcasts = pgTable("group_broadcasts", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	groupId: uuid("group_id").notNull(),
+	authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	body: text("body").notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const rewardedChatGrants = pgTable("rewarded_chat_grants", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	conversationId: uuid("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	grantedAt: timestamp("granted_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	source: text("source").notNull().default("ad"),
+	used: boolean("used").notNull().default(false),
+});
+
+export const speedDatingEvents = pgTable("speed_dating_events", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	title: text("title").notNull(),
+	startsAt: timestamp("starts_at", { withTimezone: true, precision: 6 }).notNull(),
+	endsAt: timestamp("ends_at", { withTimezone: true, precision: 6 }).notNull(),
+	maxParticipants: integer("max_participants").notNull().default(20),
+	roundDurationSec: integer("round_duration_sec").notNull().default(180),
+	status: text("status").notNull().default("scheduled"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const speedDatingParticipants = pgTable("speed_dating_participants", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	eventId: uuid("event_id").notNull().references(() => speedDatingEvents.id, { onDelete: "cascade" }),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	round: integer("round").notNull().default(1),
+	matchedWith: uuid("matched_with").references(() => users.id, { onDelete: "set null" }),
+	status: text("status").notNull().default("waiting"),
+	joinedAt: timestamp("joined_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const calendarSync = pgTable("calendar_sync", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+	provider: text("provider").notNull().default("none"),
+	enabled: boolean("enabled").notNull().default(false),
+	lastSyncedAt: timestamp("last_synced_at", { withTimezone: true, precision: 6 }),
+	freeSlots: jsonb("free_slots").notNull().default(sql`'[]'::jsonb`),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const calendarEvents = pgTable("calendar_events", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	title: text("title").notNull(),
+	startsAt: timestamp("starts_at", { withTimezone: true, precision: 6 }).notNull(),
+	endsAt: timestamp("ends_at", { withTimezone: true, precision: 6 }).notNull(),
+	location: text("location"),
+	isPrivate: boolean("is_private").notNull().default(false),
+	source: text("source").notNull().default("manual"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const profileStats = pgTable("profile_stats", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+	viewsTotal: integer("views_total").notNull().default(0),
+	viewsUnique: integer("views_unique").notNull().default(0),
+	likesSent: integer("likes_sent").notNull().default(0),
+	likesReceived: integer("likes_received").notNull().default(0),
+	matchesTotal: integer("matches_total").notNull().default(0),
+	messagesSent: integer("messages_sent").notNull().default(0),
+	messagesReceived: integer("messages_received").notNull().default(0),
+	replyRate: doublePrecision("reply_rate").notNull().default(0),
+	bestPhotoUrl: text("best_photo_url"),
+	bestReplyHour: integer("best_reply_hour"),
+	updatedAt: timestamp("updated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const profileAnalyticsEvents = pgTable("profile_analytics_events", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	eventType: text("event_type").notNull(),
+	actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+	metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const consumablesCatalog = pgTable("consumables_catalog", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	sku: text("sku").notNull().unique(),
+	name: text("name").notNull(),
+	description: text("description"),
+	priceCoins: integer("price_coins").notNull(),
+	priceUsdCents: integer("price_usd_cents"),
+	type: text("type").notNull(),
+	quantity: integer("quantity").notNull().default(1),
+	active: boolean("active").notNull().default(true),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const promoCodes = pgTable("promo_codes", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	code: text("code").notNull().unique(),
+	discountPercent: integer("discount_percent"),
+	freeDays: integer("free_days"),
+	freeCoins: integer("free_coins"),
+	tier: text("tier"),
+	maxUses: integer("max_uses").notNull().default(100),
+	usedCount: integer("used_count").notNull().default(0),
+	minTier: text("min_tier"),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull(),
+	createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const promoRedemptions = pgTable("promo_redemptions", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	promoId: uuid("promo_id").notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	redeemedAt: timestamp("redeemed_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const engagementNudges = pgTable("engagement_nudges", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	type: text("type").notNull(),
+	title: text("title").notNull(),
+	body: text("body").notNull(),
+	href: text("href"),
+	sentAt: timestamp("sent_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	openedAt: timestamp("opened_at", { withTimezone: true, precision: 6 }),
+	clickedAt: timestamp("clicked_at", { withTimezone: true, precision: 6 }),
+});
+
+export const reengagementCampaigns = pgTable("reengagement_campaigns", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	name: text("name").notNull(),
+	type: text("type").notNull(),
+	targetFilter: jsonb("target_filter").notNull().default(sql`'{}'::jsonb`),
+	content: jsonb("content").notNull(),
+	startsAt: timestamp("starts_at", { withTimezone: true, precision: 6 }).notNull(),
+	endsAt: timestamp("ends_at", { withTimezone: true, precision: 6 }).notNull(),
+	active: boolean("active").notNull().default(true),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const analyticsFunnel = pgTable("analytics_funnel", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	step: text("step").notNull(),
+	reachedAt: timestamp("reached_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
+});
+
+export const gridPresets = pgTable("grid_presets", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	name: text("name").notNull(),
+	filters: jsonb("filters").notNull(),
+	isQuick: boolean("is_quick").notNull().default(false),
+	icon: text("icon"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const compatibilityScores = pgTable("compatibility_scores", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userA: uuid("user_a").notNull().references(() => users.id, { onDelete: "cascade" }),
+	userB: uuid("user_b").notNull().references(() => users.id, { onDelete: "cascade" }),
+	score: integer("score").notNull(),
+	dimensions: jsonb("dimensions").notNull().default(sql`'{}'::jsonb`),
+	calculatedAt: timestamp("calculated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const secretAdmirers = pgTable("secret_admirers", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	admirerId: uuid("admirer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	admiredId: uuid("admired_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	revealed: boolean("revealed").notNull().default(false),
+	revealedAt: timestamp("revealed_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const emergencyShares = pgTable("emergency_shares", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	contactId: uuid("contact_id").notNull().references(() => emergencyContacts.id, { onDelete: "cascade" }),
+	lat: doublePrecision("lat").notNull(),
+	lng: doublePrecision("lng").notNull(),
+	place: text("place"),
+	message: text("message"),
+	sharedAt: timestamp("shared_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const deletionRequests = pgTable("deletion_requests", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+	reason: text("reason"),
+	status: text("status").notNull().default("pending"),
+	graceEndsAt: timestamp("grace_ends_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	requestedAt: timestamp("requested_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	deletedAt: timestamp("deleted_at", { withTimezone: true, precision: 6 }),
+});
+
+export const rateLimitLogs = pgTable("rate_limit_logs", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+	ip: text("ip"),
+	endpoint: text("endpoint").notNull(),
+	count: integer("count").notNull().default(1),
+	windowStart: timestamp("window_start", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	blocked: boolean("blocked").notNull().default(false),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const backupExports = pgTable("backup_exports", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	type: text("type").notNull().default("full"),
+	encrypted: boolean("encrypted").notNull().default(true),
+	sizeBytes: integer("size_bytes"),
+	status: text("status").notNull().default("pending"),
+	downloadUrl: text("download_url"),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const offlineQueue = pgTable("offline_queue", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	action: text("action").notNull(),
+	payload: jsonb("payload").notNull(),
+	attempts: integer("attempts").notNull().default(0),
+	status: text("status").notNull().default("pending"),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	processedAt: timestamp("processed_at", { withTimezone: true, precision: 6 }),
+});
+
+export const privacyReports = pgTable("privacy_reports", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	periodFrom: date("period_from").notNull(),
+	periodTo: date("period_to").notNull(),
+	profileViews: integer("profile_views").notNull().default(0),
+	uniqueViewers: integer("unique_viewers").notNull().default(0),
+	blockedCount: integer("blocked_count").notNull().default(0),
+	dataUsage: jsonb("data_usage").notNull().default(sql`'{}'::jsonb`),
+	activity: jsonb("activity").notNull().default(sql`'{}'::jsonb`),
+	generatedAt: timestamp("generated_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+/* --------------------------- routing optimisation (0029) ------------------- */
+
+export const otpCodes = pgTable("otp_codes", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	phone: text("phone").notNull(),
+	country: text("country").notNull().default("+1"),
+	codeHash: text("code_hash").notNull(),
+	attempts: integer("attempts").notNull().default(0),
+	verified: boolean("verified").notNull().default(false),
+	expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	verifiedAt: timestamp("verified_at", { withTimezone: true, precision: 6 }),
+});
+
+export const routingMetrics = pgTable("routing_metrics", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	route: text("route").notNull(),
+	method: text("method").notNull(),
+	p50Ms: doublePrecision("p50_ms").notNull().default(0),
+	p95Ms: doublePrecision("p95_ms").notNull().default(0),
+	p99Ms: doublePrecision("p99_ms").notNull().default(0),
+	bundleKb: doublePrecision("bundle_kb").notNull().default(0),
+	codeLines: integer("code_lines").notNull().default(0),
+	duplicationScore: doublePrecision("duplication_score").notNull().default(0),
+	status: text("status").notNull().default("pass"),
+	measuredAt: timestamp("measured_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const routeDeduplication = pgTable("route_deduplication", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	originalRoute: text("original_route").notNull(),
+	canonicalRoute: text("canonical_route").notNull(),
+	reason: text("reason").notNull(),
+	savingsKb: doublePrecision("savings_kb").notNull().default(0),
+	savingsLines: integer("savings_lines").notNull().default(0),
+	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const bundleOptimisation = pgTable("bundle_optimisation", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	bundleName: text("bundle_name").notNull(),
+	currentKb: doublePrecision("current_kb").notNull(),
+	targetKb: doublePrecision("target_kb").notNull(),
+	criticalKb: doublePrecision("critical_kb").notNull(),
+	lazyKb: doublePrecision("lazy_kb").notNull(),
+	ultraLazyKb: doublePrecision("ultra_lazy_kb").notNull(),
+	savingsKb: doublePrecision("savings_kb").notNull(),
+	savingsPercent: doublePrecision("savings_percent").notNull(),
+	strategy: text("strategy").notNull(),
+	measuredAt: timestamp("measured_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+

@@ -83,6 +83,9 @@ verify_jwt = false
 [functions.cron-cleanup]
 verify_jwt = false
 
+[functions.divine-complete]
+verify_jwt = false
+
 [extensions]
 pgvector = { enabled = true, schema = "extensions" }
 pgcrypto = { enabled = true, schema = "extensions" }

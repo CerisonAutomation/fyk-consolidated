@@ -100,3 +100,17 @@ export {
   type VibeResult,
   type VibeUser,
 } from "./vibe-infer";
+
+export * from "./auto-reply";
+export * from "./context-replies";
+export * from "./date-planner";
+export * from "./rizz-meter";
+export * from "./escalation-coach";
+export * from "./best-time";
+export * from "./trust-safety";
+export * from "./catfish-detect";
+export * from "./photo-enhance";
+export * from "./translation-realtime";
+export * from "./autocomplete";
+export * from "./meme-suggest";
+export * from "./voice-note";
