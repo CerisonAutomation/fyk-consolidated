@@ -1,45 +1,97 @@
 /**
- * Ports — Service interfaces, hexagonal architecture
+ * Service Ports — Hexagonal Architecture
+ * Interfaces for external services, implemented by adapters
  */
 
-export interface AuthService {
-  verifyToken(token: string): Promise<{ userId: string; email?: string } | null>;
-  getCaller(request: Request): Promise<{ id: string; email?: string } | null>;
+// Geocoding Service Port (Romeo: travel, Grindr: Explore)
+export interface GeocodingService {
+  geocode(address: string): Promise<{ lat: number; lng: number; city: string | null; country: string | null } | null>;
+  reverseGeocode(lat: number, lng: number): Promise<{ city: string | null; country: string | null; address: string | null } | null>;
+  getGeohash(lat: number, lng: number, precision: number): string;
+  getDistance(lat1: number, lng1: number, lat2: number, lng2: number): number; // meters
 }
 
-export interface SmsService {
-  send(to: string, body: string): Promise<{ ok: boolean; id?: string; error?: string }>;
+// Translation Service Port (Grindr: chat translation, on-device)
+export interface TranslationService {
+  translate(text: string, from: string, to: string): Promise<string>;
+  detectLanguage(text: string): Promise<string>;
+  getSupportedLanguages(): Promise<string[]>;
+  translateBatch(texts: string[], from: string, to: string): Promise<string[]>;
 }
 
+// Push Notification Service Port
 export interface PushService {
-  send(userId: string, title: string, body: string, data?: Record<string, unknown>): Promise<{ ok: boolean }>;
+  send(userId: string, title: string, body: string, data?: Record<string, unknown>): Promise<void>;
+  sendBulk(userIds: string[], title: string, body: string, data?: Record<string, unknown>): Promise<void>;
+  subscribe(userId: string, subscription: PushSubscription): Promise<void>;
+  unsubscribe(userId: string, endpoint: string): Promise<void>;
 }
 
+// SMS Service Port (Emergency share)
+export interface SMSService {
+  send(to: string, message: string): Promise<{ id: string; status: string }>;
+  sendLocation(to: string, lat: number, lng: number, place: string | null, message: string | null, expiresAt: Date): Promise<{ id: string }>;
+}
+
+// Email Service Port
+export interface EmailService {
+  send(to: string, subject: string, html: string, text?: string): Promise<void>;
+  sendVerification(to: string, code: string): Promise<void>;
+  sendPasswordReset(to: string, token: string): Promise<void>;
+}
+
+// Storage Service Port (Photos, private albums)
 export interface StorageService {
-  upload(bucket: string, path: string, file: Uint8Array, contentType: string): Promise<{ url: string }>;
-  delete(bucket: string, path: string): Promise<void>;
-  getSignedUrl(bucket: string, path: string, expiresInSec: number): Promise<string>;
-}
-
-export interface AIService {
-  generate(type: string, input: unknown): Promise<{ output: unknown; tokensUsed: number; latencyMs: number }>;
-  translate(text: string, targetLang: string): Promise<{ translated: string; sourceLang: string }>;
-  scorePhoto(url: string): Promise<{ quality: number; appeal: number; issues: string[] }>;
-}
-
-export interface RateLimitService {
-  check(key: string, limit: number, windowMs: number): Promise<{ allowed: boolean; remaining: number; resetAt: number }>;
-  block(key: string, reason: string): Promise<void>;
-}
-
-export interface CacheService {
-  get<T>(key: string): Promise<T | null>;
-  set<T>(key: string, value: T, ttlSec: number): Promise<void>;
+  upload(file: File | Buffer, path: string, options?: { private?: boolean; expiring?: boolean; expiresAt?: Date }): Promise<{ url: string; key: string }>;
   delete(key: string): Promise<void>;
+  getUrl(key: string, expiresIn?: number): Promise<string>;
+  createPrivateAlbum(userId: string, name: string): Promise<{ id: string }>;
+  addToAlbum(albumId: string, photoKey: string): Promise<void>;
+  grantAlbumAccess(albumId: string, userId: string, expiresAt?: Date): Promise<void>;
 }
 
-export interface LoggerService {
-  info(message: string, meta?: Record<string, unknown>): void;
-  warn(message: string, meta?: Record<string, unknown>): void;
-  error(message: string, error?: unknown, meta?: Record<string, unknown>): void;
+// AI Service Port (Rizz, photo enhance, compatibility)
+export interface AIService {
+  generateText(prompt: string, options?: { maxTokens?: number; temperature?: number }): Promise<string>;
+  analyzeImage(imageUrl: string): Promise<{ quality: number; lighting: number; blur: number; smile: number; background: number; appeal: number; safe: boolean }>;
+  enhanceImage(imageUrl: string, options?: { fixLighting?: boolean; fixBlur?: boolean }): Promise<{ enhancedUrl: string; scores: Record<string, number> }>;
+  detectCatfish(photoUrl: string, referencePhotos: string[]): Promise<{ isCatfish: boolean; confidence: number; reason: string | null }>;
+  generateIcebreaker(profile: unknown, vibe: string): Promise<string[]>;
+  scoreRizz(message: string, context: string[]): Promise<{ score: number; feedback: string }>;
+}
+
+// Verification Service Port (MachoBB: selfie verification, Grindr: verification badge)
+export interface VerificationService {
+  requestVerification(userId: string, photos: string[]): Promise<{ id: string; status: string }>;
+  verifySelfie(userId: string, selfieUrl: string): Promise<{ verified: boolean; confidence: number }>;
+  getVerificationStatus(userId: string): Promise<{ status: string; verifiedAt: Date | null }>;
+}
+
+// Moderation Service Port
+export interface ModerationService {
+  moderateText(text: string): Promise<{ safe: boolean; categories: string[]; score: number }>;
+  moderateImage(imageUrl: string): Promise<{ safe: boolean; categories: string[]; score: number }>;
+  reportContent(reporterId: string, targetId: string, reason: string, details?: string): Promise<{ id: string }>;
+  blockUser(userId: string, blockedId: string, reason?: string): Promise<void>;
+}
+
+// Analytics Service Port
+export interface AnalyticsService {
+  track(event: string, properties?: Record<string, unknown>, userId?: string): Promise<void>;
+  trackScreen(screen: string, userId?: string): Promise<void>;
+  identify(userId: string, traits?: Record<string, unknown>): Promise<void>;
+}
+
+// Combined Services Port
+export interface Services {
+  geocoding: GeocodingService;
+  translation: TranslationService;
+  push: PushService;
+  sms: SMSService;
+  email: EmailService;
+  storage: StorageService;
+  ai: AIService;
+  verification: VerificationService;
+  moderation: ModerationService;
+  analytics: AnalyticsService;
 }
