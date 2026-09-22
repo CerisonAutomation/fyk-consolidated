@@ -1,0 +1,1 @@
+export { useHaptics } from "./prd-hooks";

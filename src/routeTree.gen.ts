@@ -16,8 +16,11 @@ import { Route as AgendaIndexRouteImport } from './routes/agenda/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
 import { Route as BlindDateIndexRouteImport } from './routes/blind-date/index'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
+import { Route as BoostIndexRouteImport } from './routes/boost/index'
 import { Route as CalendarIndexRouteImport } from './routes/calendar/index'
 import { Route as ChatIndexRouteImport } from './routes/chat/index'
+import { Route as CirclesIndexRouteImport } from './routes/circles/index'
+import { Route as CommunityChallengesIndexRouteImport } from './routes/community-challenges/index'
 import { Route as DiscoverMapRouteImport } from './routes/discover/map'
 import { Route as DumpRifyIndexRouteImport } from './routes/dump-rify/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
@@ -25,7 +28,9 @@ import { Route as EventsEventIdRouteImport } from './routes/events/$eventId'
 import { Route as EventsCreateRouteImport } from './routes/events/create'
 import { Route as FansitesIndexRouteImport } from './routes/fansites/index'
 import { Route as FaqIndexRouteImport } from './routes/faq/index'
+import { Route as FavoritesIndexRouteImport } from './routes/favorites/index'
 import { Route as FiltersIndexRouteImport } from './routes/filters/index'
+import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as GamechangersIndexRouteImport } from './routes/gamechangers/index'
 import { Route as GridIndexRouteImport } from './routes/grid/index'
 import { Route as GroupsIndexRouteImport } from './routes/groups/index'
@@ -37,16 +42,21 @@ import { Route as ImageViewerIndexRouteImport } from './routes/image-viewer/inde
 import { Route as InterestedInMeIndexRouteImport } from './routes/interested-in-me/index'
 import { Route as KingPetIndexRouteImport } from './routes/king-pet/index'
 import { Route as LegalIndexRouteImport } from './routes/legal/index'
+import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as MeetnowIndexRouteImport } from './routes/meetnow/index'
 import { Route as NotificationsIndexRouteImport } from './routes/notifications/index'
 import { Route as OfflineIndexRouteImport } from './routes/offline/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as PaywallIndexRouteImport } from './routes/paywall/index'
+import { Route as PhoneLoginIndexRouteImport } from './routes/phone-login/index'
+import { Route as PhotoEditorIndexRouteImport } from './routes/photo-editor/index'
 import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as PremiumIndexRouteImport } from './routes/premium/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as ReportUserIndexRouteImport } from './routes/report-user/index'
 import { Route as RightNowIndexRouteImport } from './routes/right-now/index'
 import { Route as SafetyIndexRouteImport } from './routes/safety/index'
+import { Route as SearchInboxIndexRouteImport } from './routes/search-inbox/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ShoutsIndexRouteImport } from './routes/shouts/index'
 import { Route as ShoutsShoutIdRouteImport } from './routes/shouts/$shoutId'
@@ -56,7 +66,9 @@ import { Route as StoriesStoryIdRouteImport } from './routes/stories/$storyId'
 import { Route as TribesIndexRouteImport } from './routes/tribes/index'
 import { Route as VerifyIndexRouteImport } from './routes/verify/index'
 import { Route as VideoDatesIndexRouteImport } from './routes/video-dates/index'
+import { Route as VideoRouletteIndexRouteImport } from './routes/video-roulette/index'
 import { Route as VouchesIndexRouteImport } from './routes/vouches/index'
+import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
 import { Route as WhoViewedMeIndexRouteImport } from './routes/who-viewed-me/index'
 import { Route as AiPhotoEnhanceIndexRouteImport } from './routes/ai/photo-enhance/index'
 import { Route as AiPhotoRankerIndexRouteImport } from './routes/ai/photo-ranker/index'
@@ -106,23 +118,38 @@ import { Route as ProfileProfileIdIndexRouteImport } from './routes/profile/$pro
 import { Route as ProfileInsightsIndexRouteImport } from './routes/profile/insights/index'
 import { Route as SafetyEmergencyContactIndexRouteImport } from './routes/safety/emergency-contact/index'
 import { Route as SafetyEmergencyIndexRouteImport } from './routes/safety/emergency/index'
+import { Route as SettingsAccessibilityIndexRouteImport } from './routes/settings/accessibility/index'
 import { Route as SettingsAccountSettingsIndexRouteImport } from './routes/settings/account-settings/index'
 import { Route as SettingsAccountIndexRouteImport } from './routes/settings/account/index'
 import { Route as SettingsAiTogglesIndexRouteImport } from './routes/settings/ai-toggles/index'
 import { Route as SettingsAppConfigIndexRouteImport } from './routes/settings/app-config/index'
 import { Route as SettingsAppIndexRouteImport } from './routes/settings/app/index'
+import { Route as SettingsBackupRestoreIndexRouteImport } from './routes/settings/backup-restore/index'
 import { Route as SettingsBlockedUsersIndexRouteImport } from './routes/settings/blocked-users/index'
 import { Route as SettingsBlockedIndexRouteImport } from './routes/settings/blocked/index'
+import { Route as SettingsChangePasswordIndexRouteImport } from './routes/settings/change-password/index'
+import { Route as SettingsDataExportIndexRouteImport } from './routes/settings/data-export/index'
 import { Route as SettingsDataIndexRouteImport } from './routes/settings/data/index'
+import { Route as SettingsDeactivateIndexRouteImport } from './routes/settings/deactivate/index'
 import { Route as SettingsDeletionIndexRouteImport } from './routes/settings/deletion/index'
+import { Route as SettingsDiscreetIconIndexRouteImport } from './routes/settings/discreet-icon/index'
+import { Route as SettingsDndIndexRouteImport } from './routes/settings/dnd/index'
 import { Route as SettingsExportIndexRouteImport } from './routes/settings/export/index'
 import { Route as SettingsHiddenIndexRouteImport } from './routes/settings/hidden/index'
+import { Route as SettingsLanguageIndexRouteImport } from './routes/settings/language/index'
+import { Route as SettingsLocationIndexRouteImport } from './routes/settings/location/index'
+import { Route as SettingsMediaIndexRouteImport } from './routes/settings/media/index'
 import { Route as SettingsMultiAccountIndexRouteImport } from './routes/settings/multi-account/index'
+import { Route as SettingsNotificationsIndexRouteImport } from './routes/settings/notifications/index'
+import { Route as SettingsPermissionsIndexRouteImport } from './routes/settings/permissions/index'
+import { Route as SettingsPinLockIndexRouteImport } from './routes/settings/pin-lock/index'
 import { Route as SettingsPrivacyReportIndexRouteImport } from './routes/settings/privacy-report/index'
 import { Route as SettingsPrivacyIndexRouteImport } from './routes/settings/privacy/index'
 import { Route as SettingsProfileIndexRouteImport } from './routes/settings/profile/index'
 import { Route as SettingsStatsIndexRouteImport } from './routes/settings/stats/index'
 import { Route as SettingsSubscriptionIndexRouteImport } from './routes/settings/subscription/index'
+import { Route as SettingsTwoFactorIndexRouteImport } from './routes/settings/two-factor/index'
+import { Route as VerifyPhotoIndexRouteImport } from './routes/verify/photo/index'
 import { Route as ApiAdminKpisIndexRouteImport } from './routes/api/admin/kpis/index'
 import { Route as ApiAdminModerationIndexRouteImport } from './routes/api/admin/moderation/index'
 import { Route as ApiAiAutoReplyIndexRouteImport } from './routes/api/ai/auto-reply/index'
@@ -252,6 +279,11 @@ const BoardIndexRoute = BoardIndexRouteImport.update({
   path: '/board/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BoostIndexRoute = BoostIndexRouteImport.update({
+  id: '/boost/',
+  path: '/boost/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CalendarIndexRoute = CalendarIndexRouteImport.update({
   id: '/calendar/',
   path: '/calendar/',
@@ -262,6 +294,17 @@ const ChatIndexRoute = ChatIndexRouteImport.update({
   path: '/chat/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CirclesIndexRoute = CirclesIndexRouteImport.update({
+  id: '/circles/',
+  path: '/circles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityChallengesIndexRoute =
+  CommunityChallengesIndexRouteImport.update({
+    id: '/community-challenges/',
+    path: '/community-challenges/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DiscoverMapRoute = DiscoverMapRouteImport.update({
   id: '/map',
   path: '/map',
@@ -297,9 +340,19 @@ const FaqIndexRoute = FaqIndexRouteImport.update({
   path: '/faq/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FavoritesIndexRoute = FavoritesIndexRouteImport.update({
+  id: '/favorites/',
+  path: '/favorites/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FiltersIndexRoute = FiltersIndexRouteImport.update({
   id: '/filters/',
   path: '/filters/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
+  id: '/forgot-password/',
+  path: '/forgot-password/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamechangersIndexRoute = GamechangersIndexRouteImport.update({
@@ -357,6 +410,11 @@ const LegalIndexRoute = LegalIndexRouteImport.update({
   path: '/legal/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeetnowIndexRoute = MeetnowIndexRouteImport.update({
   id: '/meetnow/',
   path: '/meetnow/',
@@ -382,6 +440,16 @@ const PaywallIndexRoute = PaywallIndexRouteImport.update({
   path: '/paywall/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PhoneLoginIndexRoute = PhoneLoginIndexRouteImport.update({
+  id: '/phone-login/',
+  path: '/phone-login/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PhotoEditorIndexRoute = PhotoEditorIndexRouteImport.update({
+  id: '/photo-editor/',
+  path: '/photo-editor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlatformIndexRoute = PlatformIndexRouteImport.update({
   id: '/platform/',
   path: '/platform/',
@@ -397,6 +465,11 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportUserIndexRoute = ReportUserIndexRouteImport.update({
+  id: '/report-user/',
+  path: '/report-user/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RightNowIndexRoute = RightNowIndexRouteImport.update({
   id: '/right-now/',
   path: '/right-now/',
@@ -405,6 +478,11 @@ const RightNowIndexRoute = RightNowIndexRouteImport.update({
 const SafetyIndexRoute = SafetyIndexRouteImport.update({
   id: '/safety/',
   path: '/safety/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchInboxIndexRoute = SearchInboxIndexRouteImport.update({
+  id: '/search-inbox/',
+  path: '/search-inbox/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -452,9 +530,19 @@ const VideoDatesIndexRoute = VideoDatesIndexRouteImport.update({
   path: '/video-dates/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VideoRouletteIndexRoute = VideoRouletteIndexRouteImport.update({
+  id: '/video-roulette/',
+  path: '/video-roulette/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VouchesIndexRoute = VouchesIndexRouteImport.update({
   id: '/vouches/',
   path: '/vouches/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
+  id: '/welcome/',
+  path: '/welcome/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WhoViewedMeIndexRoute = WhoViewedMeIndexRouteImport.update({
@@ -706,6 +794,12 @@ const SafetyEmergencyIndexRoute = SafetyEmergencyIndexRouteImport.update({
   path: '/safety/emergency/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAccessibilityIndexRoute =
+  SettingsAccessibilityIndexRouteImport.update({
+    id: '/settings/accessibility/',
+    path: '/settings/accessibility/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SettingsAccountSettingsIndexRoute =
   SettingsAccountSettingsIndexRouteImport.update({
     id: '/settings/account-settings/',
@@ -732,6 +826,12 @@ const SettingsAppIndexRoute = SettingsAppIndexRouteImport.update({
   path: '/settings/app/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsBackupRestoreIndexRoute =
+  SettingsBackupRestoreIndexRouteImport.update({
+    id: '/settings/backup-restore/',
+    path: '/settings/backup-restore/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SettingsBlockedUsersIndexRoute =
   SettingsBlockedUsersIndexRouteImport.update({
     id: '/settings/blocked-users/',
@@ -743,14 +843,41 @@ const SettingsBlockedIndexRoute = SettingsBlockedIndexRouteImport.update({
   path: '/settings/blocked/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsChangePasswordIndexRoute =
+  SettingsChangePasswordIndexRouteImport.update({
+    id: '/settings/change-password/',
+    path: '/settings/change-password/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsDataExportIndexRoute = SettingsDataExportIndexRouteImport.update({
+  id: '/settings/data-export/',
+  path: '/settings/data-export/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsDataIndexRoute = SettingsDataIndexRouteImport.update({
   id: '/settings/data/',
   path: '/settings/data/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsDeactivateIndexRoute = SettingsDeactivateIndexRouteImport.update({
+  id: '/settings/deactivate/',
+  path: '/settings/deactivate/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsDeletionIndexRoute = SettingsDeletionIndexRouteImport.update({
   id: '/settings/deletion/',
   path: '/settings/deletion/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsDiscreetIconIndexRoute =
+  SettingsDiscreetIconIndexRouteImport.update({
+    id: '/settings/discreet-icon/',
+    path: '/settings/discreet-icon/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsDndIndexRoute = SettingsDndIndexRouteImport.update({
+  id: '/settings/dnd/',
+  path: '/settings/dnd/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsExportIndexRoute = SettingsExportIndexRouteImport.update({
@@ -763,12 +890,44 @@ const SettingsHiddenIndexRoute = SettingsHiddenIndexRouteImport.update({
   path: '/settings/hidden/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsLanguageIndexRoute = SettingsLanguageIndexRouteImport.update({
+  id: '/settings/language/',
+  path: '/settings/language/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsLocationIndexRoute = SettingsLocationIndexRouteImport.update({
+  id: '/settings/location/',
+  path: '/settings/location/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsMediaIndexRoute = SettingsMediaIndexRouteImport.update({
+  id: '/settings/media/',
+  path: '/settings/media/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsMultiAccountIndexRoute =
   SettingsMultiAccountIndexRouteImport.update({
     id: '/settings/multi-account/',
     path: '/settings/multi-account/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SettingsNotificationsIndexRoute =
+  SettingsNotificationsIndexRouteImport.update({
+    id: '/settings/notifications/',
+    path: '/settings/notifications/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsPermissionsIndexRoute =
+  SettingsPermissionsIndexRouteImport.update({
+    id: '/settings/permissions/',
+    path: '/settings/permissions/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsPinLockIndexRoute = SettingsPinLockIndexRouteImport.update({
+  id: '/settings/pin-lock/',
+  path: '/settings/pin-lock/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsPrivacyReportIndexRoute =
   SettingsPrivacyReportIndexRouteImport.update({
     id: '/settings/privacy-report/',
@@ -796,6 +955,16 @@ const SettingsSubscriptionIndexRoute =
     path: '/settings/subscription/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SettingsTwoFactorIndexRoute = SettingsTwoFactorIndexRouteImport.update({
+  id: '/settings/two-factor/',
+  path: '/settings/two-factor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyPhotoIndexRoute = VerifyPhotoIndexRouteImport.update({
+  id: '/verify/photo/',
+  path: '/verify/photo/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminKpisIndexRoute = ApiAdminKpisIndexRouteImport.update({
   id: '/api/admin/kpis/',
   path: '/api/admin/kpis/',
@@ -1309,13 +1478,18 @@ export interface FileRoutesByFullPath {
   '/agenda/': typeof AgendaIndexRoute
   '/blind-date/': typeof BlindDateIndexRoute
   '/board/': typeof BoardIndexRoute
+  '/boost/': typeof BoostIndexRoute
   '/calendar/': typeof CalendarIndexRoute
   '/chat/': typeof ChatIndexRoute
+  '/circles/': typeof CirclesIndexRoute
+  '/community-challenges/': typeof CommunityChallengesIndexRoute
   '/dump-rify/': typeof DumpRifyIndexRoute
   '/events/': typeof EventsIndexRoute
   '/fansites/': typeof FansitesIndexRoute
   '/faq/': typeof FaqIndexRoute
+  '/favorites/': typeof FavoritesIndexRoute
   '/filters/': typeof FiltersIndexRoute
+  '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/gamechangers/': typeof GamechangersIndexRoute
   '/grid/': typeof GridIndexRoute
   '/groups/': typeof GroupsIndexRoute
@@ -1325,23 +1499,30 @@ export interface FileRoutesByFullPath {
   '/interested-in-me/': typeof InterestedInMeIndexRoute
   '/king-pet/': typeof KingPetIndexRoute
   '/legal/': typeof LegalIndexRoute
+  '/login/': typeof LoginIndexRoute
   '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
   '/offline/': typeof OfflineIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/paywall/': typeof PaywallIndexRoute
+  '/phone-login/': typeof PhoneLoginIndexRoute
+  '/photo-editor/': typeof PhotoEditorIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/premium/': typeof PremiumIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/report-user/': typeof ReportUserIndexRoute
   '/right-now/': typeof RightNowIndexRoute
   '/safety/': typeof SafetyIndexRoute
+  '/search-inbox/': typeof SearchInboxIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/shouts/': typeof ShoutsIndexRoute
   '/speed-dating/': typeof SpeedDatingIndexRoute
   '/tribes/': typeof TribesIndexRoute
   '/verify/': typeof VerifyIndexRoute
   '/video-dates/': typeof VideoDatesIndexRoute
+  '/video-roulette/': typeof VideoRouletteIndexRoute
   '/vouches/': typeof VouchesIndexRoute
+  '/welcome/': typeof WelcomeIndexRoute
   '/who-viewed-me/': typeof WhoViewedMeIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/ai/photo-enhance/': typeof AiPhotoEnhanceIndexRoute
@@ -1391,23 +1572,38 @@ export interface FileRoutesByFullPath {
   '/profile/insights/': typeof ProfileInsightsIndexRoute
   '/safety/emergency-contact/': typeof SafetyEmergencyContactIndexRoute
   '/safety/emergency/': typeof SafetyEmergencyIndexRoute
+  '/settings/accessibility/': typeof SettingsAccessibilityIndexRoute
   '/settings/account-settings/': typeof SettingsAccountSettingsIndexRoute
   '/settings/account/': typeof SettingsAccountIndexRoute
   '/settings/ai-toggles/': typeof SettingsAiTogglesIndexRoute
   '/settings/app-config/': typeof SettingsAppConfigIndexRoute
   '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/backup-restore/': typeof SettingsBackupRestoreIndexRoute
   '/settings/blocked-users/': typeof SettingsBlockedUsersIndexRoute
   '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/change-password/': typeof SettingsChangePasswordIndexRoute
+  '/settings/data-export/': typeof SettingsDataExportIndexRoute
   '/settings/data/': typeof SettingsDataIndexRoute
+  '/settings/deactivate/': typeof SettingsDeactivateIndexRoute
   '/settings/deletion/': typeof SettingsDeletionIndexRoute
+  '/settings/discreet-icon/': typeof SettingsDiscreetIconIndexRoute
+  '/settings/dnd/': typeof SettingsDndIndexRoute
   '/settings/export/': typeof SettingsExportIndexRoute
   '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/language/': typeof SettingsLanguageIndexRoute
+  '/settings/location/': typeof SettingsLocationIndexRoute
+  '/settings/media/': typeof SettingsMediaIndexRoute
   '/settings/multi-account/': typeof SettingsMultiAccountIndexRoute
+  '/settings/notifications/': typeof SettingsNotificationsIndexRoute
+  '/settings/permissions/': typeof SettingsPermissionsIndexRoute
+  '/settings/pin-lock/': typeof SettingsPinLockIndexRoute
   '/settings/privacy-report/': typeof SettingsPrivacyReportIndexRoute
   '/settings/privacy/': typeof SettingsPrivacyIndexRoute
   '/settings/profile/': typeof SettingsProfileIndexRoute
   '/settings/stats/': typeof SettingsStatsIndexRoute
   '/settings/subscription/': typeof SettingsSubscriptionIndexRoute
+  '/settings/two-factor/': typeof SettingsTwoFactorIndexRoute
+  '/verify/photo/': typeof VerifyPhotoIndexRoute
   '/api/admin/kpis/': typeof ApiAdminKpisIndexRoute
   '/api/admin/moderation/': typeof ApiAdminModerationIndexRoute
   '/api/ai/auto-reply/': typeof ApiAiAutoReplyIndexRoute
@@ -1518,13 +1714,18 @@ export interface FileRoutesByTo {
   '/agenda': typeof AgendaIndexRoute
   '/blind-date': typeof BlindDateIndexRoute
   '/board': typeof BoardIndexRoute
+  '/boost': typeof BoostIndexRoute
   '/calendar': typeof CalendarIndexRoute
   '/chat': typeof ChatIndexRoute
+  '/circles': typeof CirclesIndexRoute
+  '/community-challenges': typeof CommunityChallengesIndexRoute
   '/dump-rify': typeof DumpRifyIndexRoute
   '/events': typeof EventsIndexRoute
   '/fansites': typeof FansitesIndexRoute
   '/faq': typeof FaqIndexRoute
+  '/favorites': typeof FavoritesIndexRoute
   '/filters': typeof FiltersIndexRoute
+  '/forgot-password': typeof ForgotPasswordIndexRoute
   '/gamechangers': typeof GamechangersIndexRoute
   '/grid': typeof GridIndexRoute
   '/groups': typeof GroupsIndexRoute
@@ -1534,23 +1735,30 @@ export interface FileRoutesByTo {
   '/interested-in-me': typeof InterestedInMeIndexRoute
   '/king-pet': typeof KingPetIndexRoute
   '/legal': typeof LegalIndexRoute
+  '/login': typeof LoginIndexRoute
   '/meetnow': typeof MeetnowIndexRoute
   '/notifications': typeof NotificationsIndexRoute
   '/offline': typeof OfflineIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/paywall': typeof PaywallIndexRoute
+  '/phone-login': typeof PhoneLoginIndexRoute
+  '/photo-editor': typeof PhotoEditorIndexRoute
   '/platform': typeof PlatformIndexRoute
   '/premium': typeof PremiumIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/report-user': typeof ReportUserIndexRoute
   '/right-now': typeof RightNowIndexRoute
   '/safety': typeof SafetyIndexRoute
+  '/search-inbox': typeof SearchInboxIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/shouts': typeof ShoutsIndexRoute
   '/speed-dating': typeof SpeedDatingIndexRoute
   '/tribes': typeof TribesIndexRoute
   '/verify': typeof VerifyIndexRoute
   '/video-dates': typeof VideoDatesIndexRoute
+  '/video-roulette': typeof VideoRouletteIndexRoute
   '/vouches': typeof VouchesIndexRoute
+  '/welcome': typeof WelcomeIndexRoute
   '/who-viewed-me': typeof WhoViewedMeIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/ai/photo-enhance': typeof AiPhotoEnhanceIndexRoute
@@ -1600,23 +1808,38 @@ export interface FileRoutesByTo {
   '/profile/insights': typeof ProfileInsightsIndexRoute
   '/safety/emergency-contact': typeof SafetyEmergencyContactIndexRoute
   '/safety/emergency': typeof SafetyEmergencyIndexRoute
+  '/settings/accessibility': typeof SettingsAccessibilityIndexRoute
   '/settings/account-settings': typeof SettingsAccountSettingsIndexRoute
   '/settings/account': typeof SettingsAccountIndexRoute
   '/settings/ai-toggles': typeof SettingsAiTogglesIndexRoute
   '/settings/app-config': typeof SettingsAppConfigIndexRoute
   '/settings/app': typeof SettingsAppIndexRoute
+  '/settings/backup-restore': typeof SettingsBackupRestoreIndexRoute
   '/settings/blocked-users': typeof SettingsBlockedUsersIndexRoute
   '/settings/blocked': typeof SettingsBlockedIndexRoute
+  '/settings/change-password': typeof SettingsChangePasswordIndexRoute
+  '/settings/data-export': typeof SettingsDataExportIndexRoute
   '/settings/data': typeof SettingsDataIndexRoute
+  '/settings/deactivate': typeof SettingsDeactivateIndexRoute
   '/settings/deletion': typeof SettingsDeletionIndexRoute
+  '/settings/discreet-icon': typeof SettingsDiscreetIconIndexRoute
+  '/settings/dnd': typeof SettingsDndIndexRoute
   '/settings/export': typeof SettingsExportIndexRoute
   '/settings/hidden': typeof SettingsHiddenIndexRoute
+  '/settings/language': typeof SettingsLanguageIndexRoute
+  '/settings/location': typeof SettingsLocationIndexRoute
+  '/settings/media': typeof SettingsMediaIndexRoute
   '/settings/multi-account': typeof SettingsMultiAccountIndexRoute
+  '/settings/notifications': typeof SettingsNotificationsIndexRoute
+  '/settings/permissions': typeof SettingsPermissionsIndexRoute
+  '/settings/pin-lock': typeof SettingsPinLockIndexRoute
   '/settings/privacy-report': typeof SettingsPrivacyReportIndexRoute
   '/settings/privacy': typeof SettingsPrivacyIndexRoute
   '/settings/profile': typeof SettingsProfileIndexRoute
   '/settings/stats': typeof SettingsStatsIndexRoute
   '/settings/subscription': typeof SettingsSubscriptionIndexRoute
+  '/settings/two-factor': typeof SettingsTwoFactorIndexRoute
+  '/verify/photo': typeof VerifyPhotoIndexRoute
   '/api/admin/kpis': typeof ApiAdminKpisIndexRoute
   '/api/admin/moderation': typeof ApiAdminModerationIndexRoute
   '/api/ai/auto-reply': typeof ApiAiAutoReplyIndexRoute
@@ -1728,13 +1951,18 @@ export interface FileRoutesById {
   '/agenda/': typeof AgendaIndexRoute
   '/blind-date/': typeof BlindDateIndexRoute
   '/board/': typeof BoardIndexRoute
+  '/boost/': typeof BoostIndexRoute
   '/calendar/': typeof CalendarIndexRoute
   '/chat/': typeof ChatIndexRoute
+  '/circles/': typeof CirclesIndexRoute
+  '/community-challenges/': typeof CommunityChallengesIndexRoute
   '/dump-rify/': typeof DumpRifyIndexRoute
   '/events/': typeof EventsIndexRoute
   '/fansites/': typeof FansitesIndexRoute
   '/faq/': typeof FaqIndexRoute
+  '/favorites/': typeof FavoritesIndexRoute
   '/filters/': typeof FiltersIndexRoute
+  '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/gamechangers/': typeof GamechangersIndexRoute
   '/grid/': typeof GridIndexRoute
   '/groups/': typeof GroupsIndexRoute
@@ -1744,23 +1972,30 @@ export interface FileRoutesById {
   '/interested-in-me/': typeof InterestedInMeIndexRoute
   '/king-pet/': typeof KingPetIndexRoute
   '/legal/': typeof LegalIndexRoute
+  '/login/': typeof LoginIndexRoute
   '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
   '/offline/': typeof OfflineIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/paywall/': typeof PaywallIndexRoute
+  '/phone-login/': typeof PhoneLoginIndexRoute
+  '/photo-editor/': typeof PhotoEditorIndexRoute
   '/platform/': typeof PlatformIndexRoute
   '/premium/': typeof PremiumIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/report-user/': typeof ReportUserIndexRoute
   '/right-now/': typeof RightNowIndexRoute
   '/safety/': typeof SafetyIndexRoute
+  '/search-inbox/': typeof SearchInboxIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/shouts/': typeof ShoutsIndexRoute
   '/speed-dating/': typeof SpeedDatingIndexRoute
   '/tribes/': typeof TribesIndexRoute
   '/verify/': typeof VerifyIndexRoute
   '/video-dates/': typeof VideoDatesIndexRoute
+  '/video-roulette/': typeof VideoRouletteIndexRoute
   '/vouches/': typeof VouchesIndexRoute
+  '/welcome/': typeof WelcomeIndexRoute
   '/who-viewed-me/': typeof WhoViewedMeIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/ai/photo-enhance/': typeof AiPhotoEnhanceIndexRoute
@@ -1810,23 +2045,38 @@ export interface FileRoutesById {
   '/profile/insights/': typeof ProfileInsightsIndexRoute
   '/safety/emergency-contact/': typeof SafetyEmergencyContactIndexRoute
   '/safety/emergency/': typeof SafetyEmergencyIndexRoute
+  '/settings/accessibility/': typeof SettingsAccessibilityIndexRoute
   '/settings/account-settings/': typeof SettingsAccountSettingsIndexRoute
   '/settings/account/': typeof SettingsAccountIndexRoute
   '/settings/ai-toggles/': typeof SettingsAiTogglesIndexRoute
   '/settings/app-config/': typeof SettingsAppConfigIndexRoute
   '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/backup-restore/': typeof SettingsBackupRestoreIndexRoute
   '/settings/blocked-users/': typeof SettingsBlockedUsersIndexRoute
   '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/change-password/': typeof SettingsChangePasswordIndexRoute
+  '/settings/data-export/': typeof SettingsDataExportIndexRoute
   '/settings/data/': typeof SettingsDataIndexRoute
+  '/settings/deactivate/': typeof SettingsDeactivateIndexRoute
   '/settings/deletion/': typeof SettingsDeletionIndexRoute
+  '/settings/discreet-icon/': typeof SettingsDiscreetIconIndexRoute
+  '/settings/dnd/': typeof SettingsDndIndexRoute
   '/settings/export/': typeof SettingsExportIndexRoute
   '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/language/': typeof SettingsLanguageIndexRoute
+  '/settings/location/': typeof SettingsLocationIndexRoute
+  '/settings/media/': typeof SettingsMediaIndexRoute
   '/settings/multi-account/': typeof SettingsMultiAccountIndexRoute
+  '/settings/notifications/': typeof SettingsNotificationsIndexRoute
+  '/settings/permissions/': typeof SettingsPermissionsIndexRoute
+  '/settings/pin-lock/': typeof SettingsPinLockIndexRoute
   '/settings/privacy-report/': typeof SettingsPrivacyReportIndexRoute
   '/settings/privacy/': typeof SettingsPrivacyIndexRoute
   '/settings/profile/': typeof SettingsProfileIndexRoute
   '/settings/stats/': typeof SettingsStatsIndexRoute
   '/settings/subscription/': typeof SettingsSubscriptionIndexRoute
+  '/settings/two-factor/': typeof SettingsTwoFactorIndexRoute
+  '/verify/photo/': typeof VerifyPhotoIndexRoute
   '/api/admin/kpis/': typeof ApiAdminKpisIndexRoute
   '/api/admin/moderation/': typeof ApiAdminModerationIndexRoute
   '/api/ai/auto-reply/': typeof ApiAiAutoReplyIndexRoute
@@ -1939,13 +2189,18 @@ export interface FileRouteTypes {
     | '/agenda/'
     | '/blind-date/'
     | '/board/'
+    | '/boost/'
     | '/calendar/'
     | '/chat/'
+    | '/circles/'
+    | '/community-challenges/'
     | '/dump-rify/'
     | '/events/'
     | '/fansites/'
     | '/faq/'
+    | '/favorites/'
     | '/filters/'
+    | '/forgot-password/'
     | '/gamechangers/'
     | '/grid/'
     | '/groups/'
@@ -1955,23 +2210,30 @@ export interface FileRouteTypes {
     | '/interested-in-me/'
     | '/king-pet/'
     | '/legal/'
+    | '/login/'
     | '/meetnow/'
     | '/notifications/'
     | '/offline/'
     | '/onboarding/'
     | '/paywall/'
+    | '/phone-login/'
+    | '/photo-editor/'
     | '/platform/'
     | '/premium/'
     | '/profile/'
+    | '/report-user/'
     | '/right-now/'
     | '/safety/'
+    | '/search-inbox/'
     | '/settings/'
     | '/shouts/'
     | '/speed-dating/'
     | '/tribes/'
     | '/verify/'
     | '/video-dates/'
+    | '/video-roulette/'
     | '/vouches/'
+    | '/welcome/'
     | '/who-viewed-me/'
     | '/api/push/subscribe'
     | '/ai/photo-enhance/'
@@ -2021,23 +2283,38 @@ export interface FileRouteTypes {
     | '/profile/insights/'
     | '/safety/emergency-contact/'
     | '/safety/emergency/'
+    | '/settings/accessibility/'
     | '/settings/account-settings/'
     | '/settings/account/'
     | '/settings/ai-toggles/'
     | '/settings/app-config/'
     | '/settings/app/'
+    | '/settings/backup-restore/'
     | '/settings/blocked-users/'
     | '/settings/blocked/'
+    | '/settings/change-password/'
+    | '/settings/data-export/'
     | '/settings/data/'
+    | '/settings/deactivate/'
     | '/settings/deletion/'
+    | '/settings/discreet-icon/'
+    | '/settings/dnd/'
     | '/settings/export/'
     | '/settings/hidden/'
+    | '/settings/language/'
+    | '/settings/location/'
+    | '/settings/media/'
     | '/settings/multi-account/'
+    | '/settings/notifications/'
+    | '/settings/permissions/'
+    | '/settings/pin-lock/'
     | '/settings/privacy-report/'
     | '/settings/privacy/'
     | '/settings/profile/'
     | '/settings/stats/'
     | '/settings/subscription/'
+    | '/settings/two-factor/'
+    | '/verify/photo/'
     | '/api/admin/kpis/'
     | '/api/admin/moderation/'
     | '/api/ai/auto-reply/'
@@ -2148,13 +2425,18 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/blind-date'
     | '/board'
+    | '/boost'
     | '/calendar'
     | '/chat'
+    | '/circles'
+    | '/community-challenges'
     | '/dump-rify'
     | '/events'
     | '/fansites'
     | '/faq'
+    | '/favorites'
     | '/filters'
+    | '/forgot-password'
     | '/gamechangers'
     | '/grid'
     | '/groups'
@@ -2164,23 +2446,30 @@ export interface FileRouteTypes {
     | '/interested-in-me'
     | '/king-pet'
     | '/legal'
+    | '/login'
     | '/meetnow'
     | '/notifications'
     | '/offline'
     | '/onboarding'
     | '/paywall'
+    | '/phone-login'
+    | '/photo-editor'
     | '/platform'
     | '/premium'
     | '/profile'
+    | '/report-user'
     | '/right-now'
     | '/safety'
+    | '/search-inbox'
     | '/settings'
     | '/shouts'
     | '/speed-dating'
     | '/tribes'
     | '/verify'
     | '/video-dates'
+    | '/video-roulette'
     | '/vouches'
+    | '/welcome'
     | '/who-viewed-me'
     | '/api/push/subscribe'
     | '/ai/photo-enhance'
@@ -2230,23 +2519,38 @@ export interface FileRouteTypes {
     | '/profile/insights'
     | '/safety/emergency-contact'
     | '/safety/emergency'
+    | '/settings/accessibility'
     | '/settings/account-settings'
     | '/settings/account'
     | '/settings/ai-toggles'
     | '/settings/app-config'
     | '/settings/app'
+    | '/settings/backup-restore'
     | '/settings/blocked-users'
     | '/settings/blocked'
+    | '/settings/change-password'
+    | '/settings/data-export'
     | '/settings/data'
+    | '/settings/deactivate'
     | '/settings/deletion'
+    | '/settings/discreet-icon'
+    | '/settings/dnd'
     | '/settings/export'
     | '/settings/hidden'
+    | '/settings/language'
+    | '/settings/location'
+    | '/settings/media'
     | '/settings/multi-account'
+    | '/settings/notifications'
+    | '/settings/permissions'
+    | '/settings/pin-lock'
     | '/settings/privacy-report'
     | '/settings/privacy'
     | '/settings/profile'
     | '/settings/stats'
     | '/settings/subscription'
+    | '/settings/two-factor'
+    | '/verify/photo'
     | '/api/admin/kpis'
     | '/api/admin/moderation'
     | '/api/ai/auto-reply'
@@ -2357,13 +2661,18 @@ export interface FileRouteTypes {
     | '/agenda/'
     | '/blind-date/'
     | '/board/'
+    | '/boost/'
     | '/calendar/'
     | '/chat/'
+    | '/circles/'
+    | '/community-challenges/'
     | '/dump-rify/'
     | '/events/'
     | '/fansites/'
     | '/faq/'
+    | '/favorites/'
     | '/filters/'
+    | '/forgot-password/'
     | '/gamechangers/'
     | '/grid/'
     | '/groups/'
@@ -2373,23 +2682,30 @@ export interface FileRouteTypes {
     | '/interested-in-me/'
     | '/king-pet/'
     | '/legal/'
+    | '/login/'
     | '/meetnow/'
     | '/notifications/'
     | '/offline/'
     | '/onboarding/'
     | '/paywall/'
+    | '/phone-login/'
+    | '/photo-editor/'
     | '/platform/'
     | '/premium/'
     | '/profile/'
+    | '/report-user/'
     | '/right-now/'
     | '/safety/'
+    | '/search-inbox/'
     | '/settings/'
     | '/shouts/'
     | '/speed-dating/'
     | '/tribes/'
     | '/verify/'
     | '/video-dates/'
+    | '/video-roulette/'
     | '/vouches/'
+    | '/welcome/'
     | '/who-viewed-me/'
     | '/api/push/subscribe'
     | '/ai/photo-enhance/'
@@ -2439,23 +2755,38 @@ export interface FileRouteTypes {
     | '/profile/insights/'
     | '/safety/emergency-contact/'
     | '/safety/emergency/'
+    | '/settings/accessibility/'
     | '/settings/account-settings/'
     | '/settings/account/'
     | '/settings/ai-toggles/'
     | '/settings/app-config/'
     | '/settings/app/'
+    | '/settings/backup-restore/'
     | '/settings/blocked-users/'
     | '/settings/blocked/'
+    | '/settings/change-password/'
+    | '/settings/data-export/'
     | '/settings/data/'
+    | '/settings/deactivate/'
     | '/settings/deletion/'
+    | '/settings/discreet-icon/'
+    | '/settings/dnd/'
     | '/settings/export/'
     | '/settings/hidden/'
+    | '/settings/language/'
+    | '/settings/location/'
+    | '/settings/media/'
     | '/settings/multi-account/'
+    | '/settings/notifications/'
+    | '/settings/permissions/'
+    | '/settings/pin-lock/'
     | '/settings/privacy-report/'
     | '/settings/privacy/'
     | '/settings/profile/'
     | '/settings/stats/'
     | '/settings/subscription/'
+    | '/settings/two-factor/'
+    | '/verify/photo/'
     | '/api/admin/kpis/'
     | '/api/admin/moderation/'
     | '/api/ai/auto-reply/'
@@ -2566,13 +2897,18 @@ export interface RootRouteChildren {
   AgendaIndexRoute: typeof AgendaIndexRoute
   BlindDateIndexRoute: typeof BlindDateIndexRoute
   BoardIndexRoute: typeof BoardIndexRoute
+  BoostIndexRoute: typeof BoostIndexRoute
   CalendarIndexRoute: typeof CalendarIndexRoute
   ChatIndexRoute: typeof ChatIndexRoute
+  CirclesIndexRoute: typeof CirclesIndexRoute
+  CommunityChallengesIndexRoute: typeof CommunityChallengesIndexRoute
   DumpRifyIndexRoute: typeof DumpRifyIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   FansitesIndexRoute: typeof FansitesIndexRoute
   FaqIndexRoute: typeof FaqIndexRoute
+  FavoritesIndexRoute: typeof FavoritesIndexRoute
   FiltersIndexRoute: typeof FiltersIndexRoute
+  ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   GamechangersIndexRoute: typeof GamechangersIndexRoute
   GridIndexRoute: typeof GridIndexRoute
   GroupsIndexRoute: typeof GroupsIndexRoute
@@ -2582,23 +2918,30 @@ export interface RootRouteChildren {
   InterestedInMeIndexRoute: typeof InterestedInMeIndexRoute
   KingPetIndexRoute: typeof KingPetIndexRoute
   LegalIndexRoute: typeof LegalIndexRoute
+  LoginIndexRoute: typeof LoginIndexRoute
   MeetnowIndexRoute: typeof MeetnowIndexRoute
   NotificationsIndexRoute: typeof NotificationsIndexRoute
   OfflineIndexRoute: typeof OfflineIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   PaywallIndexRoute: typeof PaywallIndexRoute
+  PhoneLoginIndexRoute: typeof PhoneLoginIndexRoute
+  PhotoEditorIndexRoute: typeof PhotoEditorIndexRoute
   PlatformIndexRoute: typeof PlatformIndexRoute
   PremiumIndexRoute: typeof PremiumIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
+  ReportUserIndexRoute: typeof ReportUserIndexRoute
   RightNowIndexRoute: typeof RightNowIndexRoute
   SafetyIndexRoute: typeof SafetyIndexRoute
+  SearchInboxIndexRoute: typeof SearchInboxIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   ShoutsIndexRoute: typeof ShoutsIndexRoute
   SpeedDatingIndexRoute: typeof SpeedDatingIndexRoute
   TribesIndexRoute: typeof TribesIndexRoute
   VerifyIndexRoute: typeof VerifyIndexRoute
   VideoDatesIndexRoute: typeof VideoDatesIndexRoute
+  VideoRouletteIndexRoute: typeof VideoRouletteIndexRoute
   VouchesIndexRoute: typeof VouchesIndexRoute
+  WelcomeIndexRoute: typeof WelcomeIndexRoute
   WhoViewedMeIndexRoute: typeof WhoViewedMeIndexRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
   AiPhotoEnhanceIndexRoute: typeof AiPhotoEnhanceIndexRoute
@@ -2646,23 +2989,38 @@ export interface RootRouteChildren {
   ProfileInsightsIndexRoute: typeof ProfileInsightsIndexRoute
   SafetyEmergencyContactIndexRoute: typeof SafetyEmergencyContactIndexRoute
   SafetyEmergencyIndexRoute: typeof SafetyEmergencyIndexRoute
+  SettingsAccessibilityIndexRoute: typeof SettingsAccessibilityIndexRoute
   SettingsAccountSettingsIndexRoute: typeof SettingsAccountSettingsIndexRoute
   SettingsAccountIndexRoute: typeof SettingsAccountIndexRoute
   SettingsAiTogglesIndexRoute: typeof SettingsAiTogglesIndexRoute
   SettingsAppConfigIndexRoute: typeof SettingsAppConfigIndexRoute
   SettingsAppIndexRoute: typeof SettingsAppIndexRoute
+  SettingsBackupRestoreIndexRoute: typeof SettingsBackupRestoreIndexRoute
   SettingsBlockedUsersIndexRoute: typeof SettingsBlockedUsersIndexRoute
   SettingsBlockedIndexRoute: typeof SettingsBlockedIndexRoute
+  SettingsChangePasswordIndexRoute: typeof SettingsChangePasswordIndexRoute
+  SettingsDataExportIndexRoute: typeof SettingsDataExportIndexRoute
   SettingsDataIndexRoute: typeof SettingsDataIndexRoute
+  SettingsDeactivateIndexRoute: typeof SettingsDeactivateIndexRoute
   SettingsDeletionIndexRoute: typeof SettingsDeletionIndexRoute
+  SettingsDiscreetIconIndexRoute: typeof SettingsDiscreetIconIndexRoute
+  SettingsDndIndexRoute: typeof SettingsDndIndexRoute
   SettingsExportIndexRoute: typeof SettingsExportIndexRoute
   SettingsHiddenIndexRoute: typeof SettingsHiddenIndexRoute
+  SettingsLanguageIndexRoute: typeof SettingsLanguageIndexRoute
+  SettingsLocationIndexRoute: typeof SettingsLocationIndexRoute
+  SettingsMediaIndexRoute: typeof SettingsMediaIndexRoute
   SettingsMultiAccountIndexRoute: typeof SettingsMultiAccountIndexRoute
+  SettingsNotificationsIndexRoute: typeof SettingsNotificationsIndexRoute
+  SettingsPermissionsIndexRoute: typeof SettingsPermissionsIndexRoute
+  SettingsPinLockIndexRoute: typeof SettingsPinLockIndexRoute
   SettingsPrivacyReportIndexRoute: typeof SettingsPrivacyReportIndexRoute
   SettingsPrivacyIndexRoute: typeof SettingsPrivacyIndexRoute
   SettingsProfileIndexRoute: typeof SettingsProfileIndexRoute
   SettingsStatsIndexRoute: typeof SettingsStatsIndexRoute
   SettingsSubscriptionIndexRoute: typeof SettingsSubscriptionIndexRoute
+  SettingsTwoFactorIndexRoute: typeof SettingsTwoFactorIndexRoute
+  VerifyPhotoIndexRoute: typeof VerifyPhotoIndexRoute
   ApiAdminKpisIndexRoute: typeof ApiAdminKpisIndexRoute
   ApiAdminModerationIndexRoute: typeof ApiAdminModerationIndexRoute
   ApiAiAutoReplyIndexRoute: typeof ApiAiAutoReplyIndexRoute
@@ -2809,6 +3167,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/boost/': {
+      id: '/boost/'
+      path: '/boost'
+      fullPath: '/boost/'
+      preLoaderRoute: typeof BoostIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/calendar/': {
       id: '/calendar/'
       path: '/calendar'
@@ -2821,6 +3186,20 @@ declare module '@tanstack/react-router' {
       path: '/chat'
       fullPath: '/chat/'
       preLoaderRoute: typeof ChatIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/circles/': {
+      id: '/circles/'
+      path: '/circles'
+      fullPath: '/circles/'
+      preLoaderRoute: typeof CirclesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community-challenges/': {
+      id: '/community-challenges/'
+      path: '/community-challenges'
+      fullPath: '/community-challenges/'
+      preLoaderRoute: typeof CommunityChallengesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discover/map': {
@@ -2872,11 +3251,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FaqIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/favorites/': {
+      id: '/favorites/'
+      path: '/favorites'
+      fullPath: '/favorites/'
+      preLoaderRoute: typeof FavoritesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/filters/': {
       id: '/filters/'
       path: '/filters'
       fullPath: '/filters/'
       preLoaderRoute: typeof FiltersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password/': {
+      id: '/forgot-password/'
+      path: '/forgot-password'
+      fullPath: '/forgot-password/'
+      preLoaderRoute: typeof ForgotPasswordIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gamechangers/': {
@@ -2956,6 +3349,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/meetnow/': {
       id: '/meetnow/'
       path: '/meetnow'
@@ -2991,6 +3391,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaywallIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/phone-login/': {
+      id: '/phone-login/'
+      path: '/phone-login'
+      fullPath: '/phone-login/'
+      preLoaderRoute: typeof PhoneLoginIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/photo-editor/': {
+      id: '/photo-editor/'
+      path: '/photo-editor'
+      fullPath: '/photo-editor/'
+      preLoaderRoute: typeof PhotoEditorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/platform/': {
       id: '/platform/'
       path: '/platform'
@@ -3012,6 +3426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/report-user/': {
+      id: '/report-user/'
+      path: '/report-user'
+      fullPath: '/report-user/'
+      preLoaderRoute: typeof ReportUserIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/right-now/': {
       id: '/right-now/'
       path: '/right-now'
@@ -3024,6 +3445,13 @@ declare module '@tanstack/react-router' {
       path: '/safety'
       fullPath: '/safety/'
       preLoaderRoute: typeof SafetyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search-inbox/': {
+      id: '/search-inbox/'
+      path: '/search-inbox'
+      fullPath: '/search-inbox/'
+      preLoaderRoute: typeof SearchInboxIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -3089,11 +3517,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VideoDatesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/video-roulette/': {
+      id: '/video-roulette/'
+      path: '/video-roulette'
+      fullPath: '/video-roulette/'
+      preLoaderRoute: typeof VideoRouletteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/vouches/': {
       id: '/vouches/'
       path: '/vouches'
       fullPath: '/vouches/'
       preLoaderRoute: typeof VouchesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome/': {
+      id: '/welcome/'
+      path: '/welcome'
+      fullPath: '/welcome/'
+      preLoaderRoute: typeof WelcomeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/who-viewed-me/': {
@@ -3439,6 +3881,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SafetyEmergencyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/accessibility/': {
+      id: '/settings/accessibility/'
+      path: '/settings/accessibility'
+      fullPath: '/settings/accessibility/'
+      preLoaderRoute: typeof SettingsAccessibilityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/account-settings/': {
       id: '/settings/account-settings/'
       path: '/settings/account-settings'
@@ -3474,6 +3923,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAppIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/backup-restore/': {
+      id: '/settings/backup-restore/'
+      path: '/settings/backup-restore'
+      fullPath: '/settings/backup-restore/'
+      preLoaderRoute: typeof SettingsBackupRestoreIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/blocked-users/': {
       id: '/settings/blocked-users/'
       path: '/settings/blocked-users'
@@ -3488,6 +3944,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsBlockedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/change-password/': {
+      id: '/settings/change-password/'
+      path: '/settings/change-password'
+      fullPath: '/settings/change-password/'
+      preLoaderRoute: typeof SettingsChangePasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/data-export/': {
+      id: '/settings/data-export/'
+      path: '/settings/data-export'
+      fullPath: '/settings/data-export/'
+      preLoaderRoute: typeof SettingsDataExportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/data/': {
       id: '/settings/data/'
       path: '/settings/data'
@@ -3495,11 +3965,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsDataIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/deactivate/': {
+      id: '/settings/deactivate/'
+      path: '/settings/deactivate'
+      fullPath: '/settings/deactivate/'
+      preLoaderRoute: typeof SettingsDeactivateIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/deletion/': {
       id: '/settings/deletion/'
       path: '/settings/deletion'
       fullPath: '/settings/deletion/'
       preLoaderRoute: typeof SettingsDeletionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/discreet-icon/': {
+      id: '/settings/discreet-icon/'
+      path: '/settings/discreet-icon'
+      fullPath: '/settings/discreet-icon/'
+      preLoaderRoute: typeof SettingsDiscreetIconIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/dnd/': {
+      id: '/settings/dnd/'
+      path: '/settings/dnd'
+      fullPath: '/settings/dnd/'
+      preLoaderRoute: typeof SettingsDndIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/export/': {
@@ -3516,11 +4007,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsHiddenIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/language/': {
+      id: '/settings/language/'
+      path: '/settings/language'
+      fullPath: '/settings/language/'
+      preLoaderRoute: typeof SettingsLanguageIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/location/': {
+      id: '/settings/location/'
+      path: '/settings/location'
+      fullPath: '/settings/location/'
+      preLoaderRoute: typeof SettingsLocationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/media/': {
+      id: '/settings/media/'
+      path: '/settings/media'
+      fullPath: '/settings/media/'
+      preLoaderRoute: typeof SettingsMediaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/multi-account/': {
       id: '/settings/multi-account/'
       path: '/settings/multi-account'
       fullPath: '/settings/multi-account/'
       preLoaderRoute: typeof SettingsMultiAccountIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/notifications/': {
+      id: '/settings/notifications/'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications/'
+      preLoaderRoute: typeof SettingsNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/permissions/': {
+      id: '/settings/permissions/'
+      path: '/settings/permissions'
+      fullPath: '/settings/permissions/'
+      preLoaderRoute: typeof SettingsPermissionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/pin-lock/': {
+      id: '/settings/pin-lock/'
+      path: '/settings/pin-lock'
+      fullPath: '/settings/pin-lock/'
+      preLoaderRoute: typeof SettingsPinLockIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/privacy-report/': {
@@ -3556,6 +4089,20 @@ declare module '@tanstack/react-router' {
       path: '/settings/subscription'
       fullPath: '/settings/subscription/'
       preLoaderRoute: typeof SettingsSubscriptionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/two-factor/': {
+      id: '/settings/two-factor/'
+      path: '/settings/two-factor'
+      fullPath: '/settings/two-factor/'
+      preLoaderRoute: typeof SettingsTwoFactorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/photo/': {
+      id: '/verify/photo/'
+      path: '/verify/photo'
+      fullPath: '/verify/photo/'
+      preLoaderRoute: typeof VerifyPhotoIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/kpis/': {
@@ -4243,13 +4790,18 @@ const rootRouteChildren: RootRouteChildren = {
   AgendaIndexRoute: AgendaIndexRoute,
   BlindDateIndexRoute: BlindDateIndexRoute,
   BoardIndexRoute: BoardIndexRoute,
+  BoostIndexRoute: BoostIndexRoute,
   CalendarIndexRoute: CalendarIndexRoute,
   ChatIndexRoute: ChatIndexRoute,
+  CirclesIndexRoute: CirclesIndexRoute,
+  CommunityChallengesIndexRoute: CommunityChallengesIndexRoute,
   DumpRifyIndexRoute: DumpRifyIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   FansitesIndexRoute: FansitesIndexRoute,
   FaqIndexRoute: FaqIndexRoute,
+  FavoritesIndexRoute: FavoritesIndexRoute,
   FiltersIndexRoute: FiltersIndexRoute,
+  ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   GamechangersIndexRoute: GamechangersIndexRoute,
   GridIndexRoute: GridIndexRoute,
   GroupsIndexRoute: GroupsIndexRoute,
@@ -4259,23 +4811,30 @@ const rootRouteChildren: RootRouteChildren = {
   InterestedInMeIndexRoute: InterestedInMeIndexRoute,
   KingPetIndexRoute: KingPetIndexRoute,
   LegalIndexRoute: LegalIndexRoute,
+  LoginIndexRoute: LoginIndexRoute,
   MeetnowIndexRoute: MeetnowIndexRoute,
   NotificationsIndexRoute: NotificationsIndexRoute,
   OfflineIndexRoute: OfflineIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   PaywallIndexRoute: PaywallIndexRoute,
+  PhoneLoginIndexRoute: PhoneLoginIndexRoute,
+  PhotoEditorIndexRoute: PhotoEditorIndexRoute,
   PlatformIndexRoute: PlatformIndexRoute,
   PremiumIndexRoute: PremiumIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
+  ReportUserIndexRoute: ReportUserIndexRoute,
   RightNowIndexRoute: RightNowIndexRoute,
   SafetyIndexRoute: SafetyIndexRoute,
+  SearchInboxIndexRoute: SearchInboxIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   ShoutsIndexRoute: ShoutsIndexRoute,
   SpeedDatingIndexRoute: SpeedDatingIndexRoute,
   TribesIndexRoute: TribesIndexRoute,
   VerifyIndexRoute: VerifyIndexRoute,
   VideoDatesIndexRoute: VideoDatesIndexRoute,
+  VideoRouletteIndexRoute: VideoRouletteIndexRoute,
   VouchesIndexRoute: VouchesIndexRoute,
+  WelcomeIndexRoute: WelcomeIndexRoute,
   WhoViewedMeIndexRoute: WhoViewedMeIndexRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,
   AiPhotoEnhanceIndexRoute: AiPhotoEnhanceIndexRoute,
@@ -4323,23 +4882,38 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileInsightsIndexRoute: ProfileInsightsIndexRoute,
   SafetyEmergencyContactIndexRoute: SafetyEmergencyContactIndexRoute,
   SafetyEmergencyIndexRoute: SafetyEmergencyIndexRoute,
+  SettingsAccessibilityIndexRoute: SettingsAccessibilityIndexRoute,
   SettingsAccountSettingsIndexRoute: SettingsAccountSettingsIndexRoute,
   SettingsAccountIndexRoute: SettingsAccountIndexRoute,
   SettingsAiTogglesIndexRoute: SettingsAiTogglesIndexRoute,
   SettingsAppConfigIndexRoute: SettingsAppConfigIndexRoute,
   SettingsAppIndexRoute: SettingsAppIndexRoute,
+  SettingsBackupRestoreIndexRoute: SettingsBackupRestoreIndexRoute,
   SettingsBlockedUsersIndexRoute: SettingsBlockedUsersIndexRoute,
   SettingsBlockedIndexRoute: SettingsBlockedIndexRoute,
+  SettingsChangePasswordIndexRoute: SettingsChangePasswordIndexRoute,
+  SettingsDataExportIndexRoute: SettingsDataExportIndexRoute,
   SettingsDataIndexRoute: SettingsDataIndexRoute,
+  SettingsDeactivateIndexRoute: SettingsDeactivateIndexRoute,
   SettingsDeletionIndexRoute: SettingsDeletionIndexRoute,
+  SettingsDiscreetIconIndexRoute: SettingsDiscreetIconIndexRoute,
+  SettingsDndIndexRoute: SettingsDndIndexRoute,
   SettingsExportIndexRoute: SettingsExportIndexRoute,
   SettingsHiddenIndexRoute: SettingsHiddenIndexRoute,
+  SettingsLanguageIndexRoute: SettingsLanguageIndexRoute,
+  SettingsLocationIndexRoute: SettingsLocationIndexRoute,
+  SettingsMediaIndexRoute: SettingsMediaIndexRoute,
   SettingsMultiAccountIndexRoute: SettingsMultiAccountIndexRoute,
+  SettingsNotificationsIndexRoute: SettingsNotificationsIndexRoute,
+  SettingsPermissionsIndexRoute: SettingsPermissionsIndexRoute,
+  SettingsPinLockIndexRoute: SettingsPinLockIndexRoute,
   SettingsPrivacyReportIndexRoute: SettingsPrivacyReportIndexRoute,
   SettingsPrivacyIndexRoute: SettingsPrivacyIndexRoute,
   SettingsProfileIndexRoute: SettingsProfileIndexRoute,
   SettingsStatsIndexRoute: SettingsStatsIndexRoute,
   SettingsSubscriptionIndexRoute: SettingsSubscriptionIndexRoute,
+  SettingsTwoFactorIndexRoute: SettingsTwoFactorIndexRoute,
+  VerifyPhotoIndexRoute: VerifyPhotoIndexRoute,
   ApiAdminKpisIndexRoute: ApiAdminKpisIndexRoute,
   ApiAdminModerationIndexRoute: ApiAdminModerationIndexRoute,
   ApiAiAutoReplyIndexRoute: ApiAiAutoReplyIndexRoute,

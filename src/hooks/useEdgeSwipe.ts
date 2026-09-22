@@ -1,0 +1,1 @@
+export { useEdgeSwipe } from "./prd-hooks";

@@ -39,7 +39,7 @@ export function validateInput<T>(schema: { parse: (data: unknown) => T }, data: 
   return schema.parse(data);
 }
 
-export function checkRateLimit(userId: string, endpoint: string): { allowed: boolean; remaining: number } {
+export function checkRateLimit(_userId: string, _endpoint: string): { allowed: boolean; remaining: number } {
   // Calls edge function rate-limit
   // In production, this would check Supabase rate_limits table
   return { allowed: true, remaining: 30 };

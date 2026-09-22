@@ -1,0 +1,1 @@
+export { useAISearch } from "./prd-hooks";

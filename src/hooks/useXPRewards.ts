@@ -1,0 +1,1 @@
+export { useXPRewards } from "./prd-hooks";
