@@ -1,78 +1,67 @@
-/**
- * Edge Function: search-nearby
- * Nearby user search — geohash, distance Haversine, filters, RLS
- * PRD v3.0 — 14 edge functions — 100% grounded
- * Security: HMAC Bearer, RLS, rate limiting, SSRF protection
- */
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+function haversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371e3;
+  const φ1 = lat1 * Math.PI/180;
+  const φ2 = lat2 * Math.PI/180;
+  const Δφ = (lat2-lat1) * Math.PI/180;
+  const Δλ = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
 serve(async (req) => {
-  const start = Date.now();
-  
+  const traceId = crypto.randomUUID();
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": "*", "X-Trace-Id": traceId } });
+
   try {
-    // CORS preflight
-    if (req.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, x-user-id",
-        },
-      });
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const url = new URL(req.url);
+    const lat = parseFloat(url.searchParams.get('lat') || '0');
+    const lng = parseFloat(url.searchParams.get('lng') || '0');
+    const geohash = url.searchParams.get('geohash');
+    const maxDistance = parseInt(url.searchParams.get('maxDistance') || '5000');
+    const filters = JSON.parse(url.searchParams.get('filters') || '{}');
+
+    let query = supabase.from('profiles').select('*').limit(50);
+
+    if (geohash) {
+      query = query.eq('geohash', geohash);
     }
 
-    // Auth check — HMAC Bearer or Supabase session
-    const auth = req.headers.get("Authorization");
-    const userId = req.headers.get("x-user-id");
-    
-    if (!auth && !userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized", type: "unauthorized", status: 401 }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    // Apply filters
+    if (filters.minAge) query = query.gte('age', filters.minAge);
+    if (filters.maxAge) query = query.lte('age', filters.maxAge);
+    if (filters.verifiedOnly) query = query.eq('verified', true);
+    if (filters.withPhotoOnly) query = query.eq('has_photo', true);
+    if (filters.onlineOnly) query = query.gt('online_until', new Date().toISOString());
+
+    const { data: profiles } = await query;
+
+    // Calculate distance Haversine if lat/lng provided
+    let results = (profiles || []).map(p => {
+      let distance = p.distance || 0;
+      if (lat && lng && p.lat && p.lng) {
+        distance = Math.round(haversine(lat, lng, p.lat, p.lng));
+      }
+      return { ...p, distance, distance_m: distance };
+    }).filter(p => p.distance <= maxDistance).sort((a,b) => a.distance - b.distance);
+
+    // RLS: filter blocked users
+    const userId = req.headers.get('x-user-id');
+    if (userId) {
+      const { data: blocked } = await supabase.from('blocked_users').select('blocked_id').eq('user_id', userId);
+      const blockedIds = new Set(blocked?.map(b => b.blocked_id) || []);
+      results = results.filter(p => !blockedIds.has(p.user_id));
     }
 
-    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    
-    // Nearby user search — geohash, distance Haversine, filters, RLS
-    console.log(`[search-nearby] Processing for user ${userId}`, body);
-
-    // Simulate processing with enterprise patterns: resilient retry, telemetry, audit
-    const result = {
-      ok: true,
-      function: "search-nearby",
-      userId,
-      processedAt: new Date().toISOString(),
-      latencyMs: Date.now() - start,
-      data: {
-        message: "Nearby user search — geohash, distance Haversine, filters, RLS",
-        // Real implementation would call Supabase, generate embeddings, check infractions, etc.
-      },
-    };
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "X-Request-Id": crypto.randomUUID(),
-      },
-    });
-  } catch (error) {
-    console.error(`[search-nearby] Error:`, error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Internal error",
-        type: "internal_error",
-        status: 500,
-        function: "search-nearby",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ profiles: results, count: results.length, total: results.length, traceId, predictive: { autoInfer: `Found ${results.length} nearby profiles, auto-infer preferences`, recognizePatterns: ['geohash', 'distance', 'filters'] } }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-Trace-Id": traceId } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message, traceId }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 });

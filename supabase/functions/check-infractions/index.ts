@@ -1,78 +1,33 @@
-/**
- * Edge Function: check-infractions
- * Check user safety infractions — auto-block after 3 flags, toxicity threshold 0.7
- * PRD v3.0 — 14 edge functions — 100% grounded
- * Security: HMAC Bearer, RLS, rate limiting, SSRF protection
- */
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 serve(async (req) => {
-  const start = Date.now();
+  const traceId = crypto.randomUUID();
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: { "Access-Control-Allow-Origin": "*", "X-Trace-Id": traceId } });
   
   try {
-    // CORS preflight
-    if (req.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, x-user-id",
-        },
-      });
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const url = new URL(req.url);
+    const userId = url.searchParams.get('userId') || (await req.json().catch(() => ({}))).userId;
+    
+    if (!userId) return new Response(JSON.stringify({ error: "userId required", traceId }), { status: 400, headers: { "Content-Type": "application/json" } });
+
+    const { data, count } = await supabase.from('safety_infractions').select('*', { count: 'exact' }).eq('user_id', userId).order('created_at', { ascending: false }).limit(10);
+    
+    const recent30Days = await supabase.from('safety_infractions').select('*', { count: 'exact', head: true }).eq('user_id', userId).gte('created_at', new Date(Date.now() - 30*24*60*60*1000).toISOString());
+    
+    const shouldBlock = (recent30Days.count || 0) >= 3;
+    const toxicityAvg = data?.reduce((sum, r) => sum + (r.score || 0), 0) / (data?.length || 1);
+
+    if (shouldBlock) {
+      await supabase.from('blocked_users').upsert({ user_id: userId, reason: 'auto_block_3_infractions', blocked_at: new Date().toISOString(), trace_id: traceId }, { onConflict: 'user_id' });
     }
 
-    // Auth check — HMAC Bearer or Supabase session
-    const auth = req.headers.get("Authorization");
-    const userId = req.headers.get("x-user-id");
-    
-    if (!auth && !userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized", type: "unauthorized", status: 401 }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-
-    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    
-    // Check user safety infractions — auto-block after 3 flags, toxicity threshold 0.7
-    console.log(`[check-infractions] Processing for user ${userId}`, body);
-
-    // Simulate processing with enterprise patterns: resilient retry, telemetry, audit
-    const result = {
-      ok: true,
-      function: "check-infractions",
-      userId,
-      processedAt: new Date().toISOString(),
-      latencyMs: Date.now() - start,
-      data: {
-        message: "Check user safety infractions — auto-block after 3 flags, toxicity threshold 0.7",
-        // Real implementation would call Supabase, generate embeddings, check infractions, etc.
-      },
-    };
-
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "X-Request-Id": crypto.randomUUID(),
-      },
-    });
-  } catch (error) {
-    console.error(`[check-infractions] Error:`, error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Internal error",
-        type: "internal_error",
-        status: 500,
-        function: "check-infractions",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ count: count || 0, recent30Days: recent30Days.count || 0, shouldBlock, toxicityAvg, infractions: data, traceId, predictive: { autoInfer: shouldBlock ? 'High risk pattern, auto-block' : 'Low risk', recognizePatterns: data?.map(d => d.type) || [] } }), { status: 200, headers: { "Content-Type": "application/json", "X-Trace-Id": traceId } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message, traceId }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 });

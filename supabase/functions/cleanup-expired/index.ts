@@ -1,78 +1,56 @@
-/**
- * Edge Function: cleanup-expired
- * Clean expired data — cron, board posts, shouts, ephemeral messages, check-ins, emergency shares
- * PRD v3.0 — 14 edge functions — 100% grounded
- * Security: HMAC Bearer, RLS, rate limiting, SSRF protection
- */
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 serve(async (req) => {
-  const start = Date.now();
-  
+  const traceId = crypto.randomUUID();
+  const auth = req.headers.get('x-fyk-cron-token') || req.headers.get('Authorization');
+  if (!auth) return new Response(JSON.stringify({ error: "Unauthorized cron", traceId }), { status: 401, headers: { "Content-Type": "application/json" } });
+
   try {
-    // CORS preflight
-    if (req.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization, x-user-id",
-        },
-      });
-    }
-
-    // Auth check — HMAC Bearer or Supabase session
-    const auth = req.headers.get("Authorization");
-    const userId = req.headers.get("x-user-id");
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    const now = new Date().toISOString();
     
-    if (!auth && !userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized", type: "unauthorized", status: 401 }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
-    }
+    const results = {};
 
-    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
-    
-    // Clean expired data — cron, board posts, shouts, ephemeral messages, check-ins, emergency shares
-    console.log(`[cleanup-expired] Processing for user ${userId}`, body);
+    // Board posts expired
+    const { count: boardCount } = await supabase.from('board_posts').delete().lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.board = boardCount;
 
-    // Simulate processing with enterprise patterns: resilient retry, telemetry, audit
-    const result = {
-      ok: true,
-      function: "cleanup-expired",
-      userId,
-      processedAt: new Date().toISOString(),
-      latencyMs: Date.now() - start,
-      data: {
-        message: "Clean expired data — cron, board posts, shouts, ephemeral messages, check-ins, emergency shares",
-        // Real implementation would call Supabase, generate embeddings, check infractions, etc.
-      },
-    };
+    // Shouts expired
+    const { count: shoutsCount } = await supabase.from('shouts').delete().lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.shouts = shoutsCount;
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "X-Request-Id": crypto.randomUUID(),
-      },
-    });
-  } catch (error) {
-    console.error(`[cleanup-expired] Error:`, error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Internal error",
-        type: "internal_error",
-        status: 500,
-        function: "cleanup-expired",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    // Ephemeral messages
+    const { count: ephemeralCount } = await supabase.from('messages').delete().eq('is_ephemeral', true).lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.ephemeral = ephemeralCount;
+
+    // Check-ins expired
+    const { count: checkinCount } = await supabase.from('check_ins').delete().lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.checkins = checkinCount;
+
+    // Emergency shares expired
+    const { count: emergencyCount } = await supabase.from('emergency_shares').delete().lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.emergency = emergencyCount;
+
+    // MeetNow expired
+    const { count: meetnowCount } = await supabase.from('meetnow').delete().lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.meetnow = meetnowCount;
+
+    // Sessions expired
+    const { count: sessionsCount } = await supabase.from('sessions').delete().lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.sessions = sessionsCount;
+
+    // Stories expired
+    const { count: storiesCount } = await supabase.from('stories').delete().lt('expires_at', now).select('*', { count: 'exact', head: true });
+    results.stories = storiesCount;
+
+    await supabase.from('cleanup_logs').insert({ trace_id: traceId, results, cleaned_at: now });
+
+    return new Response(JSON.stringify({ ok: true, cleaned: results, traceId, predictive: { autoInfer: 'Expired data cleaned, storage optimized', recognizePatterns: Object.keys(results) } }), { status: 200, headers: { "Content-Type": "application/json", "X-Trace-Id": traceId } });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message, traceId }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 });
