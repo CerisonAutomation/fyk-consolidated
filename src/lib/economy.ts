@@ -380,3 +380,74 @@ export function pushMoodLog<T>(log: readonly T[], entry: T): T[] {
 		? next.slice(next.length - MOOD_LOG_LIMIT)
 		: next;
 }
+
+/**
+ * ENTITY PROMOTION PRICING
+ * ------------------------
+ * `/api/boost` buys a *member* top-of-deck placement, and `spotlights` records it.
+ * The lists that are not people — groups, shouts, activities, fansites, tribes,
+ * board posts — needed the same lever, and until `entity_promotions` (0030) there
+ * was nowhere to record it, so every `/api/<feature>/<id>/boost` the generated
+ * screens called hit a 404.
+ *
+ * Prices are in bones (the app's own currency, see `BONES`), per 30-minute block,
+ * because a per-minute price invites a client to buy one minute and check whether
+ * the ordering moved. The cheapest surface is the board post: it is a throwaway
+ * listing with a built-in expiry, so paying profile-boost money for it would be
+ * nonsense.
+ */
+export const PROMOTION_ENTITY_TYPES = [
+	"group",
+	"shout",
+	"activity",
+	"fansite",
+	"tribe",
+	"board_post",
+] as const;
+
+export type PromotionEntityType = (typeof PROMOTION_ENTITY_TYPES)[number];
+
+export function isPromotionEntityType(
+	value: unknown,
+): value is PromotionEntityType {
+	return (
+		typeof value === "string" &&
+		(PROMOTION_ENTITY_TYPES as readonly string[]).includes(value)
+	);
+}
+
+/** Bones per 30-minute block, by entity kind. */
+export const PROMOTION_BLOCK_COST: Record<PromotionEntityType, number> = {
+	group: 25,
+	shout: 15,
+	activity: 25,
+	fansite: 20,
+	tribe: 25,
+	board_post: 10,
+};
+
+export const PROMOTION_BLOCK_MINUTES = 30;
+export const PROMOTION_MIN_MINUTES = 30;
+export const PROMOTION_MAX_MINUTES = 720;
+
+/** Clamp a requested window onto whole blocks inside the supported range. */
+export function promotionWindow(minutes: number | null | undefined): number {
+	const raw = Number.isFinite(minutes as number)
+		? Number(minutes)
+		: PROMOTION_BLOCK_MINUTES;
+	const blocks = Math.round(raw / PROMOTION_BLOCK_MINUTES);
+	const clamped = Math.min(
+		Math.max(blocks, PROMOTION_MIN_MINUTES / PROMOTION_BLOCK_MINUTES),
+		PROMOTION_MAX_MINUTES / PROMOTION_BLOCK_MINUTES,
+	);
+	return clamped * PROMOTION_BLOCK_MINUTES;
+}
+
+/** What a window costs, in bones. Never negative, always whole blocks. */
+export function promotionCost(
+	entityType: PromotionEntityType,
+	minutes: number | null | undefined,
+): number {
+	const blocks = promotionWindow(minutes) / PROMOTION_BLOCK_MINUTES;
+	return PROMOTION_BLOCK_COST[entityType] * blocks;
+}

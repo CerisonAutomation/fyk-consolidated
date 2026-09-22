@@ -74,7 +74,10 @@ function allowedPatchKeys(): { prefs: Set<string>; notif: Set<string> } {
 			),
 		);
 	return {
-		prefs: grab("const prefsSchema = z", ".strict();\n\nconst EXPORT_COLUMNS"),
+		// The export column list moved to `#/lib/settings.server#EXPORT_COLUMNS` so
+		// `GET /api/settings?view=export` and `POST /api/settings/data-export` share
+		// one definition of "my data"; the anchor follows it.
+		prefs: grab("const prefsSchema = z", ".strict();\n\nexport const Route"),
 		notif: grab("const notifSchema = z", "\n\nconst aiSchema"),
 	};
 }

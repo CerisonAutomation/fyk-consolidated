@@ -372,3 +372,15 @@ export async function getCaller(request: Request): Promise<Caller | null> {
 export function clearCallerCache(): void {
 	cache.clear();
 }
+
+/**
+ * Drop one token's cached verification.
+ *
+ * `clearCallerCache` is the drill-sized hammer; a logout needs the scalpel. Without
+ * this, a token that was just revoked keeps answering from the cache for up to
+ * `CACHE_MS` — thirty seconds in which `/api/auth/logout` has said "signed out" and
+ * every other endpoint still agrees with the old answer.
+ */
+export function forgetVerification(token: string): void {
+	cache.delete(cacheKey(token));
+}

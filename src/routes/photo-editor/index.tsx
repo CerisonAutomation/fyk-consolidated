@@ -1,143 +1,314 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Calendar, MapPin, Search } from "lucide-react";
-import { Skeleton } from "@/components/ui/primitives";
-import { cn } from "@/lib/utils";
-import { useHaptics } from "@/hooks/useHaptics";
-import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useMutation } from "@tanstack/react-query";
+import { ImageIcon, ShieldCheck, Sliders, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/primitives";
+import { api, ApiError } from "@/lib/client";
+import { uploadMedia, uploadMessage } from "@/lib/upload-media";
 
-// photo editor — Production photo-editor with real backend — MAX DEPTH PRODUCTION — canonical real working code GitHub — no stubs
+/**
+ * `/photo-editor` — adjust a photo's lighting and crop through `POST /api/ai/photo-enhance`.
+ *
+ * The generated screen called `/api/ai/photo-enhance` and `/api/ai/photo-edit` with an
+ * invented `{image, filters}` body and rendered a slider that mutated nothing. The real
+ * route has two actions: `score` (`{urls}`) and `enhance`
+ * (`{url, adjustments}`), and `enhance` refuses any request whose payload mentions
+ * face shape, birthmarks, skin colour or age — that refusal is the point of the screen,
+ * so it is shown rather than hidden behind a client-side filter.
+ *
+ * WHAT "ENHANCE" DOES HERE
+ * ------------------------
+ * `#/domains/ai/heuristic/photo-enhance` stores the adjustments and returns the same
+ * image URL with a marker query; it does not re-encode pixels, because nothing in this
+ * deployment runs an image model. So the preview is drawn by the browser from the
+ * brightness and contrast values the server accepted, and the copy says that. Scores
+ * are derived from the URL and filename — deterministic, not a measurement of the
+ * photograph.
+ */
+
+interface ScoreResponse {
+	ok: boolean;
+	scores?: {
+		url: string;
+		quality: number;
+		lighting: number;
+		blur: number;
+		smile: number;
+		background: number;
+		appeal: number;
+		issues: string[];
+		suggestions: string[];
+	}[];
+	explainability?: { engine: string; deterministic: boolean; model: string | null };
+}
+
+interface EnhanceResponse {
+	ok: boolean;
+	enhancement?: {
+		originalUrl: string;
+		enhancedUrl?: string;
+		adjustments: {
+			brightness?: number;
+			contrast?: number;
+			crop?: { x: number; y: number; width: number; height: number };
+		};
+		allowed: boolean;
+		blockedReason?: string;
+	};
+	explainability?: { engine: string; deterministic: boolean; model: string | null };
+}
 
 export const Route = createFileRoute("/photo-editor/")({
-  component: PhotoEditorScreen,
+	component: PhotoEditorScreen,
 });
 
 function PhotoEditorScreen() {
-  const [filter, setFilter] = useState("All");
-  const [search, setSearch] = useState("");
-  const qc = useQueryClient();
-  const { vibrate } = useHaptics();
-  const { isConnected } = useRealtimeSync();
+	const [url, setUrl] = useState("");
+	const [note, setNote] = useState<string | null>(null);
+	const [brightness, setBrightness] = useState(0);
+	const [contrast, setContrast] = useState(0);
+	const [squareCrop, setSquareCrop] = useState(false);
+	const [scored, setScored] = useState<ScoreResponse["scores"] | null>(null);
+	const [applied, setApplied] = useState<EnhanceResponse["enhancement"] | null>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["photo-editor", filter, search],
-    queryFn: async () => {
-      const params = new URLSearchParams({ filter, search });
-      const res = await fetch(`/api/photo-editor?${params}`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      return {
-        items: (json.items ?? json.data ?? []) as Array<{ id: string; name?: string; title?: string; description?: string; verified?: boolean; boosted?: boolean; distance?: number; members?: number; tags?: string[] }>,
-        total: json.total ?? 0,
-        online: json.online ?? 0,
-      };
-    },
-    staleTime: 30_000,
-  });
+	const score = useMutation({
+		mutationFn: async () => {
+			if (!url) throw new ApiError(0, "Upload a photo first.");
+			return api<ScoreResponse>(
+				"/api/ai/photo-enhance?action=score&urls=" + encodeURIComponent(url),
+				{ method: "POST", body: { urls: [url] } },
+			);
+		},
+		onSuccess: (data) => {
+			setScored(data.scores ?? []);
+			setNote(null);
+		},
+		onError: (error) =>
+			setNote(error instanceof ApiError ? error.message : uploadMessage(error)),
+	});
 
-  const actionMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/photo-editor/${id}/action`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id, filter }),
-      });
-      if (!res.ok) throw new Error("Action failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["photo-editor"] });
-      vibrate(20);
-    },
-  });
+	const enhance = useMutation({
+		mutationFn: () =>
+			api<EnhanceResponse>("/api/ai/photo-enhance?action=enhance", {
+				method: "POST",
+				body: {
+					url,
+					adjustments: {
+						brightness,
+						contrast,
+						...(squareCrop ? { crop: { x: 0, y: 0, width: 1, height: 1 } } : {}),
+					},
+				},
+			}),
+		onSuccess: (data) => {
+			setApplied(data.enhancement ?? null);
+			setNote(null);
+		},
+		onError: (error) => {
+			setApplied(null);
+			setNote(error instanceof ApiError ? error.message : uploadMessage(error));
+		},
+	});
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <Skeleton className="h-[200px] rounded-[20px]" />
-      </div>
-    );
-  }
+	return (
+		<div className="mx-auto max-w-3xl p-4 pb-24">
+			<div className="rounded-[20px] border border-black/[0.06] bg-white p-6 shadow-sm">
+				<div className="flex items-center gap-3">
+					<div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white">
+						<Sliders className="h-5 w-5" />
+					</div>
+					<div>
+						<h1 className="font-display text-[22px] font-bold tracking-tight text-black">
+							Photo editor
+						</h1>
+						<p className="mt-0.5 text-[13px] text-zinc-500">
+							Brightness, contrast and crop — recorded against your profile.
+						</p>
+					</div>
+				</div>
 
-  if (error) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
-          <p className="text-[14px] font-medium text-red-800">Failed to load photo editor</p>
-          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
-          <button onClick={() => qc.invalidateQueries({ queryKey: ["photo-editor"] })} className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white">Retry</button>
-        </div>
-      </div>
-    );
-  }
+				{note && (
+					<output className="mt-4 block rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+						{note}
+					</output>
+				)}
 
-  return (
-    <div className="mx-auto max-w-3xl p-4 pb-24">
-      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-[24px] font-bold tracking-tight text-black capitalize">photo editor</h1>
-            <p className="mt-1 text-[14px] text-zinc-500">Production photo-editor with real backend</p>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
-              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
-              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • Real backend • No stubs
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
-            <Search className="h-3.5 w-3.5 text-zinc-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-24 bg-transparent text-[13px] outline-none md:w-40" />
-          </div>
-          {["All", "Nearby", "Popular", "Verified"].map((f) => (
-            <button key={f} onClick={() => { setFilter(f); vibrate(10); }} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-[13px]", filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600")}>{f}</button>
-          ))}
-        </div>
-      </div>
+				<div className="mt-4 grid gap-4 md:grid-cols-[260px,1fr]">
+					<div className="space-y-3">
+						<input
+							type="file"
+							accept="image/*"
+							onChange={(event) => {
+								const file = event.target.files?.[0];
+								if (!file) return;
+								uploadMedia(file, "edits")
+									.then((result) => {
+										setUrl(result.url);
+										setScored(null);
+										setApplied(null);
+										setNote(null);
+									})
+									.catch((error) => setNote(uploadMessage(error)));
+							}}
+							className="w-full rounded-[10px] border border-black/10 bg-white px-3 py-2 text-[13px] file:mr-3 file:rounded-full file:border-0 file:bg-black file:px-3 file:py-1.5 file:text-[12px] file:text-white"
+							aria-label="Choose a photo to edit"
+						/>
 
-      {data?.items.length === 0 ? (
-        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
-          <p className="text-[14px] font-medium text-zinc-700">No photo editor found</p>
-          <p className="mt-1 text-[12px] text-zinc-500">Real API: /api/photo-editor • No fake data</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {data?.items.map((item) => (
-            <div key={item.id} className="rounded-[16px] border border-black/[0.06] bg-white p-4 shadow-sm hover:shadow-md transition">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-black truncate">{item.name ?? item.title ?? item.id}</p>
-                  <p className="mt-1 text-[13px] text-zinc-500 line-clamp-2">{item.description ?? "Production photo-editor with real backend"}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {item.tags?.slice(0, 3).map((tag) => (
-                      <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">{tag}</span>
-                    ))}
-                    {item.verified && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">Verified</span>}
-                    {item.boosted && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">Boosted</span>}
-                  </div>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <button onClick={() => actionMutation.mutate(item.id)} className="rounded-full bg-black px-3 py-1.5 text-[11px] text-white hover:bg-zinc-900">Action</button>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-3 text-[11px] text-zinc-400">
-                {item.distance !== undefined && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.distance}m</span>}
-                {item.members !== undefined && <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item.members}</span>}
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Real • No stubs</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+						<div
+							className="relative aspect-square overflow-hidden rounded-[16px] bg-zinc-100"
+							style={{
+								filter: `brightness(${100 + brightness}%) contrast(${100 + contrast}%)`,
+							}}
+						>
+							{url ? (
+								<img
+									src={url}
+									alt="Preview of the adjustments applied"
+									className="h-full w-full object-cover"
+									style={squareCrop ? { objectFit: "cover" } : undefined}
+								/>
+							) : (
+								<div className="flex h-full flex-col items-center justify-center gap-2 text-zinc-400">
+									<ImageIcon className="h-8 w-8" />
+									<p className="text-[12px]">No photo yet</p>
+								</div>
+							)}
+						</div>
+						<p className="text-[11px] text-zinc-500">
+							The preview above is drawn by your browser from the values the
+							server accepted. Nothing in this build re-encodes the image, so
+							what you see is the look, not a new file.
+						</p>
+					</div>
 
-      <div className="mt-6 rounded-[16px] border bg-zinc-50 p-4">
-        <p className="text-[11px] text-zinc-500">PRD 11/12/13/14 • photo-editor • Production max depth • Real API /api/photo-editor • Drizzle RLS rate limiting realtime • No fake Array.from • No stubs • Enterprise • Exceeds expectations</p>
-      </div>
-    </div>
-  );
+					<div className="space-y-4">
+						<div>
+							<div className="flex items-center justify-between text-[12px] font-medium text-zinc-600">
+								<span>Brightness</span>
+								<span className="tabular-nums text-black">{brightness}</span>
+							</div>
+							<input
+								type="range"
+								min={-50}
+								max={50}
+								value={brightness}
+								onChange={(event) => setBrightness(Number(event.target.value))}
+								className="mt-2 w-full"
+								aria-label="Brightness"
+							/>
+						</div>
+
+						<div>
+							<div className="flex items-center justify-between text-[12px] font-medium text-zinc-600">
+								<span>Contrast</span>
+								<span className="tabular-nums text-black">{contrast}</span>
+							</div>
+							<input
+								type="range"
+								min={-50}
+								max={50}
+								value={contrast}
+								onChange={(event) => setContrast(Number(event.target.value))}
+								className="mt-2 w-full"
+								aria-label="Contrast"
+							/>
+						</div>
+
+						<label className="flex items-center gap-2 text-[13px] text-zinc-700">
+							<input
+								type="checkbox"
+								checked={squareCrop}
+								onChange={(event) => setSquareCrop(event.target.checked)}
+							/>
+							Crop to a centred square
+						</label>
+
+						<div className="flex flex-wrap gap-2">
+							<Button
+								type="button"
+								onClick={() => score.mutate()}
+								disabled={!url || score.isPending}
+								className="rounded-[12px] border border-black/10 px-4 text-black disabled:opacity-60"
+							>
+								<Sparkles className="mr-1 inline h-4 w-4" />
+								{score.isPending ? "Scoring…" : "Score this photo"}
+							</Button>
+							<Button
+								type="button"
+								onClick={() => enhance.mutate()}
+								disabled={!url || enhance.isPending}
+								className="rounded-[12px] bg-black px-4 text-white disabled:opacity-60"
+							>
+								{enhance.isPending ? "Applying…" : "Apply to my profile"}
+							</Button>
+						</div>
+
+						<div className="rounded-[12px] border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-600">
+							<ShieldCheck className="mr-1 inline h-4 w-4 align-text-bottom" />
+							The server refuses edits that alter identity — face shape,
+							birthmarks, skin colour or age — with a 400 and the reason. This
+							screen sends only lighting and crop, so nothing here can trip it.
+						</div>
+
+						{applied && (
+							<dl className="rounded-[12px] border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-900">
+								<div className="flex justify-between">
+									<dt>Saved</dt>
+									<dd className="font-medium">
+										brightness {applied.adjustments.brightness ?? 0},{" "}
+										contrast {applied.adjustments.contrast ?? 0}
+										{applied.adjustments.crop ? ", square crop" : ""}
+									</dd>
+								</div>
+								<div className="mt-1 flex justify-between">
+									<dt>Allowed</dt>
+									<dd className="font-medium">{applied.allowed ? "yes" : "no"}</dd>
+								</div>
+							</dl>
+						)}
+
+						{scored && scored.length > 0 && (
+							<div className="rounded-[12px] border border-zinc-200 px-3 py-2 text-[12px]">
+								<p className="font-medium text-black">Heuristic scores</p>
+								<p className="mt-1 text-zinc-500">
+									Derived from the URL and filename, so they are stable and
+									comparable — they are not a measurement of the photograph.
+								</p>
+								<div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+									{[
+										["quality", scored[0].quality],
+										["lighting", scored[0].lighting],
+										["sharpness", scored[0].blur],
+										["smile", scored[0].smile],
+										["background", scored[0].background],
+										["appeal", scored[0].appeal],
+									].map(([label, value]) => (
+										<div key={label} className="flex justify-between text-zinc-700">
+											<span className="capitalize">{label}</span>
+											<span className="tabular-nums font-medium">{value}</span>
+										</div>
+									))}
+								</div>
+								{scored[0].issues.length > 0 && (
+									<p className="mt-2 text-zinc-600">
+										Flagged: {scored[0].issues.join(", ")}
+									</p>
+								)}
+								{scored[0].suggestions.length > 0 && (
+									<p className="mt-1 text-zinc-600">
+										Suggested: {scored[0].suggestions.join(" · ")}
+									</p>
+								)}
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+
+			<p className="mt-4 text-[11px] text-zinc-500">
+				Reads and writes <code>/api/ai/photo-enhance</code> —{" "}
+				<code>?action=score</code> then <code>?action=enhance</code>.
+			</p>
+		</div>
+	);
 }

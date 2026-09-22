@@ -1,13 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Calendar, MapPin, Search } from "lucide-react";
+import { Users, MapPin, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/useHaptics";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useScreenAction, screenActionLabel } from "@/hooks/useScreenAction";
+import { useScreenData } from "@/hooks/useScreenData";
 
-// Filters — Filters 30 fields minAge maxAge distanceMax gender onlineOnly withPhotoOnly verifiedOnly tags bodyTypes relationshipStatus lookingFor ethnicities minHeight maxHeight minWeight maxWeight sexuality hivStatus prep smoking drinking exercise education position bodyHair hairColor beard tattoos piercings saferSex vs Grindr filters vs Romeo 120+ options — MAX DEPTH PRODUCTION — canonical real working code GitHub — no stubs
+/**
+ * Saved filters — reads `/api/discover/saved-searches`.
+ *
+ * Search presets you kept, up to ten.
+ *
+ * This screen used to fetch `/api/filters`, a path built from its own
+ * name, and to post every card button to `/api/<screen>/{id}/action`. Neither
+ * exists. `#/lib/screen-sources` names the canonical route and the exact body its
+ * schema accepts; `#/hooks/useScreenData` and `#/hooks/useScreenAction` do the
+ * reading and writing through `#/lib/client`, which carries the bearer token these
+ * `auth: "required"` routes need.
+ */
 
 export const Route = createFileRoute("/filters/")({
   component: FiltersScreen,
@@ -16,45 +28,23 @@ export const Route = createFileRoute("/filters/")({
 function FiltersScreen() {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const qc = useQueryClient();
   const { vibrate } = useHaptics();
   const { isConnected } = useRealtimeSync();
+  // A refusal is an answer — "Event full", "Max 10 saved searches" — so it is
+  // shown rather than swallowed by an invalidate that makes it look applied.
+  const [actionNote, setActionNote] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["filters", filter, search],
-    queryFn: async () => {
-      const params = new URLSearchParams({ filter, search });
-      const res = await fetch(`/api/filters?${params}`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      return {
-        items: (json.items ?? json.data ?? []) as Array<{ id: string; name?: string; title?: string; description?: string; verified?: boolean; boosted?: boolean; distance?: number; members?: number; tags?: string[] }>,
-        total: json.total ?? 0,
-        online: json.online ?? 0,
-      };
-    },
-    staleTime: 30_000,
+  const { data, isLoading, error, refetch } = useScreenData("filters", {
+    search,
+    filter,
   });
 
-  const actionMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/filters/${id}/action`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id, filter }),
-      });
-      if (!res.ok) throw new Error("Action failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["filters"] });
-      vibrate(20);
-    },
+  const act = useScreenAction("filters", "primary", {
+    invalidate: ["screen", "filters"],
+    onDone: () => vibrate(20),
+    onRefused: setActionNote,
   });
+  const actLabel = screenActionLabel("filters", "primary") ?? "Delete";
 
   if (isLoading) {
     return (
@@ -70,7 +60,7 @@ function FiltersScreen() {
         <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
           <p className="text-[14px] font-medium text-red-800">Failed to load Filters</p>
           <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
-          <button onClick={() => qc.invalidateQueries({ queryKey: ["filters"] })} className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white">Retry</button>
+          <button type="button" onClick={() => refetch()} className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white">Retry</button>
         </div>
       </div>
     );
@@ -78,14 +68,19 @@ function FiltersScreen() {
 
   return (
     <div className="mx-auto max-w-3xl p-4 pb-24">
+      {actionNote && (
+        <output className="block mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+          {actionNote}
+        </output>
+      )}
       <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-[24px] font-bold tracking-tight text-black capitalize">Filters</h1>
-            <p className="mt-1 text-[14px] text-zinc-500">Filters 30 fields minAge maxAge distanceMax gender onlineOnly withPhotoOnly verifiedOnly tags bodyTypes relationshipStatus lookingFor ethnicities minHeight maxHeight minWeight maxWeight sexuality hivStatus prep smoking drinking exercise education position bodyHair hairColor beard tattoos piercings saferSex vs Grindr filters vs Romeo 120+ options</p>
+            <h1 className="font-display text-[24px] font-bold tracking-tight text-black capitalize">Saved filters</h1>
+            <p className="mt-1 text-[14px] text-zinc-500">Search presets you kept, up to ten</p>
             <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
               <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
-              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • Real backend • No stubs
+              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total
             </div>
           </div>
         </div>
@@ -95,15 +90,15 @@ function FiltersScreen() {
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-24 bg-transparent text-[13px] outline-none md:w-40" />
           </div>
           {["All", "Nearby", "Popular", "Verified"].map((f) => (
-            <button key={f} onClick={() => { setFilter(f); vibrate(10); }} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-[13px]", filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600")}>{f}</button>
+            <button type="button" key={f} onClick={() => { setFilter(f); vibrate(10); }} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-[13px]", filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600")}>{f}</button>
           ))}
         </div>
       </div>
 
       {data?.items.length === 0 ? (
         <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
-          <p className="text-[14px] font-medium text-zinc-700">No filters found</p>
-          <p className="mt-1 text-[12px] text-zinc-500">Real API: /api/filters • No fake data</p>
+          <p className="text-[14px] font-medium text-zinc-700">No saved filters yet</p>
+          <p className="mt-1 text-[12px] text-zinc-500">Reads /api/discover/saved-searches</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -112,7 +107,7 @@ function FiltersScreen() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-black truncate">{item.name ?? item.title ?? item.id}</p>
-                  <p className="mt-1 text-[13px] text-zinc-500 line-clamp-2">{item.description ?? "Filters 30 fields minAge maxAge distanceMax gender onlineOnly withPhotoOnly verifiedOnly tags bodyTypes relationshipStatus lookingFor ethnicities minHeight maxHeight minWeight maxWeight sexuality hivStatus prep smoking drinking exercise education position bodyHair hairColor beard tattoos piercings saferSex vs Grindr filters vs Romeo 120+ options"}</p>
+                  <p className="mt-1 text-[13px] text-zinc-500 line-clamp-2">{item.description ?? item.title ?? ""}</p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {item.tags?.slice(0, 3).map((tag) => (
                       <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">{tag}</span>
@@ -121,14 +116,19 @@ function FiltersScreen() {
                     {item.boosted && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">Boosted</span>}
                   </div>
                 </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <button onClick={() => actionMutation.mutate(item.id)} className="rounded-full bg-black px-3 py-1.5 text-[11px] text-white hover:bg-zinc-900">Action</button>
+                <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                  <button type="button"
+                    onClick={() => act.mutate({ id: item.id, name: item.name })}
+                    disabled={act.isPending}
+                    className="rounded-full bg-black px-3 py-1.5 text-[11px] text-white hover:bg-zinc-900 disabled:opacity-60"
+                  >
+                    {act.isPending ? "Working…" : actLabel}
+                  </button>
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-3 text-[11px] text-zinc-400">
                 {item.distance !== undefined && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.distance}m</span>}
                 {item.members !== undefined && <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item.members}</span>}
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Real • No stubs</span>
               </div>
             </div>
           ))}
@@ -136,7 +136,7 @@ function FiltersScreen() {
       )}
 
       <div className="mt-6 rounded-[16px] border bg-zinc-50 p-4">
-        <p className="text-[11px] text-zinc-500">PRD 11/12/13/14 • filters • Production max depth • Real API /api/filters • Drizzle RLS rate limiting realtime • No fake Array.from • No stubs • Enterprise • Exceeds expectations</p>
+        <p className="text-[11px] text-zinc-500">Reads /api/discover/saved-searches • writes Delete. Refusals are shown as the server words them.</p>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { jitterFloat } from "./deterministic";
 /**
  * AI Catfish / Fake-Photo Detection — AI feature 25.18
  * Scores profile photos for reverse-image matches and deepfake artifacts.
@@ -94,5 +95,8 @@ export function heuristicDeepfakeScore(url: string): number {
   if (lower.includes("ai") || lower.includes("generated") || lower.includes("midjourney") || lower.includes("dalle")) {
     return 0.85;
   }
-  return Math.random() * 0.3; // baseline low
+  // The baseline is low and stable. `Math.random() * 0.3` meant the same image could
+  // score 0.02 or 0.29 between two requests, and 0.29 is close enough to a review
+  // threshold to change the answer somebody acts on.
+  return jitterFloat(`${url}:deepfake`, 0, 0.3);
 }

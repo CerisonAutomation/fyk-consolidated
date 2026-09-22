@@ -71,7 +71,57 @@ ip_version = "IPv4"
 #     the service role, i.e. unusable with the JWT check and RLS-bypassing without it, with
 #     no caller in the app. It is deleted rather than configured (AUDIT §2.22).
 # ---------------------------------------------------------------------------
+# Every function declares its posture explicitly. Inheriting the platform default
+# means a new function silently becomes public (or silently stops working for the
+# scheduler that calls it), and neither failure is visible in a diff — which is what
+# `src/lib/migration-invariants.test.ts` ("declares a JWT posture for every
+# function") is for.
+#
+# The rule the declarations below follow:
+#   * called by a signed-in browser  -> verify_jwt = true
+#   * called by Postgres/scheduler   -> verify_jwt = false AND a shared-secret
+#     header (`x-fyk-*-token`) compared in constant time, refusing 503 when the
+#     secret is unset. No service-role write path sits behind an unauthenticated URL.
+#
+# `cleanup-expired` and `streak-check` are cron-shaped but hold privilege without a
+# shared secret, so they are declared `true`: the honest posture until they grow the
+# token guard `cron-cleanup` already has. Reach them through `cron-cleanup`, which
+# pg_cron/pg_net already schedule (0023 §5).
+
 [functions.ai-chat]
+verify_jwt = true
+
+[functions.ai-intent-detect]
+verify_jwt = true
+
+[functions.auto-moderate]
+verify_jwt = true
+
+[functions.check-infractions]
+verify_jwt = true
+
+[functions.cleanup-expired]
+verify_jwt = true
+
+[functions.cron-cleanup]
+verify_jwt = false
+
+[functions.divine-complete]
+verify_jwt = false
+
+[functions.generate-embeddings]
+verify_jwt = true
+
+[functions.match-profiles]
+verify_jwt = true
+
+[functions.meetnow-boost]
+verify_jwt = true
+
+[functions.mfa-setup]
+verify_jwt = true
+
+[functions.mfa-verify]
 verify_jwt = true
 
 [functions.moderate]
@@ -80,11 +130,17 @@ verify_jwt = true
 [functions.notify]
 verify_jwt = false
 
-[functions.cron-cleanup]
-verify_jwt = false
+[functions.rate-limit]
+verify_jwt = true
 
-[functions.divine-complete]
-verify_jwt = false
+[functions.search-nearby]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
+
+[functions.streak-check]
+verify_jwt = true
 
 [extensions]
 pgvector = { enabled = true, schema = "extensions" }

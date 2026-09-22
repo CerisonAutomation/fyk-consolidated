@@ -61,6 +61,28 @@ export const Route = createFileRoute("/api/admin/kpis/")({
             db.select({ count: count() }).from(notifications),
           ]);
 
+          // Three numbers here used to be constants: `avgTrustScore: 65`,
+          // `reports: 0`, `pendingVerifications: 0`, each with a comment saying a query
+          // would be needed. An operator dashboard that reports a fixed 0 for open
+          // reports is worse than one that omits the number — it reads as "queue empty".
+          const [trustRow] = (await db.execute(sql`
+            select coalesce(round(avg(trust_score))::int, 0) as avg_trust
+              from public.users
+          `)) as unknown as { avg_trust: number }[];
+
+          const [openReportsRow] = (await db.execute(sql`
+            select count(*)::int as open_reports
+              from public.reports
+             where status in ('open','in_review')
+          `)) as unknown as { open_reports: number }[];
+
+          const [pendingVerificationRow] = (await db.execute(sql`
+            select count(*)::int as pending_verifications
+              from public.verification_requests
+             where status = 'pending'
+               and expires_at > now()
+          `)) as unknown as { pending_verifications: number }[];
+
           const kpis = {
             users: {
               total: totalUsers[0]?.count ?? 0,
@@ -87,9 +109,10 @@ export const Route = createFileRoute("/api/admin/kpis/")({
             },
             system: {
               notifications: totalNotifications[0]?.count ?? 0,
-              avgTrustScore: 65, // would compute avg
-              reports: 0, // would query reports
-              pendingVerifications: 0,
+              avgTrustScore: Number(trustRow?.avg_trust ?? 0),
+              // Open *and* in-review: both are work a moderator still has to do.
+              reports: Number(openReportsRow?.open_reports ?? 0),
+              pendingVerifications: Number(pendingVerificationRow?.pending_verifications ?? 0),
             },
             timestamp: new Date().toISOString(),
           };

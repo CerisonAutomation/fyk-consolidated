@@ -66,6 +66,10 @@ function modelledTables(): Set<string> {
 }
 
 const UNMODELLED = new Set([
+	// Community tables (groups, group_members, group_messages, shouts, shout_likes,
+	// board_posts, board_comments, site_config, wallet, wallet_transactions) were
+	// modelled when `/api/groups`, `/api/shouts` and `/api/board` were written: a
+	// route that selects from a table with no model is a route nobody type-checked.
 	"ai_chat_health",
 	"ai_match_scores",
 	"ai_memory",
@@ -74,28 +78,18 @@ const UNMODELLED = new Set([
 	"album_shares",
 	"audit_events",
 	"auth_rate_limits",
-	"board_comments",
-	"board_posts",
 	"event_waitlist",
-	"group_members",
-	"group_messages",
-	"groups",
 	"likes",
 	"message_attachments",
 	"message_embeddings",
 	"offer_joins",
 	"offers",
-	"post_joins",
 	"profile_embeddings",
 	"profile_photos",
 	"profiles",
 	"reports",
 	"saved_filters",
 	"saved_phrases",
-	"sessions",
-	"shout_likes",
-	"shouts",
-	"site_config",
 	"story_views",
 	"tag_embeddings",
 	"typing_indicators",

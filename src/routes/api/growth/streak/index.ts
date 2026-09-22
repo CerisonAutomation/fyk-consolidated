@@ -1,100 +1,68 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
-import { json, withSecurity } from "@/middleware";
+import { methodNotAllowed, requireCaller, unexpected } from "@/lib/api-helpers";
+import { activityDays, ACTIVITY_WINDOW_DAYS } from "@/lib/activity.server";
 import { calculateStreak } from "@/lib/growth";
-
-import { telemetry } from "@/lib/enterprise/telemetry";
-import { resilient } from "@/lib/enterprise/self-healing";
-import { cache } from "@/lib/enterprise/performance";
-import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
-import { auditLogger } from "@/lib/enterprise/security-hardened";
-import { validate } from "@/lib/enterprise/validation";
+import { json, withSecurity } from "@/middleware";
 
 /**
- * Enterprise enrichment for growth.streak
- * - Telemetry spans with traceId correlation
- * - Resilient retry with circuit breaker
- * - Cache with stale-while-revalidate
- * - Audit logging for compliance
- * - Validation with detailed errors
- * - Rate limiting per user/IP
+ * `GET /api/growth/streak` — the consecutive-day counter the welcome, home and
+ * notification surfaces show.
+ *
+ * WHAT CHANGED
+ * ------------
+ * The handler used to build its own input: an array of three timestamps for today,
+ * yesterday and the day before, passed to `calculateStreak` with a comment saying a
+ * production build would query `audit_events` or presence logs. Every account
+ * therefore had a three-day streak, `celebration` fired "3 day streak!" for everybody
+ * on their first request, and `atRisk` was always false because one of the three
+ * invented days was always today. The retention surface was describing a habit the
+ * user might never have had.
+ *
+ * It now reads the days this account was actually here (`#/lib/activity.server`:
+ * session sign-ins and touches, plus messages sent) and counts them. A new account
+ * gets `count: 0` and no celebration, which is the truthful answer and the one that
+ * makes the counter worth showing.
+ *
+ * The response shape is unchanged — `{ streak, celebration, atRiskMessage }` — so the
+ * screens that read it did not have to change with it.
  */
-
-// Use all enterprise imports to satisfy TS noUnusedLocals
-void cache;
-void auditTrail;
-void auditLogger;
-void validate;
-void traceRequest;
-void finishTrace;
-void resilient;
-
-const ENTERPRISE_CONFIG = {
-  route: "growth.streak",
-  version: "2.0",
-  enrichedAt: new Date().toISOString(),
-  patterns: ["telemetry", "resilient", "cache", "audit", "validation", "observability"] as const,
-  metrics: {
-    cacheTtlSeconds: 60,
-    retryAttempts: 3,
-    timeoutMs: 3000,
-    circuitBreaker: "db-growth.streak",
-  },
-};
-
-// Telemetry helper for this route
-function trackRoute(event: string, meta: Record<string, unknown> = {}) {
-  telemetry.counter(`api.${ENTERPRISE_CONFIG.route}.${event}`, 1, meta as any);
-}
-
-// Resilient wrapper for DB operations
-async function withResilience<T>(fn: () => Promise<T>): Promise<T> {
-  return resilient(fn, {
-    retry: { maxAttempts: ENTERPRISE_CONFIG.metrics.retryAttempts, initialDelayMs: 100, maxDelayMs: 1000, factor: 2, jitter: true },
-    timeoutMs: ENTERPRISE_CONFIG.metrics.timeoutMs,
-    circuitBreaker: ENTERPRISE_CONFIG.metrics.circuitBreaker,
-  }) as Promise<T>;
-}
-
-
-
-/**
- * Streaks / Activity Loop — 24.2
- * Consecutive-day login or conversation streaks with visible counter.
- */
-
 export const Route = createFileRoute("/api/growth/streak/")({
-  server: {
-    handlers: {
-      POST: methodNotAllowed("GET"),
-      PUT: methodNotAllowed("GET"),
-      PATCH: methodNotAllowed("GET"),
-      DELETE: methodNotAllowed("GET"),
+	server: {
+		handlers: {
+			POST: methodNotAllowed("GET"),
+			PUT: methodNotAllowed("GET"),
+			PATCH: methodNotAllowed("GET"),
+			DELETE: methodNotAllowed("GET"),
 
-      GET: withSecurity(
-        async ({ caller }) => {
-          const user = requireCaller(caller);
+			GET: withSecurity(
+				async ({ caller }) => {
+					const user = requireCaller(caller);
+					try {
+						const days = await activityDays(user.id);
+						const streak = calculateStreak(days);
+						streak.userId = user.id;
+						streak.type = "login";
 
-          // Mock login dates — production: query audit_events or presence logs
-          const mockDates = [
-            new Date().toISOString(),
-            new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-            new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          ];
-
-          const streak = calculateStreak(mockDates);
-          streak.userId = user.id;
-          streak.type = "login";
-
-          return json({
-            streak,
-            celebration: streak.count >= 7 ? "Week streak! 🔥" : streak.count >= 3 ? "3 day streak!" : null,
-            atRiskMessage: streak.atRisk ? "Login today to keep your streak!" : null,
-          });
-        },
-        { rateLimit: { limit: 60, key: ({ caller }) => `streak:${caller?.id}` } },
-      ),
-    },
-  },
+						return json({
+							streak,
+							celebration:
+								streak.count >= 7
+									? `Week streak — ${streak.count} days`
+									: streak.count >= 3
+										? `${streak.count} day streak`
+										: null,
+							atRiskMessage: streak.atRisk
+								? "Open FYK today to keep your streak."
+								: null,
+							windowDays: ACTIVITY_WINDOW_DAYS,
+							activeDays: days,
+						});
+					} catch (error) {
+						return unexpected("growth/streak/GET", error);
+					}
+				},
+				{ rateLimit: { limit: 60, key: ({ caller }) => `streak:${caller?.id ?? "anon"}` } },
+			),
+		},
+	},
 });
-void trackRoute; void withResilience;

@@ -1,143 +1,191 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Calendar, MapPin, Search } from "lucide-react";
-import { Skeleton } from "@/components/ui/primitives";
-import { cn } from "@/lib/utils";
-import { useHaptics } from "@/hooks/useHaptics";
-import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Images, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/primitives";
+import { api, ApiError } from "@/lib/client";
+import { uploadMedia, uploadMessage } from "@/lib/upload-media";
 
-// Photo Ranker — Photo ranker AI scoring client-side heuristic category classification vs Grindr A-List — MAX DEPTH PRODUCTION — canonical real working code GitHub — no stubs
+/**
+ * `/ai/photo-ranker` — rank the photos on a profile through `POST /api/ai`.
+ *
+ * The generated screen fetched `/api/ai/photo-ranker` as a list and posted to
+ * `/api/ai/photo-ranker/{id}/action`. Neither exists: ranking is one call with the
+ * photo URLs in it, answered by the `photoRanker` action of `#/routes/api/ai`.
+ *
+ * WHAT THE SCORE IS, SAID PLAINLY
+ * -------------------------------
+ * `#/domains/ai/heuristic/photo-rank` scores from signals in the URL and filename —
+ * `selfie`, `sunset`, `blur`, `sunglasses` — with a hash of the URL as the
+ * tie-breaker. There is no vision model in this deployment, so a file called
+ * `IMG_1234.jpg` scores a neutral 50 with no tags, and the screen says that rather
+ * than presenting the number as though the image had been looked at. It is
+ * deterministic: the same list ranks the same way every time, which is what makes the
+ * ordering worth acting on.
+ */
+
+interface RankedPhoto {
+	url: string;
+	score: number;
+	tags: string[];
+}
+
+interface MeResponse {
+	profile?: { photos?: string[] } | null;
+}
+
+const MAX_PHOTOS = 12;
 
 export const Route = createFileRoute("/ai/photo-ranker/")({
-  component: PhotoRankerScreen,
+	component: PhotoRankerScreen,
 });
 
 function PhotoRankerScreen() {
-  const [filter, setFilter] = useState("All");
-  const [search, setSearch] = useState("");
-  const qc = useQueryClient();
-  const { vibrate } = useHaptics();
-  const { isConnected } = useRealtimeSync();
+	const [extra, setExtra] = useState<string[]>([]);
+	const [note, setNote] = useState<string | null>(null);
+	const [pendingFile, setPendingFile] = useState<File | null>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["photo-ranker", filter, search],
-    queryFn: async () => {
-      const params = new URLSearchParams({ filter, search });
-      const res = await fetch(`/api/ai/photo-ranker?${params}`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      return {
-        items: (json.items ?? json.data ?? []) as Array<{ id: string; name?: string; title?: string; description?: string; verified?: boolean; boosted?: boolean; distance?: number; members?: number; tags?: string[] }>,
-        total: json.total ?? 0,
-        online: json.online ?? 0,
-      };
-    },
-    staleTime: 30_000,
-  });
+	const me = useQuery({
+		queryKey: ["photo-ranker", "me"],
+		queryFn: () => api<MeResponse>("/api/auth/me"),
+	});
 
-  const actionMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/ai/photo-ranker/${id}/action`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id, filter }),
-      });
-      if (!res.ok) throw new Error("Action failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["photo-ranker"] });
-      vibrate(20);
-    },
-  });
+	const photos = [
+		...(me.data?.profile?.photos ?? []).filter((url): url is string => typeof url === "string"),
+		...extra,
+	].slice(0, MAX_PHOTOS);
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <Skeleton className="h-[200px] rounded-[20px]" />
-      </div>
-    );
-  }
+	const rank = useMutation({
+		mutationFn: async () => {
+			const file = pendingFile;
+			const uploaded = file ? (await uploadMedia(file, "photos")).url : null;
+			const list = uploaded ? [...photos, uploaded] : photos;
+			if (list.length === 0)
+				throw new ApiError(0, "Add at least one photo to rank.");
+			if (uploaded) setExtra((prev) => [...prev, uploaded]);
+			return api<{ ranked: RankedPhoto[] }>("/api/ai", {
+				method: "POST",
+				body: { action: "photoRanker", photos: list },
+			});
+		},
+		onSuccess: () => setNote(null),
+		onError: (error) =>
+			setNote(error instanceof ApiError ? error.message : uploadMessage(error)),
+	});
 
-  if (error) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
-          <p className="text-[14px] font-medium text-red-800">Failed to load Photo Ranker</p>
-          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
-          <button onClick={() => qc.invalidateQueries({ queryKey: ["photo-ranker"] })} className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white">Retry</button>
-        </div>
-      </div>
-    );
-  }
+	return (
+		<div className="mx-auto max-w-2xl p-4 pb-24">
+			<div className="rounded-[20px] border border-black/[0.06] bg-white p-6 shadow-sm">
+				<div className="flex items-center gap-3">
+					<div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white">
+						<Images className="h-5 w-5" />
+					</div>
+					<div>
+						<h1 className="font-display text-[22px] font-bold tracking-tight text-black">
+							Photo ranker
+						</h1>
+						<p className="mt-0.5 text-[13px] text-zinc-500">
+							{photos.length} of {MAX_PHOTOS} photos ready to rank.
+						</p>
+					</div>
+				</div>
 
-  return (
-    <div className="mx-auto max-w-3xl p-4 pb-24">
-      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-[24px] font-bold tracking-tight text-black capitalize">Photo Ranker</h1>
-            <p className="mt-1 text-[14px] text-zinc-500">Photo ranker AI scoring client-side heuristic category classification vs Grindr A-List</p>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
-              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
-              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • Real backend • No stubs
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
-            <Search className="h-3.5 w-3.5 text-zinc-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-24 bg-transparent text-[13px] outline-none md:w-40" />
-          </div>
-          {["All", "Nearby", "Popular", "Verified"].map((f) => (
-            <button key={f} onClick={() => { setFilter(f); vibrate(10); }} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-[13px]", filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600")}>{f}</button>
-          ))}
-        </div>
-      </div>
+				<p className="mt-4 rounded-[12px] border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-600">
+					Scores come from the filename and URL — words like <code>selfie</code>,{" "}
+					<code>sunset</code>, <code>blur</code> — not from looking at the image.
+					There is no vision model in this build. A file named{" "}
+					<code>IMG_1234.jpg</code> scores a neutral 50 with no tags, and the order
+					is the same every time you ask.
+				</p>
 
-      {data?.items.length === 0 ? (
-        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
-          <p className="text-[14px] font-medium text-zinc-700">No photo ranker found</p>
-          <p className="mt-1 text-[12px] text-zinc-500">Real API: /api/ai/photo-ranker • No fake data</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {data?.items.map((item) => (
-            <div key={item.id} className="rounded-[16px] border border-black/[0.06] bg-white p-4 shadow-sm hover:shadow-md transition">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-black truncate">{item.name ?? item.title ?? item.id}</p>
-                  <p className="mt-1 text-[13px] text-zinc-500 line-clamp-2">{item.description ?? "Photo ranker AI scoring client-side heuristic category classification vs Grindr A-List"}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {item.tags?.slice(0, 3).map((tag) => (
-                      <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">{tag}</span>
-                    ))}
-                    {item.verified && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">Verified</span>}
-                    {item.boosted && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">Boosted</span>}
-                  </div>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <button onClick={() => actionMutation.mutate(item.id)} className="rounded-full bg-black px-3 py-1.5 text-[11px] text-white hover:bg-zinc-900">Action</button>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-3 text-[11px] text-zinc-400">
-                {item.distance !== undefined && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.distance}m</span>}
-                {item.members !== undefined && <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item.members}</span>}
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Real • No stubs</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+				{note && (
+					<output className="mt-4 block rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+						{note}
+					</output>
+				)}
 
-      <div className="mt-6 rounded-[16px] border bg-zinc-50 p-4">
-        <p className="text-[11px] text-zinc-500">PRD 11/12/13/14 • photo-ranker • Production max depth • Real API /api/ai/photo-ranker • Drizzle RLS rate limiting realtime • No fake Array.from • No stubs • Enterprise • Exceeds expectations</p>
-      </div>
-    </div>
-  );
+				<div className="mt-4 flex flex-wrap items-center gap-2">
+					<input
+						type="file"
+						accept="image/*"
+						onChange={(event) => setPendingFile(event.target.files?.[0] ?? null)}
+						className="rounded-[10px] border border-black/10 bg-white px-3 py-2 text-[13px] file:mr-3 file:rounded-full file:border-0 file:bg-black file:px-3 file:py-1.5 file:text-[12px] file:text-white"
+						aria-label="Add a photo to rank"
+					/>
+					<Button
+						type="button"
+						onClick={() => rank.mutate()}
+						disabled={rank.isPending || photos.length === 0}
+						className="rounded-[12px] bg-black px-4 text-white disabled:opacity-60"
+					>
+						<Sparkles className="mr-1 inline h-4 w-4" />
+						{rank.isPending ? "Ranking…" : "Rank these photos"}
+					</Button>
+				</div>
+
+				{photos.length === 0 && (
+					<p className="mt-4 text-[13px] text-zinc-500">
+						No photos on the profile yet. Add one above, or upload them from{" "}
+						<a className="underline" href="/settings/profile">
+							profile settings
+						</a>
+						.
+					</p>
+				)}
+			</div>
+
+			{rank.data?.ranked && rank.data.ranked.length > 0 && (
+				<div className="mt-4 space-y-3">
+					{rank.data.ranked.map((photo, index) => (
+						<div
+							key={photo.url}
+							className="flex items-center gap-4 rounded-[16px] border border-black/[0.06] bg-white p-4 shadow-sm"
+						>
+							<span className="font-display w-6 text-[18px] font-bold text-zinc-400">
+								{index + 1}
+							</span>
+							<img
+								src={photo.url}
+								alt=""
+								className="h-16 w-16 shrink-0 rounded-[12px] object-cover"
+							/>
+							<div className="min-w-0 flex-1">
+								<div className="flex items-center gap-2">
+									<div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100">
+										<div
+											className="h-full rounded-full bg-black"
+											style={{ width: `${Math.max(0, Math.min(100, photo.score))}%` }}
+										/>
+									</div>
+									<span className="text-[13px] font-medium text-black">
+										{photo.score}
+									</span>
+								</div>
+								<div className="mt-2 flex flex-wrap gap-1.5">
+									{photo.tags.length === 0 && (
+										<span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-500">
+											no signals in the filename
+										</span>
+									)}
+									{photo.tags.map((tag) => (
+										<span
+											key={tag}
+											className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600"
+										>
+											{tag}
+										</span>
+									))}
+								</div>
+							</div>
+						</div>
+					))}
+				</div>
+			)}
+
+			<p className="mt-4 text-[11px] text-zinc-500">
+				Reads <code>/api/auth/me</code> for the current photos and writes{" "}
+				<code>POST /api/ai</code> with <code>action: "photoRanker"</code>.
+			</p>
+		</div>
+	);
 }

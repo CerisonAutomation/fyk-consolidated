@@ -1,112 +1,152 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
-import { json, jsonError, withSecurity } from "@/middleware";
-
-import { telemetry } from "@/lib/enterprise/telemetry";
-import { resilient } from "@/lib/enterprise/self-healing";
-import { cache } from "@/lib/enterprise/performance";
-import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
-import { auditLogger } from "@/lib/enterprise/security-hardened";
-import { validate } from "@/lib/enterprise/validation";
+import { db } from "@/db";
+import {
+	methodNotAllowed,
+	requireCaller,
+	unexpected,
+	z,
+} from "@/lib/api-helpers";
+import {
+	expiredSessionCount,
+	listSessions,
+	revokeOtherSessions,
+	revokeSession,
+	touchSession,
+} from "@/lib/auth-sessions.server";
+import { ApiError, json, jsonError, withSecurity } from "@/middleware";
 
 /**
- * Enterprise enrichment for auth.sessions
- * - Telemetry spans with traceId correlation
- * - Resilient retry with circuit breaker
- * - Cache with stale-while-revalidate
- * - Audit logging for compliance
- * - Validation with detailed errors
- * - Rate limiting per user/IP
+ * `GET/DELETE /api/auth/sessions` — the devices signed in as you, and ending them.
+ *
+ * WHAT THIS REPLACED
+ * ------------------
+ * A handler that returned a literal: one invented session with
+ * `userAgent: "Current Device"` and `ip: "127.0.0.1"`, a second entry of the same
+ * shape, a `DELETE` that answered `{ok: true, revoked: [...]}` without touching a
+ * table, and eight `void cache;` statements whose comment said they existed "to
+ * satisfy TS noUnusedLocals". Every device looked like the current one and nothing
+ * was ever signed out, which is the worst shape for a security screen: it reports
+ * the action it did not take.
+ *
+ * 0032 reshapes `public.sessions` around a `token_hash` instead of a plaintext
+ * bearer token, and `#/lib/auth-sessions.server` owns the reads and writes. The row
+ * for the calling token is touched on the way in, so the list always marks the
+ * device you are holding as `current` — that flag is derived from the token hash,
+ * not from a client's claim.
+ *
+ * Revocation sets `revoked_at` rather than deleting: "signed out on that phone, on
+ * that date" stays answerable, and `#/lib/supabase-auth.server#forgetVerification`
+ * drops the cached verification so the revocation takes effect on the next request
+ * instead of thirty seconds later.
  */
 
-// Use all enterprise imports to satisfy TS noUnusedLocals
-void cache;
-void auditTrail;
-void auditLogger;
-void validate;
-void traceRequest;
-void finishTrace;
-void resilient;
-
-const ENTERPRISE_CONFIG = {
-  route: "auth.sessions",
-  version: "2.0",
-  enrichedAt: new Date().toISOString(),
-  patterns: ["telemetry", "resilient", "cache", "audit", "validation", "observability"] as const,
-  metrics: {
-    cacheTtlSeconds: 60,
-    retryAttempts: 3,
-    timeoutMs: 3000,
-    circuitBreaker: "db-auth.sessions",
-  },
-};
-
-// Telemetry helper for this route
-function trackRoute(event: string, meta: Record<string, unknown> = {}) {
-  telemetry.counter(`api.${ENTERPRISE_CONFIG.route}.${event}`, 1, meta as any);
-}
-
-// Resilient wrapper for DB operations
-async function withResilience<T>(fn: () => Promise<T>): Promise<T> {
-  return resilient(fn, {
-    retry: { maxAttempts: ENTERPRISE_CONFIG.metrics.retryAttempts, initialDelayMs: 100, maxDelayMs: 1000, factor: 2, jitter: true },
-    timeoutMs: ENTERPRISE_CONFIG.metrics.timeoutMs,
-    circuitBreaker: ENTERPRISE_CONFIG.metrics.circuitBreaker,
-  }) as Promise<T>;
-}
-
-
-
 export const Route = createFileRoute("/api/auth/sessions/")({
-  server: {
-    handlers: {
-      POST: methodNotAllowed("GET, DELETE"),
-      PUT: methodNotAllowed("GET, DELETE"),
-      PATCH: methodNotAllowed("GET, DELETE"),
+	server: {
+		handlers: {
+			GET: withSecurity(
+				async ({ request, caller, ip }) => {
+					const user = requireCaller(caller);
+					try {
+						const token = bearer(request);
+						if (token)
+							await touchSession({
+								userId: user.id,
+								token,
+								userAgent: request.headers.get("user-agent"),
+								ip,
+							});
 
-      GET: withSecurity(
-        async ({ caller }) => {
-          const user = requireCaller(caller);
+						const [all, expired] = await Promise.all([
+							listSessions(user.id, token),
+							expiredSessionCount(user.id),
+						]);
+						const live = all.filter((s) => s.revokedAt === null);
 
-          const sessions = [
-            {
-              id: "current",
-              userId: user.id,
-              userAgent: "Current Device",
-              ip: "127.0.0.1",
-              createdAt: new Date().toISOString(),
-              lastActiveAt: new Date().toISOString(),
-              current: true,
-            },
-          ];
+						return json(
+							{
+								sessions: live,
+								revoked: all.filter((s) => s.revokedAt !== null),
+								current: live.find((s) => s.current) ?? null,
+								expiredCount: expired,
+								// Supabase owns the refresh token: revoking here stops this
+								// server accepting the access token, and the client still has
+								// to sign out to clear the cookie it holds.
+								note: "Revoking a session ends it here. The device's own sign-out clears its stored token.",
+							},
+							{ cache: "private" },
+						);
+					} catch (error) {
+						if (error instanceof ApiError)
+							return jsonError(error.message, error.status);
+						return unexpected("auth/sessions:GET", error);
+					}
+				},
+				{
+					auth: "required",
+					rateLimit: {
+						limit: 60,
+						key: ({ caller }) => `sessions:GET:${caller?.id ?? "anon"}`,
+					},
+				},
+			),
 
-          return json({ sessions });
-        },
-        { rateLimit: { limit: 30, key: ({ caller }) => `sessions:GET:${caller?.id}` } },
-      ),
+			DELETE: withSecurity(
+				async ({ request, caller }) => {
+					const user = requireCaller(caller);
+					try {
+						const url = new URL(request.url);
+						const id = url.searchParams.get("id");
+						const everywhere = url.searchParams.get("everywhere") === "1";
+						const token = bearer(request);
 
-      DELETE: withSecurity(
-        async ({ request, caller }) => {
-          requireCaller(caller);
-          const url = new URL(request.url);
-          const sessionId = url.searchParams.get("id");
-          const all = url.searchParams.get("all") === "true";
+						if (everywhere) {
+							if (!token) return jsonError("Sign in first", 401);
+							// "Everywhere" means every *other* device: signing out the device
+							// that made the request is `/api/auth/logout`, and doing both from
+							// one button leaves the caller with a token the server refuses
+							// while the screen still renders as signed in.
+							const revoked = await revokeOtherSessions(user.id, token);
+							return json({ ok: true, revoked, othersOnly: true });
+						}
 
-          if (all) {
-            return json({ ok: true, revoked: "all_others", message: "Signed out of other devices" });
-          }
+						const parsed = z.uuid().safeParse(id ?? "");
+						if (!parsed.success)
+							return jsonError("Pass ?id=<session id> or ?everywhere=1", 400);
 
-          if (!sessionId) return jsonError("Session id required or ?all=true", 400);
+						const revoked = await db.transaction((tx) =>
+							revokeSession(user.id, parsed.data, tx),
+						);
+						if (!revoked)
+							return jsonError(
+								"That session is not yours, or it is already revoked",
+								404,
+							);
+						return json({ ok: true, revoked: 1, id: parsed.data });
+					} catch (error) {
+						if (error instanceof ApiError)
+							return jsonError(error.message, error.status);
+						return unexpected("auth/sessions:DELETE", error);
+					}
+				},
+				{
+					auth: "required",
+					rateLimit: {
+						limit: 20,
+						key: ({ caller }) => `sessions:DELETE:${caller?.id ?? "anon"}`,
+					},
+				},
+			),
 
-          if (sessionId === "current") {
-            return jsonError("Cannot revoke current session via this endpoint", 400);
-          }
-
-          return json({ ok: true, revoked: sessionId });
-        },
-        { rateLimit: { limit: 20, key: ({ caller }) => `sessions:DELETE:${caller?.id}` } },
-      ),
-    },
-  },
+			POST: methodNotAllowed("GET, DELETE"),
+			PUT: methodNotAllowed("GET, DELETE"),
+			PATCH: methodNotAllowed("GET, DELETE"),
+		},
+	},
 });
-void trackRoute; void withResilience;
+
+function bearer(request: Request): string | null {
+	const header = request.headers.get("authorization") ?? "";
+	const match = /^Bearer\s+(.+)$/i.exec(header.trim());
+	const token = match?.[1]?.trim();
+	return token ? token : null;
+}

@@ -17,6 +17,17 @@ import {
 
 export const Route = createFileRoute("/auth/sign-in/")({
 	component: SignInPage,
+	/**
+	 * `?mode=` selects the panel this screen already has: `forgot` for a reset
+	 * link, `signup`, `reset`, `magic-link`. It exists so the screens that used to
+	 * be separate — `/login`, `/forgot-password` — can send a person here and land
+	 * them on the right form instead of a login box they then have to click out of.
+	 * An unknown mode is ignored rather than guessed at.
+	 */
+	validateSearch: (search: Record<string, unknown>): { mode?: AuthMode } => {
+		const mode = typeof search.mode === "string" ? search.mode : "";
+		return MODES.includes(mode as AuthMode) ? { mode: mode as AuthMode } : {};
+	},
 });
 
 /* ── FYKLogo using the actual logo asset ── */
@@ -35,6 +46,8 @@ function FYKLogoInline() {
 
 /* ── Types ── */
 type AuthMode = "login" | "signup" | "forgot" | "reset" | "magic-link";
+
+const MODES: AuthMode[] = ["login", "signup", "forgot", "reset", "magic-link"];
 
 const PASSWORD_STRENGTH_LABELS = [
 	"",
@@ -89,7 +102,7 @@ const GLASS_CARD_STYLE: React.CSSProperties = {
 function SignInPage() {
 	const navigate = useNavigate();
 
-	const [mode, setMode] = useState<AuthMode>("login");
+	const [mode, setMode] = useState<AuthMode>(Route.useSearch().mode ?? "login");
 	const [loading, setLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 	const [error, setError] = useState<string | null>(null);

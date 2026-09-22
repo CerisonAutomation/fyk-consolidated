@@ -3,6 +3,7 @@ import { type DbLike, db } from "@/db";
 import {
 	hoursAgo,
 	isTier,
+	monthlyBoostsFor,
 	PURCHASES_PER_HOUR,
 	type Tier,
 	tierRank,
@@ -432,4 +433,73 @@ export async function upsertConsumable(
 		return 0;
 	}
 	return Number(updated.quantity);
+}
+
+/**
+ * Grant a paid tier for a period, and hand over the boosts the tier sells.
+ *
+ * WHY ONE FUNCTION AND NOT TWO ROUTES' COPIES
+ * -------------------------------------------
+ * `POST /api/wallet {action:'subscribe'}` and `POST /api/premium {action:'activate'}`
+ * are the same purchase reached from two screens, and the tier ladder plus its
+ * monthly boosts live in `#/lib/economy`. Written twice, the two paths drift: one
+ * grants the boosts and the other does not, and a Platinum member who upgraded from
+ * the premium screen silently loses ten boosters a month. Both call this.
+ *
+ * The caller decides whether a payment backs the grant (`paymentsConfigured()` and
+ * the `source` string are what make a dev-mode grant auditable afterwards); this
+ * function only performs it, inside the caller's transaction, so the entitlement,
+ * the subscription row and the inventory cannot disagree.
+ */
+export async function activateTier(
+	params: {
+		userId: string;
+		tier: Tier;
+		/** Names what backed the grant: a provider invoice, or `dev-mode-grant`. */
+		source?: string;
+		months?: number;
+	},
+	tx: DbLike = db,
+): Promise<{ tier: Tier; renewsAt: Date; monthlyBoosts: number }> {
+	const { userId, tier } = params;
+	const months = Math.min(Math.max(params.months ?? 1, 1), 12);
+
+	const renewsAt = new Date();
+	renewsAt.setUTCMonth(renewsAt.getUTCMonth() + months);
+
+	await setTier(
+		{
+			userId,
+			tier,
+			source: params.source ?? "dev-mode-grant",
+			expiresAt: renewsAt,
+		},
+		tx,
+	);
+
+	// The perk is the product: Gold and Platinum sell boosters, so the grant that
+	// raises the tier is the same write that puts them in the inventory.
+	const monthlyBoosts = monthlyBoostsFor(tier);
+	if (monthlyBoosts > 0)
+		await upsertConsumable(
+			{ userId, type: "boost", delta: monthlyBoosts * months },
+			tx,
+		);
+
+	return { tier, renewsAt, monthlyBoosts };
+}
+
+/**
+ * Drop to `free` immediately. Anything already bought stays in the inventory:
+ * boosters are paid-for goods, and cancelling a subscription is not a clawback.
+ */
+export async function cancelTier(
+	userId: string,
+	tx: DbLike = db,
+): Promise<{ tier: "free" }> {
+	await setTier(
+		{ userId, tier: "free", source: "cancelled", expiresAt: null },
+		tx,
+	);
+	return { tier: "free" };
 }

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, isNull, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
 import { json, jsonError, withSecurity } from "@/middleware";
-import { users } from "@/schema";
+import { blocks, messages, users } from "@/schema";
 import { calculateTrustScore, detectScamKeywords, detectUnderageKeywords } from "@/domains/ai/heuristic/trust-safety";
 
 /**
@@ -47,19 +47,67 @@ export const Route = createFileRoute("/api/ai/trust-score/")({
 
           const accountAgeDays = Math.floor((Date.now() - new Date(target.createdAt as any).getTime()) / (1000 * 60 * 60 * 24));
 
+          /* Four of these signals were constants: `reportCount: 0`,
+           * `reportReasons: []`, `messageVelocity: 5`, `blockedByCount: 0`. They are
+           * also the only inputs that can lower a score, so the scorer could not
+           * return anything but the sum of the positives — `flag_for_review` (3+
+           * reports), `rate_limit` (30+ msgs/hour) and `blocked_by_many` (5+ blocks)
+           * were unreachable, and a profile reported ten times scored like a clean
+           * one. They are queried now, from the same tables the rest of the app
+           * writes: `public.reports` (the moderation queue), `blocks`, `messages`.
+           *
+           * `dismissed` reports are excluded — moderation looked and found nothing,
+           * so carrying them would punish a user for having been wrongly accused. */
+          const sinceAnHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+          const [reportRows, blockedRows, velocityRows] = await Promise.all([
+            db.execute(sql`
+              select reason, count(*)::int as n
+                from public.reports
+               where target_id = ${target.id}
+                 and status <> 'dismissed'
+               group by reason
+            `),
+            db
+              .select({ n: sql<number>`count(*)::int` })
+              .from(blocks)
+              .where(eq(blocks.blockedId, target.id)),
+            db
+              .select({ n: sql<number>`count(*)::int` })
+              .from(messages)
+              .where(
+                and(
+                  eq(messages.senderId, target.id),
+                  isNull(messages.unsentAt),
+                  gte(messages.createdAt, sinceAnHourAgo),
+                ),
+              ),
+          ]);
+
+          const reportReasons = reportRows
+            .map((row: { reason?: string | null }) => String(row.reason ?? "").trim())
+            .filter((reason: string) => reason.length > 0);
+          const reportCount = reportRows.reduce(
+            (total: number, row: { n?: number | string | null }) =>
+              total + Number(row.n ?? 0),
+            0,
+          );
+
           const signals = {
             userId: target.id,
             verified: (target.verification ?? 0) >= 2,
-            reportCount: 0, // would query reports table
-            reportReasons: [],
+            reportCount,
+            reportReasons,
             accountAgeDays,
             photoCount: Array.isArray(target.photos) ? (target.photos as any[]).length : 0,
             bioLength: target.bio?.length ?? 0,
+            // No social-link column exists in `users`, and `calculateTrustScore` does
+            // not read this field. It stays false rather than being invented from the
+            // bio, which is how a link that is not there would end up in a score.
             hasSocialLinks: false,
-            messageVelocity: 5,
+            messageVelocity: Number(velocityRows[0]?.n ?? 0),
             scamKeywords: target.bio ? detectScamKeywords(target.bio) : [],
             underageKeywords: target.bio ? detectUnderageKeywords(target.bio) : [],
-            blockedByCount: 0,
+            blockedByCount: Number(blockedRows[0]?.n ?? 0),
             isPremium: (target.tier ?? "free") !== "free",
           };
 
@@ -83,6 +131,10 @@ export const Route = createFileRoute("/api/ai/trust-score/")({
               accountAgeDays,
               photoCount: signals.photoCount,
               bioLength: signals.bioLength,
+              reportCount: signals.reportCount,
+              reportReasons: signals.reportReasons,
+              blockedByCount: signals.blockedByCount,
+              messageVelocity: signals.messageVelocity,
             },
             ethics: {
               neverShownToOthers: true,
