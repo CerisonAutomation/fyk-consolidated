@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
 	boolean,
+	check,
 	integer,
 	jsonb,
 	pgTable,
@@ -11,6 +12,7 @@ import {
 	date,
 	index,
 	unique,
+	uniqueIndex,
 	uuid,
 } from "drizzle-orm/pg-core";
 
@@ -97,6 +99,15 @@ export const users = pgTable("users", {
 
 	status: text("status").default("online"),
 	role: text("role").default("user"),
+	/**
+	 * Denormalised second-factor flag (0027). `two_factor_credentials.enabled`
+	 * (0031) is the authority; this column exists so a profile card and the
+	 * settings screens can answer "is 2FA on" without a join. Written in the same
+	 * transaction as the credential row — `/api/auth/2fa` was writing this key
+	 * through an `as any` cast while the model did not declare it, so the flag
+	 * never moved and the screen reported success anyway.
+	 */
+	twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
 	tier: text("tier").default("free"),
 	verification: integer("verification").default(0),
 	trustScore: integer("trust_score").default(50),
@@ -341,6 +352,30 @@ export const blocks = pgTable("blocks", {
 	blockedId: uuid("blocked_id").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).defaultNow(),
 });
+
+/**
+ * `0033` — one member standing behind another's identity.
+ *
+ * `body` is 20–500 characters at the database level, because a vouch that says "good"
+ * vouches for nothing. `revokedAt` is a withdrawal rather than a delete, so the record
+ * can answer "did this person ever vouch for them".
+ */
+export const vouches = pgTable(
+	"vouches",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		voucherId: uuid("voucher_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+		profileId: uuid("profile_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+		body: text("body").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+		revokedAt: timestamp("revoked_at", { withTimezone: true, precision: 6 }),
+	},
+	(t) => [
+		uniqueIndex("vouches_one_per_pair").on(t.voucherId, t.profileId),
+		index("vouches_profile_recent").on(t.profileId, t.createdAt),
+		check("vouches_not_self", sql`${t.voucherId} <> ${t.profileId}`),
+	],
+);
 
 /* ---------------------------------- chat ----------------------------------- */
 
@@ -882,6 +917,53 @@ export const vouchers = pgTable("vouchers", {
 	createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
 	createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
 });
+
+/**
+ * `0033` — staff-authored, time-boxed community goals.
+ *
+ * `kind` decides where progress is read from: `streak` (sessions + messages),
+ * `profile` (`users.profile_complete`), `events` (`event_rsvps`), `community`
+ * (`group_roles`). No client role can write a row; the API reads them with the service
+ * role.
+ */
+export const challenges = pgTable(
+	"challenges",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		slug: text("slug").notNull().unique(),
+		title: text("title").notNull(),
+		description: text("description").notNull(),
+		kind: text("kind").notNull(),
+		targetCount: integer("target_count").notNull().default(1),
+		rewardBones: integer("reward_bones").notNull().default(0),
+		startsAt: timestamp("starts_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+		endsAt: timestamp("ends_at", { withTimezone: true, precision: 6 }).notNull(),
+		createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+		createdAt: timestamp("created_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+	},
+	(t) => [index("challenges_active").on(t.startsAt, t.endsAt)],
+);
+
+/**
+ * `0033` — who joined a challenge, when they finished, whether the reward was paid.
+ *
+ * Progress is not stored. `#/routes/api/growth/challenges` computes it from the table
+ * the kind names, so the number a user sees cannot disagree with the thing it counts.
+ */
+export const challengeParticipants = pgTable(
+	"challenge_participants",
+	{
+		challengeId: uuid("challenge_id").notNull().references(() => challenges.id, { onDelete: "cascade" }),
+		userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+		joinedAt: timestamp("joined_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+		completedAt: timestamp("completed_at", { withTimezone: true, precision: 6 }),
+		rewardClaimedAt: timestamp("reward_claimed_at", { withTimezone: true, precision: 6 }),
+	},
+	(t) => [
+		primaryKey({ columns: [t.challengeId, t.userId] }),
+		index("challenge_participants_user").on(t.userId, t.joinedAt),
+	],
+);
 
 export const polls = pgTable("polls", {
 	id: uuid("id").primaryKey().defaultRandom(),
@@ -1454,3 +1536,326 @@ export const bundleOptimisation = pgTable("bundle_optimisation", {
 	measuredAt: timestamp("measured_at", { withTimezone: true, precision: 6 }).notNull().defaultNow(),
 });
 
+
+/* ------------------------------- community (0010) ---------------------------- */
+/**
+ * Groups, shouts, board and wallet — modelled from `0010_remaining_tables.sql` and
+ * `0000_profiles.sql` rather than generated, per this file's rule.
+ *
+ * These tables have been live since 0010 and were reachable only through raw
+ * `sql\`\`` (which type-checks nothing) or not at all: `/api/groups`, `/api/shouts`
+ * and `/api/board` did not exist, so the screens that listed them rendered an empty
+ * state forever. Modelling them is what lets those routes be written against columns
+ * the database actually has. `src/lib/schema-coverage.test.ts` keeps this list and
+ * the DDL in step; its `UNMODELLED` set shrinks as each table lands here.
+ *
+ * `board_posts.author_id` and `board_comments.author_id` reference
+ * `public.profiles(id)` (the auth-uid lineage), not `public.users(id)`; `profiles`
+ * has no model in this file yet, so the columns are declared without a Drizzle
+ * reference rather than pointed at the wrong table. The FK still exists in the
+ * database and still enforces the relation.
+ */
+
+export const groups = pgTable(
+	"groups",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		name: text("name").notNull(),
+		description: text("description"),
+		coverUrl: text("cover_url"),
+		icon: text("icon"),
+		/** CHECK (privacy IN ('public','private','secret')) — 0013. */
+		privacy: text("privacy").default("public"),
+		createdBy: uuid("created_by").references(() => users.id, {
+			onDelete: "set null",
+		}),
+		memberCount: integer("member_count").default(0),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+	},
+	(table) => [index("idx_groups_created_by").on(table.createdBy)],
+);
+
+export const groupMembers = pgTable(
+	"group_members",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		groupId: uuid("group_id")
+			.notNull()
+			.references(() => groups.id, { onDelete: "cascade" }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		/** CHECK (role IN ('member','moderator','admin','owner')) — 0013. */
+		role: text("role").default("member"),
+		joinedAt: timestamp("joined_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+	},
+	(table) => [
+		unique("group_members_group_id_user_id_key").on(table.groupId, table.userId),
+		index("idx_group_members_user").on(table.userId),
+	],
+);
+
+export const groupMessages = pgTable(
+	"group_messages",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		groupId: uuid("group_id")
+			.notNull()
+			.references(() => groups.id, { onDelete: "cascade" }),
+		senderId: uuid("sender_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		content: text("content").notNull(),
+		/** CHECK (type IN ('text','image','video','system')) — 0013. */
+		type: text("type").default("text"),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+	},
+	(table) => [index("idx_group_messages_group").on(table.groupId, table.createdAt)],
+);
+
+export const shouts = pgTable(
+	"shouts",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		content: text("content").notNull(),
+		mediaUrl: text("media_url"),
+		likesCount: integer("likes_count").default(0),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+	},
+	(table) => [index("idx_shouts_created_at").on(table.createdAt)],
+);
+
+export const shoutLikes = pgTable(
+	"shout_likes",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		shoutId: uuid("shout_id")
+			.notNull()
+			.references(() => shouts.id, { onDelete: "cascade" }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+	},
+	(table) => [unique("shout_likes_shout_id_user_id_key").on(table.shoutId, table.userId)],
+);
+
+export const boardPosts = pgTable(
+	"board_posts",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		/** FK to `public.profiles(id)`; see the note above this section. */
+		authorId: uuid("author_id").notNull(),
+		/** post_kind enum: invite | offer | ask | photo | text. */
+		kind: text("kind").notNull().default("text"),
+		body: text("body").notNull(),
+		activityId: text("activity_id"),
+		storagePath: text("storage_path"),
+		city: text("city"),
+		area: text("area"),
+		spots: integer("spots"),
+		joinCount: integer("join_count").notNull().default(0),
+		expiresAt: timestamp("expires_at", { withTimezone: true, precision: 6 }).notNull(),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).notNull().defaultNow(),
+	},
+	(table) => [index("idx_board_posts_expires").on(table.expiresAt)],
+);
+
+export const boardComments = pgTable(
+	"board_comments",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		postId: uuid("post_id")
+			.notNull()
+			.references(() => boardPosts.id, { onDelete: "cascade" }),
+		/** FK to `public.profiles(id)`; see the note above this section. */
+		authorId: uuid("author_id").notNull(),
+		body: text("body").notNull(),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).notNull().defaultNow(),
+	},
+	(table) => [index("idx_board_comments_post").on(table.postId)],
+);
+
+/**
+ * The edge behind `board_posts.join_count`.
+ *
+ * `0002_rls.sql` derives the counter from this table (`refresh_post_join_count`,
+ * re-registered by 0022), so a handler that increments `join_count` instead of
+ * inserting the edge is refused by the database and would drift if it were not.
+ * `profileId` is the auth-uid lineage, exactly like `board_posts.authorId`.
+ */
+export const postJoins = pgTable(
+	"post_joins",
+	{
+		postId: uuid("post_id")
+			.notNull()
+			.references(() => boardPosts.id, { onDelete: "cascade" }),
+		/** FK to `public.profiles(id)`; see the note above this section. */
+		profileId: uuid("profile_id").notNull(),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).notNull().defaultNow(),
+	},
+	(table) => [primaryKey({ columns: [table.postId, table.profileId] })],
+);
+
+// `wallet` and `wallet_transactions` are modelled above (see the economy
+// section): `#/lib/wallet.server#postLedger` is the only writer, because
+// 0019 made `wallet.balance` a derived column. They are deliberately not
+// repeated here.
+
+/** Server-controlled configuration: feature flags, taxonomy, limits. Key/value. */
+export const siteConfig = pgTable("site_config", {
+	key: text("key").primaryKey(),
+	value: jsonb("value").notNull(),
+	updatedAt: timestamp("updated_at", {
+		withTimezone: true,
+		precision: 6,
+	}).defaultNow(),
+});
+
+/**
+ * Paid visibility for an entity rather than a profile: a group, shout, activity,
+ * fansite, tribe or board post sits at the top of its own list until `endsAt`.
+ *
+ * `entityId` is deliberately not a Drizzle reference. The targets live in six
+ * different tables and one of them (`activity`) points at `events`; Postgres has
+ * no cross-table foreign key, so existence and ownership are checked in the
+ * handler that writes the row — inside the transaction that spends the bones.
+ * Partial unique index `entity_promotions_one_live_per_entity` keeps a second
+ * purchase from stacking on the same entity.
+ */
+export const entityPromotions = pgTable(
+	"entity_promotions",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		entityType: text("entity_type").notNull(),
+		entityId: uuid("entity_id").notNull(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		startsAt: timestamp("starts_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+		endsAt: timestamp("ends_at", { withTimezone: true, precision: 6 }).notNull(),
+		cost: integer("cost").default(0),
+		currency: text("currency").default("bones"),
+		impressions: integer("impressions").default(0),
+		extendedAt: timestamp("extended_at", {
+			withTimezone: true,
+			precision: 6,
+		}),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+	},
+	(table) => [
+		index("entity_promotions_lookup").on(table.entityType, table.endsAt),
+		index("entity_promotions_user").on(table.userId, table.createdAt),
+	],
+);
+
+/**
+ * Second-factor secrets (0031). Server-only: the migration enables RLS with no
+ * policies and revokes both client roles, so nothing but the API's service-role
+ * connection can read a row.
+ *
+ * `secret` is a bearer credential for the second factor. It reaches a browser once,
+ * as an `otpauth://` URI during enrolment, and never again — which is why
+ * `#/routes/api/auth/2fa` returns it from `setup` and not from `status`.
+ */
+export const twoFactorCredentials = pgTable(
+	"two_factor_credentials",
+	{
+		userId: uuid("user_id")
+			.primaryKey()
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		secret: text("secret").notNull(),
+		enabled: boolean("enabled").notNull().default(false),
+		verifiedAt: timestamp("verified_at", { withTimezone: true, precision: 6 }),
+		/** sha256 hex per recovery code; the plaintext is shown once and not stored. */
+		recoveryCodes: jsonb("recovery_codes").notNull().default(sql`'[]'::jsonb`),
+		attempts: integer("attempts").notNull().default(0),
+		lockedUntil: timestamp("locked_until", { withTimezone: true, precision: 6 }),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).notNull().defaultNow(),
+		updatedAt: timestamp("updated_at", {
+			withTimezone: true,
+			precision: 6,
+		}).notNull().defaultNow(),
+	},
+	(table) => [index("two_factor_credentials_enabled").on(table.enabled)],
+);
+
+/**
+ * One row per signed-in device (0010, reshaped by 0032).
+ *
+ * The identity of a session is `tokenHash` — sha256 of the bearer token, hex — and
+ * 0032 dropped the plaintext `token` column it replaced. A device list is a
+ * convenience; a table of live credentials is a breach waiting for one query.
+ *
+ * `revokedAt` is a state rather than a delete, so "signed out on that phone, on this
+ * date" stays answerable. Nothing selects the hash into a response.
+ */
+export const sessions = pgTable(
+	"sessions",
+	{
+		id: uuid("id").primaryKey().defaultRandom(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+		tokenHash: text("token_hash").notNull(),
+		device: text("device"),
+		userAgent: text("user_agent"),
+		ip: text("ip"),
+		kind: text("kind").notNull().default("web"),
+		expiresAt: timestamp("expires_at", {
+			withTimezone: true,
+			precision: 6,
+		}).notNull(),
+		lastSeenAt: timestamp("last_seen_at", { withTimezone: true, precision: 6 }),
+		revokedAt: timestamp("revoked_at", { withTimezone: true, precision: 6 }),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			precision: 6,
+		}).defaultNow(),
+		updatedAt: timestamp("updated_at", {
+			withTimezone: true,
+			precision: 6,
+		}).notNull().defaultNow(),
+	},
+	(table) => [
+		unique("sessions_token_hash_key").on(table.tokenHash),
+		index("sessions_user_active").on(table.userId, table.revokedAt, table.lastSeenAt),
+	],
+);

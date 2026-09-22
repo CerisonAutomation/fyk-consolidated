@@ -12,6 +12,7 @@ import {
 	requireCaller,
 	z,
 } from "@/lib/api-helpers";
+import { startPromotion } from "@/lib/promotion.server";
 import { json, jsonError, withSecurity } from "@/middleware";
 import { eventRsvps, events, users } from "@/schema";
 
@@ -64,9 +65,26 @@ const rsvpSchema = z.object({
 	eventId: z.uuid(),
 });
 
+/**
+ * An event can be promoted to the top of the feed — but only by its host, and
+ * only while it still happens in the future. `#/lib/entity-promotions.server`
+ * applies the same price table, the same 7-day cap and the same `wallet` debit
+ * as every other surface, so "boost" costs the same on a group, a shout and an
+ * event: three different screens, one economy.
+ */
+const boostEventSchema = z
+	.object({
+		action: z.literal("boost"),
+		eventId: z.uuid(),
+		minutes: z.number().int().min(30).max(720).optional(),
+		idempotencyKey: z.string().max(120).optional(),
+	})
+	.strict();
+
 const bodySchema = z.discriminatedUnion("action", [
 	createEventSchema,
 	rsvpSchema,
+	boostEventSchema,
 ]);
 
 /** `char_length(title) between 3 and 120` is a DB check; mirror it, don't 500. */
@@ -91,9 +109,14 @@ export const Route = createFileRoute("/api/events/")({
 					const { limit, cursor } = readPagination(url);
 					const city =
 						url.searchParams.get("city")?.trim().slice(0, 120) || undefined;
+					// `#/routes/events/$eventId` renders one event. Without this filter its
+					// only options were a page of unrelated events or a route of its own;
+					// the id is a uuid, so it is parsed rather than trusted.
+					const onlyId = z.uuid().safeParse(url.searchParams.get("id") ?? "");
 
 					const where = and(
-						eq(events.status, "published"),
+						onlyId.success ? eq(events.id, onlyId.data) : undefined,
+						onlyId.success ? undefined : eq(events.status, "published"),
 						city
 							? ilike(events.city, `%${city.replace(/[%_]/g, "\\$&")}%`)
 							: undefined,
@@ -225,6 +248,55 @@ export const Route = createFileRoute("/api/events/")({
 				async ({ request, caller }) => {
 					const user = requireCaller(caller);
 					const body = await readJson(request, bodySchema, 32 * 1024);
+
+					if (body.action === "boost") {
+						const [row] = await db
+							.select({
+								id: events.id,
+								hostId: events.hostId,
+								startsAt: events.startsAt,
+								status: events.status,
+							})
+							.from(events)
+							.where(eq(events.id, body.eventId))
+							.limit(1);
+						if (!row || row.status !== "published")
+							return jsonError("That event is not published", 404);
+						if (row.hostId !== user.id)
+							return jsonError("You can only boost an event you host", 403);
+						if (row.startsAt.getTime() < Date.now())
+							return jsonError("That event already started", 409);
+
+						const outcome = await db.transaction((tx) =>
+							startPromotion(
+								{
+									userId: user.id,
+									entityType: "activity",
+									entityId: row.id,
+									minutes: body.minutes,
+									idempotencyKey: body.idempotencyKey,
+								},
+								tx,
+							),
+						);
+						if (outcome.kind === "insufficient")
+							return jsonError(
+								`That costs ${outcome.cost} bones and the wallet holds ${outcome.balance}`,
+								402,
+							);
+						if (outcome.kind === "held")
+							return jsonError(
+								`Already promoted until ${outcome.endsAt.toISOString()}`,
+								409,
+							);
+						if (outcome.kind === "duplicate")
+							return json({
+								ok: true,
+								duplicate: true,
+								note: "That boost was already applied.",
+							});
+						return json({ ok: true, ...outcome });
+					}
 
 					if (body.action === "create") {
 						const title = cleanText(body.title, TITLE_MAX);

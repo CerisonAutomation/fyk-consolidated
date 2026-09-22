@@ -54,9 +54,19 @@ export function Topbar({ user }: { user: ProfileUser }) {
   }, [q]);
 
   async function logout() {
-    // No `/api/auth/logout` exists: Supabase Auth owns the session, so the
-    // client library is what clears it. (The `router.refresh()` that followed was
-    // a Next-only cache bust and has no equivalent here.)
+    // Two halves, and both are needed. `POST /api/auth/logout` ends the session on
+    // the server: it revokes the `sessions` row (0032) and drops this server's
+    // cached verification, so the access token stops being accepted immediately
+    // instead of at expiry. Only the browser can then delete the token it holds,
+    // which is what `signOut({scope:"local"})` does. Signing out locally on its own
+    // left a valid token in the wild and every other device still signed in.
+    try {
+      const { post } = await import("@/lib/client");
+      await post("/api/auth/logout", {});
+    } catch {
+      // A server that cannot be reached must not trap the person in a session they
+      // asked to leave: the local half still runs.
+    }
     try {
       const { getSupabase } = await import("@/integrations/supabase/client");
       await getSupabase()?.auth.signOut({ scope: "local" });
@@ -89,7 +99,7 @@ export function Topbar({ user }: { user: ProfileUser }) {
                 <p className="px-4 py-3 text-xs text-muted">No kings match “{q}”</p>
               ) : (
                 results.map((r) => (
-                  <button
+                  <button type="button"
                     key={r.id}
                     onClick={() => { navigate({ to: `/profile/${r.id}` }); setOpen(false); setQ(""); }}
                     className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-hover"
@@ -129,7 +139,7 @@ export function Topbar({ user }: { user: ProfileUser }) {
           <Avatar name={user.pseudo} photoUrl={user.photos?.[0]} size={32} online={user.online} />
           <span className="hidden text-sm font-medium text-foreground sm:inline">{user.pseudo}</span>
         </Link>
-        <button
+        <button type="button"
           onClick={logout}
           className="rounded-lg px-2 py-1.5 text-[11px] text-muted transition-colors hover:bg-surface-hover hover:text-rose-300"
         >

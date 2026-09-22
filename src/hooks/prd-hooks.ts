@@ -1,11 +1,26 @@
 /**
- * PRD v3.0 — 47+ Custom Hooks — Missing 20 hooks
- * 100% grounded in real code, nothing made up
- * Practical, reusable, enterprise patterns
+ * The hook library the generated screens import from, one shim per hook
+ * (`#/hooks/useIsUserOnline`, `#/hooks/useSafety`, …).
+ *
+ * Every network call in here used to be a bare `fetch` to a path that does not
+ * exist — `/api/ai/suggestions`, `/api/ai/local-chat`, `/api/ai/icebreakers`,
+ * `/api/presence/{id}`, `/api/safety/block`, `/api/safety/report`,
+ * `/api/subscription`, `/api/auth/session`. A `fetch` that misses does not throw:
+ * it resolves with the SPA's `200 text/html` 404 document, `res.json()` rejects,
+ * and the hook either swallowed it or crashed the component that mounted it. So
+ * `useIsUserOnline()` reported everybody offline, `useSubscription()` reported
+ * everybody free, and `useSafety().blockUser()` reported success for a block that
+ * was never written.
+ *
+ * They now go through `#/lib/client`, which attaches the Supabase bearer token
+ * (these are `auth: "required"` routes), raises `ApiError` with the server's own
+ * sentence on a non-2xx, and refreshes the session on a 401 — and each one names
+ * the canonical route that answers it.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, post } from "@/lib/client";
 
 // AI Hooks — PRD 8.1
 export function useAIChat(conversationId: string) {
@@ -13,32 +28,85 @@ export function useAIChat(conversationId: string) {
   const [icebreakers, setIcebreakers] = useState<string[]>([]);
   const [toxicity, setToxicity] = useState<number>(0);
   
-  void setIcebreakers;
-  void setToxicity;
-  void icebreakers;
-  void toxicity;
-  
-  const generateSuggestions = useCallback(async (context: string) => {
-    // Calls /api/ai/suggestions with resilient retry, telemetry, cache
-    const res = await fetch("/api/ai/suggestions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ conversationId, context }),
-    });
-    const data = await res.json();
-    setSuggestions(data.suggestions ?? []);
+  // On mount, seed the list with what `/api/ai` says about the thread itself —
+  // `chatHealth` reads the conversation and returns suggestions in the same shape.
+  useEffect(() => {
+    if (!conversationId) return;
+    let cancelled = false;
+    post<{ suggestions: string[] }>("/api/ai", {
+      action: "chatHealth",
+      conversationId,
+    })
+      .then((data) => {
+        if (!cancelled) setSuggestions(data.suggestions ?? []);
+      })
+      .catch(() => {
+        /* no thread yet, or not a member of it: the list stays empty */
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [conversationId]);
 
-  return { suggestions, icebreakers, toxicity, generateSuggestions };
+  // `/api/ai` classifies the incoming line and answers with reply templates for
+  // that intent, plus the label and confidence behind the choice.
+  const generateSuggestions = useCallback(
+    async (context: string) => {
+      const data = await post<{ replies: string[]; intent: { label: string } }>(
+        "/api/ai",
+        { action: "replies", message: context },
+      );
+      setSuggestions(data.replies ?? []);
+    },
+    [],
+  );
+
+  // Icebreakers are keyed on the *other* profile, so they belong to the thread's
+  // counterpart rather than to this conversation id.
+  const loadIcebreakers = useCallback(
+    async (targetId: string) => {
+      const data = await post<{ icebreakers: string[] }>("/api/ai", {
+        action: "icebreakers",
+        targetId,
+      });
+      setIcebreakers(data.icebreakers ?? []);
+    },
+    [],
+  );
+
+  // Toxicity is a property of a line, not of a thread: `/api/ai` scores it as part
+  // of intent detection, so the caller passes the text it is worried about.
+  const scoreToxicity = useCallback(async (text: string) => {
+    const data = await post<{ intent: { label: string; confidence: number } }>(
+      "/api/ai",
+      { action: "replies", message: text },
+    );
+    const flagged = data.intent?.label === "toxicity";
+    setToxicity(flagged ? (data.intent?.confidence ?? 0) : 0);
+    return flagged;
+  }, []);
+
+  return {
+    suggestions,
+    icebreakers,
+    toxicity,
+    generateSuggestions,
+    loadIcebreakers,
+    scoreToxicity,
+  };
 }
 
 export function useAIChatSuggestions(conversationId: string) {
   const { data, isLoading } = useQuery({
     queryKey: ["ai-suggestions", conversationId],
-    queryFn: async () => {
-      const res = await fetch(`/api/ai/suggestions?conversationId=${conversationId}`);
-      return res.json();
-    },
+    queryFn: () =>
+      // `chatHealth` reads the thread and returns the same `suggestions` array the
+      // screen renders, alongside the score and trend that produced it.
+      post<{ suggestions: string[]; health: number; trend: string }>("/api/ai", {
+        action: "chatHealth",
+        conversationId,
+      }),
+    enabled: Boolean(conversationId),
   });
   return { suggestions: data?.suggestions ?? [], isLoading };
 }
@@ -46,14 +114,12 @@ export function useAIChatSuggestions(conversationId: string) {
 export function useAIChatIcebreakers(profileId: string) {
   const { data, isLoading } = useQuery({
     queryKey: ["ai-icebreakers", profileId],
-    queryFn: async () => {
-      const res = await fetch("/api/ai/icebreakers", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId, count: 3 }),
-      });
-      return res.json();
-    },
+    queryFn: () =>
+      post<{ icebreakers: string[] }>("/api/ai", {
+        action: "icebreakers",
+        targetId: profileId,
+      }),
+    enabled: Boolean(profileId),
   });
   return { icebreakers: data?.icebreakers ?? [], isLoading };
 }
@@ -66,11 +132,28 @@ export function useAISearch(query: string) {
     if (!query) return;
     setIsSearching(true);
     const timer = setTimeout(async () => {
-      // AI-powered search with embeddings cosine similarity
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-      const data = await res.json();
-      setResults(data.results ?? []);
-      setIsSearching(false);
+      try {
+        // `#/routes/api/search/global` answers with three lists — profiles, groups
+        // and threads — plus the sentence explaining how it read the query. The
+        // `/api/search` this replaced does not exist, and `data.results` was a key
+        // no route in this repo has ever answered with.
+        const data = await api<{
+          profiles?: unknown[];
+          groups?: unknown[];
+          threads?: unknown[];
+        }>(`/api/search/global?q=${encodeURIComponent(query)}`);
+        setResults([
+          ...(data.profiles ?? []),
+          ...(data.groups ?? []),
+          ...(data.threads ?? []),
+        ]);
+      } catch {
+        // A search that cannot run is an empty result, not a crash: the caller is
+        // typing, and this effect fires on every pause.
+        setResults([]);
+      } finally {
+        setIsSearching(false);
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
@@ -85,14 +168,17 @@ export function useLocalChat() {
   const sendMessage = useCallback(async (content: string) => {
     setIsGenerating(true);
     setMessages((prev) => [...prev, { role: "user", content }]);
-    // Local AI with Transformers.js Qwen3-0.6B-ONNX ~300MB
-    const res = await fetch("/api/ai/local-chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: content }),
+    // The assistant answer is the first reply `/api/ai` suggests for that line.
+    // There is no local model in this bundle: the comment this replaces promised
+    // a 300MB ONNX checkpoint that was never shipped, and the fetch went to a path
+    // nobody serves.
+    const data = await post<{ replies: string[] }>("/api/ai", {
+      action: "replies",
+      message: content,
     });
-    const data = await res.json();
-    setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+    const reply = data.replies?.[0];
+    if (reply)
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     setIsGenerating(false);
   }, []);
 
@@ -167,15 +253,34 @@ export function useIsUserOnline(userId: string) {
   const [isOnline, setIsOnline] = useState(false);
 
   useEffect(() => {
-    // Check if specific user is online via presence tracking
+    if (!userId) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+
+    // `#/routes/api/presence/$userId` answers with the moment its own answer stops
+    // being true, so the next poll is scheduled for then instead of every 30s: a
+    // presence window is minutes wide, and polling ten times inside it buys nine
+    // copies of the same fact.
     const check = async () => {
-      const res = await fetch(`/api/presence/${userId}`);
-      const data = await res.json();
-      setIsOnline(data.isOnline);
+      try {
+        const data = await api<{ isOnline: boolean; recheckAfterMs?: number }>(
+          `/api/presence/${encodeURIComponent(userId)}`,
+        );
+        if (stopped) return;
+        setIsOnline(data.isOnline === true);
+        const wait = Math.min(Math.max(data.recheckAfterMs ?? 60_000, 15_000), 300_000);
+        timer = setTimeout(check, wait);
+      } catch {
+        // A 404 here means blocked, hidden or gone: not online, and not worth
+        // another poll until the caller mounts this hook for somebody else.
+        if (!stopped) setIsOnline(false);
+      }
     };
     check();
-    const interval = setInterval(check, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [userId]);
 
   return isOnline;
@@ -504,21 +609,26 @@ export function useSafety() {
   const [blocked, setBlocked] = useState<string[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
 
+  // One route owns block/unblock/hide/favourite — `#/routes/api/social` — because
+  // they are all "what I did about another person", and splitting them meant the
+  // blocked-users screen and this hook could disagree about the same row.
   const blockUser = useCallback(async (userId: string) => {
-    await fetch("/api/safety/block", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) });
-    setBlocked((prev) => [...prev, userId]);
+    await post("/api/social", { targetId: userId, action: "block" });
+    setBlocked((prev) => [...new Set([...prev, userId])]);
   }, []);
 
   const unblockUser = useCallback(async (userId: string) => {
-    await fetch(`/api/safety/block?userId=${userId}`, { method: "DELETE" });
+    await post("/api/social", { targetId: userId, action: "unblock" });
     setBlocked((prev) => prev.filter((id) => id !== userId));
   }, []);
 
   const reportUser = useCallback(async (userId: string, reason: string, description?: string) => {
-    await fetch("/api/safety/report", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reportedId: userId, reason, description }),
+    // The route calls the free-text field `details`; sending `description` was
+    // silently dropped by a `.strict()` schema and the report landed with no context.
+    await post("/api/safety/reports", {
+      reportedId: userId,
+      reason,
+      details: description,
     });
   }, []);
 
@@ -528,10 +638,9 @@ export function useSafety() {
 export function useSubscription() {
   const { data, isLoading } = useQuery({
     queryKey: ["subscription"],
-    queryFn: async () => {
-      const res = await fetch("/api/subscription");
-      return res.json();
-    },
+    // `/api/premium` is the one place a tier is read: the same ladder the wallet
+    // charges from, so the gate below cannot disagree with what was paid for.
+    queryFn: () => api<{ tier?: string }>("/api/premium"),
   });
 
   const isPremium = data?.tier !== "free";
@@ -686,14 +795,26 @@ export function useSupabaseAuth() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Supabase auth sync
+    let cancelled = false;
+    // `/api/auth/me` verifies the bearer token this client sends and answers with
+    // the account row; a suspended account comes back as `{user: null}`, which is
+    // what signs this shell out.
     const check = async () => {
-      const res = await fetch("/api/auth/session");
-      const data = await res.json();
-      setUser(data.user ?? null);
-      setIsLoading(false);
+      try {
+        const data = await api<{ user: { id: string; email: string } | null }>(
+          "/api/auth/me",
+        );
+        if (!cancelled) setUser(data.user ?? null);
+      } catch {
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     };
     check();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { user, isLoading };

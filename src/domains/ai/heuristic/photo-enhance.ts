@@ -1,3 +1,4 @@
+import { jitter } from "./deterministic";
 /**
  * AI Photo Enhancer & Ordering — 25.5
  * Scores quality (lighting, blur, smile, background) and predicted appeal.
@@ -31,14 +32,19 @@ export type PhotoEnhancement = {
 const BLOCKED_ALTERATIONS = ["face_shape", "birthmarks", "skin_color", "age"];
 
 export function scorePhoto(url: string): PhotoScore {
-  // Heuristic scoring — production uses ML model
+  // A heuristic over the signals this deployment actually has: the URL and its
+  // filename. There is no vision model here, so nothing claims to have measured
+  // lighting or sharpness — these are stable, derived numbers, and one photo scores
+  // the same way every time it is asked about. `Math.random()` used to fill all four,
+  // so the editor printed "lighting 78" and then "lighting 41" for an image that had
+  // not changed, which is a measurement of nothing.
   const hasGoodLighting = !url.includes("dark");
   const isSharp = !url.includes("blur");
 
-  const lighting = hasGoodLighting ? 75 + Math.floor(Math.random() * 25) : 30 + Math.floor(Math.random() * 30);
-  const blur = isSharp ? 80 + Math.floor(Math.random() * 20) : 20 + Math.floor(Math.random() * 40);
-  const smile = 50 + Math.floor(Math.random() * 50);
-  const background = 60 + Math.floor(Math.random() * 40);
+  const lighting = hasGoodLighting ? jitter(`${url}:lighting`, 75, 99) : jitter(`${url}:lighting`, 30, 59);
+  const blur = isSharp ? jitter(`${url}:blur`, 80, 99) : jitter(`${url}:blur`, 20, 59);
+  const smile = jitter(`${url}:smile`, 50, 99);
+  const background = jitter(`${url}:background`, 60, 99);
 
   const quality = Math.round((lighting * 0.3 + blur * 0.3 + smile * 0.2 + background * 0.2));
 

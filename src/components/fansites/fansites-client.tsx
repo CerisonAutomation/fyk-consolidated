@@ -1,12 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { MapPin, Users, Shield, Crown, Zap, Heart, Search } from "lucide-react";
+import { MapPin, Users, Shield, Crown, Zap, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/useHaptics";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useEntityAction } from "@/hooks/useEntityAction";
+import { api } from "@/lib/client";
+import { entityLabel } from "@/lib/entity-actions";
+import { listOf, numberOf } from "@/lib/list-payload";
 
 interface FansitesItem {
   id: string;
@@ -26,6 +30,9 @@ export function FansitesClient() {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "map" | "list">("grid");
+  // A refused write is an answer ("already promoted", "the wallet holds 40
+  // bones and that costs 60"), so it is shown rather than swallowed.
+  const [actionNote, setActionNote] = useState<string | null>(null);
   const qc = useQueryClient();
   const { vibrate } = useHaptics();
   const { isConnected } = useRealtimeSync();
@@ -34,40 +41,24 @@ export function FansitesClient() {
     queryKey: ["fansites", filter, search],
     queryFn: async () => {
       const params = new URLSearchParams({ filter, search, viewMode });
-      const res = await fetch(`/api/fansites?${params.toString()}`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Failed to fetch" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      const json = await res.json();
+      // `api()` carries the Supabase bearer token; the raw `fetch` this replaced
+      // sent cookies only, so a signed-in caller reached an `auth: "required"`
+      // route anonymous and got a 401 it could not explain.
+      const payload = await api<Record<string, unknown>>(`/api/fansites?${params.toString()}`);
       return {
-        items: (json.items ?? json.data ?? []) as FansitesItem[],
-        total: json.total ?? 0,
-        online: json.online ?? 0,
+        items: listOf<FansitesItem>(payload, "items"),
+        total: numberOf(payload, "total"),
+        online: numberOf(payload, "online"),
       };
     },
     staleTime: 30_000,
     retry: 2,
   });
 
-  const boostMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/fansites/${id}/boost`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) throw new Error("Boost failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["fansites"] });
-      vibrate(20);
-    },
+  const boostMutation = useEntityAction("fansite", "boost", {
+    invalidate: ["fansites"],
+    onDone: () => vibrate(20),
+    onRefused: setActionNote,
   });
 
   if (isLoading) {
@@ -89,7 +80,7 @@ export function FansitesClient() {
         <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
           <p className="text-[14px] font-medium text-red-800">Failed to load fansites</p>
           <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
-          <button
+          <button type="button"
             onClick={() => qc.invalidateQueries({ queryKey: ["fansites"] })}
             className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white"
           >
@@ -102,6 +93,11 @@ export function FansitesClient() {
 
   return (
     <div className="mx-auto max-w-5xl p-4 pb-24">
+      {actionNote && (
+        <output className="block mb-3 rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+          {actionNote}
+        </output>
+      )}
       <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06)] backdrop-blur-xl">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -113,7 +109,7 @@ export function FansitesClient() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button
+            <button type="button"
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
               className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] hover:bg-zinc-50"
             >
@@ -133,7 +129,7 @@ export function FansitesClient() {
             />
           </div>
           {["All", "Nearby", "Popular", "Verified", "Boosted"].map((f) => (
-            <button
+            <button type="button"
               key={f}
               onClick={() => {
                 setFilter(f);
@@ -201,14 +197,15 @@ export function FansitesClient() {
                       )}
                     </div>
                     <div className="mt-2 flex gap-1.5">
-                      <button
-                        onClick={() => boostMutation.mutate(item.id)}
-                        className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black hover:bg-zinc-100"
+                      <button type="button"
+                        onClick={() => boostMutation.mutate({ id: item.id, name: item.name })}
+                        disabled={boostMutation.isPending}
+                        className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black hover:bg-zinc-100 disabled:opacity-60"
                       >
-                        <Zap className="h-3 w-3" /> Boost
-                      </button>
-                      <button className="flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-md hover:bg-black/60">
-                        <Heart className="h-3 w-3" /> Like
+                        <Zap className="h-3 w-3" />{" "}
+                        {boostMutation.isPending && boostMutation.variables?.id === (item.id)
+                          ? "Working…"
+                          : entityLabel("fansite", "boost") ?? "Boost"}
                       </button>
                     </div>
                   </div>

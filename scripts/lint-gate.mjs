@@ -208,6 +208,15 @@ const diff = [
 	.join("\n");
 const untracked = git(["ls-files", "--others", "--exclude-standard"]) ?? "";
 
+if (!process.env.LINT_BASE?.trim() && base === "HEAD") {
+	// Worth saying out loud: comparing against HEAD means the file list is whatever the
+	// working tree happens to contain, which in a fresh checkout is nothing. A gate that
+	// silently checks nothing reads as a pass.
+	console.log(
+		"lint:changed — no base ref (origin/main) is available; comparing against the working tree only.",
+	);
+}
+
 const changed = [
 	...new Set(
 		`${diff}\n${untracked}`

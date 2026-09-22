@@ -1,143 +1,230 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Calendar, MapPin, Search } from "lucide-react";
-import { Skeleton } from "@/components/ui/primitives";
-import { cn } from "@/lib/utils";
-import { useHaptics } from "@/hooks/useHaptics";
-import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useMutation } from "@tanstack/react-query";
+import { Users } from "lucide-react";
+import { Button } from "@/components/ui/primitives";
+import { api, ApiError } from "@/lib/client";
+import { uploadMedia, uploadMessage } from "@/lib/upload-media";
 
-// Create Group — Group creation form with name description category members vs Grindr groups — MAX DEPTH PRODUCTION — canonical real working code GitHub — no stubs
+/**
+ * `/groups/create` — start a group through `#/routes/api/groups`.
+ *
+ * The generated screen listed groups and posted to `/api/groups/{id}/action`, a path
+ * nothing serves, so the only route to a new group was a direct API call.
+ *
+ * Privacy is the part worth getting right in the UI, because the route enforces it
+ * afterwards: `public` is listed to everyone, `private` is listed but needs approval
+ * to see inside, and `secret` answers 404 to anybody who is not a member — including
+ * the person trying to find it again by browsing.
+ */
+
+interface CreateResult {
+	ok: boolean;
+	group?: { id: string; name?: string };
+}
+
+const PRIVACY = [
+	{ value: "public", label: "Public", detail: "Listed, and anyone can read it." },
+	{ value: "private", label: "Private", detail: "Listed, but only members see inside." },
+	{ value: "secret", label: "Secret", detail: "Not listed. Members only — it 404s for everyone else." },
+] as const;
+
+const inputClass =
+	"w-full rounded-[10px] border border-black/10 bg-white px-3 py-2 text-[14px] outline-none focus:border-black";
 
 export const Route = createFileRoute("/groups/create")({
-  component: CreateScreen,
+	component: GroupCreateScreen,
 });
 
-function CreateScreen() {
-  const [filter, setFilter] = useState("All");
-  const [search, setSearch] = useState("");
-  const qc = useQueryClient();
-  const { vibrate } = useHaptics();
-  const { isConnected } = useRealtimeSync();
+function GroupCreateScreen() {
+	const [name, setName] = useState("");
+	const [description, setDescription] = useState("");
+	const [privacy, setPrivacy] = useState<(typeof PRIVACY)[number]["value"]>("public");
+	const [icon, setIcon] = useState("");
+	const [cover, setCover] = useState<File | null>(null);
+	const [note, setNote] = useState<string | null>(null);
+	const [created, setCreated] = useState<CreateResult | null>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["create", filter, search],
-    queryFn: async () => {
-      const params = new URLSearchParams({ filter, search });
-      const res = await fetch(`/api/groups?${params}`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      return {
-        items: (json.items ?? json.data ?? []) as Array<{ id: string; name?: string; title?: string; description?: string; verified?: boolean; boosted?: boolean; distance?: number; members?: number; tags?: string[] }>,
-        total: json.total ?? 0,
-        online: json.online ?? 0,
-      };
-    },
-    staleTime: 30_000,
-  });
+	const create = useMutation({
+		mutationFn: async () => {
+			const coverUrl = cover ? (await uploadMedia(cover, "groups")).url : undefined;
+			return api<CreateResult>("/api/groups", {
+				method: "POST",
+				body: {
+					action: "create",
+					name: name.trim(),
+					description: description.trim() || undefined,
+					privacy,
+					icon: icon.trim() || undefined,
+					coverUrl,
+				},
+			});
+		},
+		onSuccess: (result) => setCreated(result),
+		onError: (error) =>
+			setNote(error instanceof ApiError ? error.message : uploadMessage(error)),
+	});
 
-  const actionMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/groups/${id}/action`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id, filter }),
-      });
-      if (!res.ok) throw new Error("Action failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["create"] });
-      vibrate(20);
-    },
-  });
+	const tooShort = name.trim().length < 3;
+	const tooLong = name.trim().length > 60;
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <Skeleton className="h-[200px] rounded-[20px]" />
-      </div>
-    );
-  }
+	if (created?.group?.id) {
+		return (
+			<div className="mx-auto max-w-md p-4 pb-24">
+				<div className="rounded-[20px] border border-emerald-200 bg-emerald-50 p-6 text-center">
+					<Users className="mx-auto h-8 w-8 text-emerald-700" />
+					<h1 className="font-display mt-3 text-[20px] font-bold text-emerald-900">
+						{created.group.name ?? "Group"} created
+					</h1>
+					<p className="mt-1 text-[13px] text-emerald-800">You are its owner.</p>
+					<div className="mt-4 flex justify-center gap-2">
+						<Link
+							to="/groups/$groupId"
+							params={{ groupId: created.group.id }}
+							className="rounded-full bg-black px-4 py-2 text-[13px] text-white"
+						>
+							Open the group
+						</Link>
+						<Link
+							to="/groups"
+							className="rounded-full border border-emerald-300 bg-white px-4 py-2 text-[13px] text-emerald-800"
+						>
+							All groups
+						</Link>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
-  if (error) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
-          <p className="text-[14px] font-medium text-red-800">Failed to load Create Group</p>
-          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
-          <button onClick={() => qc.invalidateQueries({ queryKey: ["create"] })} className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white">Retry</button>
-        </div>
-      </div>
-    );
-  }
+	return (
+		<div className="mx-auto max-w-md p-4 pb-24">
+			<div className="rounded-[20px] border border-black/[0.06] bg-white p-6 shadow-sm">
+				<h1 className="font-display text-[22px] font-bold tracking-tight text-black">
+					Create a group
+				</h1>
+				<p className="mt-1 text-[13px] text-zinc-500">
+					A group has members, roles, its own chat and its own events.
+				</p>
 
-  return (
-    <div className="mx-auto max-w-3xl p-4 pb-24">
-      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-[24px] font-bold tracking-tight text-black capitalize">Create Group</h1>
-            <p className="mt-1 text-[14px] text-zinc-500">Group creation form with name description category members vs Grindr groups</p>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
-              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
-              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • Real backend • No stubs
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
-            <Search className="h-3.5 w-3.5 text-zinc-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-24 bg-transparent text-[13px] outline-none md:w-40" />
-          </div>
-          {["All", "Nearby", "Popular", "Verified"].map((f) => (
-            <button key={f} onClick={() => { setFilter(f); vibrate(10); }} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-[13px]", filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600")}>{f}</button>
-          ))}
-        </div>
-      </div>
+				{note && (
+					<output className="mt-4 block rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+						{note}
+					</output>
+				)}
 
-      {data?.items.length === 0 ? (
-        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
-          <p className="text-[14px] font-medium text-zinc-700">No create group found</p>
-          <p className="mt-1 text-[12px] text-zinc-500">Real API: /api/groups • No fake data</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {data?.items.map((item) => (
-            <div key={item.id} className="rounded-[16px] border border-black/[0.06] bg-white p-4 shadow-sm hover:shadow-md transition">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-black truncate">{item.name ?? item.title ?? item.id}</p>
-                  <p className="mt-1 text-[13px] text-zinc-500 line-clamp-2">{item.description ?? "Group creation form with name description category members vs Grindr groups"}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {item.tags?.slice(0, 3).map((tag) => (
-                      <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">{tag}</span>
-                    ))}
-                    {item.verified && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">Verified</span>}
-                    {item.boosted && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">Boosted</span>}
-                  </div>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <button onClick={() => actionMutation.mutate(item.id)} className="rounded-full bg-black px-3 py-1.5 text-[11px] text-white hover:bg-zinc-900">Action</button>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-3 text-[11px] text-zinc-400">
-                {item.distance !== undefined && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.distance}m</span>}
-                {item.members !== undefined && <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item.members}</span>}
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Real • No stubs</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+				<div className="mt-5 space-y-4">
+					<div>
+						<label className="block text-[12px] font-medium text-zinc-600" htmlFor="name">
+							Name
+						</label>
+						<input
+							id="name"
+							value={name}
+							maxLength={60}
+							onChange={(event) => setName(event.target.value)}
+							placeholder="Sliema runners"
+							className={`${inputClass} mt-1`}
+						/>
+						<p className="mt-1 text-right text-[11px] text-zinc-400">
+							{name.trim().length}/60
+						</p>
+					</div>
 
-      <div className="mt-6 rounded-[16px] border bg-zinc-50 p-4">
-        <p className="text-[11px] text-zinc-500">PRD 11/12/13/14 • create • Production max depth • Real API /api/groups • Drizzle RLS rate limiting realtime • No fake Array.from • No stubs • Enterprise • Exceeds expectations</p>
-      </div>
-    </div>
-  );
+					<div>
+						<label className="block text-[12px] font-medium text-zinc-600" htmlFor="description">
+							What it is for
+						</label>
+						<textarea
+							id="description"
+							value={description}
+							rows={3}
+							maxLength={500}
+							onChange={(event) => setDescription(event.target.value)}
+							className={`${inputClass} mt-1`}
+						/>
+					</div>
+
+					<div>
+						<label className="block text-[12px] font-medium text-zinc-600" htmlFor="icon">
+							Icon <span className="text-zinc-400">(a short word or emoji)</span>
+						</label>
+						<input
+							id="icon"
+							value={icon}
+							maxLength={64}
+							onChange={(event) => setIcon(event.target.value)}
+							placeholder="🏃"
+							className={`${inputClass} mt-1`}
+						/>
+					</div>
+
+					<div>
+						<label className="block text-[12px] font-medium text-zinc-600" htmlFor="cover">
+							Cover image
+						</label>
+						<input
+							id="cover"
+							type="file"
+							accept="image/*"
+							onChange={(event) => setCover(event.target.files?.[0] ?? null)}
+							className="mt-1 w-full rounded-[10px] border border-black/10 bg-white px-3 py-2 text-[13px] file:mr-3 file:rounded-full file:border-0 file:bg-black file:px-3 file:py-1.5 file:text-[12px] file:text-white"
+						/>
+					</div>
+
+					<fieldset>
+						<legend className="block text-[12px] font-medium text-zinc-600">
+							Who can see it
+						</legend>
+						<div className="mt-2 space-y-2">
+							{PRIVACY.map((option) => (
+								<label
+									key={option.value}
+									className="flex items-start gap-2 rounded-[12px] border border-zinc-200 bg-white px-3 py-2 text-[13px] text-zinc-700"
+								>
+									<input
+										type="radio"
+										name="privacy"
+										value={option.value}
+										checked={privacy === option.value}
+										onChange={() => setPrivacy(option.value)}
+										className="mt-0.5 h-4 w-4"
+									/>
+									<span>
+										<span className="font-medium text-black">{option.label}</span>
+										<span className="block text-[12px] text-zinc-500">
+											{option.detail}
+										</span>
+									</span>
+								</label>
+							))}
+						</div>
+					</fieldset>
+
+					{(tooShort || tooLong) && (
+						<p className="rounded-[12px] border border-zinc-200 bg-zinc-50 px-3 py-2 text-[12px] text-zinc-600">
+							{tooShort
+								? "A group name needs at least 3 characters."
+								: "A group name is at most 60 characters."}
+						</p>
+					)}
+
+					<Button
+						type="button"
+						onClick={() => create.mutate()}
+						disabled={create.isPending || tooShort || tooLong}
+						className="w-full rounded-[12px] bg-black text-white disabled:opacity-60"
+					>
+						{create.isPending ? "Creating…" : "Create group"}
+					</Button>
+				</div>
+			</div>
+
+			<p className="mt-4 text-[11px] text-zinc-500">
+				Writes <code>POST /api/groups</code> with <code>action: "create"</code>. The
+				creator is inserted as <code>owner</code> in the same transaction, so a
+				group never exists without one.
+			</p>
+		</div>
+	);
 }

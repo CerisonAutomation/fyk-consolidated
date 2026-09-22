@@ -14,6 +14,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, because `pnpm lint:changed` compares this branch against
+          # `origin/main` and reads the committed baseline ledger. A shallow checkout
+          # has neither, so the gate fell back to comparing HEAD with itself and its
+          # answer depended on what happened to be in the working tree.
+          fetch-depth: 0
 
       - name: Setup Node 20
         uses: actions/setup-node@v4
@@ -22,8 +28,10 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
+        # No `version` here on purpose: the action reads `packageManager` from
+        # package.json. Pinning 9 while package.json declared pnpm@10.34.5 made the
+        # setup step abort with ERR_PNPM_BAD_PM_VERSION, so every job in this file
+        # was skipped and the typecheck and tests below had never actually run.
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
@@ -41,7 +49,7 @@ jobs:
       - name: Typecheck (0 errors required)
         run: pnpm typecheck
 
-      - name: Tests (242 required)
+      - name: Tests (314 required)
         run: pnpm test
         env:
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
@@ -54,6 +62,16 @@ jobs:
           SUPABASE_URL: https://dummy.supabase.co
           SUPABASE_ANON_KEY: dummy
           DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: API contract audit (every call must reach a route that exists)
+        run: node scripts/audit-contracts.mjs
+
+      - name: Lint gate (this branch must not add violations)
+        run: pnpm lint:changed
+        env:
+          # Named explicitly rather than inferred: the gate's fallback is `HEAD`, which
+          # silently means "lint everything in the tree" instead of "lint the diff".
+          LINT_BASE: origin/main
 
       - name: Security audit
         run: pnpm audit --audit-level=high || true
@@ -71,15 +89,19 @@ jobs:
       - name: Check edge functions JWT posture
         run: |
           echo "Checking edge functions declare JWT posture..."
+          missing=0
           for func in supabase/functions/*/; do
-            name=$(basename $func)
-            if [ -f "$func/index.ts" ]; then
-              if ! grep -q "verify_jwt" supabase/config.toml | grep -q "$name"; then
-                echo "❌ Edge function $name missing verify_jwt in config.toml"
-                exit 1
-              fi
+            name=$(basename "$func")
+            [ -f "$func/index.ts" ] || continue
+            # `grep -q` writes nothing, so `grep -q ... | grep -q "$name"` tested an
+            # empty stream and always failed — this step failed for every function in
+            # the repo rather than for the ones actually missing their posture.
+            if ! grep "^\[functions\.$name\]" -A 2 supabase/config.toml | grep -q "verify_jwt"; then
+              echo "❌ Edge function $name missing verify_jwt in config.toml"
+              missing=1
             fi
           done
+          [ "$missing" -eq 0 ] || exit 1
           echo "✅ All edge functions declare JWT posture"
 
       - name: Check for console.log in production code (should use logger)

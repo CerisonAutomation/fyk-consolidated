@@ -5,6 +5,7 @@
  */
 
 import type { Intent } from "./intent-detect";
+import { hashString, seededRandom } from "./deterministic";
 
 const TEMPLATES: Record<Intent, string[]> = {
   greeting: [
@@ -58,22 +59,9 @@ const TEMPLATES: Record<Intent, string[]> = {
   ],
 };
 
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
-
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charCodeAt(i);
-    hash = ((hash << 5) - hash + ch) | 0;
-  }
-  return Math.abs(hash);
-}
+// `seededRandom` and `hashString` live in `./deterministic`, so every heuristic that
+// needs a stable derived value uses one generator. Two copies of a PRNG is two
+// different answers to "why did the assistant pick that line".
 
 export function suggestReplies(
   text: string,

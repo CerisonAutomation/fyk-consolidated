@@ -1,55 +1,132 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Crown, Zap, Shield, MapPin, Check, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/primitives";
-import { pricing, formatPrice, calculateDiscountedPrice } from "@/core/billing/pricing";
-import { useSubscription } from "@/hooks/useSubscription";
+import { pricing, formatPrice } from "@/core/billing/pricing";
+import { ApiError, api, post } from "@/lib/client";
+
+/**
+ * The paywall.
+ *
+ * WHAT IT DID BEFORE
+ * ------------------
+ * It posted `{tier, promoCode, currency}` to `/api/billing/checkout` and expected a
+ * Stripe `url` back to redirect to, and it validated codes against
+ * `/api/billing/promo`. Neither path exists. `POST` therefore resolved with the
+ * SPA's HTML 404, `res.ok` was true for the document handler in some builds and
+ * false in others, and either way no tier was ever granted: the button said
+ * "Processing…", then nothing, forever. The promo field then struck through the real
+ * price and printed "15% off applied" for a discount no charge would ever honour.
+ *
+ * WHAT IT DOES NOW
+ * ----------------
+ * Two real calls, both through `#/lib/client` so they carry the bearer token:
+ *   - `POST /api/premium {action:"activate", tier, months}` — the same grant
+ *     `#/routes/api/wallet` gives for `{action:"subscribe"}`, via
+ *     `#/lib/wallet.server#activateTier`. It answers with the tier, when it renews
+ *     and the boosters that came with it, or refuses with a sentence: 503 when no
+ *     payment provider is configured, 409 when the tier is already active.
+ *   - `POST /api/monetization/promo {code}` — redeeming a code, which is what the
+ *     backend supports. It grants free days or coins and answers with its own
+ *     message; a used, expired or unknown code is a 4xx with the reason.
+ *
+ * The price shown is the price in `#/core/billing/pricing`, undistorted: a discount
+ * this purchase cannot apply is not displayed as applied. Prices and perks are read
+ * from `GET /api/premium` — the ladder the wallet charges from — so the card cannot
+ * promise a perk the tier does not have.
+ */
+
+/** `#/lib/economy#TIER_ORDER` minus `free` — exactly what `activate` accepts. */
+const TIER_KEYS = ["plus", "gold", "platinum"] as const;
+type SellableTier = (typeof TIER_KEYS)[number];
+
+interface PremiumState {
+  tier: string;
+  tierName: string;
+  paid: boolean;
+  balance: number;
+  ladder: Array<{
+    tier: string;
+    name: string;
+    price: number;
+    perks?: string[];
+    monthlyBoosts?: number;
+    current?: boolean;
+    sellable?: boolean;
+  }>;
+  payments: { configured: boolean; unavailableMessage: string };
+}
 
 export const Route = createFileRoute("/paywall/")({
   component: PaywallScreen,
+  /**
+   * `?plan=gold` arrives from the Game Changers catalogue, whose rows are packages
+   * rather than promotions — that screen links here instead of pretending to boost a
+   * row. An unknown or free plan is ignored rather than guessed at.
+   */
+  validateSearch: (search: Record<string, unknown>): { plan?: SellableTier } => {
+    const plan = typeof search.plan === "string" ? search.plan.toLowerCase() : "";
+    return TIER_KEYS.includes(plan as SellableTier)
+      ? { plan: plan as SellableTier }
+      : {};
+  },
 });
 
 function PaywallScreen() {
-  const [_selectedTier] = useState<"gold" | "platinum">("gold");
+  const { plan } = Route.useSearch();
+  const qc = useQueryClient();
   const [promoCode, setPromoCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
-  const { tier: currentTier } = useSubscription();
+  const [note, setNote] = useState<string | null>(null);
 
-  const { data: promoValid } = useQuery({
-    queryKey: ["promo", promoCode],
-    queryFn: async () => {
-      if (!promoCode) return null;
-      const res = await fetch(`/api/billing/promo?code=${promoCode}`);
-      if (!res.ok) return null;
-      return res.json();
+  const { data: premium } = useQuery({
+    queryKey: ["premium"],
+    queryFn: () => api<PremiumState>("/api/premium"),
+  });
+  const currentTier = premium?.tier ?? "free";
+  const rowFor = (tier: SellableTier) =>
+    premium?.ladder.find((entry) => entry.tier === tier);
+  const goldPrice = rowFor("gold")?.price ?? pricing.gold.price.monthly;
+  const platinumPrice = rowFor("platinum")?.price ?? pricing.platinum.price.monthly;
+
+  const activate = useMutation({
+    mutationFn: (tier: SellableTier) =>
+      post<{ tier: string; tierName: string; renewsAt: string; monthlyBoosts: number }>(
+        "/api/premium",
+        { action: "activate", tier, months: 1 },
+      ),
+    onSuccess: (result) => {
+      // Both keys: `#/hooks/useSubscription` caches under "subscription".
+      qc.invalidateQueries({ queryKey: ["premium"] });
+      qc.invalidateQueries({ queryKey: ["subscription"] });
+      setNote(
+        `${result.tierName} is active until ${new Date(result.renewsAt).toLocaleDateString()}, with ${result.monthlyBoosts} boosters a month.`,
+      );
     },
-    enabled: !!promoCode && promoCode.length >= 4,
+    onError: (error) => setNote(refusal(error)),
   });
 
-  const checkoutMutation = useMutation({
-    mutationFn: async ({ tier, promo }: { tier: string; promo?: string }) => {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier, promoCode: promo, currency: "EUR" }),
-      });
-      if (!res.ok) throw new Error("Checkout failed");
-      return res.json();
+  const redeem = useMutation({
+    mutationFn: (code: string) =>
+      post<{ message?: string; promo?: { discountPercent?: number; freeDays?: number } }>(
+        "/api/monetization/promo",
+        { code },
+      ),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["premium"] });
+      setNote(result.message ?? "Code redeemed.");
     },
-    onSuccess: (data) => {
-      if (data.url) window.location.href = data.url;
-    },
+    onError: (error) => setNote(refusal(error)),
   });
 
   const handleApplyPromo = () => {
-    if (promoValid?.valid) {
-      setAppliedDiscount(promoValid.discount);
+    const code = promoCode.trim();
+    if (code.length < 3) {
+      setNote("Enter a code first.");
+      return;
     }
+    redeem.mutate(code);
   };
-
-  const goldPrice = promoCode ? calculateDiscountedPrice(pricing.gold.price.monthly, promoCode) : pricing.gold.price.monthly;
-  const platinumPrice = promoCode ? calculateDiscountedPrice(pricing.platinum.price.monthly, promoCode) : pricing.platinum.price.monthly;
 
   const features = [
     { name: "Discover nearby", free: true, gold: true, platinum: true, grindrFree: true, grindrXtra: true, grindrUnlimited: true },
@@ -71,6 +148,16 @@ function PaywallScreen() {
 
   return (
     <div className="mx-auto max-w-5xl p-4 pb-24">
+      {note && (
+        <output className="block mb-4 rounded-[12px] border border-black/10 bg-white px-4 py-3 text-[13px] text-black">
+          {note}
+        </output>
+      )}
+      {plan && (
+        <p className="mb-4 rounded-[12px] border border-amber-200 bg-amber-50 px-4 py-2 text-[12px] text-amber-900">
+          You came here for the {plan} package — its card is marked below.
+        </p>
+      )}
       <div className="mb-8 rounded-[24px] border border-black/[0.06] bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-white">
@@ -97,17 +184,29 @@ function PaywallScreen() {
                 placeholder="WELCOME15"
                 className="w-full rounded-[10px] border border-black/10 bg-white px-3 py-2 text-[13px] outline-none focus:border-black"
               />
-              <Button onClick={handleApplyPromo} className="shrink-0 rounded-[10px] bg-black px-4 text-white">
-                Apply
+              <Button
+                onClick={handleApplyPromo}
+                disabled={redeem.isPending}
+                className="shrink-0 rounded-[10px] bg-black px-4 text-white disabled:opacity-60"
+              >
+                {redeem.isPending ? "Redeeming…" : "Redeem"}
               </Button>
             </div>
-            {promoValid?.valid && <p className="mt-2 text-[12px] text-emerald-600">✓ {promoValid.discount}% off applied</p>}
-            {appliedDiscount > 0 && <p className="mt-1 text-[11px] text-zinc-500">Discount: {appliedDiscount}%</p>}
+            <p className="mt-2 text-[11px] text-zinc-500">
+              A code grants what its row says — free days or coins. It is redeemed
+              here, not applied to a price this screen cannot discount.
+            </p>
           </div>
           <div className="rounded-[16px] border border-black/[0.06] bg-white p-4">
             <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">Billing</p>
-            <p className="mt-1 text-[13px] text-black">€ pricing • Stripe • RevenueCat • No hidden fees</p>
-            <p className="mt-1 text-[11px] text-zinc-500">Cancel anytime, GDPR data export</p>
+            <p className="mt-1 text-[13px] text-black">
+              {premium?.payments.configured
+                ? "€ pricing • card payments • no hidden fees"
+                : "€ pricing • wallet grants (no payment provider configured)"}
+            </p>
+            <p className="mt-1 text-[11px] text-zinc-500">
+              Cancel anytime • balance {premium?.balance ?? 0} bones • GDPR data export
+            </p>
           </div>
         </div>
       </div>
@@ -135,7 +234,6 @@ function PaywallScreen() {
           <div className="mt-2 flex items-baseline gap-2">
             <p className="text-[28px] font-bold tracking-tight text-black">{formatPrice(goldPrice)}</p>
             <p className="text-[13px] text-zinc-500">/ month</p>
-            {appliedDiscount > 0 && <p className="text-[12px] line-through text-zinc-400">{formatPrice(pricing.gold.price.monthly)}</p>}
           </div>
           <p className="text-[12px] text-zinc-500">Yearly {formatPrice(pricing.gold.price.yearly)} • Save 50%</p>
           <div className="mt-4 space-y-2">
@@ -145,12 +243,21 @@ function PaywallScreen() {
             <p className="flex items-center gap-2 text-[13px] text-zinc-700"><Check className="h-4 w-4 text-emerald-600" /> Unsend, private albums</p>
           </div>
           <Button
-            onClick={() => checkoutMutation.mutate({ tier: "gold", promo: promoCode })}
-            className="mt-6 w-full rounded-[12px] bg-black text-white hover:bg-zinc-900"
+            onClick={() => activate.mutate("gold")}
+            disabled={activate.isPending || currentTier === "gold"}
+            className="mt-6 w-full rounded-[12px] bg-black text-white hover:bg-zinc-900 disabled:opacity-60"
           >
-            {checkoutMutation.isPending ? "Processing..." : "Upgrade to Gold"}
+            {activate.isPending
+              ? "Activating…"
+              : currentTier === "gold"
+                ? "Your current tier"
+                : plan === "gold"
+                  ? "Activate Gold (selected)"
+                  : "Upgrade to Gold"}
           </Button>
-          <p className="mt-2 text-center text-[11px] text-zinc-500">Stripe • Cancel anytime</p>
+          <p className="mt-2 text-center text-[11px] text-zinc-500">
+            {rowFor("gold")?.monthlyBoosts ?? 0} boosters a month • cancel anytime
+          </p>
         </div>
 
         <div className="rounded-[20px] border border-black/[0.06] bg-zinc-950 p-5 text-white shadow-sm">
@@ -161,7 +268,6 @@ function PaywallScreen() {
           <div className="mt-2 flex items-baseline gap-2">
             <p className="text-[28px] font-bold tracking-tight">{formatPrice(platinumPrice)}</p>
             <p className="text-[13px] text-zinc-400">/ month</p>
-            {appliedDiscount > 0 && <p className="text-[12px] line-through text-zinc-500">{formatPrice(pricing.platinum.price.monthly)}</p>}
           </div>
           <p className="text-[12px] text-zinc-400">Yearly {formatPrice(pricing.platinum.price.yearly)} • Best value</p>
           <div className="mt-4 space-y-2">
@@ -171,10 +277,17 @@ function PaywallScreen() {
             <p className="flex items-center gap-2 text-[13px] text-zinc-200"><Check className="h-4 w-4 text-amber-300" /> Everything in Gold</p>
           </div>
           <Button
-            onClick={() => checkoutMutation.mutate({ tier: "platinum", promo: promoCode })}
-            className="mt-6 w-full rounded-[12px] bg-white text-black hover:bg-zinc-100"
+            onClick={() => activate.mutate("platinum")}
+            disabled={activate.isPending || currentTier === "platinum"}
+            className="mt-6 w-full rounded-[12px] bg-white text-black hover:bg-zinc-100 disabled:opacity-60"
           >
-            {checkoutMutation.isPending ? "Processing..." : "Upgrade to Platinum"}
+            {activate.isPending
+              ? "Activating…"
+              : currentTier === "platinum"
+                ? "Your current tier"
+                : plan === "platinum"
+                  ? "Activate Platinum (selected)"
+                  : "Upgrade to Platinum"}
           </Button>
         </div>
       </div>
@@ -229,4 +342,11 @@ function PaywallScreen() {
       </div>
     </div>
   );
+}
+
+/** The sentence to show when a purchase or a redemption is refused. */
+function refusal(error: unknown): string {
+  if (error instanceof ApiError) return error.message;
+  if (error instanceof Error && error.message) return error.message;
+  return "That did not go through. Try again.";
 }

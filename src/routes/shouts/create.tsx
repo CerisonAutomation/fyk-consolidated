@@ -1,143 +1,158 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Users, Calendar, MapPin, Search } from "lucide-react";
-import { Skeleton } from "@/components/ui/primitives";
-import { cn } from "@/lib/utils";
-import { useHaptics } from "@/hooks/useHaptics";
-import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { Megaphone } from "lucide-react";
+import { Button } from "@/components/ui/primitives";
+import { api, ApiError } from "@/lib/client";
+import { uploadMedia, uploadMessage } from "@/lib/upload-media";
 
-// Create Shout — Shout creation content location tags expiresAt vs Grindr tags — MAX DEPTH PRODUCTION — canonical real working code GitHub — no stubs
+/**
+ * `/shouts/create` — post a shout through `#/routes/api/shouts`.
+ *
+ * The generated screen showed a grid of `/api/shouts` and posted its button to
+ * `/api/shouts/{id}/action`, which nothing serves: the one thing this route is for —
+ * writing a shout — was not reachable from it.
+ *
+ * A shout is text, media, or both, up to 500 characters; the route says so in its own
+ * refinement, and the counter here reflects that limit rather than letting the submit
+ * be the first place it is mentioned. Media goes to the `media` bucket through
+ * `#/lib/upload-media` and the URL is what gets stored.
+ */
+
+interface CreateResult {
+	ok: boolean;
+	shout?: { id: string };
+}
+
+const MAX_CONTENT = 500;
 
 export const Route = createFileRoute("/shouts/create")({
-  component: CreateScreen,
+	component: ShoutCreateScreen,
 });
 
-function CreateScreen() {
-  const [filter, setFilter] = useState("All");
-  const [search, setSearch] = useState("");
-  const qc = useQueryClient();
-  const { vibrate } = useHaptics();
-  const { isConnected } = useRealtimeSync();
+function ShoutCreateScreen() {
+	const [content, setContent] = useState("");
+	const [file, setFile] = useState<File | null>(null);
+	const [note, setNote] = useState<string | null>(null);
+	const [created, setCreated] = useState<CreateResult | null>(null);
+	const fileInput = useRef<HTMLInputElement>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["create", filter, search],
-    queryFn: async () => {
-      const params = new URLSearchParams({ filter, search });
-      const res = await fetch(`/api/shouts?${params}`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      return {
-        items: (json.items ?? json.data ?? []) as Array<{ id: string; name?: string; title?: string; description?: string; verified?: boolean; boosted?: boolean; distance?: number; members?: number; tags?: string[] }>,
-        total: json.total ?? 0,
-        online: json.online ?? 0,
-      };
-    },
-    staleTime: 30_000,
-  });
+	const create = useMutation({
+		mutationFn: async () => {
+			const mediaUrl = file ? (await uploadMedia(file, "shouts")).url : undefined;
+			return api<CreateResult>("/api/shouts", {
+				method: "POST",
+				body: {
+					action: "create",
+					content: content.trim() || undefined,
+					mediaUrl,
+				},
+			});
+		},
+		onSuccess: (result) => setCreated(result),
+		onError: (error) =>
+			setNote(
+				error instanceof ApiError
+					? error.message
+					: uploadMessage(error),
+			),
+	});
 
-  const actionMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/shouts/${id}/action`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id, filter }),
-      });
-      if (!res.ok) throw new Error("Action failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["create"] });
-      vibrate(20);
-    },
-  });
+	const tooLong = content.length > MAX_CONTENT;
+	const empty = content.trim().length === 0 && !file;
 
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <Skeleton className="h-[200px] rounded-[20px]" />
-      </div>
-    );
-  }
+	if (created?.shout?.id) {
+		return (
+			<div className="mx-auto max-w-md p-4 pb-24">
+				<div className="rounded-[20px] border border-emerald-200 bg-emerald-50 p-6 text-center">
+					<Megaphone className="mx-auto h-8 w-8 text-emerald-700" />
+					<h1 className="font-display mt-3 text-[20px] font-bold text-emerald-900">
+						Shout posted
+					</h1>
+					<p className="mt-1 text-[13px] text-emerald-800">
+						It is in the public feed now.
+					</p>
+					<div className="mt-4 flex justify-center gap-2">
+						<Link
+							to="/shouts/$shoutId"
+							params={{ shoutId: created.shout.id }}
+							className="rounded-full bg-black px-4 py-2 text-[13px] text-white"
+						>
+							Open it
+						</Link>
+						<Link
+							to="/shouts"
+							className="rounded-full border border-emerald-300 bg-white px-4 py-2 text-[13px] text-emerald-800"
+						>
+							Feed
+						</Link>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
-  if (error) {
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
-          <p className="text-[14px] font-medium text-red-800">Failed to load Create Shout</p>
-          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
-          <button onClick={() => qc.invalidateQueries({ queryKey: ["create"] })} className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white">Retry</button>
-        </div>
-      </div>
-    );
-  }
+	return (
+		<div className="mx-auto max-w-md p-4 pb-24">
+			<div className="rounded-[20px] border border-black/[0.06] bg-white p-6 shadow-sm">
+				<h1 className="font-display text-[22px] font-bold tracking-tight text-black">
+					Shout
+				</h1>
+				<p className="mt-1 text-[13px] text-zinc-500">
+					Public, short-lived, and visible to everyone browsing.
+				</p>
 
-  return (
-    <div className="mx-auto max-w-3xl p-4 pb-24">
-      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-[24px] font-bold tracking-tight text-black capitalize">Create Shout</h1>
-            <p className="mt-1 text-[14px] text-zinc-500">Shout creation content location tags expiresAt vs Grindr tags</p>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
-              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
-              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • Real backend • No stubs
-            </div>
-          </div>
-        </div>
-        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
-          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
-            <Search className="h-3.5 w-3.5 text-zinc-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-24 bg-transparent text-[13px] outline-none md:w-40" />
-          </div>
-          {["All", "Nearby", "Popular", "Verified"].map((f) => (
-            <button key={f} onClick={() => { setFilter(f); vibrate(10); }} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-[13px]", filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600")}>{f}</button>
-          ))}
-        </div>
-      </div>
+				{note && (
+					<output className="mt-4 block rounded-[12px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+						{note}
+					</output>
+				)}
 
-      {data?.items.length === 0 ? (
-        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
-          <p className="text-[14px] font-medium text-zinc-700">No create shout found</p>
-          <p className="mt-1 text-[12px] text-zinc-500">Real API: /api/shouts • No fake data</p>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {data?.items.map((item) => (
-            <div key={item.id} className="rounded-[16px] border border-black/[0.06] bg-white p-4 shadow-sm hover:shadow-md transition">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-black truncate">{item.name ?? item.title ?? item.id}</p>
-                  <p className="mt-1 text-[13px] text-zinc-500 line-clamp-2">{item.description ?? "Shout creation content location tags expiresAt vs Grindr tags"}</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {item.tags?.slice(0, 3).map((tag) => (
-                      <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">{tag}</span>
-                    ))}
-                    {item.verified && <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] text-emerald-700">Verified</span>}
-                    {item.boosted && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-700">Boosted</span>}
-                  </div>
-                </div>
-                <div className="flex shrink-0 gap-1.5">
-                  <button onClick={() => actionMutation.mutate(item.id)} className="rounded-full bg-black px-3 py-1.5 text-[11px] text-white hover:bg-zinc-900">Action</button>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-3 text-[11px] text-zinc-400">
-                {item.distance !== undefined && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {item.distance}m</span>}
-                {item.members !== undefined && <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {item.members}</span>}
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Real • No stubs</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+				<div className="mt-5 space-y-4">
+					<textarea
+						value={content}
+						rows={4}
+						maxLength={MAX_CONTENT}
+						onChange={(event) => setContent(event.target.value)}
+						placeholder="What is happening right now?"
+						className="w-full rounded-[10px] border border-black/10 bg-white px-3 py-2 text-[14px] outline-none focus:border-black"
+						aria-label="Shout text"
+					/>
+					<p className="text-right text-[11px] text-zinc-400">
+						{content.length}/{MAX_CONTENT}
+					</p>
 
-      <div className="mt-6 rounded-[16px] border bg-zinc-50 p-4">
-        <p className="text-[11px] text-zinc-500">PRD 11/12/13/14 • create • Production max depth • Real API /api/shouts • Drizzle RLS rate limiting realtime • No fake Array.from • No stubs • Enterprise • Exceeds expectations</p>
-      </div>
-    </div>
-  );
+					<input
+						ref={fileInput}
+						type="file"
+						accept="image/*,video/*"
+						onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+						className="w-full rounded-[10px] border border-black/10 bg-white px-3 py-2 text-[13px] file:mr-3 file:rounded-full file:border-0 file:bg-black file:px-3 file:py-1.5 file:text-[12px] file:text-white"
+						aria-label="Photo or video"
+					/>
+
+					{empty && (
+						<p className="text-[12px] text-zinc-500">
+							A shout needs text, media, or both.
+						</p>
+					)}
+
+					<Button
+						type="button"
+						onClick={() => create.mutate()}
+						disabled={create.isPending || empty || tooLong}
+						className="w-full rounded-[12px] bg-black text-white disabled:opacity-60"
+					>
+						{create.isPending ? "Posting…" : "Post shout"}
+					</Button>
+				</div>
+			</div>
+
+			<p className="mt-4 text-[11px] text-zinc-500">
+				Writes <code>POST /api/shouts</code> with <code>action: "create"</code>.
+				Likes are counted by a trigger from the like rows, so the number on the
+				card cannot drift from the taps behind it.
+			</p>
+		</div>
+	);
 }

@@ -9,6 +9,7 @@ import {
 	unexpected,
 	z,
 } from "@/lib/api-helpers";
+import { buildExport } from "@/lib/settings.server";
 import { json, jsonError, withSecurity } from "@/middleware";
 import { users } from "@/schema";
 
@@ -79,52 +80,6 @@ const prefsSchema = z
 	})
 	.strict();
 
-const EXPORT_COLUMNS = {
-	id: users.id,
-	displayName: users.displayName,
-	handle: users.handle,
-	bio: users.bio,
-	occupation: users.occupation,
-	relationshipStatus: users.relationshipStatus,
-	ethnicity: users.ethnicity,
-	pronouns: users.pronouns,
-	birthday: users.birthday,
-	age: users.age,
-	height: users.height,
-	weight: users.weight,
-	bodyType: users.bodyType,
-	position: users.position,
-	languages: users.languages,
-	lookingFor: users.lookingFor,
-	intents: users.intents,
-	tagCodes: users.tagCodes,
-	interests: users.interests,
-	tribes: users.tribes,
-	photos: users.photos,
-	avatar: users.avatar,
-	city: users.city,
-	area: users.area,
-	status: users.status,
-	theme: users.theme,
-	accent: users.accent,
-	fontSize: users.fontSize,
-	gridColumns: users.gridColumns,
-	cardStyle: users.cardStyle,
-	dndMode: users.dndMode,
-	colorblindMode: users.colorblindMode,
-	language: users.language,
-	notifPrefs: users.notifPrefs,
-	aiPrefs: users.aiPrefs,
-	profileComplete: users.profileComplete,
-	onboardingDone: users.onboardingDone,
-	createdAt: users.createdAt,
-	updatedAt: users.updatedAt,
-	// Deliberately excluded: `lat`/`lng` (a precise fix is not a preference and
-	// an export file is the last place it should end up), `role`, `tier`,
-	// `trust_score`, `verification`, `is_suspended` — moderation state belongs in
-	// a staff process, not in a self-serve JSON download.
-};
-
 export const Route = createFileRoute("/api/settings/")({
 	server: {
 		handlers: {
@@ -143,16 +98,11 @@ export const Route = createFileRoute("/api/settings/")({
 					const view = new URL(request.url).searchParams.get("view") ?? "prefs";
 
 					if (view === "export") {
-						const [row] = await db
-							.select(EXPORT_COLUMNS)
-							.from(users)
-							.where(eq(users.id, user.id))
-							.limit(1);
-						if (!row) return jsonError("No profile row yet", 404);
-						return json({
-							generated_at: new Date().toISOString(),
-							profile: row,
-						});
+						// `#/lib/settings.server#buildExport` is the one definition of "my
+						// data", shared with `POST /api/settings/data-export`.
+						const exported = await buildExport(user.id);
+						if (!exported.profile) return jsonError("No profile row yet", 404);
+						return json(exported);
 					}
 					if (view !== "prefs") return jsonError("Unsupported view", 400);
 

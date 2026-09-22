@@ -1,12 +1,15 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { MapPin, Users, Shield, Crown, Zap, Heart, Search } from "lucide-react";
+import { MapPin, Users, Shield, Crown, Zap, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useHaptics } from "@/hooks/useHaptics";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { api } from "@/lib/client";
+import { listOf, numberOf } from "@/lib/list-payload";
+import { Link } from "@tanstack/react-router";
 
 interface GamechangersItem {
   id: string;
@@ -22,6 +25,23 @@ interface GamechangersItem {
   authorId?: string;
 }
 
+/**
+ * A Game Changers row is either a tier (`id: "tier:gold"`, `action: "activate"`,
+ * `actionRoute: "/api/premium"`) or a paid surface with nowhere to buy from this
+ * screen. Only the first kind gets a button: `#/routes/api/gamechangers` is a
+ * read-only catalogue and answers 405 on POST, so linking to the paywall with the
+ * tier preselected is the honest action, and a surface row renders no button at all
+ * rather than one that cannot work.
+ */
+const SELLABLE = ["plus", "gold", "platinum"] as const;
+
+function planOf(id: unknown): { plan?: (typeof SELLABLE)[number] } {
+  const raw = typeof id === "string" ? id.replace(/^tier:/, "").toLowerCase() : "";
+  return (SELLABLE as readonly string[]).includes(raw)
+    ? { plan: raw as (typeof SELLABLE)[number] }
+    : {};
+}
+
 export function GamechangersClient() {
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -34,49 +54,29 @@ export function GamechangersClient() {
     queryKey: ["gamechangers", filter, search],
     queryFn: async () => {
       const params = new URLSearchParams({ filter, search, viewMode });
-      const res = await fetch(`/api/gamechangers?${params.toString()}`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Failed to fetch" }));
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-      const json = await res.json();
+      // `api()` carries the Supabase bearer token; the raw `fetch` this replaced
+      // sent cookies only, so a signed-in caller reached an `auth: "required"`
+      // route anonymous and got a 401 it could not explain.
+      const payload = await api<Record<string, unknown>>(`/api/gamechangers?${params.toString()}`);
       return {
-        items: (json.items ?? json.data ?? []) as GamechangersItem[],
-        total: json.total ?? 0,
-        online: json.online ?? 0,
+        items: listOf<GamechangersItem>(payload, "items"),
+        total: numberOf(payload, "total"),
+        online: numberOf(payload, "online"),
       };
     },
     staleTime: 30_000,
     retry: 2,
   });
 
-  const boostMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/gamechangers/${id}/boost`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ id }),
-      });
-      if (!res.ok) throw new Error("Boost failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["gamechangers"] });
-      vibrate(20);
-    },
-  });
+
 
   if (isLoading) {
     return (
       <div className="mx-auto max-w-5xl p-4">
         <Skeleton className="mb-4 h-[200px] rounded-[20px]" />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="aspect-[3/4] rounded-[16px]" />
+          {Array.from({ length: 6 }, (_, i) => `skeleton-${i}`).map((skeletonId) => (
+            <Skeleton key={skeletonId} className="aspect-[3/4] rounded-[16px]" />
           ))}
         </div>
       </div>
@@ -89,7 +89,7 @@ export function GamechangersClient() {
         <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
           <p className="text-[14px] font-medium text-red-800">Failed to load gamechangers</p>
           <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
-          <button
+          <button type="button"
             onClick={() => qc.invalidateQueries({ queryKey: ["gamechangers"] })}
             className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white"
           >
@@ -113,7 +113,7 @@ export function GamechangersClient() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button
+            <button type="button"
               onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
               className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] hover:bg-zinc-50"
             >
@@ -133,7 +133,7 @@ export function GamechangersClient() {
             />
           </div>
           {["All", "Nearby", "Popular", "Verified", "Boosted"].map((f) => (
-            <button
+            <button type="button"
               key={f}
               onClick={() => {
                 setFilter(f);
@@ -201,15 +201,15 @@ export function GamechangersClient() {
                       )}
                     </div>
                     <div className="mt-2 flex gap-1.5">
-                      <button
-                        onClick={() => boostMutation.mutate(item.id)}
+                      {planOf(item.id).plan ? (
+                      <Link
+                        to="/paywall"
+                        search={planOf(item.id)}
                         className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black hover:bg-zinc-100"
                       >
-                        <Zap className="h-3 w-3" /> Boost
-                      </button>
-                      <button className="flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-md hover:bg-black/60">
-                        <Heart className="h-3 w-3" /> Like
-                      </button>
+                        <Zap className="h-3 w-3" /> View plan
+                      </Link>
+                      ) : null}
                     </div>
                   </div>
                 </>

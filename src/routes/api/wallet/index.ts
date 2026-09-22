@@ -12,7 +12,6 @@ import {
 	DAILY_REWARD,
 	findShopItem,
 	findTopupPack,
-	monthlyBoostsFor,
 	PAYMENTS_UNAVAILABLE,
 	paymentsConfigured,
 	SHOP_ITEMS,
@@ -23,14 +22,15 @@ import {
 	tierPrice,
 } from "@/lib/economy";
 import {
+	activateTier,
 	activeSubscription,
+	cancelTier,
 	currentTier,
 	InsufficientBalance,
 	postLedger,
 	purchaseCountLastHour,
 	purchaseLimitReached,
 	recentTransactions,
-	setTier,
 	upsertConsumable,
 	walletBalance,
 } from "@/lib/wallet.server";
@@ -302,34 +302,24 @@ export const Route = createFileRoute("/api/wallet/")({
 								if (!paymentsConfigured())
 									return jsonError(PAYMENTS_UNAVAILABLE, 503);
 
-								const periodEnd = new Date();
-								periodEnd.setUTCMonth(periodEnd.getUTCMonth() + 1);
-								const boosts = monthlyBoostsFor(body.tier);
-
-								await db.transaction(async (tx) => {
-									await setTier(
+								// `activateTier` is shared with `POST /api/premium`: one
+								// definition of "what a tier grant does", two ways to reach it.
+								const granted = await db.transaction((tx) =>
+									activateTier(
 										{
 											userId: user.id,
 											tier: body.tier,
 											source: "dev-mode-grant",
-											expiresAt: periodEnd,
 										},
 										tx,
-									);
-									// The perk is the product: Gold and Platinum pay for boosts, so the
-									// same route that grants the tier puts them in the inventory.
-									if (boosts > 0)
-										await upsertConsumable(
-											{ userId: user.id, type: "boost", delta: boosts },
-											tx,
-										);
-								});
+									),
+								);
 
 								return json({
 									ok: true,
-									tier: body.tier,
-									renewsAt: periodEnd.toISOString(),
-									monthlyBoosts: boosts,
+									tier: granted.tier,
+									renewsAt: granted.renewsAt.toISOString(),
+									monthlyBoosts: granted.monthlyBoosts,
 									note: process.env.STRIPE_SECRET_KEY
 										? undefined
 										: "Granted by PAYMENTS_DEV_MODE. No payment was taken.",
@@ -337,17 +327,7 @@ export const Route = createFileRoute("/api/wallet/")({
 							}
 
 							case "cancel": {
-								await db.transaction((tx) =>
-									setTier(
-										{
-											userId: user.id,
-											tier: "free",
-											source: "cancelled",
-											expiresAt: null,
-										},
-										tx,
-									),
-								);
+								await db.transaction((tx) => cancelTier(user.id, tx));
 								return json({
 									ok: true,
 									tier: "free",
