@@ -8,7 +8,7 @@
 import type { GridFilters, GridProfile } from '../../domain/entities/grid';
 import type { GridRepository, UserRepository } from '../../ports/repositories';
 import type { GeocodingService } from '../../ports/services';
-import { calculateDistance, filterGridProfiles, sortGridProfiles } from '../../domain/entities/grid';
+import { filterGridProfiles, sortGridProfiles } from '../../domain/entities/grid';
 import { telemetry } from '#/lib/enterprise/telemetry';
 import { resilient } from '#/lib/enterprise/self-healing';
 import { cache } from '#/lib/enterprise/performance';
@@ -40,11 +40,13 @@ export interface GetNearbyProfilesOutput {
 export class GetNearbyProfilesUseCase {
   constructor(
     private readonly gridRepo: GridRepository,
-    private readonly userRepo: UserRepository,
-    private readonly geocoding: GeocodingService,
+    private readonly _userRepo: UserRepository,
+    private readonly _geocoding: GeocodingService,
   ) {}
 
   async execute(input: GetNearbyProfilesInput): Promise<GetNearbyProfilesOutput> {
+    void this._userRepo;
+    void this._geocoding;
     const traceId = crypto.randomUUID();
     const span = telemetry.startSpan('usecase.get-nearby-profiles', 'server', undefined, { userId: input.userId });
 
