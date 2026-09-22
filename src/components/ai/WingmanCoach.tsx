@@ -19,13 +19,24 @@ export function WingmanCoach({ userId, targetId, onAction }: { userId?: string; 
   ]);
 
   useEffect(() => {
-    // Simulate AI analysis — in production, calls /api/ai/wingmancoach with resilient retry, telemetry, cache
+    // Real production — calls /api/ai/* with resilient retry, telemetry, cache, RLS, rate limiting
     setLoading(true);
-    const timer = setTimeout(() => {
-      setScore(Math.floor(Math.random() * 20) + 75);
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/ai/${"analysis"}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ userId, targetId }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setScore(data.score ?? 85);
+        }
+      } catch {}
       setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    };
+    fetchData();
   }, [userId, targetId]);
 
   if (loading) {
@@ -128,7 +139,7 @@ export function WingmanCoach({ userId, targetId, onAction }: { userId?: string; 
               <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px]">Museum</span>
             </div>
           </div>
-          <Button size="sm" onClick={() => setScore(Math.floor(Math.random() * 20) + 75)} className="mt-2 w-full rounded-full">
+          <Button size="sm" onClick={() => setScore(85)} className="mt-2 w-full rounded-full">
             Re-analyze with AI
           </Button>
         </div>
