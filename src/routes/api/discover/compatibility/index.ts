@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { users } from "#/schema";
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { staleWhileRevalidate } from "#/lib/enterprise/performance";
-import { traceRequest, finishTrace } from "#/lib/enterprise/observability";
-import { calculateCompatibility, orderGridProfiles, type ProfileForMatch, DEFAULT_WEIGHTS } from "#/lib/enterprise/matching-algorithms";
-import { validate } from "#/lib/enterprise/validation";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { users } from "@/schema";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { staleWhileRevalidate } from "@/lib/enterprise/performance";
+import { traceRequest, finishTrace } from "@/lib/enterprise/observability";
+import { calculateCompatibility, orderGridProfiles, type ProfileForMatch, DEFAULT_WEIGHTS } from "@/lib/enterprise/matching-algorithms";
+import { validate } from "@/lib/enterprise/validation";
 import { z } from "zod";
 
 const querySchema = z.object({

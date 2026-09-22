@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { rateLimitLogs } from "#/schema";
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { auditLogger } from "#/lib/enterprise/security-hardened";
-import { traceRequest, finishTrace } from "#/lib/enterprise/observability";
-import { staleWhileRevalidate } from "#/lib/enterprise/performance";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { rateLimitLogs } from "@/schema";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
+import { traceRequest, finishTrace } from "@/lib/enterprise/observability";
+import { staleWhileRevalidate } from "@/lib/enterprise/performance";
 
 export const Route = createFileRoute("/api/safety/rate-limit/")({
   server: {

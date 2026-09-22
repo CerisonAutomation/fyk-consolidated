@@ -4,7 +4,7 @@
  */
 
 import { telemetry } from "./telemetry";
-import { logger } from "#/lib/logger";
+import { logger } from "@/lib/logger";
 
 export type HealthStatus = "healthy" | "degraded" | "unhealthy";
 export type HealthCheck = { name: string; status: HealthStatus; latencyMs?: number; message?: string; timestamp: string };

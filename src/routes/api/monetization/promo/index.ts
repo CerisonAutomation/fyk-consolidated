@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { promoCodes, promoRedemptions } from "#/schema";
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { cache, staleWhileRevalidate } from "#/lib/enterprise/performance";
-import { traceRequest, finishTrace, auditTrail } from "#/lib/enterprise/observability";
-import { auditLogger } from "#/lib/enterprise/security-hardened";
-import { validate } from "#/lib/enterprise/validation";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { promoCodes, promoRedemptions } from "@/schema";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { cache, staleWhileRevalidate } from "@/lib/enterprise/performance";
+import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
+import { validate } from "@/lib/enterprise/validation";
 
 const redeemSchema = z.object({
   code: z.string().min(3).max(20).regex(/^[A-Z0-9_-]+$/i, "Invalid promo code format").transform((s) => s.toUpperCase()),

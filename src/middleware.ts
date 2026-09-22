@@ -5,19 +5,19 @@
  * The server-only auth import is dynamic to satisfy import-protection.
  */
 
-import { logError, logger } from "#/lib/logger";
+import { logError, logger } from "@/lib/logger";
 import {
   clientIp,
   DEFAULT_WINDOW_MS,
   enforceRateLimit,
   type RateLimitResult,
-} from "#/lib/rate-limit";
+} from "@/lib/rate-limit";
 import {
   noStoreHeaders,
   publicCacheHeaders,
   securityHeaders,
-} from "#/lib/security";
-import type { Caller } from "#/lib/supabase-auth.server";
+} from "@/lib/security";
+import type { Caller } from "@/lib/supabase-auth.server";
 
 const SCOPE = "request-security";
 

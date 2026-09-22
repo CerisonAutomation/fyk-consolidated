@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { analyticsFunnel } from "#/schema";
-import { trackFunnelStep, getFunnelProgress, FUNNEL_STEPS } from "#/lib/growth";
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { cache, staleWhileRevalidate } from "#/lib/enterprise/performance";
-import { traceRequest, finishTrace, auditTrail } from "#/lib/enterprise/observability";
-import { auditLogger } from "#/lib/enterprise/security-hardened";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { analyticsFunnel } from "@/schema";
+import { trackFunnelStep, getFunnelProgress, FUNNEL_STEPS } from "@/lib/growth";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { cache, staleWhileRevalidate } from "@/lib/enterprise/performance";
+import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
 
 const stepSchema = z.object({
   step: z.string().min(1).max(50).refine((s) => [...FUNNEL_STEPS].includes(s as any) || s.startsWith("custom_"), "Invalid funnel step"),

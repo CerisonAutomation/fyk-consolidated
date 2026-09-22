@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, messages, scheduledMessages } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { conversationMembers, messages, scheduledMessages } from "@/schema";
 
 const scheduleSchema = z.object({
   conversationId: z.string().uuid(),

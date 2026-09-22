@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, users } from "#/schema";
-import { shouldAutoReply, generateAutoReply, createDefaultAutoReplyConfig } from "#/domains/ai/heuristic/auto-reply";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { conversationMembers, users } from "@/schema";
+import { shouldAutoReply, generateAutoReply, createDefaultAutoReplyConfig } from "@/domains/ai/heuristic/auto-reply";
 
 /**
  * Auto-Reply / AI Avatar — CORE 25.1

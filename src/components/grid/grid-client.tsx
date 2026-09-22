@@ -20,23 +20,23 @@ import {
 	useRef,
 	useState,
 } from "react";
-import type { GridSearchFilters } from "#/core/model/grid";
+import type { GridSearchFilters } from "@/core/model/grid";
 import {
 	GridFilters,
 	type GridFiltersState,
-} from "#/core/ui/organisms/filters/GridFilters";
+} from "@/core/ui/organisms/filters/GridFilters";
 import {
 	initGridSearchFilters,
 	useGridSearchFiltersStore,
-} from "#/domains/grid/filters-store";
-import { useGridStore } from "#/domains/grid/store";
+} from "@/domains/grid/filters-store";
+import { useGridStore } from "@/domains/grid/store";
 import {
 	getPreferencesSnapshot,
 	setPreferences,
-} from "#/domains/settings/preferences";
-import { FYKMap } from "#/components/map/FYKMap";
-import { candidatesToPins } from "#/components/map/candidate-pins";
-import { cn } from "#/utils/cn";
+} from "@/domains/settings/preferences";
+import { FYKMap } from "@/components/map/FYKMap";
+import { candidatesToPins } from "@/components/map/candidate-pins";
+import { cn } from "@/utils/cn";
 
 
 const GRID_SKELETON_IDS = Array.from(

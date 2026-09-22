@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { users } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { users } from "@/schema";
 
 /**
  * TOTP Two-Factor Auth — D1.2, 21.1

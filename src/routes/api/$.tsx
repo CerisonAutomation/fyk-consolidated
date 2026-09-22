@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { json } from "#/middleware";
+import { json } from "@/middleware";
 
 /**
  * `/api/$` — the catch-all that makes an unknown API path answer in JSON.

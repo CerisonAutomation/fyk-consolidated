@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { photoScores, photoEnhancements, aiConversations } from "#/schema";
-import { scorePhoto, enhancePhoto, suggestPhotoOrder } from "#/domains/ai/heuristic/photo-enhance";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { photoScores, photoEnhancements, aiConversations } from "@/schema";
+import { scorePhoto, enhancePhoto, suggestPhotoOrder } from "@/domains/ai/heuristic/photo-enhance";
 
 const scoreSchema = z.object({ urls: z.array(z.string().url()).min(1).max(10) });
 const enhanceSchema = z.object({ url: z.string().url(), adjustments: z.object({ brightness: z.number().min(-100).max(100).optional(), contrast: z.number().min(-100).max(100).optional(), crop: z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() }).optional() }) });

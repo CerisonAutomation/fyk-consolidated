@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { pushSubscriptions } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { pushSubscriptions } from "@/schema";
 
 /**
  * Web-push subscription registration.

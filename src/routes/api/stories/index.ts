@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, and, gt, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { stories } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { stories } from "@/schema";
 
 const createSchema = z.object({
   type: z.enum(["image", "video", "text"]),

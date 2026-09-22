@@ -18,7 +18,7 @@
 
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
-import { logError, logger } from "#/lib/logger";
+import { logError, logger } from "@/lib/logger";
 
 const SCOPE = "rate-limit";
 

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { dataExports, backupExports } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { dataExports, backupExports } from "@/schema";
 
 const exportSchema = z.object({
   includes: z.array(z.enum(["profile","messages","media","settings","all"])).default(["all"]),

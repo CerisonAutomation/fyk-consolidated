@@ -20,7 +20,7 @@ import {
   useOfflineQueue,
   useAppReady,
   useScheduledMessages,
-} from "#/hooks/app-hooks";
+} from "@/hooks/app-hooks";
 
 export function AppWiringPanel() {
   const appConfig = useAppConfig();

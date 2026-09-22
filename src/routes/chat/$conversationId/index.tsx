@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChatView } from "#/components/chat/chat-view";
-import { api } from "#/lib/client";
+import { ChatView } from "@/components/chat/chat-view";
+import { api } from "@/lib/client";
 
 export const Route = createFileRoute("/chat/$conversationId/")({
 	component: ConversationPage,

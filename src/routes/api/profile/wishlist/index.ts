@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, and, or, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { wishlists, wishlistItems } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { wishlists, wishlistItems } from "@/schema";
 
 const createSchema = z.object({ participantId: z.string().uuid() });
 const addItemSchema = z.object({ wishlistId: z.string().uuid(), text: z.string().min(1).max(200), category: z.string().max(50).default("general") });

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, or, sql } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	asStringArray,
 	methodNotAllowed,
@@ -8,9 +8,9 @@ import {
 	requireCaller,
 	toProfileCard,
 	z,
-} from "#/lib/api-helpers";
-import { onlineUntil } from "#/lib/compatibility";
-import { json, jsonError, withSecurity } from "#/middleware";
+} from "@/lib/api-helpers";
+import { onlineUntil } from "@/lib/compatibility";
+import { json, jsonError, withSecurity } from "@/middleware";
 import {
 	blocks,
 	favorites,
@@ -19,7 +19,7 @@ import {
 	taps,
 	userNotes,
 	users,
-} from "#/schema";
+} from "@/schema";
 
 /**
  * `GET /api/profile/{profileId}` — one public profile, shaped for the sheet.

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 
 /**
  * The block list. `blocks` has no Row Level Security (it is not a browser-readable

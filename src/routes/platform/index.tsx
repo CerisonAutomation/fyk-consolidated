@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getRoutingOptimization } from "#/lib/routing";
-import { useMultiAccount, useAppConfig, useAppReady } from "#/hooks/app-hooks";
-import { AppWiringPanel } from "#/components/app/AppWiringPanel";
+import { getRoutingOptimization } from "@/lib/routing";
+import { useMultiAccount, useAppConfig, useAppReady } from "@/hooks/app-hooks";
+import { AppWiringPanel } from "@/components/app/AppWiringPanel";
 
 export const Route = createFileRoute("/platform/")({
   component: PlatformPage,

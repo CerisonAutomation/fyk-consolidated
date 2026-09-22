@@ -2,10 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { Crown, Bell, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { UserDropdown } from "#/components/UserDropdown";
-import { MapSearchBar } from "#/components/map/MapSearchBar";
-import { api } from "#/lib/client";
-import { cn } from "#/utils/cn";
+import { UserDropdown } from "@/components/UserDropdown";
+import { MapSearchBar } from "@/components/map/MapSearchBar";
+import { api } from "@/lib/client";
+import { cn } from "@/utils/cn";
 
 interface Notification {
  id: string;

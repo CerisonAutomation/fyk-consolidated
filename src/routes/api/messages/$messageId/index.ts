@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, messages } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { conversationMembers, messages } from "@/schema";
 
 /**
  * `PATCH /api/messages/{messageId}` — pin, unpin, edit, recall.

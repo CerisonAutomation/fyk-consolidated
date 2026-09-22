@@ -1,13 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 import {
 	DEFAULT_SETTINGS,
 	patchFor,
 	valueFor,
 	type ServerPrivacyField,
 	type ServerSettings,
-} from "#/lib/settings-map";
+} from "@/lib/settings-map";
 
 /**
  * The privacy half of Settings, read from and written to the server.

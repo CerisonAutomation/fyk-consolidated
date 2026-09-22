@@ -1,9 +1,9 @@
 "use client";
 import { useState, useCallback } from "react";
 import { MapPin, Navigation, Loader2, Check } from "lucide-react";
-import { cn } from "#/utils/cn";
-import { locate } from "#/lib/geo";
-import { Button } from "#/components/ui/primitives";
+import { cn } from "@/utils/cn";
+import { locate } from "@/lib/geo";
+import { Button } from "@/components/ui/primitives";
 
 interface ShareLocationSheetProps {
   onShare: (lat: number, lng: number) => void;

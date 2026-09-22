@@ -7,8 +7,8 @@ import {
   Shield, Ban, Flag, Lock, Eye, Smartphone, X, Heart, Zap, FileLock2, Handshake, Moon,
   ShieldCheck, MapPin,
 } from "lucide-react";
-import { FYKMap } from "#/components/map/FYKMap";
-import type { MapPinItem } from "#/components/map/FYKMap";
+import { FYKMap } from "@/components/map/FYKMap";
+import type { MapPinItem } from "@/components/map/FYKMap";
 import { useAuth } from "@/components/EntryShell";
 import { useAppStore } from "@/lib/store";
 import {
@@ -16,7 +16,7 @@ import {
   listNotes, createNote, deleteNote, createCheckIn,
   listCheckIns, listEmergencyContacts, addEmergencyContact, removeEmergencyContact,
   type SafetyProfile,
-} from "#/integrations/supabase/safety";
+} from "@/integrations/supabase/safety";
 import { EmptyState, Skeleton, Button } from "@/components/ui/primitives";
 import { Avatar } from "@/components/ui/Avatar";
 import { cn, timeAgo } from "@/lib/utils";

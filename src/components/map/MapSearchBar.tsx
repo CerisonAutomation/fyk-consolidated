@@ -2,8 +2,8 @@
 
 import { MapPin, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type GeocodingFeature, searchPlaces } from "#/lib/geocoding";
-import { cn } from "#/utils/cn";
+import { type GeocodingFeature, searchPlaces } from "@/lib/geocoding";
+import { cn } from "@/utils/cn";
 
 interface MapSearchBarProps {
 	placeholder?: string;

@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { db } from "#/db";
-import { moderateContent } from "#/domains/ai/heuristic";
+import { db } from "@/db";
+import { moderateContent } from "@/domains/ai/heuristic";
 import {
 	cleanText,
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
 import {
 	conversationMembers,
 	conversations,
@@ -17,7 +17,7 @@ import {
 	messageReads,
 	messages,
 	users,
-} from "#/schema";
+} from "@/schema";
 
 /**
  * `GET|POST /api/conversations/{conversationId}/messages`

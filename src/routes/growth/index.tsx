@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { getRoutingOptimization } from "#/lib/routing";
+import { getRoutingOptimization } from "@/lib/routing";
 import {
   useWishlist,
   useGridPresets,
@@ -8,8 +8,8 @@ import {
   useAppReady,
   useStats,
   useOfflineQueue,
-} from "#/hooks/app-hooks";
-import { AppWiringPanel } from "#/components/app/AppWiringPanel";
+} from "@/hooks/app-hooks";
+import { AppWiringPanel } from "@/components/app/AppWiringPanel";
 
 export const Route = createFileRoute("/growth/")({
   component: GrowthPage,

@@ -10,8 +10,8 @@ import {
 	Trash2,
 	UserX,
 } from "lucide-react";
-import { useAuthStore } from "#/domains/auth/store";
-import { requireDocumentSession } from "#/lib/document-auth";
+import { useAuthStore } from "@/domains/auth/store";
+import { requireDocumentSession } from "@/lib/document-auth";
 
 export const Route = createFileRoute("/settings/account/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no

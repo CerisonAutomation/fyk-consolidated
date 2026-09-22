@@ -1,6 +1,6 @@
-import { getSupabase } from "#/integrations/supabase/client";
-import { clearAccountCaches } from "#/core/api/account-caches";
-import { clearAccountPreferences } from "#/domains/settings/preferences";
+import { getSupabase } from "@/integrations/supabase/client";
+import { clearAccountCaches } from "@/core/api/account-caches";
+import { clearAccountPreferences } from "@/domains/settings/preferences";
 
 export async function signOut(): Promise<void> {
 	try {

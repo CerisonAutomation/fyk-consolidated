@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Navigation } from "lucide-react";
-import { getStaticMapUrl } from "#/lib/geocoding";
-import { haversineKm, displayDistance } from "#/lib/geo";
+import { getStaticMapUrl } from "@/lib/geocoding";
+import { haversineKm, displayDistance } from "@/lib/geo";
 
 interface LiveLocationPreviewProps {
   lat: number;

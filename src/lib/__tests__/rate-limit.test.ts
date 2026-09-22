@@ -3,7 +3,7 @@ import {
 	checkRateLimit,
 	enforceRateLimit,
 	rateLimitHeaders,
-} from "#/lib/rate-limit";
+} from "@/lib/rate-limit";
 
 /**
  * The previous limiter kept a counter per *route* with the key

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { count, eq, sql } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { favorites, footprints, taps, users } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { favorites, footprints, taps, users } from "@/schema";
 
 /**
  * Profile View Analytics — 18.5, 27.8

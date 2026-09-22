@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { users } from "#/schema";
-import { calculateCompletion } from "#/lib/growth";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { users } from "@/schema";
+import { calculateCompletion } from "@/lib/growth";
 
 /**
  * Profile Completion Meter — 24.3

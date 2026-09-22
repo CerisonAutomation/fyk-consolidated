@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, messages, users } from "#/schema";
-import { generateContextAwareReplies, generateSmartIcebreakers } from "#/domains/ai/heuristic/context-replies";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { conversationMembers, messages, users } from "@/schema";
+import { generateContextAwareReplies, generateSmartIcebreakers } from "@/domains/ai/heuristic/context-replies";
 
 /**
  * Context-Aware Reply Suggestions — CORE 25.2

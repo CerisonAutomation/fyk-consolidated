@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ChatEnhancementsPanel } from "#/components/chat/enhanced/ChatEnhancements";
+import { ChatEnhancementsPanel } from "@/components/chat/enhanced/ChatEnhancements";
 import { useState } from "react";
 
 export const Route = createFileRoute("/chat/enhanced/")({

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { profileStats, profileAnalyticsEvents, footprints, taps, matches, messages } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { profileStats, profileAnalyticsEvents, footprints, taps, matches, messages } from "@/schema";
 
 export const Route = createFileRoute("/api/profile/stats/")({
   server: {

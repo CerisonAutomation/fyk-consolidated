@@ -9,9 +9,9 @@ import type { Message, MessageId, ConversationId } from '../../domain/entities/m
 import type { MessageRepository } from '../../ports/repositories';
 import type { TranslationService, StorageService, PushService, ModerationService } from '../../ports/services';
 import { createMessageId } from '../../domain/entities/message';
-import { telemetry } from '#/lib/enterprise/telemetry';
-import { resilient } from '#/lib/enterprise/self-healing';
-import { auditLogger } from '#/lib/enterprise/security-hardened';
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
 
 export interface SendMessageInput {
   senderId: string;

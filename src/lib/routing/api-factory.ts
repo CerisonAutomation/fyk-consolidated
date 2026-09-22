@@ -3,7 +3,7 @@
  * Replaces scattered route handlers with single source
  */
 
-import { z } from "#/lib/api-helpers";
+import { z } from "@/lib/api-helpers";
 
 export const canonicalSchemas = {
   uuid: z.string().uuid(),

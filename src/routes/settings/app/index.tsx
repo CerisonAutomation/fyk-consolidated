@@ -12,10 +12,10 @@ import {
 	getPreferencesSnapshot,
 	setPreferences,
 	type Preferences,
-} from "#/domains/settings/preferences";
-import { useServerSettings } from "#/domains/settings/use-server-settings";
-import { requireDocumentSession } from "#/lib/document-auth";
-import { isServerPrivacyField, type ServerAppField } from "#/lib/settings-map";
+} from "@/domains/settings/preferences";
+import { useServerSettings } from "@/domains/settings/use-server-settings";
+import { requireDocumentSession } from "@/lib/document-auth";
+import { isServerPrivacyField, type ServerAppField } from "@/lib/settings-map";
 
 export const Route = createFileRoute("/settings/app/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no

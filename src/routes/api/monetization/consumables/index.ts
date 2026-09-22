@@ -1,17 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { consumablesCatalog, consumablesInventory, wallet, walletTransactions } from "#/schema";
-import { CONSUMABLE_PRICES } from "#/lib/monetization";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { consumablesCatalog, consumablesInventory, wallet, walletTransactions } from "@/schema";
+import { CONSUMABLE_PRICES } from "@/lib/monetization";
 
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { cache } from "#/lib/enterprise/performance";
-import { traceRequest, finishTrace, auditTrail } from "#/lib/enterprise/observability";
-import { auditLogger } from "#/lib/enterprise/security-hardened";
-import { validate } from "#/lib/enterprise/validation";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { cache } from "@/lib/enterprise/performance";
+import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
+import { validate } from "@/lib/enterprise/validation";
 
 /**
  * Enterprise enrichment for monetization.consumables

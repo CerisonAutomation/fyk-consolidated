@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { generateVoiceNote, VOICE_TONES, estimateDuration } from "#/domains/ai/heuristic/voice-note";
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { cache } from "#/lib/enterprise/performance";
-import { traceRequest, finishTrace, auditTrail } from "#/lib/enterprise/observability";
-import { auditLogger } from "#/lib/enterprise/security-hardened";
-import { validate } from "#/lib/enterprise/validation";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { generateVoiceNote, VOICE_TONES, estimateDuration } from "@/domains/ai/heuristic/voice-note";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { cache } from "@/lib/enterprise/performance";
+import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
+import { validate } from "@/lib/enterprise/validation";
 
 const schema = z.object({
   text: z.string().min(1).max(500).refine((s) => !s.includes("<script"), "XSS detected"),

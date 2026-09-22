@@ -15,8 +15,8 @@
  * Everything else resolves against Storage, and an empty reference stays empty
  * rather than becoming a placeholder face.
  */
-import { demoMediaUrl } from "#/domains/demo";
-import { demoEnabled } from "#/domains/demo/config";
+import { demoMediaUrl } from "@/domains/demo";
+import { demoEnabled } from "@/domains/demo/config";
 import { getSupabase } from "./client";
 
 /**

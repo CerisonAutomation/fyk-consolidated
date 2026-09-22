@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { calculateStreak } from "#/lib/growth";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { calculateStreak } from "@/lib/growth";
 
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { cache } from "#/lib/enterprise/performance";
-import { traceRequest, finishTrace, auditTrail } from "#/lib/enterprise/observability";
-import { auditLogger } from "#/lib/enterprise/security-hardened";
-import { validate } from "#/lib/enterprise/validation";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { cache } from "@/lib/enterprise/performance";
+import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
+import { validate } from "@/lib/enterprise/validation";
 
 /**
  * Enterprise enrichment for growth.streak

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, count, desc, eq, gt, inArray } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	isMissingProfileError,
@@ -10,9 +10,9 @@ import {
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { meetnowPosts, notifications, taps, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { meetnowPosts, notifications, taps, users } from "@/schema";
 
 /**
  * MeetNow — "I'm at X, come over" posts.

@@ -4,7 +4,7 @@ import {
 	compatibilityScore,
 	onlineUntil,
 	tagOverlap,
-} from "#/lib/compatibility";
+} from "@/lib/compatibility";
 
 const minutes = (count: number) => new Date(Date.now() - count * 60_000);
 const days = (count: number) => new Date(Date.now() - count * 86_400_000);

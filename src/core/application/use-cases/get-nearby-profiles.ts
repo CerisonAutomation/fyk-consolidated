@@ -9,9 +9,9 @@ import type { GridFilters, GridProfile } from '../../domain/entities/grid';
 import type { GridRepository, UserRepository } from '../../ports/repositories';
 import type { GeocodingService } from '../../ports/services';
 import { filterGridProfiles, sortGridProfiles } from '../../domain/entities/grid';
-import { telemetry } from '#/lib/enterprise/telemetry';
-import { resilient } from '#/lib/enterprise/self-healing';
-import { cache } from '#/lib/enterprise/performance';
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { cache } from "@/lib/enterprise/performance";
 
 export interface GetNearbyProfilesInput {
   userId: string;

@@ -10,19 +10,19 @@ import {
 	Star,
 	Stethoscope,
 } from "lucide-react";
-import { useBlockUser } from "#/core/api/hooks/use-blocks";
+import { useBlockUser } from "@/core/api/hooks/use-blocks";
 import {
 	useAddFavorite,
 	useRemoveFavorite,
-} from "#/core/api/hooks/use-favorites";
-import { useHideUser } from "#/core/api/hooks/use-hides";
-import { useProfile } from "#/core/api/hooks/use-profiles";
-import { useSendTap } from "#/core/api/hooks/use-taps";
-import { useRecordView } from "#/core/api/hooks/use-views";
+} from "@/core/api/hooks/use-favorites";
+import { useHideUser } from "@/core/api/hooks/use-hides";
+import { useProfile } from "@/core/api/hooks/use-profiles";
+import { useSendTap } from "@/core/api/hooks/use-taps";
+import { useRecordView } from "@/core/api/hooks/use-views";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 const PhotoLightbox = lazy(() => import("#/core/ui/organisms/PhotoLightbox").then(m => ({ default: m.PhotoLightbox })));
-import { resolveMediaUrl } from "#/integrations/supabase/media";
-import { cn } from "#/lib/utils";
+import { resolveMediaUrl } from "@/integrations/supabase/media";
+import { cn } from "@/lib/utils";
 
 const PROFILE_STAT_SKELETON_IDS = ["height", "weight", "body", "position"];
 

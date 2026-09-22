@@ -14,9 +14,9 @@ import { Skeleton, Spinner } from "@/components/ui/primitives";
 import { cn, timeAgo } from "@/lib/utils";
 import { MESSAGE_EMOJIS, EMOJI_TO_REACTION, REACTION_TO_EMOJI } from "@/lib/constants";
 import type { Message, ConversationWithMeta } from "@/lib/types";
-import { ShareLocationSheet } from "#/components/chat/ShareLocationSheet";
-import { PickLocationSheet } from "#/components/chat/PickLocationSheet";
-import { LiveLocationPreview } from "#/components/chat/LiveLocationPreview";
+import { ShareLocationSheet } from "@/components/chat/ShareLocationSheet";
+import { PickLocationSheet } from "@/components/chat/PickLocationSheet";
+import { LiveLocationPreview } from "@/components/chat/LiveLocationPreview";
 
 export function ChatView({
   conversationId, onBack,

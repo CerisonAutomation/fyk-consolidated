@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, and, or } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { compatibilityScores, users } from "#/schema";
-import { calculateCompatibility } from "#/lib/matching";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { compatibilityScores, users } from "@/schema";
+import { calculateCompatibility } from "@/lib/matching";
 
 const calcSchema = z.object({ targetId: z.string().uuid() });
 

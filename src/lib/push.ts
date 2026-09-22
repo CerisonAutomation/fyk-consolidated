@@ -30,8 +30,8 @@
  *     `/api/push/subscribe` the server keeps a live endpoint for a device whose owner said
  *     stop — on this app that is not an annoyance, it is a safety problem.
  */
-import { ApiError, api } from "#/lib/client";
-import { serviceWorkerRegistration } from "#/lib/persist";
+import { ApiError, api } from "@/lib/client";
+import { serviceWorkerRegistration } from "@/lib/persist";
 
 export type PushState =
 	| { kind: "unsupported"; reason: string }

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
-import { requireSupabase } from "#/integrations/supabase/client";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
+import { requireSupabase } from "@/integrations/supabase/client";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
 import {
 	Eye,
 	EyeOff,

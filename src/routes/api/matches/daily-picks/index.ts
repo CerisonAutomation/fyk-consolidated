@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
-import { db } from "#/db";
-import { asStringArray, cardSelection, methodNotAllowed, requireCaller, toProfileCard } from "#/lib/api-helpers";
-import { compatibilityScore } from "#/lib/compatibility";
-import { json, withSecurity } from "#/middleware";
-import { users } from "#/schema";
+import { db } from "@/db";
+import { asStringArray, cardSelection, methodNotAllowed, requireCaller, toProfileCard } from "@/lib/api-helpers";
+import { compatibilityScore } from "@/lib/compatibility";
+import { json, withSecurity } from "@/middleware";
+import { users } from "@/schema";
 
 /**
  * Daily Picks — 15.3

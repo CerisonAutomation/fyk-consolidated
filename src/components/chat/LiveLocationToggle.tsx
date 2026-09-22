@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { Radio, Clock, X } from "lucide-react";
-import { cn } from "#/utils/cn";
-import { Button } from "#/components/ui/primitives";
+import { cn } from "@/utils/cn";
+import { Button } from "@/components/ui/primitives";
 
 interface LiveLocationToggleProps {
   onStart: (durationMs: number) => void;

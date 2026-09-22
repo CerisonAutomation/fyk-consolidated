@@ -1,6 +1,6 @@
-import { now } from "#/core/lib/clock";
-import { getPreferencesSnapshot } from "#/domains/settings/preferences";
-import { useGridStore } from "#/domains/grid/store";
+import { now } from "@/core/lib/clock";
+import { getPreferencesSnapshot } from "@/domains/settings/preferences";
+import { useGridStore } from "@/domains/grid/store";
 
 export const ONLINE_WINDOW_MS = 10 * 60 * 1000;
 const ONLINE_REFRESH_MARGIN_MS = 3 * 60 * 1000;

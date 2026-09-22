@@ -1,9 +1,9 @@
 import {
 	getPreferencesSnapshot,
 	setPreferences,
-} from "#/domains/settings/preferences";
-import { decodeGeohash, encodeGeohash } from "#/core/model/geohash";
-import { now } from "#/core/lib/clock";
+} from "@/domains/settings/preferences";
+import { decodeGeohash, encodeGeohash } from "@/core/model/geohash";
+import { now } from "@/core/lib/clock";
 import { distanceMeters, type Coordinates } from "./distance";
 
 const BACKGROUND_FIX_MAX_AGE_MS = 6 * 60 * 1000;

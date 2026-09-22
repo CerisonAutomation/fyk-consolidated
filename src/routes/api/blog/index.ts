@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
+import { methodNotAllowed } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
 
 /**
  * Blog & FAQ — 8.2

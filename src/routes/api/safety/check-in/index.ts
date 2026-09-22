@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	methodNotAllowed,
@@ -7,7 +7,7 @@ import {
 	requireCaller,
 	unexpected,
 	z,
-} from "#/lib/api-helpers";
+} from "@/lib/api-helpers";
 import {
 	armCheckIn,
 	DEFAULT_MINUTES,
@@ -18,8 +18,8 @@ import {
 	MIN_MINUTES,
 	SafetyError,
 	sweepOverdue,
-} from "#/lib/safety.server";
-import { json, jsonError, withSecurity } from "#/middleware";
+} from "@/lib/safety.server";
+import { json, jsonError, withSecurity } from "@/middleware";
 
 /**
  * `GET /api/safety/check-in` — the one that is running, plus the recent history and

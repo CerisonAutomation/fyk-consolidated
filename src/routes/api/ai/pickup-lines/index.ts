@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { generatePickupLines } from "#/domains/ai/heuristic/pickup-lines";
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { resilient } from "#/lib/enterprise/self-healing";
-import { cache } from "#/lib/enterprise/performance";
-import { traceRequest, finishTrace } from "#/lib/enterprise/observability";
-import { validate } from "#/lib/enterprise/validation";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { generatePickupLines } from "@/domains/ai/heuristic/pickup-lines";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { resilient } from "@/lib/enterprise/self-healing";
+import { cache } from "@/lib/enterprise/performance";
+import { traceRequest, finishTrace } from "@/lib/enterprise/observability";
+import { validate } from "@/lib/enterprise/validation";
 
 const schema = z.object({
   vibe: z.enum(["flirty", "funny", "sweet", "bold"]).default("flirty"),

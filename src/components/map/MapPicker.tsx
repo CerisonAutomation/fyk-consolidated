@@ -4,9 +4,9 @@ import mapboxgl from "mapbox-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Check, Navigation, X } from "lucide-react";
-import { reverseGeocode } from "#/lib/geocoding";
-import { getMapboxToken } from "#/lib/mapbox-config";
-import { cn } from "#/utils/cn";
+import { reverseGeocode } from "@/lib/geocoding";
+import { getMapboxToken } from "@/lib/mapbox-config";
+import { cn } from "@/utils/cn";
 
 interface MapPickerProps {
 	initialPosition?: { lat: number; lng: number };

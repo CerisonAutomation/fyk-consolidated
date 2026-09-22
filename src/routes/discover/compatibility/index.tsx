@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useCompatibility } from "#/hooks/app-hooks";
+import { useCompatibility } from "@/hooks/app-hooks";
 
 export const Route = createFileRoute("/discover/compatibility/")({
   component: CompatibilityPage,

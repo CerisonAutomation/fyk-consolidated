@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
 
 const VENUES = [
   { id: "1", name: "The Eagle", type: "bar", lat: 40.7128, lng: -74.006, address: "NYC", activeUsers: 12, tags: ["leather", "bear"] },

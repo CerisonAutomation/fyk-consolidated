@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, ilike, ne, or } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { users } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { users } from "@/schema";
 
 /**
  * Global Search — 10.3 People / Group / Thread Search

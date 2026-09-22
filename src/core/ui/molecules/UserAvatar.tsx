@@ -1,6 +1,6 @@
 import { User } from "lucide-react";
 import type { ReactNode } from "react";
-import { resolveMediaUrl } from "#/integrations/supabase/media";
+import { resolveMediaUrl } from "@/integrations/supabase/media";
 import { cn } from "../cn";
 import { MediaImage } from "./MediaImage";
 

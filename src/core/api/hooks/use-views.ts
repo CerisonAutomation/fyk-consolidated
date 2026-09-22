@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 
 /**
  * Profile views. `GET /api/interest/visitors` returns the identified visitors in

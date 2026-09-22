@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { usePhotoScores, useAI } from "#/hooks/app-hooks";
+import { usePhotoScores, useAI } from "@/hooks/app-hooks";
 
 export function PhotoEnhancerPanel() {
   const { scorePhoto, topPhotos, averageAppeal } = usePhotoScores();

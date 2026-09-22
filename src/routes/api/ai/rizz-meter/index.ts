@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, eq, isNull } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, messages } from "#/schema";
-import { calculateRizzScore, shouldCelebrate } from "#/domains/ai/heuristic/rizz-meter";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { conversationMembers, messages } from "@/schema";
+import { calculateRizzScore, shouldCelebrate } from "@/domains/ai/heuristic/rizz-meter";
 
 export const Route = createFileRoute("/api/ai/rizz-meter/")({
   server: {

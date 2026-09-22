@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { users } from "#/schema";
-import { calculateTrustScore, detectScamKeywords, detectUnderageKeywords } from "#/domains/ai/heuristic/trust-safety";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { users } from "@/schema";
+import { calculateTrustScore, detectScamKeywords, detectUnderageKeywords } from "@/domains/ai/heuristic/trust-safety";
 
 /**
  * Trust & Risk Scoring — 25.14

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { users } from "#/schema";
-import { generatePoseChallenge, verificationExpiry, heuristicFaceMatch } from "#/core/model/verification";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { users } from "@/schema";
+import { generatePoseChallenge, verificationExpiry, heuristicFaceMatch } from "@/core/model/verification";
 
 const requestSchema = z.object({
   selfieUrl: z.string().url().max(2048),

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, and, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { hotPicsRequests } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { hotPicsRequests } from "@/schema";
 
 const requestSchema = z.object({ ownerId: z.string().uuid() });
 const responseSchema = z.object({ requestId: z.string().uuid(), action: z.enum(["accept","decline"]) });

@@ -1,4 +1,4 @@
-import { getSupabase } from "#/integrations/supabase/client";
+import { getSupabase } from "@/integrations/supabase/client";
 
 /**
  * Browser → `/api/*` JSON client.

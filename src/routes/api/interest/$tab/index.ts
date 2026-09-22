@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cardSelection,
 	methodNotAllowed,
@@ -8,8 +8,8 @@ import {
 	requireCaller,
 	toProfileCard,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
 import {
 	favorites,
 	footprints,
@@ -17,7 +17,7 @@ import {
 	taps,
 	userNotes,
 	users,
-} from "#/schema";
+} from "@/schema";
 
 /**
  * `GET /api/interest/{likes,matches,visitors,favourites,notes}` — the five tabs

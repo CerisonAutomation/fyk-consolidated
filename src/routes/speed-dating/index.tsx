@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SpeedDatingPanel } from "#/components/settings/SafetyGrowthPanel";
+import { SpeedDatingPanel } from "@/components/settings/SafetyGrowthPanel";
 
 export const Route = createFileRoute("/speed-dating/")({
   component: SpeedDatingPage,

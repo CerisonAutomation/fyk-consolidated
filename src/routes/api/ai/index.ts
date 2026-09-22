@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	analyzeChatHealth,
 	analyzeProfile,
@@ -12,16 +12,16 @@ import {
 	rankPhotos,
 	suggestReplies,
 	summarizeChat,
-} from "#/domains/ai/heuristic";
+} from "@/domains/ai/heuristic";
 import {
 	asStringArray,
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, messages, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { conversationMembers, messages, users } from "@/schema";
 
 /**
  * `POST /api/ai` — the assistant actions the UI already calls.

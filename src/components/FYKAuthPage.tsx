@@ -17,7 +17,7 @@ import {
 import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { requireSupabase } from "#/integrations/supabase/client";
+import { requireSupabase } from "@/integrations/supabase/client";
 
 // --- Zod schemas for form validation (per react-forms.md docs) ---
 

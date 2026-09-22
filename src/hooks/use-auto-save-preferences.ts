@@ -4,11 +4,11 @@
  * Falls back to localStorage when offline or not authenticated.
  */
 import { useEffect, useRef, useCallback } from "react";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
 import {
 	setPreferences,
 	type Preferences,
-} from "#/domains/settings/preferences";
+} from "@/domains/settings/preferences";
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 const METADATA_KEY = "app_preferences";

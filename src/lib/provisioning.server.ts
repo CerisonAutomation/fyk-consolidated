@@ -21,8 +21,8 @@
  */
 
 import { eq } from "drizzle-orm";
-import { type DbLike, db } from "#/db";
-import { users } from "#/schema";
+import { type DbLike, db } from "@/db";
+import { users } from "@/schema";
 
 export type Provisioning = "present" | "missing" | "unknown";
 

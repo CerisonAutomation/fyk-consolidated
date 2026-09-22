@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 
 /**
  * Profile reads and the caller's own profile write.

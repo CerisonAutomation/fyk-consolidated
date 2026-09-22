@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, count, desc, eq, gte, inArray } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cardSelection,
 	methodNotAllowed,
@@ -9,9 +9,9 @@ import {
 	toProfileCard,
 	unexpected,
 	z,
-} from "#/lib/api-helpers";
-import { isBlocked } from "#/lib/tap.server";
-import { json, jsonError, withSecurity } from "#/middleware";
+} from "@/lib/api-helpers";
+import { isBlocked } from "@/lib/tap.server";
+import { json, jsonError, withSecurity } from "@/middleware";
 import {
 	blocks,
 	favorites,
@@ -20,7 +20,7 @@ import {
 	privateAlbumItems,
 	privateAlbums,
 	users,
-} from "#/schema";
+} from "@/schema";
 
 /**
  * `/api/social` — the edges between two people: favourites (the star), blocks,

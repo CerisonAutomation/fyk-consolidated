@@ -20,7 +20,7 @@ import {
   useSafetyStore,
   useOfflineQueueStore,
   useScheduledStore,
-} from "#/lib/stores/app-stores";
+} from "@/lib/stores/app-stores";
 
 export function useAppConfig() {
   const store = useAppConfigStore();

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
 
 /**
  * Banners — 8.4

@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, desc } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { privacyReports, footprints, blocks } from "#/schema";
-import { generatePrivacyReport } from "#/lib/privacy-report";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { privacyReports, footprints, blocks } from "@/schema";
+import { generatePrivacyReport } from "@/lib/privacy-report";
 
 export const Route = createFileRoute("/api/profile/privacy-report/")({
   server: {

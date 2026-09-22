@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SettingsPanel, MultiAccountSwitcher } from "#/components/settings/SettingsPanel";
+import { SettingsPanel, MultiAccountSwitcher } from "@/components/settings/SettingsPanel";
 
 export const Route = createFileRoute("/settings/app-config/")({
   component: AppConfigPage,

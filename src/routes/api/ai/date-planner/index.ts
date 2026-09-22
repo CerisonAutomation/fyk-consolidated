@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { users } from "#/schema";
-import { planDateIdeas, createEventFromPlan } from "#/domains/ai/heuristic/date-planner";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { users } from "@/schema";
+import { planDateIdeas, createEventFromPlan } from "@/domains/ai/heuristic/date-planner";
 
 /**
  * AI Date & Event Planner — CORE 25.3

@@ -1,12 +1,12 @@
 import { and, eq, gte, sql } from "drizzle-orm";
-import { type DbLike, db } from "#/db";
+import { type DbLike, db } from "@/db";
 import {
 	hoursAgo,
 	isTier,
 	PURCHASES_PER_HOUR,
 	type Tier,
 	tierRank,
-} from "#/lib/economy";
+} from "@/lib/economy";
 import {
 	consumablesInventory,
 	premiumEntitlements,
@@ -14,7 +14,7 @@ import {
 	users,
 	wallet,
 	walletTransactions,
-} from "#/schema";
+} from "@/schema";
 
 /**
  * The wallet primitives every money-touching route shares.

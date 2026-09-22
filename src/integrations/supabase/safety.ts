@@ -4,7 +4,7 @@
  * Footprints (profile visits), blocks, and private notes.
  */
 
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 import { getSupabase, ok, type Result, toFailure } from "./client";
 import type { Profile } from "./types";
 

@@ -24,7 +24,7 @@ import {
 	streakFor,
 	tapLimitFor,
 	tierPrice,
-} from "#/lib/economy";
+} from "@/lib/economy";
 
 /**
  * These are the invariants the deleted browser module could not keep, written as

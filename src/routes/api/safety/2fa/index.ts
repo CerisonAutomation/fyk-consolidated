@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { telemetry } from "#/lib/enterprise/telemetry";
-import { traceRequest, finishTrace, auditTrail } from "#/lib/enterprise/observability";
-import { auditLogger } from "#/lib/enterprise/security-hardened";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { telemetry } from "@/lib/enterprise/telemetry";
+import { traceRequest, finishTrace, auditTrail } from "@/lib/enterprise/observability";
+import { auditLogger } from "@/lib/enterprise/security-hardened";
 
 /**
  * Safety 2FA alias — redirects to /api/auth/2fa for consistency

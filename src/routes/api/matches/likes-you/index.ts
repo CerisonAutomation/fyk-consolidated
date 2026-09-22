@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller, toProfileCard } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { taps, users } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller, toProfileCard } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { taps, users } from "@/schema";
 
 export const Route = createFileRoute("/api/matches/likes-you/")({
   server: {

@@ -64,15 +64,15 @@
 
 import { redirect } from "@tanstack/react-router";
 import { getRequest } from "@tanstack/react-start/server";
-import { demoEnabled } from "#/domains/demo";
-import { logError } from "#/lib/logger";
-import { type Provisioning, profileRowExists } from "#/lib/provisioning.server";
+import { demoEnabled } from "@/domains/demo";
+import { logError } from "@/lib/logger";
+import { type Provisioning, profileRowExists } from "@/lib/provisioning.server";
 import {
 	type Caller,
 	isAuthConfigured,
 	type Verification,
 	verifyRequest,
-} from "#/lib/supabase-auth.server";
+} from "@/lib/supabase-auth.server";
 
 const SCOPE = "auth/document";
 

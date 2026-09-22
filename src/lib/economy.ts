@@ -1,4 +1,4 @@
-import { TIERS } from "#/lib/constants";
+import { TIERS } from "@/lib/constants";
 
 /**
  * The server's side of the economy: what things cost, what a tier means, and how

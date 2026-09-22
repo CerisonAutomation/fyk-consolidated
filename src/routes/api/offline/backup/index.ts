@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
 
 const backupSchema = z.object({
   action: z.enum(["export", "import"]),

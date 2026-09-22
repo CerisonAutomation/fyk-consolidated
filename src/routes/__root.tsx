@@ -6,13 +6,13 @@ import {
 } from "@tanstack/react-router";
 import { Suspense } from "react";
 import appCss from "../styles.css?url";
-import { TanstackQueryProvider } from "#/integrations/tanstack-query/root-provider";
-import { EntryShell } from "#/components/EntryShell";
-import { ErrorBoundary } from "#/components/ErrorBoundary";
-import { LoadingSpinner } from "#/components/FYKLoadingSpinner";
-import { SupabaseSessionProvider } from "#/integrations/supabase/session-provider";
-import { DeviceBridge } from "#/components/DeviceBridge";
-import { noStoreHeaders, securityHeaders } from "#/lib/security";
+import { TanstackQueryProvider } from "@/integrations/tanstack-query/root-provider";
+import { EntryShell } from "@/components/EntryShell";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { LoadingSpinner } from "@/components/FYKLoadingSpinner";
+import { SupabaseSessionProvider } from "@/integrations/supabase/session-provider";
+import { DeviceBridge } from "@/components/DeviceBridge";
+import { noStoreHeaders, securityHeaders } from "@/lib/security";
 
 export const Route = createRootRouteWithContext()({
 	/**

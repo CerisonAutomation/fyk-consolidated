@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
-import { useAuthStore } from "#/domains/auth/store";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
+import { useAuthStore } from "@/domains/auth/store";
 
 interface AuthGuardProps {
 	children: ReactNode;

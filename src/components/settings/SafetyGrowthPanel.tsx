@@ -11,7 +11,7 @@ import {
   useSpeedDating,
   useStats,
   useOfflineQueue,
-} from "#/hooks/app-hooks";
+} from "@/hooks/app-hooks";
 
 export function EmergencySharePanel() {
   const safety = useSafety();

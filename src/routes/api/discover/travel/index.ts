@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, readJson, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { users } from "#/schema";
-import { TRAVEL_CITIES, resolveEffectiveLocation, isTravelExpired } from "#/core/model/travel";
+import { db } from "@/db";
+import { methodNotAllowed, readJson, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { users } from "@/schema";
+import { TRAVEL_CITIES, resolveEffectiveLocation, isTravelExpired } from "@/core/model/travel";
 
 /**
  * Travel / Passport Mode — 16.1, D3.3

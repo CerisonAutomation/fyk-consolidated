@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PhotoEnhancerPanel, TranslationPanel, AutocompleteDemo, MemeSuggestPanel, VoiceNotePanel } from "#/components/ai-panel/AIAssistantPanel";
+import { PhotoEnhancerPanel, TranslationPanel, AutocompleteDemo, MemeSuggestPanel, VoiceNotePanel } from "@/components/ai-panel/AIAssistantPanel";
 
 export const Route = createFileRoute("/ai/photo-enhance/")({
   component: AIPhotoPage,

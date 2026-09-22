@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, gt } from "drizzle-orm";
-import { methodNotAllowed, readJson, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { getDb } from "#/db";
-import { otpCodes } from "#/schema";
+import { methodNotAllowed, readJson, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { getDb } from "@/db";
+import { otpCodes } from "@/schema";
 import { createHash, randomInt } from "crypto";
 
 const sendSchema = z.object({

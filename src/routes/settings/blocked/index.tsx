@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, ShieldOff, UserCircle } from "lucide-react";
-import { useBlockedUsers, useUnblockUser } from "#/core/api/hooks/use-blocks";
-import { useProfiles } from "#/core/api/hooks/use-profiles";
-import { requireDocumentSession } from "#/lib/document-auth";
+import { useBlockedUsers, useUnblockUser } from "@/core/api/hooks/use-blocks";
+import { useProfiles } from "@/core/api/hooks/use-profiles";
+import { requireDocumentSession } from "@/lib/document-auth";
 
 export const Route = createFileRoute("/settings/blocked/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no

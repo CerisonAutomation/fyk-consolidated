@@ -4,9 +4,9 @@ import mapboxgl from "mapbox-gl";
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "mapbox-gl/dist/mapbox-gl.css";
-import type { LatLng } from "#/lib/geo";
-import { getMapboxToken, isMapboxAvailable } from "#/lib/mapbox-config";
-import { cn } from "#/utils/cn";
+import type { LatLng } from "@/lib/geo";
+import { getMapboxToken, isMapboxAvailable } from "@/lib/mapbox-config";
+import { cn } from "@/utils/cn";
 import { MapPinMarker } from "./MapPinMarker";
 
 // ---------------------------------------------------------------------------

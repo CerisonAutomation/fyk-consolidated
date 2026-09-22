@@ -10,7 +10,7 @@ import {
 	type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { getSupabase } from "#/integrations/supabase/client";
+import { getSupabase } from "@/integrations/supabase/client";
 
 interface SupabaseSessionContextValue {
 	session: Session | null;

@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { count, eq, sql } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { blocks, conversations, favorites, footprints, messages, notifications, taps, users } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { blocks, conversations, favorites, footprints, messages, notifications, taps, users } from "@/schema";
 
 /**
  * Admin KPIs Dashboard — D10.5, D13.11

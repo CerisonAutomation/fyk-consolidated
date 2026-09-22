@@ -1,8 +1,8 @@
 import { and, eq, gte, or, sql } from "drizzle-orm";
-import { db } from "#/db";
-import { tapLimitFor } from "#/lib/economy";
-import { currentTier } from "#/lib/wallet.server";
-import { blocks, matches, notifications, taps, users } from "#/schema";
+import { db } from "@/db";
+import { tapLimitFor } from "@/lib/economy";
+import { currentTier } from "@/lib/wallet.server";
+import { blocks, matches, notifications, taps, users } from "@/schema";
 
 /**
  * The single tap engine behind both `POST /api/discover` and `POST /api/taps`.

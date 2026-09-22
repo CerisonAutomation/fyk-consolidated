@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useViews } from "#/core/api/hooks/use-views";
+import { useViews } from "@/core/api/hooks/use-views";
 import { Eye, Heart, Lock } from "lucide-react";
-import { resolveMediaUrl } from "#/integrations/supabase/media";
+import { resolveMediaUrl } from "@/integrations/supabase/media";
 
 export const Route = createFileRoute("/interest/views/")({
 	component: ViewsPage,

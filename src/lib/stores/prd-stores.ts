@@ -51,7 +51,7 @@ export const useNavigationStore = create<NavigationState>()(
 );
 
 // 2. useAuthStore — already exists in src/domains/auth/store.ts, re-export for PRD compliance
-export { useAuthStore } from "#/domains/auth/store";
+export { useAuthStore } from "@/domains/auth/store";
 
 // 3. useChatStore
 type ChatState = {

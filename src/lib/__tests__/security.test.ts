@@ -4,7 +4,7 @@ import {
 	noStoreHeaders,
 	publicCacheHeaders,
 	securityHeaders,
-} from "#/lib/security";
+} from "@/lib/security";
 
 /**
  * These headers used to live in `next.config.ts` — a file this Vite app never

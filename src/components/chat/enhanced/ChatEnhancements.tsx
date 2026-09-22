@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useChatEnhancements, useScheduledMessages } from "#/hooks/app-hooks";
+import { useChatEnhancements, useScheduledMessages } from "@/hooks/app-hooks";
 
 export function PinnedMessages({ conversationId }: { conversationId: string }) {
   const { pinned, unpin } = useChatEnhancements(conversationId);

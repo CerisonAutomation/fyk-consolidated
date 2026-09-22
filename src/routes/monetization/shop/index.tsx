@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ConsumablesPanel, PromoPanel } from "#/components/settings/SafetyGrowthPanel";
+import { ConsumablesPanel, PromoPanel } from "@/components/settings/SafetyGrowthPanel";
 
 export const Route = createFileRoute("/monetization/shop/")({
   component: ShopPage,

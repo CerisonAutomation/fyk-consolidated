@@ -2,13 +2,13 @@
 
 import { BellOff, BellRing, Loader2, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "#/components/ui/primitives";
+import { Button } from "@/components/ui/primitives";
 import {
 	disablePush,
 	enablePush,
 	type PushState,
 	readPushState,
-} from "#/lib/push";
+} from "@/lib/push";
 
 /**
  * The device-level half of the notifications screen: the inbox above lists what the server

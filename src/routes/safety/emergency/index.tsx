@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { EmergencySharePanel, RateLimitPanel, DeletionPanel } from "#/components/settings/SafetyGrowthPanel";
+import { EmergencySharePanel, RateLimitPanel, DeletionPanel } from "@/components/settings/SafetyGrowthPanel";
 
 export const Route = createFileRoute("/safety/emergency/")({
   component: SafetyEmergencyPage,

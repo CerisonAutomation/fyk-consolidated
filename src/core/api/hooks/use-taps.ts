@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 
 /**
  * Taps. `POST /api/taps` is the one writer: it records the edge, finds a mutual

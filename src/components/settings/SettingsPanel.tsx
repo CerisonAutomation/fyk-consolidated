@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { useAppConfig } from "#/hooks/app-hooks";
+import { useAppConfig } from "@/hooks/app-hooks";
 
 const ICONS = [
   { id: "default", label: "FYK" },
