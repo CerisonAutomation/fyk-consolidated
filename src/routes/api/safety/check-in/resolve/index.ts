@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { resolveCheckIn, SafetyError } from "#/lib/safety.server";
-import { json, jsonError, withSecurity } from "#/middleware";
+} from "@/lib/api-helpers";
+import { resolveCheckIn, SafetyError } from "@/lib/safety.server";
+import { json, jsonError, withSecurity } from "@/middleware";
 
 /**
  * `POST /api/safety/check-in/resolve` — confirm safe, or admit you are not.

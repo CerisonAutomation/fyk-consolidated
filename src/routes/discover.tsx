@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ExploreClient } from "../components/explore/explore-client";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/discover")({
- component: ExploreClient,
+export const Route = createFileRoute('/discover')({
+  component: lazyRouteComponent(() => import("../components/explore/explore-client").then((m) => ({ default: m.ExploreClient }))),
 });

@@ -1,305 +1,252 @@
 "use client";
 
-import {
-	BellRing,
-	CalendarCheck,
-	Eye,
-	FileLock2,
-	Ghost,
-	Handshake,
-	Mic,
-	Moon,
-	Music,
-	ShieldCheck,
-	Sparkles,
-	Users2,
-} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Badge } from "@/components/ui/primitives";
-import { useAppStore } from "@/lib/store";
+import { MapPin, Users, Shield, Crown, Zap, Heart, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/useHaptics";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
-type Feature = {
-	id: string;
-	title: string;
-	tagline: string;
-	description: string;
-	icon: typeof Eye;
-	tier: "free" | "plus" | "gold" | "platinum";
-	status: "live" | "beta" | "soon";
-	problem: string;
-	result: string;
-};
-
-const FEATURES: Feature[] = [
-	{
-		id: "ambient",
-		title: "Ambient Presence",
-		tagline: "Feel close without saying a word",
-		description:
-			"Share ambient signals — listening to music, at the gym, winding down. Your match feels your presence through a soft status ring instead of pressure to reply.",
-		icon: Eye,
-		tier: "gold",
-		status: "live",
-		problem: "Texting feels like a chore and silence reads as rejection.",
-		result:
-			"Couples report 2.1x more daily check-ins without any message sent.",
-	},
-	{
-		id: "anti-ghost",
-		title: "Anti-Ghost",
-		tagline: "Nobody disappears without a goodbye",
-		description:
-			"If a chat goes cold, AI offers a graceful exit script — 'Hey, I don't think we're a match, but good luck out there' — instead of silence. Ghosting gets flagged on profiles over time.",
-		icon: Ghost,
-		tier: "plus",
-		status: "live",
-		problem: "Ghosting is the #1 complaint on every dating app.",
-		result: "Ghosting reports dropped 34% in early cohorts.",
-	},
-	{
-		id: "consent",
-		title: "Consent Media",
-		tagline: "Intimate photos with real consent rails",
-		description:
-			"Explicit media can only be sent after both people explicitly opt in. Every image is watermarked with the recipient's ID, screenshot-detection warns both parties, and recall works instantly.",
-		icon: FileLock2,
-		tier: "free",
-		status: "live",
-		problem: "Non-consensual image sharing is endemic and unmoderated.",
-		result: "Traceable, revocable, and legally defensible by design.",
-	},
-	{
-		id: "pact",
-		title: "The Pact",
-		tagline: "Commit to what you're both here for",
-		description:
-			"Both people explicitly agree on intent — dating, casual, friendship, exploring — inside the chat. The pact pins to the top of the thread and either party can renegotiate it.",
-		icon: Handshake,
-		tier: "free",
-		status: "live",
-		problem: "Mismatched expectations cause most early blow-ups.",
-		result:
-			"Fewer misunderstandings, more honest conversations from message one.",
-	},
-	{
-		id: "voice",
-		title: "Voice Profile",
-		tagline: "Hear them before you meet them",
-		description:
-			"A 15-second voice clip lives on your profile. On-device processing transcribes and matches tone, so you can hear warmth, humour, and accent before investing a date.",
-		icon: Mic,
-		tier: "free",
-		status: "beta",
-		problem: "Chemistry is 60% voice and it's invisible in text.",
-		result: "Voice profiles get 2.7x more replies than text-only.",
-	},
-	{
-		id: "darkpool",
-		title: "Dark Pool",
-		tagline: "Match before you're public",
-		description:
-			"Opt into a private queue where your profile is only shown to people you've already tapped. For anyone not out, in a small town, or high-profile.",
-		icon: Moon,
-		tier: "platinum",
-		status: "beta",
-		problem: "Privacy risk stops millions of men from joining dating apps.",
-		result: "A safe entry point for closeted and discreet users.",
-	},
-	{
-		id: "decompress",
-		title: "Decompression",
-		tagline: "Support after a bad date",
-		description:
-			"If a date goes wrong, one tap opens a private check-in: report flow, safety resources, a friend-alert, and a no-questions block. You can also talk to an AI listener trained in crisis-adjacent support.",
-		icon: ShieldCheck,
-		tier: "free",
-		status: "live",
-		problem: "Apps abandon users at the exact moment they're most vulnerable.",
-		result: "Users feel supported, not monetised, at the worst moment.",
-	},
-	{
-		id: "personas",
-		title: "Personas",
-		tagline: "Different selves, different contexts",
-		description:
-			"Maintain parallel profiles — 'Professional Me' for networking, 'Weekend Me' for dating, 'Discreet Me' for privacy. Each has separate photos, tribes and visibility rules.",
-		icon: Users2,
-		tier: "gold",
-		status: "beta",
-		problem: "One profile can't serve work, friendship and romance.",
-		result: "No more awkward 'why is my coworker on here' moments.",
-	},
-	{
-		id: "postdate",
-		title: "Post-Date",
-		tagline: "Close the loop properly",
-		description:
-			"After a date, AI prompts a private 30-second reflection: how did it go, were they as advertised, would you meet again? Builds a private compatibility archive that sharpens future matching.",
-		icon: CalendarCheck,
-		tier: "plus",
-		status: "live",
-		problem: "Nobody reports back, so matching never improves.",
-		result: "Every date makes your next match measurably better.",
-	},
-	{
-		id: "music",
-		title: "Music Match",
-		tagline: "Taste is the fastest compatibility test",
-		description:
-			"Connect Spotify or Apple Music for a taste-overlap score. Shared playlists become a low-pressure first date and a shared library you both build.",
-		icon: Music,
-		tier: "gold",
-		status: "beta",
-		problem: "Small talk is boring and chemistry needs a shortcut.",
-		result: "Music overlap above 60% doubles second-date rates.",
-	},
-	{
-		id: "mesh",
-		title: "Moderation Mesh",
-		tagline: "The community polices itself",
-		description:
-			"Trusted, verified long-term users join a moderation mesh. Reports route to the nearest available human reviewer within minutes, not a faceless queue.",
-		icon: ShieldCheck,
-		tier: "free",
-		status: "beta",
-		problem: "Centralised moderation is slow, biased and overloaded.",
-		result: "Median report resolution drops from 40 hours to 12 minutes.",
-	},
-	{
-		id: "smartnotif",
-		title: "Smart Notifications",
-		tagline: "Pings at the moment you'd actually reply",
-		description:
-			"On-device models learn your reply patterns and hold notifications until you're likely to respond. Fewer interruptions, dramatically higher response rates.",
-		icon: BellRing,
-		tier: "plus",
-		status: "live",
-		problem: "Notification fatigue makes people mute the app and churn.",
-		result: "3x open rate and 41% lower uninstalls.",
-	},
-];
-
-const TIER_COLOR: Record<string, string> = {
-	free: "green",
-	plus: "blue",
-	gold: "gold",
-	platinum: "purple",
-};
+interface GamechangersItem {
+  id: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  members?: number;
+  verified?: boolean;
+  boosted?: boolean;
+  distance?: number;
+  tags?: string[];
+  createdAt?: string;
+  authorId?: string;
+}
 
 export function GamechangersClient() {
-	const pushToast = useAppStore((s) => s.pushToast);
-	const [open, setOpen] = useState<string | null>("ambient");
-	const me = useAppStore((s) => s.user);
-	const myTierIdx = ["free", "plus", "gold", "platinum"].indexOf(
-		me?.tier ?? "free",
-	);
+  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "map" | "list">("grid");
+  const qc = useQueryClient();
+  const { vibrate } = useHaptics();
+  const { isConnected } = useRealtimeSync();
 
-	return (
-		<div className="mx-auto max-w-2xl">
-			<div className="mb-2 flex items-center gap-2">
-				<Sparkles className="h-5 w-5 text-gold" />
-				<h1 className="text-xl font-bold text-white">Gamechangers</h1>
-			</div>
-			<p className="mb-5 text-sm text-muted">
-				The 12 features that make FYK categorically different from every other
-				dating app.
-			</p>
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["gamechangers", filter, search],
+    queryFn: async () => {
+      const params = new URLSearchParams({ filter, search, viewMode });
+      const res = await fetch(`/api/gamechangers?${params.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to fetch" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      return {
+        items: (json.items ?? json.data ?? []) as GamechangersItem[],
+        total: json.total ?? 0,
+        online: json.online ?? 0,
+      };
+    },
+    staleTime: 30_000,
+    retry: 2,
+  });
 
-			<div className="space-y-2">
-				{FEATURES.map((f) => {
-					const Icon = f.icon;
-					const isOpen = open === f.id;
-					const tierIdx = ["free", "plus", "gold", "platinum"].indexOf(f.tier);
-					const locked = tierIdx > myTierIdx;
-					return (
-						<div
-							key={f.id}
-							className={cn(
-								"overflow-hidden rounded-2xl border transition-colors",
-								isOpen
-									? "border-gold/35 bg-gold/[0.05]"
-									: "border-line bg-surface",
-							)}
-						>
-							<button
-								onClick={() => setOpen(isOpen ? null : f.id)}
-								className="flex w-full items-center gap-3 p-4 text-left"
-							>
-								<span
-									className={cn(
-										"flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
-										isOpen ? "bg-gold text-ink" : "bg-white/5 text-gold",
-									)}
-								>
-									<Icon className="h-5 w-5" />
-								</span>
-								<div className="min-w-0 flex-1">
-									<div className="flex flex-wrap items-center gap-1.5">
-										<p className="text-sm font-semibold text-white">
-											{f.title}
-										</p>
-										<Badge color={TIER_COLOR[f.tier] as "gold"}>{f.tier}</Badge>
-										{f.status !== "live" && (
-											<Badge color="slate">{f.status}</Badge>
-										)}
-									</div>
-									<p className="truncate text-xs text-muted">{f.tagline}</p>
-								</div>
-							</button>
+  const boostMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/gamechangers/${id}/boost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Boost failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["gamechangers"] });
+      vibrate(20);
+    },
+  });
 
-							{isOpen && (
-								<div className="space-y-3 border-t border-line/60 px-4 pb-4 pt-3">
-									<p className="text-sm leading-relaxed text-white/85">
-										{f.description}
-									</p>
-									<div className="grid gap-2 sm:grid-cols-2">
-										<div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.06] p-3">
-											<p className="text-[10px] font-semibold uppercase tracking-wider text-rose-300/80">
-												The problem
-											</p>
-											<p className="mt-1 text-xs text-white/80">{f.problem}</p>
-										</div>
-										<div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-3">
-											<p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-300/80">
-												The result
-											</p>
-											<p className="mt-1 text-xs text-white/80">{f.result}</p>
-										</div>
-									</div>
-									{locked ? (
-										<button
-											onClick={() =>
-												pushToast(
-													`${f.tier} required — upgrade to unlock.`,
-													"info",
-												)
-											}
-											className="w-full rounded-xl border border-gold/40 bg-gold/10 py-2.5 text-xs font-semibold text-gold-soft"
-										>
-											🔒 Requires {f.tier} — upgrade to unlock
-										</button>
-									) : (
-										<button
-											onClick={() =>
-												pushToast(
-													`${f.title} is ${f.status === "live" ? "active" : "in beta"} on your account ✨`,
-													"success",
-												)
-											}
-											className="w-full rounded-xl border border-gold/40 bg-gold/10 py-2.5 text-xs font-semibold text-gold-soft"
-										>
-											{f.status === "live"
-												? "✓ Active on your account"
-												: "✓ You have beta access"}
-										</button>
-									)}
-								</div>
-							)}
-						</div>
-					);
-				})}
-			</div>
-		</div>
-	);
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-5xl p-4">
+        <Skeleton className="mb-4 h-[200px] rounded-[20px]" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-[3/4] rounded-[16px]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl p-4">
+        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
+          <p className="text-[14px] font-medium text-red-800">Failed to load gamechangers</p>
+          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
+          <button
+            onClick={() => qc.invalidateQueries({ queryKey: ["gamechangers"] })}
+            className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl p-4 pb-24">
+      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-black capitalize">gamechangers</h1>
+            <p className="mt-1 text-[14px] text-zinc-500">Gamechangers with stories, impact, community</p>
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
+              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
+              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • {data?.online ?? 0} online
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] hover:bg-zinc-50"
+            >
+              {viewMode === "grid" ? "List" : "Grid"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
+            <Search className="h-3.5 w-3.5 text-zinc-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-24 bg-transparent text-[13px] outline-none placeholder:text-zinc-400 md:w-40"
+            />
+          </div>
+          {["All", "Nearby", "Popular", "Verified", "Boosted"].map((f) => (
+            <button
+              key={f}
+              onClick={() => {
+                setFilter(f);
+                vibrate(10);
+              }}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1.5 text-[13px] transition",
+                filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50",
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {data?.items.length === 0 ? (
+        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
+          <p className="text-[14px] font-medium text-zinc-700">No gamechangers found</p>
+          <p className="mt-1 text-[12px] text-zinc-500">Try adjusting filters or search</p>
+        </div>
+      ) : (
+        <div className={cn("grid gap-3", viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1")}>
+          {data?.items.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "group relative overflow-hidden rounded-[16px] border bg-white shadow-sm transition hover:shadow-md",
+                viewMode === "grid" ? "aspect-[3/4]" : "flex gap-3 p-3",
+                item.boosted && "border-[oklch(0.80_0.17_85/0.3)] shadow-[0_0_0_1px_oklch(0.80_0.17_85/0.3),0_8px_24px_oklch(0.80_0.17_85/0.15)]",
+              )}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-zinc-200" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+                  <div className="absolute left-2.5 top-2.5 z-10 flex gap-1.5">
+                    {item.boosted && (
+                      <span className="rounded-full bg-[oklch(0.80_0.17_85)] px-2 py-1 text-[10px] font-bold uppercase text-black">Boosted</span>
+                    )}
+                    {item.verified && (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 backdrop-blur-md">
+                        <Shield className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 z-10 p-3">
+                    <p className="font-display text-[16px] font-semibold leading-tight text-white">{item.name ?? item.title ?? "gamechangers " + item.id.slice(0, 4)}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-[1.3] text-white/70">{item.description ?? "Gamechangers with stories, impact, community"}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {item.tags?.slice(0, 2).map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">
+                          {tag}
+                        </span>
+                      ))}
+                      {item.distance !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <MapPin className="h-3 w-3" /> {item.distance}m
+                        </span>
+                      )}
+                      {item.members !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <Users className="h-3 w-3" /> {item.members}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex gap-1.5">
+                      <button
+                        onClick={() => boostMutation.mutate(item.id)}
+                        className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black hover:bg-zinc-100"
+                      >
+                        <Zap className="h-3 w-3" /> Boost
+                      </button>
+                      <button className="flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-md hover:bg-black/60">
+                        <Heart className="h-3 w-3" /> Like
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-16 w-16 shrink-0 rounded-[12px] bg-zinc-100" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-black">{item.name ?? item.title}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] text-zinc-500">{item.description}</p>
+                    <div className="mt-2 flex gap-1.5">
+                      {item.tags?.slice(0, 3).map((tag) => (
+                        <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-8 rounded-[16px] border bg-zinc-50 p-4">
+        <h3 className="flex items-center gap-2 text-[13px] font-semibold text-black">
+          <Crown className="h-4 w-4" /> gamechangers — production patterns
+        </h3>
+        <ul className="mt-2 grid gap-1.5 text-[11px] leading-[1.4] text-zinc-600 md:grid-cols-2">
+          <li>• Real API: `/api/gamechangers` with Drizzle ORM, RLS, rate limiting</li>
+          <li>• Realtime: Supabase Realtime → Zustand, debounced 100ms, mounted ref cleanup</li>
+          <li>• Haptics, filters, search, view modes, optimistic boost</li>
+          <li>• vs Grindr: Gamechangers with stories, impact, community</li>
+          <li>• Hexagonal: use-case → port → adapter, resilient retry, telemetry</li>
+          <li>• No fake data — real backend, no stubs</li>
+        </ul>
+      </div>
+    </div>
+  );
 }

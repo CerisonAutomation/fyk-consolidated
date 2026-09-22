@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { asc, eq } from "drizzle-orm";
-import { type DbLike, db } from "#/db";
+import { type DbLike, db } from "@/db";
 import {
 	cleanText,
 	methodNotAllowed,
@@ -8,7 +8,7 @@ import {
 	requireCaller,
 	unexpected,
 	z,
-} from "#/lib/api-helpers";
+} from "@/lib/api-helpers";
 import {
 	applyExperience,
 	cooldownLeft,
@@ -19,14 +19,14 @@ import {
 	pushMoodLog,
 	stageForLevel,
 	streakFor,
-} from "#/lib/economy";
+} from "@/lib/economy";
 import {
 	InsufficientBalance,
 	postLedger,
 	walletBalance,
-} from "#/lib/wallet.server";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { kingPet, petAdventures, petItems } from "#/schema";
+} from "@/lib/wallet.server";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { kingPet, petAdventures, petItems } from "@/schema";
 
 /**
  * `GET/POST /api/king-pet` — the pet, its shop and its trips.

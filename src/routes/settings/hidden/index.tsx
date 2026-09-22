@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ChevronLeft, EyeOff, UserCircle } from "lucide-react";
-import { useHiddenUsers, useUnhideUser } from "#/core/api/hooks/use-hides";
-import { useProfiles } from "#/core/api/hooks/use-profiles";
-import { requireDocumentSession } from "#/lib/document-auth";
+import { useHiddenUsers, useUnhideUser } from "@/core/api/hooks/use-hides";
+import { useProfiles } from "@/core/api/hooks/use-profiles";
+import { requireDocumentSession } from "@/lib/document-auth";
 
 export const Route = createFileRoute("/settings/hidden/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no

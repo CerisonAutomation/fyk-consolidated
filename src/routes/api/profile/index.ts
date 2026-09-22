@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { normaliseTribeTokens } from "#/lib/tribes.server";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { profilePrivate, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { normaliseTribeTokens } from "@/lib/tribes.server";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { profilePrivate, users } from "@/schema";
 
 /**
  * `GET|PUT /api/profile` — the caller's own profile row, and the only way an

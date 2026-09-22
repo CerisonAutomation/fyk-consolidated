@@ -27,7 +27,7 @@
  */
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
-import { logError } from "#/lib/logger";
+import { logError } from "@/lib/logger";
 
 const SCOPE = "auth/supabase";
 

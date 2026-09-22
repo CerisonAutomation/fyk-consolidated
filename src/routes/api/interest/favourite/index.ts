@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { favorites } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { favorites } from "@/schema";
 
 /**
  * `POST /api/interest/favourite` — `add` or `remove`, sent by the star on a

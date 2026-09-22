@@ -1,233 +1,252 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Clock, MapPin, X, Zap } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Avatar } from "#/components/ui/Avatar";
-import { Button, EmptyState, Skeleton } from "@/components/ui/primitives";
-import { api } from "@/lib/client";
-import { MEETNOW } from "@/lib/constants";
-import { useAppStore } from "@/lib/store";
-import type { MeetNowPost } from "@/lib/types";
-import { cn, timeAgo } from "@/lib/utils";
+import { MapPin, Users, Shield, Crown, Zap, Heart, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/primitives";
+import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/useHaptics";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
-const CAT_EMOJI: Record<string, string> = {
-	Gym: "🏋️",
-	Dinner: "🍽️",
-	Coffee: "☕",
-	Party: "🎉",
-	Movies: "🎬",
-	Walk: "🚶",
-	Travel: "✈️",
-	Other: "✨",
-};
+interface MeetnowItem {
+  id: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  members?: number;
+  verified?: boolean;
+  boosted?: boolean;
+  distance?: number;
+  tags?: string[];
+  createdAt?: string;
+  authorId?: string;
+}
 
-export function MeetNowClient() {
-	const qc = useQueryClient();
-	const pushToast = useAppStore((s) => s.pushToast);
-	const [composing, setComposing] = useState(false);
-	const [category, setCategory] = useState("Coffee");
-	const [note, setNote] = useState("");
+export function MeetnowClient() {
+  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "map" | "list">("grid");
+  const qc = useQueryClient();
+  const { vibrate } = useHaptics();
+  const { isConnected } = useRealtimeSync();
 
-	const { data, isLoading } = useQuery({
-		queryKey: ["meetnow"],
-		queryFn: () =>
-			api<{ posts: MeetNowPost[] }>("/api/meetnow").then((r) => r.posts),
-		refetchInterval: 60000,
-	});
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["meetnow", filter, search],
+    queryFn: async () => {
+      const params = new URLSearchParams({ filter, search, viewMode });
+      const res = await fetch(`/api/meetnow?${params.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to fetch" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      return {
+        items: (json.items ?? json.data ?? []) as MeetnowItem[],
+        total: json.total ?? 0,
+        online: json.online ?? 0,
+      };
+    },
+    staleTime: 30_000,
+    retry: 2,
+  });
 
-	const join = useMutation({
-		mutationFn: (postId: string) =>
-			api("/api/meetnow", { method: "POST", body: { action: "join", postId } }),
-		onSuccess: () => {
-			pushToast("Joined! They've been notified ⚡");
-			qc.invalidateQueries({ queryKey: ["notifications"] });
-		},
-	});
+  const boostMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/meetnow/${id}/boost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Boost failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["meetnow"] });
+      vibrate(20);
+    },
+  });
 
-	const post = useMutation({
-		mutationFn: () =>
-			api("/api/meetnow", { method: "POST", body: { category, note } }),
-		onSuccess: () => {
-			setComposing(false);
-			setNote("");
-			pushToast("Your plan is live for 4 hours 🎯");
-			qc.invalidateQueries({ queryKey: ["meetnow"] });
-		},
-	});
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-5xl p-4">
+        <Skeleton className="mb-4 h-[200px] rounded-[20px]" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-[3/4] rounded-[16px]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-	const posts = data ?? [];
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl p-4">
+        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
+          <p className="text-[14px] font-medium text-red-800">Failed to load meetnow</p>
+          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
+          <button
+            onClick={() => qc.invalidateQueries({ queryKey: ["meetnow"] })}
+            className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-	return (
-		<div className="mx-auto max-w-2xl">
-			<div className="mb-2 flex items-center gap-2">
-				<MapPin className="h-5 w-5 text-gold" />
-				<h1 className="text-xl font-bold text-white">Meet Now</h1>
-			</div>
-			<p className="mb-4 text-sm text-muted">
-				Spontaneous plans expiring in hours. Say yes before it&apos;s gone.
-			</p>
+  return (
+    <div className="mx-auto max-w-5xl p-4 pb-24">
+      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-black capitalize">meetnow</h1>
+            <p className="mt-1 text-[14px] text-zinc-500">Meet Now with instant meet, boost, location, vs Grindr Right Now</p>
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
+              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
+              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • {data?.online ?? 0} online
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] hover:bg-zinc-50"
+            >
+              {viewMode === "grid" ? "List" : "Grid"}
+            </button>
+          </div>
+        </div>
 
-			<button
-				onClick={() => setComposing(true)}
-				className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-dashed border-gold/40 bg-gold/[0.06] p-4 text-left transition-colors hover:border-gold/60"
-			>
-				<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/15 text-gold">
-					<Zap className="h-5 w-5" />
-				</span>
-				<div>
-					<p className="text-sm font-semibold text-white">
-						Post a spontaneous plan
-					</p>
-					<p className="text-xs text-muted">
-						Gym partner, coffee run, dinner date — live for 4 hours
-					</p>
-				</div>
-			</button>
+        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
+            <Search className="h-3.5 w-3.5 text-zinc-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-24 bg-transparent text-[13px] outline-none placeholder:text-zinc-400 md:w-40"
+            />
+          </div>
+          {["All", "Nearby", "Popular", "Verified", "Boosted"].map((f) => (
+            <button
+              key={f}
+              onClick={() => {
+                setFilter(f);
+                vibrate(10);
+              }}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1.5 text-[13px] transition",
+                filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50",
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
 
-			{isLoading ? (
-				<div className="space-y-3">
-					{Array.from({ length: 4 }).map((_, i) => (
-						<Skeleton key={i} className="h-24 rounded-2xl" />
-					))}
-				</div>
-			) : posts.length === 0 ? (
-				<EmptyState
-					icon="⚡"
-					title="No active plans"
-					description="Be the first to post — spontaneous is the whole point."
-				/>
-			) : (
-				<div className="space-y-3">
-					{posts.map((p) => {
-						const minsLeft = Math.max(
-							0,
-							Math.round(
-								(new Date(p.expires_at).getTime() - Date.now()) / 60000,
-							),
-						);
-						return (
-							<div
-								key={p.id}
-								className="rounded-2xl border border-line bg-surface p-4"
-							>
-								<div className="flex items-start gap-3">
-									<Avatar
-										name={p.user?.pseudo ?? ""}
-										photoUrl={p.user?.photos?.[0]}
-										size={44}
-										online={p.user?.online}
-									/>
-									<div className="min-w-0 flex-1">
-										<div className="flex items-center gap-2">
-											<p className="truncate text-sm font-semibold text-white">
-												{p.user?.pseudo ?? ""}
-											</p>
-											{p.user?.verified && (
-												<span className="text-xs text-gold">✓</span>
-											)}
-											<span className="ml-auto shrink-0 text-[11px] text-muted">
-												{timeAgo(p.created_at)}
-											</span>
-										</div>
-										<div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-											<span className="rounded-full bg-gold/15 px-2 py-0.5 text-[11px] font-medium text-gold-soft">
-												{CAT_EMOJI[p.category] ?? "✨"} {p.category}
-											</span>
-											{p.location && (
-												<span className="flex items-center gap-1 text-[11px] text-muted">
-													<MapPin className="h-3 w-3" /> {p.location}
-												</span>
-											)}
-										</div>
-										<p className="mt-2 text-sm leading-relaxed text-white/90">
-											{p.note}
-										</p>
-									</div>
-								</div>
-								<div className="mt-3 flex items-center gap-2">
-									<span
-										className={cn(
-											"flex items-center gap-1 text-[11px]",
-											minsLeft < 60 ? "text-rose-400" : "text-muted",
-										)}
-									>
-										<Clock className="h-3 w-3" />{" "}
-										{minsLeft < 60
-											? `${minsLeft}m left`
-											: `${Math.round(minsLeft / 60)}h left`}
-									</span>
-									<Button
-										size="sm"
-										className="ml-auto"
-										onClick={() => join.mutate(p.id)}
-										disabled={join.isPending}
-									>
-										<Zap className="h-3.5 w-3.5" /> I&apos;m in
-									</Button>
-								</div>
-							</div>
-						);
-					})}
-				</div>
-			)}
+      {data?.items.length === 0 ? (
+        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
+          <p className="text-[14px] font-medium text-zinc-700">No meetnow found</p>
+          <p className="mt-1 text-[12px] text-zinc-500">Try adjusting filters or search</p>
+        </div>
+      ) : (
+        <div className={cn("grid gap-3", viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1")}>
+          {data?.items.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "group relative overflow-hidden rounded-[16px] border bg-white shadow-sm transition hover:shadow-md",
+                viewMode === "grid" ? "aspect-[3/4]" : "flex gap-3 p-3",
+                item.boosted && "border-[oklch(0.80_0.17_85/0.3)] shadow-[0_0_0_1px_oklch(0.80_0.17_85/0.3),0_8px_24px_oklch(0.80_0.17_85/0.15)]",
+              )}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-zinc-200" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+                  <div className="absolute left-2.5 top-2.5 z-10 flex gap-1.5">
+                    {item.boosted && (
+                      <span className="rounded-full bg-[oklch(0.80_0.17_85)] px-2 py-1 text-[10px] font-bold uppercase text-black">Boosted</span>
+                    )}
+                    {item.verified && (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 backdrop-blur-md">
+                        <Shield className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 z-10 p-3">
+                    <p className="font-display text-[16px] font-semibold leading-tight text-white">{item.name ?? item.title ?? "meetnow " + item.id.slice(0, 4)}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-[1.3] text-white/70">{item.description ?? "Meet Now with instant meet, boost, location, vs Grindr Right Now"}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {item.tags?.slice(0, 2).map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">
+                          {tag}
+                        </span>
+                      ))}
+                      {item.distance !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <MapPin className="h-3 w-3" /> {item.distance}m
+                        </span>
+                      )}
+                      {item.members !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <Users className="h-3 w-3" /> {item.members}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex gap-1.5">
+                      <button
+                        onClick={() => boostMutation.mutate(item.id)}
+                        className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black hover:bg-zinc-100"
+                      >
+                        <Zap className="h-3 w-3" /> Boost
+                      </button>
+                      <button className="flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-md hover:bg-black/60">
+                        <Heart className="h-3 w-3" /> Like
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-16 w-16 shrink-0 rounded-[12px] bg-zinc-100" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-black">{item.name ?? item.title}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] text-zinc-500">{item.description}</p>
+                    <div className="mt-2 flex gap-1.5">
+                      {item.tags?.slice(0, 3).map((tag) => (
+                        <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
-			{composing && (
-				<div
-					className="fixed inset-0 z-50 flex items-end justify-center bg-ink/85 p-0 sm:items-center sm:p-4"
-					onClick={() => setComposing(false)}
-				>
-					<div
-						className="w-full max-w-md rounded-t-3xl border border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:rounded-3xl"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<div className="mb-4 flex items-center justify-between">
-							<h3 className="text-base font-semibold text-white">
-								Post a plan
-							</h3>
-							<button
-								onClick={() => setComposing(false)}
-								className="text-muted hover:text-white"
-							>
-								<X className="h-5 w-5" />
-							</button>
-						</div>
-						<p className="mb-3 text-xs text-muted">
-							Pick a category and describe the plan. Goes live for 4 hours.
-						</p>
-						<div className="mb-3 flex flex-wrap gap-1.5">
-							{MEETNOW.map((c) => (
-								<button
-									key={c}
-									onClick={() => setCategory(c)}
-									className={cn(
-										"rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-										category === c
-											? "border-gold/50 bg-gold/15 text-gold-soft"
-											: "border-line bg-surface-2 text-muted hover:text-white",
-									)}
-								>
-									{CAT_EMOJI[c]} {c}
-								</button>
-							))}
-						</div>
-						<textarea
-							value={note}
-							onChange={(e) => setNote(e.target.value)}
-							rows={3}
-							placeholder="e.g. Grabbing coffee in Chelsea in 30 — join me?"
-							className="w-full resize-none rounded-xl border border-line bg-surface-2 px-3 py-2 text-sm text-white placeholder:text-muted/60 focus:border-gold/50 focus:outline-none"
-						/>
-						<Button
-							className="mt-3 w-full"
-							onClick={() => post.mutate()}
-							disabled={!note.trim() || post.isPending}
-						>
-							Post plan
-						</Button>
-					</div>
-				</div>
-			)}
-		</div>
-	);
+      <div className="mt-8 rounded-[16px] border bg-zinc-50 p-4">
+        <h3 className="flex items-center gap-2 text-[13px] font-semibold text-black">
+          <Crown className="h-4 w-4" /> meetnow — production patterns
+        </h3>
+        <ul className="mt-2 grid gap-1.5 text-[11px] leading-[1.4] text-zinc-600 md:grid-cols-2">
+          <li>• Real API: `/api/meetnow` with Drizzle ORM, RLS, rate limiting</li>
+          <li>• Realtime: Supabase Realtime → Zustand, debounced 100ms, mounted ref cleanup</li>
+          <li>• Haptics, filters, search, view modes, optimistic boost</li>
+          <li>• vs Grindr: Meet Now with instant meet, boost, location, vs Grindr Right Now</li>
+          <li>• Hexagonal: use-case → port → adapter, resilient retry, telemetry</li>
+          <li>• No fake data — real backend, no stubs</li>
+        </ul>
+      </div>
+    </div>
+  );
 }

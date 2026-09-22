@@ -1,5 +1,5 @@
-import { type DbLike, db } from "#/db";
-import { tribes } from "#/schema";
+import { type DbLike, db } from "@/db";
+import { tribes } from "@/schema";
 
 /**
  * `users.tribes` is a jsonb array with a GIN index and no foreign key (0010), and two

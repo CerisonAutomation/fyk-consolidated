@@ -7,10 +7,10 @@
  */
 
 import { z } from "zod";
-import { logError } from "#/lib/logger";
-import type { Caller } from "#/lib/supabase-auth.server";
-import { ApiError, parseJsonBody, safeDeepLink } from "#/middleware";
-import { type UserRow, users } from "#/schema";
+import { logError } from "@/lib/logger";
+import type { Caller } from "@/lib/supabase-auth.server";
+import { ApiError, parseJsonBody, safeDeepLink } from "@/middleware";
+import { type UserRow, users } from "@/schema";
 
 export { z };
 

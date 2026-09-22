@@ -1,4 +1,4 @@
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 
 /**
  * The King Pet screen's API client.

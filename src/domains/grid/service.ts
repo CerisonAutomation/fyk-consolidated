@@ -1,10 +1,10 @@
-import { TtlCache } from "#/core/lib/ttl-cache";
-import { resolveMediaUrl } from "#/integrations/supabase/media";
-import { compatibilityScore, onlineUntil } from "#/lib/compatibility";
-import { api } from "#/lib/client";
-import { getSupabase } from "#/integrations/supabase/client";
-import { decodeGeohash } from "#/core/model/geohash";
-import { haversineKm } from "#/lib/geo";
+import { TtlCache } from "@/core/lib/ttl-cache";
+import { resolveMediaUrl } from "@/integrations/supabase/media";
+import { compatibilityScore, onlineUntil } from "@/lib/compatibility";
+import { api } from "@/lib/client";
+import { getSupabase } from "@/integrations/supabase/client";
+import { decodeGeohash } from "@/core/model/geohash";
+import { haversineKm } from "@/lib/geo";
 
 export type RenderedGridProfile = {
 	type: "rendered";

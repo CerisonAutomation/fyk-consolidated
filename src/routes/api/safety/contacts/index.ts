@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	methodNotAllowed,
@@ -7,15 +7,15 @@ import {
 	requireCaller,
 	unexpected,
 	z,
-} from "#/lib/api-helpers";
+} from "@/lib/api-helpers";
 import {
 	addContact,
 	listContacts,
 	removeContact,
 	SafetyError,
 	setDefaultContact,
-} from "#/lib/safety.server";
-import { json, withSecurity } from "#/middleware";
+} from "@/lib/safety.server";
+import { json, withSecurity } from "@/middleware";
 
 /**
  * `GET /api/safety/contacts` — the caller's emergency contacts.

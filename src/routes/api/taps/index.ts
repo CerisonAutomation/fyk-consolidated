@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { recordTap } from "#/lib/tap.server";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { taps } from "#/schema";
+} from "@/lib/api-helpers";
+import { recordTap } from "@/lib/tap.server";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { taps } from "@/schema";
 
 /**
  * `POST /api/taps` — the tap itself.

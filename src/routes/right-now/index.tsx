@@ -24,13 +24,13 @@ import {
 	type ChangeEvent,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getSupabase } from "#/integrations/supabase/client";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
-import { onlineUntil } from "#/lib/compatibility";
-import { useAppStore } from "#/lib/store";
-import { watchLocation, type GeoState } from "#/lib/geo";
-import { FYKMap, type MapPinItem } from "#/components/map/FYKMap";
-import { cn } from "#/utils/cn";
+import { getSupabase } from "@/integrations/supabase/client";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
+import { onlineUntil } from "@/lib/compatibility";
+import { useAppStore } from "@/lib/store";
+import { watchLocation, type GeoState } from "@/lib/geo";
+import { FYKMap, type MapPinItem } from "@/components/map/FYKMap";
+import { cn } from "@/utils/cn";
 
 export const Route = createFileRoute("/right-now/")({
 	component: RightNowPage,

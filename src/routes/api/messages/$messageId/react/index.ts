@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, asc, eq } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { conversationMembers, messageReactions, messages } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { conversationMembers, messageReactions, messages } from "@/schema";
 
 /**
  * `POST /api/messages/{messageId}/react` — toggle a reaction.

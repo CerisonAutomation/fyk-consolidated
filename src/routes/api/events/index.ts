@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, count, eq, ilike, inArray, sql } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	isMissingProfileError,
@@ -11,9 +11,9 @@ import {
 	readPagination,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { eventRsvps, events, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { eventRsvps, events, users } from "@/schema";
 
 /**
  * Events API.

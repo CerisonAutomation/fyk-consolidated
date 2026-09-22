@@ -2,6 +2,7 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 @import 'tw-animate-css';
+@import './styles/polished.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -1906,7 +1907,7 @@
 }
 
 /* ================================================================== */
-/*  LANDING PAGE — CINEMATIC HERO STYLES                               */
+/*  LANDING PAGE — soft HERO STYLES                               */
 /* ================================================================== */
 
 .hero-gradient-mesh {

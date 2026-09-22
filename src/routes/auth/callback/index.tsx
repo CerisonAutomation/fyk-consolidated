@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { requireSupabase } from "#/integrations/supabase/client";
+import { requireSupabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback/")({
 	component: AuthCallback,

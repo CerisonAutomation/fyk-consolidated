@@ -14,10 +14,10 @@ import {
 	Zap,
 } from "lucide-react";
 import { useCallback, useEffect } from "react";
-import { Avatar } from "#/components/ui/Avatar";
-import { PushRow } from "#/components/notifications/push-row";
-import { setUnreadBadge } from "#/lib/badge";
-import { syncPushSubscription } from "#/lib/push";
+import { Avatar } from "@/components/ui/Avatar";
+import { PushRow } from "@/components/notifications/push-row";
+import { setUnreadBadge } from "@/lib/badge";
+import { syncPushSubscription } from "@/lib/push";
 import { Button, EmptyState, Skeleton } from "@/components/ui/primitives";
 import { api } from "@/lib/client";
 import { useAppStore } from "@/lib/store";

@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { KingPetClient } from '../../components/king-pet/king-pet-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/king-pet/')({
-  component: KingPetClient,
-})
+  component: lazyRouteComponent(() => import("../../components/king-pet/king-pet-client").then((m) => ({ default: m.KingPetClient }))),
+});

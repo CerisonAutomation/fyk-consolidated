@@ -3,8 +3,8 @@ import { Store } from "@tanstack/store";
 import { BotIcon, ChevronRight, Send, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
-import type { ChatMessages } from "#/lib/demo-ai-hook";
-import { useGuitarRecommendationChat } from "#/lib/demo-ai-hook";
+import type { ChatMessages } from "@/lib/demo-ai-hook";
+import { useGuitarRecommendationChat } from "@/lib/demo-ai-hook";
 
 import GuitarRecommendation from "./demo-GuitarRecommendation";
 

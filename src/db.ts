@@ -83,7 +83,7 @@ export function getDb(): PostgresJsDatabase<typeof schema> {
 }
 
 /**
- * Proxy so call sites keep the previous `import { db } from "#/db"` shape
+ * Proxy so call sites keep the previous `import { db } from "@/db"` shape
  * without paying for pool creation at import time.
  */
 export const db: PostgresJsDatabase<typeof schema> = new Proxy(

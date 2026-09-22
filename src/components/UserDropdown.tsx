@@ -14,8 +14,8 @@ import {
 	User,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { signOut } from "#/domains/auth/services/sign-out";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
+import { signOut } from "@/domains/auth/services/sign-out";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
 
 export function UserDropdown() {
 	const { user } = useSupabaseSession();

@@ -4,7 +4,7 @@
  * Coordinates go through the snap() pipeline via locate() / watchLocation().
  */
 
-import { locate, watchLocation, type LatLng } from "#/lib/geo";
+import { locate, watchLocation, type LatLng } from "@/lib/geo";
 
 const UPDATE_INTERVAL_MS = 60_000; // 60 seconds between position broadcasts
 

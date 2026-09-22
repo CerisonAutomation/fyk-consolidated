@@ -8,7 +8,7 @@ import {
 	safeDeepLink,
 	toSafeError,
 	validateUuid,
-} from "#/middleware";
+} from "@/middleware";
 
 const URL_HERE = "https://fyk.test/api/events";
 

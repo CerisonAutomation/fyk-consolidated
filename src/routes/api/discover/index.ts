@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, gt, ne, or, sql } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	asStringArray,
 	cardSelection,
@@ -10,11 +10,11 @@ import {
 	requireCaller,
 	toProfileCard,
 	z,
-} from "#/lib/api-helpers";
-import { compatibilityScore } from "#/lib/compatibility";
-import { recordTap } from "#/lib/tap.server";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { favorites, taps, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { compatibilityScore } from "@/lib/compatibility";
+import { recordTap } from "@/lib/tap.server";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { favorites, taps, users } from "@/schema";
 
 /**
  * Discovery deck: `GET /api/discover` and the tap that follows it.

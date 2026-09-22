@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { MeetNowClient } from '../../components/meetnow/meetnow-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/meetnow/')({
-  component: MeetNowClient,
-})
+  component: lazyRouteComponent(() => import("../../components/meetnow/meetnow-client").then((m) => ({ default: m.MeetnowClient }))),
+});

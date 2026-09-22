@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, inArray, or } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cardSelection,
 	methodNotAllowed,
 	requireCaller,
 	toProfileCard,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { blocks, hides as hidesTable, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { blocks, hides as hidesTable, users } from "@/schema";
 
 /**
  * `GET /api/profiles?ids=…` — several public profiles in one round trip.

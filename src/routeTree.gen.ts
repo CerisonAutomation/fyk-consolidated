@@ -12,33 +12,82 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as DiscoverRouteImport } from './routes/discover'
+import { Route as AgendaIndexRouteImport } from './routes/agenda/index'
 import { Route as ApiSplatRouteImport } from './routes/api/$'
+import { Route as BlindDateIndexRouteImport } from './routes/blind-date/index'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
+import { Route as BoostIndexRouteImport } from './routes/boost/index'
+import { Route as CalendarIndexRouteImport } from './routes/calendar/index'
 import { Route as ChatIndexRouteImport } from './routes/chat/index'
+import { Route as CirclesIndexRouteImport } from './routes/circles/index'
+import { Route as CommunityChallengesIndexRouteImport } from './routes/community-challenges/index'
+import { Route as DiscoverMapRouteImport } from './routes/discover/map'
+import { Route as DumpRifyIndexRouteImport } from './routes/dump-rify/index'
 import { Route as EventsIndexRouteImport } from './routes/events/index'
+import { Route as EventsEventIdRouteImport } from './routes/events/$eventId'
+import { Route as EventsCreateRouteImport } from './routes/events/create'
 import { Route as FansitesIndexRouteImport } from './routes/fansites/index'
+import { Route as FaqIndexRouteImport } from './routes/faq/index'
+import { Route as FavoritesIndexRouteImport } from './routes/favorites/index'
+import { Route as FiltersIndexRouteImport } from './routes/filters/index'
+import { Route as ForgotPasswordIndexRouteImport } from './routes/forgot-password/index'
 import { Route as GamechangersIndexRouteImport } from './routes/gamechangers/index'
 import { Route as GridIndexRouteImport } from './routes/grid/index'
 import { Route as GroupsIndexRouteImport } from './routes/groups/index'
+import { Route as GroupsGroupIdRouteImport } from './routes/groups/$groupId'
+import { Route as GroupsCreateRouteImport } from './routes/groups/create'
+import { Route as GrowthIndexRouteImport } from './routes/growth/index'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
+import { Route as ImageViewerIndexRouteImport } from './routes/image-viewer/index'
+import { Route as InterestedInMeIndexRouteImport } from './routes/interested-in-me/index'
 import { Route as KingPetIndexRouteImport } from './routes/king-pet/index'
+import { Route as LegalIndexRouteImport } from './routes/legal/index'
+import { Route as LoginIndexRouteImport } from './routes/login/index'
 import { Route as MeetnowIndexRouteImport } from './routes/meetnow/index'
 import { Route as NotificationsIndexRouteImport } from './routes/notifications/index'
+import { Route as OfflineIndexRouteImport } from './routes/offline/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
+import { Route as PaywallIndexRouteImport } from './routes/paywall/index'
+import { Route as PhoneLoginIndexRouteImport } from './routes/phone-login/index'
+import { Route as PhotoEditorIndexRouteImport } from './routes/photo-editor/index'
+import { Route as PlatformIndexRouteImport } from './routes/platform/index'
 import { Route as PremiumIndexRouteImport } from './routes/premium/index'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as ReportUserIndexRouteImport } from './routes/report-user/index'
 import { Route as RightNowIndexRouteImport } from './routes/right-now/index'
 import { Route as SafetyIndexRouteImport } from './routes/safety/index'
+import { Route as SearchInboxIndexRouteImport } from './routes/search-inbox/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as ShoutsIndexRouteImport } from './routes/shouts/index'
+import { Route as ShoutsShoutIdRouteImport } from './routes/shouts/$shoutId'
+import { Route as ShoutsCreateRouteImport } from './routes/shouts/create'
+import { Route as SpeedDatingIndexRouteImport } from './routes/speed-dating/index'
+import { Route as StoriesStoryIdRouteImport } from './routes/stories/$storyId'
 import { Route as TribesIndexRouteImport } from './routes/tribes/index'
+import { Route as VerifyIndexRouteImport } from './routes/verify/index'
+import { Route as VideoDatesIndexRouteImport } from './routes/video-dates/index'
+import { Route as VideoRouletteIndexRouteImport } from './routes/video-roulette/index'
+import { Route as VouchesIndexRouteImport } from './routes/vouches/index'
+import { Route as WelcomeIndexRouteImport } from './routes/welcome/index'
+import { Route as WhoViewedMeIndexRouteImport } from './routes/who-viewed-me/index'
+import { Route as AiPhotoEnhanceIndexRouteImport } from './routes/ai/photo-enhance/index'
+import { Route as AiPhotoRankerIndexRouteImport } from './routes/ai/photo-ranker/index'
+import { Route as AiTranslationIndexRouteImport } from './routes/ai/translation/index'
+import { Route as AiVoiceIndexRouteImport } from './routes/ai/voice/index'
 import { Route as ApiAiIndexRouteImport } from './routes/api/ai/index'
+import { Route as ApiAlbumsIndexRouteImport } from './routes/api/albums/index'
+import { Route as ApiBannersIndexRouteImport } from './routes/api/banners/index'
+import { Route as ApiBlogIndexRouteImport } from './routes/api/blog/index'
 import { Route as ApiBoostIndexRouteImport } from './routes/api/boost/index'
+import { Route as ApiCalendarIndexRouteImport } from './routes/api/calendar/index'
+import { Route as ApiCallsIndexRouteImport } from './routes/api/calls/index'
 import { Route as ApiConversationsIndexRouteImport } from './routes/api/conversations/index'
 import { Route as ApiDiscoverIndexRouteImport } from './routes/api/discover/index'
 import { Route as ApiEventsIndexRouteImport } from './routes/api/events/index'
+import { Route as ApiGiftsIndexRouteImport } from './routes/api/gifts/index'
 import { Route as ApiHealthIndexRouteImport } from './routes/api/health/index'
 import { Route as ApiKingPetIndexRouteImport } from './routes/api/king-pet/index'
+import { Route as ApiLiveIndexRouteImport } from './routes/api/live/index'
 import { Route as ApiMeetnowIndexRouteImport } from './routes/api/meetnow/index'
 import { Route as ApiNotesIndexRouteImport } from './routes/api/notes/index'
 import { Route as ApiNotificationsIndexRouteImport } from './routes/api/notifications/index'
@@ -47,32 +96,150 @@ import { Route as ApiProfilesIndexRouteImport } from './routes/api/profiles/inde
 import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
 import { Route as ApiSettingsIndexRouteImport } from './routes/api/settings/index'
 import { Route as ApiSocialIndexRouteImport } from './routes/api/social/index'
+import { Route as ApiSpeedDatingIndexRouteImport } from './routes/api/speed-dating/index'
+import { Route as ApiStoriesIndexRouteImport } from './routes/api/stories/index'
 import { Route as ApiTapsIndexRouteImport } from './routes/api/taps/index'
+import { Route as ApiVideoRouletteIndexRouteImport } from './routes/api/video-roulette/index'
 import { Route as ApiWalletIndexRouteImport } from './routes/api/wallet/index'
 import { Route as AuthCallbackIndexRouteImport } from './routes/auth/callback/index'
 import { Route as AuthSignInIndexRouteImport } from './routes/auth/sign-in/index'
 import { Route as AuthSignUpIndexRouteImport } from './routes/auth/sign-up/index'
 import { Route as ChatConversationIdIndexRouteImport } from './routes/chat/$conversationId/index'
+import { Route as ChatEnhancedIndexRouteImport } from './routes/chat/enhanced/index'
+import { Route as DiscoverCompatibilityIndexRouteImport } from './routes/discover/compatibility/index'
+import { Route as DiscoverPresetsIndexRouteImport } from './routes/discover/presets/index'
 import { Route as InterestTapsIndexRouteImport } from './routes/interest/taps/index'
 import { Route as InterestViewsIndexRouteImport } from './routes/interest/views/index'
+import { Route as MatchesCompatibilityIndexRouteImport } from './routes/matches/compatibility/index'
+import { Route as MatchesSecretAdmirerIndexRouteImport } from './routes/matches/secret-admirer/index'
+import { Route as MonetizationPromoIndexRouteImport } from './routes/monetization/promo/index'
+import { Route as MonetizationShopIndexRouteImport } from './routes/monetization/shop/index'
 import { Route as ProfileProfileIdIndexRouteImport } from './routes/profile/$profileId/index'
+import { Route as ProfileInsightsIndexRouteImport } from './routes/profile/insights/index'
+import { Route as SafetyEmergencyContactIndexRouteImport } from './routes/safety/emergency-contact/index'
+import { Route as SafetyEmergencyIndexRouteImport } from './routes/safety/emergency/index'
+import { Route as SettingsAccessibilityIndexRouteImport } from './routes/settings/accessibility/index'
+import { Route as SettingsAccountSettingsIndexRouteImport } from './routes/settings/account-settings/index'
 import { Route as SettingsAccountIndexRouteImport } from './routes/settings/account/index'
+import { Route as SettingsAiTogglesIndexRouteImport } from './routes/settings/ai-toggles/index'
+import { Route as SettingsAppConfigIndexRouteImport } from './routes/settings/app-config/index'
 import { Route as SettingsAppIndexRouteImport } from './routes/settings/app/index'
+import { Route as SettingsBackupRestoreIndexRouteImport } from './routes/settings/backup-restore/index'
+import { Route as SettingsBlockedUsersIndexRouteImport } from './routes/settings/blocked-users/index'
 import { Route as SettingsBlockedIndexRouteImport } from './routes/settings/blocked/index'
+import { Route as SettingsChangePasswordIndexRouteImport } from './routes/settings/change-password/index'
+import { Route as SettingsDataExportIndexRouteImport } from './routes/settings/data-export/index'
+import { Route as SettingsDataIndexRouteImport } from './routes/settings/data/index'
+import { Route as SettingsDeactivateIndexRouteImport } from './routes/settings/deactivate/index'
+import { Route as SettingsDeletionIndexRouteImport } from './routes/settings/deletion/index'
+import { Route as SettingsDiscreetIconIndexRouteImport } from './routes/settings/discreet-icon/index'
+import { Route as SettingsDndIndexRouteImport } from './routes/settings/dnd/index'
+import { Route as SettingsExportIndexRouteImport } from './routes/settings/export/index'
 import { Route as SettingsHiddenIndexRouteImport } from './routes/settings/hidden/index'
+import { Route as SettingsLanguageIndexRouteImport } from './routes/settings/language/index'
+import { Route as SettingsLocationIndexRouteImport } from './routes/settings/location/index'
+import { Route as SettingsMediaIndexRouteImport } from './routes/settings/media/index'
+import { Route as SettingsMultiAccountIndexRouteImport } from './routes/settings/multi-account/index'
+import { Route as SettingsNotificationsIndexRouteImport } from './routes/settings/notifications/index'
+import { Route as SettingsPermissionsIndexRouteImport } from './routes/settings/permissions/index'
+import { Route as SettingsPinLockIndexRouteImport } from './routes/settings/pin-lock/index'
+import { Route as SettingsPrivacyReportIndexRouteImport } from './routes/settings/privacy-report/index'
 import { Route as SettingsPrivacyIndexRouteImport } from './routes/settings/privacy/index'
 import { Route as SettingsProfileIndexRouteImport } from './routes/settings/profile/index'
+import { Route as SettingsStatsIndexRouteImport } from './routes/settings/stats/index'
+import { Route as SettingsSubscriptionIndexRouteImport } from './routes/settings/subscription/index'
+import { Route as SettingsTwoFactorIndexRouteImport } from './routes/settings/two-factor/index'
+import { Route as VerifyPhotoIndexRouteImport } from './routes/verify/photo/index'
+import { Route as ApiAdminKpisIndexRouteImport } from './routes/api/admin/kpis/index'
+import { Route as ApiAdminModerationIndexRouteImport } from './routes/api/admin/moderation/index'
+import { Route as ApiAiAutoReplyIndexRouteImport } from './routes/api/ai/auto-reply/index'
+import { Route as ApiAiAutocompleteIndexRouteImport } from './routes/api/ai/autocomplete/index'
+import { Route as ApiAiBestTimeIndexRouteImport } from './routes/api/ai/best-time/index'
+import { Route as ApiAiCatfishIndexRouteImport } from './routes/api/ai/catfish/index'
+import { Route as ApiAiChatSummaryIndexRouteImport } from './routes/api/ai/chat-summary/index'
+import { Route as ApiAiContextRepliesIndexRouteImport } from './routes/api/ai/context-replies/index'
+import { Route as ApiAiDatePlannerIndexRouteImport } from './routes/api/ai/date-planner/index'
+import { Route as ApiAiDigestIndexRouteImport } from './routes/api/ai/digest/index'
+import { Route as ApiAiEscalationIndexRouteImport } from './routes/api/ai/escalation/index'
+import { Route as ApiAiIcebreakersIndexRouteImport } from './routes/api/ai/icebreakers/index'
+import { Route as ApiAiMemeSuggestIndexRouteImport } from './routes/api/ai/meme-suggest/index'
+import { Route as ApiAiPhotoEnhanceIndexRouteImport } from './routes/api/ai/photo-enhance/index'
+import { Route as ApiAiPickupLinesIndexRouteImport } from './routes/api/ai/pickup-lines/index'
+import { Route as ApiAiRizzMeterIndexRouteImport } from './routes/api/ai/rizz-meter/index'
+import { Route as ApiAiTranslationIndexRouteImport } from './routes/api/ai/translation/index'
+import { Route as ApiAiTrustScoreIndexRouteImport } from './routes/api/ai/trust-score/index'
+import { Route as ApiAiVoiceNoteIndexRouteImport } from './routes/api/ai/voice-note/index'
+import { Route as ApiAiWingmanIndexRouteImport } from './routes/api/ai/wingman/index'
+import { Route as ApiAuth2faIndexRouteImport } from './routes/api/auth/2fa/index'
 import { Route as ApiAuthMeIndexRouteImport } from './routes/api/auth/me/index'
+import { Route as ApiAuthPhoneIndexRouteImport } from './routes/api/auth/phone/index'
+import { Route as ApiAuthSessionsIndexRouteImport } from './routes/api/auth/sessions/index'
+import { Route as ApiAuthSocialIndexRouteImport } from './routes/api/auth/social/index'
+import { Route as ApiChatBroadcastIndexRouteImport } from './routes/api/chat/broadcast/index'
+import { Route as ApiChatEphemeralIndexRouteImport } from './routes/api/chat/ephemeral/index'
+import { Route as ApiChatLocationIndexRouteImport } from './routes/api/chat/location/index'
+import { Route as ApiChatPinnedIndexRouteImport } from './routes/api/chat/pinned/index'
+import { Route as ApiChatPollsIndexRouteImport } from './routes/api/chat/polls/index'
+import { Route as ApiChatQuietHoursIndexRouteImport } from './routes/api/chat/quiet-hours/index'
+import { Route as ApiChatRewardedIndexRouteImport } from './routes/api/chat/rewarded/index'
+import { Route as ApiChatScheduledIndexRouteImport } from './routes/api/chat/scheduled/index'
+import { Route as ApiChatScreenshotIndexRouteImport } from './routes/api/chat/screenshot/index'
+import { Route as ApiChatThemesIndexRouteImport } from './routes/api/chat/themes/index'
+import { Route as ApiDiscoverCompatibilityIndexRouteImport } from './routes/api/discover/compatibility/index'
+import { Route as ApiDiscoverFreshIndexRouteImport } from './routes/api/discover/fresh/index'
+import { Route as ApiDiscoverGridPresetsIndexRouteImport } from './routes/api/discover/grid-presets/index'
+import { Route as ApiDiscoverOnlineIndexRouteImport } from './routes/api/discover/online/index'
+import { Route as ApiDiscoverPlacesIndexRouteImport } from './routes/api/discover/places/index'
+import { Route as ApiDiscoverSavedSearchesIndexRouteImport } from './routes/api/discover/saved-searches/index'
+import { Route as ApiDiscoverTravelIndexRouteImport } from './routes/api/discover/travel/index'
 import { Route as ApiFansitesSubscribeIndexRouteImport } from './routes/api/fansites/subscribe/index'
+import { Route as ApiGrowthCompletionIndexRouteImport } from './routes/api/growth/completion/index'
+import { Route as ApiGrowthEngagementIndexRouteImport } from './routes/api/growth/engagement/index'
+import { Route as ApiGrowthFunnelIndexRouteImport } from './routes/api/growth/funnel/index'
+import { Route as ApiGrowthStreakIndexRouteImport } from './routes/api/growth/streak/index'
 import { Route as ApiInterestTabIndexRouteImport } from './routes/api/interest/$tab/index'
 import { Route as ApiInterestFavouriteIndexRouteImport } from './routes/api/interest/favourite/index'
 import { Route as ApiInterestLikeIndexRouteImport } from './routes/api/interest/like/index'
 import { Route as ApiInterestStatsIndexRouteImport } from './routes/api/interest/stats/index'
+import { Route as ApiMatchesCompatibilityIndexRouteImport } from './routes/api/matches/compatibility/index'
+import { Route as ApiMatchesDailyPicksIndexRouteImport } from './routes/api/matches/daily-picks/index'
+import { Route as ApiMatchesDealbreakersIndexRouteImport } from './routes/api/matches/dealbreakers/index'
+import { Route as ApiMatchesLikesYouIndexRouteImport } from './routes/api/matches/likes-you/index'
+import { Route as ApiMatchesSecretAdmirerIndexRouteImport } from './routes/api/matches/secret-admirer/index'
 import { Route as ApiMessagesMessageIdIndexRouteImport } from './routes/api/messages/$messageId/index'
+import { Route as ApiMonetizationConsumablesIndexRouteImport } from './routes/api/monetization/consumables/index'
+import { Route as ApiMonetizationGiftMembershipIndexRouteImport } from './routes/api/monetization/gift-membership/index'
+import { Route as ApiMonetizationPayPerReadIndexRouteImport } from './routes/api/monetization/pay-per-read/index'
+import { Route as ApiMonetizationPromoIndexRouteImport } from './routes/api/monetization/promo/index'
+import { Route as ApiMonetizationReferralIndexRouteImport } from './routes/api/monetization/referral/index'
+import { Route as ApiMonetizationSpotlightIndexRouteImport } from './routes/api/monetization/spotlight/index'
+import { Route as ApiMonetizationVoucherIndexRouteImport } from './routes/api/monetization/voucher/index'
+import { Route as ApiOfflineBackupIndexRouteImport } from './routes/api/offline/backup/index'
+import { Route as ApiOfflineQueueIndexRouteImport } from './routes/api/offline/queue/index'
 import { Route as ApiProfileProfileIdIndexRouteImport } from './routes/api/profile/$profileId/index'
+import { Route as ApiProfileAnalyticsIndexRouteImport } from './routes/api/profile/analytics/index'
+import { Route as ApiProfileAppConfigIndexRouteImport } from './routes/api/profile/app-config/index'
+import { Route as ApiProfileDeletionIndexRouteImport } from './routes/api/profile/deletion/index'
+import { Route as ApiProfileExportIndexRouteImport } from './routes/api/profile/export/index'
+import { Route as ApiProfileHotPicsIndexRouteImport } from './routes/api/profile/hot-pics/index'
+import { Route as ApiProfileMultiAccountIndexRouteImport } from './routes/api/profile/multi-account/index'
+import { Route as ApiProfilePauseIndexRouteImport } from './routes/api/profile/pause/index'
+import { Route as ApiProfilePrivacyReportIndexRouteImport } from './routes/api/profile/privacy-report/index'
+import { Route as ApiProfileSocialLinksIndexRouteImport } from './routes/api/profile/social-links/index'
+import { Route as ApiProfileStatsIndexRouteImport } from './routes/api/profile/stats/index'
+import { Route as ApiProfileVerificationIndexRouteImport } from './routes/api/profile/verification/index'
+import { Route as ApiProfileWishlistIndexRouteImport } from './routes/api/profile/wishlist/index'
+import { Route as ApiSafety2faIndexRouteImport } from './routes/api/safety/2fa/index'
+import { Route as ApiSafetyAppealsIndexRouteImport } from './routes/api/safety/appeals/index'
 import { Route as ApiSafetyCheckInIndexRouteImport } from './routes/api/safety/check-in/index'
 import { Route as ApiSafetyContactsIndexRouteImport } from './routes/api/safety/contacts/index'
+import { Route as ApiSafetyDeletionIndexRouteImport } from './routes/api/safety/deletion/index'
+import { Route as ApiSafetyEmergencyShareIndexRouteImport } from './routes/api/safety/emergency-share/index'
+import { Route as ApiSafetyRateLimitIndexRouteImport } from './routes/api/safety/rate-limit/index'
 import { Route as ApiSafetyReportsIndexRouteImport } from './routes/api/safety/reports/index'
+import { Route as ApiSearchGlobalIndexRouteImport } from './routes/api/search/global/index'
+import { Route as ApiSearchSavedIndexRouteImport } from './routes/api/search/saved/index'
+import { Route as ApiChatPollsVoteIndexRouteImport } from './routes/api/chat/polls/vote/index'
 import { Route as ApiConversationsConversationIdMessagesIndexRouteImport } from './routes/api/conversations/$conversationId/messages/index'
 import { Route as ApiMessagesMessageIdReactIndexRouteImport } from './routes/api/messages/$messageId/react/index'
 import { Route as ApiSafetyCheckInResolveIndexRouteImport } from './routes/api/safety/check-in/resolve/index'
@@ -92,9 +259,19 @@ const DiscoverRoute = DiscoverRouteImport.update({
   path: '/discover',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AgendaIndexRoute = AgendaIndexRouteImport.update({
+  id: '/agenda/',
+  path: '/agenda/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSplatRoute = ApiSplatRouteImport.update({
   id: '/api/$',
   path: '/api/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlindDateIndexRoute = BlindDateIndexRouteImport.update({
+  id: '/blind-date/',
+  path: '/blind-date/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardIndexRoute = BoardIndexRouteImport.update({
@@ -102,9 +279,40 @@ const BoardIndexRoute = BoardIndexRouteImport.update({
   path: '/board/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BoostIndexRoute = BoostIndexRouteImport.update({
+  id: '/boost/',
+  path: '/boost/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CalendarIndexRoute = CalendarIndexRouteImport.update({
+  id: '/calendar/',
+  path: '/calendar/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatIndexRoute = ChatIndexRouteImport.update({
   id: '/chat/',
   path: '/chat/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CirclesIndexRoute = CirclesIndexRouteImport.update({
+  id: '/circles/',
+  path: '/circles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CommunityChallengesIndexRoute =
+  CommunityChallengesIndexRouteImport.update({
+    id: '/community-challenges/',
+    path: '/community-challenges/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const DiscoverMapRoute = DiscoverMapRouteImport.update({
+  id: '/map',
+  path: '/map',
+  getParentRoute: () => DiscoverRoute,
+} as any)
+const DumpRifyIndexRoute = DumpRifyIndexRouteImport.update({
+  id: '/dump-rify/',
+  path: '/dump-rify/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsIndexRoute = EventsIndexRouteImport.update({
@@ -112,9 +320,39 @@ const EventsIndexRoute = EventsIndexRouteImport.update({
   path: '/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsEventIdRoute = EventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsCreateRoute = EventsCreateRouteImport.update({
+  id: '/events/create',
+  path: '/events/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FansitesIndexRoute = FansitesIndexRouteImport.update({
   id: '/fansites/',
   path: '/fansites/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqIndexRoute = FaqIndexRouteImport.update({
+  id: '/faq/',
+  path: '/faq/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritesIndexRoute = FavoritesIndexRouteImport.update({
+  id: '/favorites/',
+  path: '/favorites/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FiltersIndexRoute = FiltersIndexRouteImport.update({
+  id: '/filters/',
+  path: '/filters/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordIndexRoute = ForgotPasswordIndexRouteImport.update({
+  id: '/forgot-password/',
+  path: '/forgot-password/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamechangersIndexRoute = GamechangersIndexRouteImport.update({
@@ -132,14 +370,49 @@ const GroupsIndexRoute = GroupsIndexRouteImport.update({
   path: '/groups/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsGroupIdRoute = GroupsGroupIdRouteImport.update({
+  id: '/groups/$groupId',
+  path: '/groups/$groupId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsCreateRoute = GroupsCreateRouteImport.update({
+  id: '/groups/create',
+  path: '/groups/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GrowthIndexRoute = GrowthIndexRouteImport.update({
+  id: '/growth/',
+  path: '/growth/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuideIndexRoute = GuideIndexRouteImport.update({
   id: '/guide/',
   path: '/guide/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImageViewerIndexRoute = ImageViewerIndexRouteImport.update({
+  id: '/image-viewer/',
+  path: '/image-viewer/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InterestedInMeIndexRoute = InterestedInMeIndexRouteImport.update({
+  id: '/interested-in-me/',
+  path: '/interested-in-me/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const KingPetIndexRoute = KingPetIndexRouteImport.update({
   id: '/king-pet/',
   path: '/king-pet/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalIndexRoute = LegalIndexRouteImport.update({
+  id: '/legal/',
+  path: '/legal/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginIndexRoute = LoginIndexRouteImport.update({
+  id: '/login/',
+  path: '/login/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeetnowIndexRoute = MeetnowIndexRouteImport.update({
@@ -152,9 +425,34 @@ const NotificationsIndexRoute = NotificationsIndexRouteImport.update({
   path: '/notifications/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OfflineIndexRoute = OfflineIndexRouteImport.update({
+  id: '/offline/',
+  path: '/offline/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
   id: '/onboarding/',
   path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaywallIndexRoute = PaywallIndexRouteImport.update({
+  id: '/paywall/',
+  path: '/paywall/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PhoneLoginIndexRoute = PhoneLoginIndexRouteImport.update({
+  id: '/phone-login/',
+  path: '/phone-login/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PhotoEditorIndexRoute = PhotoEditorIndexRouteImport.update({
+  id: '/photo-editor/',
+  path: '/photo-editor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlatformIndexRoute = PlatformIndexRouteImport.update({
+  id: '/platform/',
+  path: '/platform/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PremiumIndexRoute = PremiumIndexRouteImport.update({
@@ -167,6 +465,11 @@ const ProfileIndexRoute = ProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportUserIndexRoute = ReportUserIndexRouteImport.update({
+  id: '/report-user/',
+  path: '/report-user/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RightNowIndexRoute = RightNowIndexRouteImport.update({
   id: '/right-now/',
   path: '/right-now/',
@@ -175,6 +478,11 @@ const RightNowIndexRoute = RightNowIndexRouteImport.update({
 const SafetyIndexRoute = SafetyIndexRouteImport.update({
   id: '/safety/',
   path: '/safety/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchInboxIndexRoute = SearchInboxIndexRouteImport.update({
+  id: '/search-inbox/',
+  path: '/search-inbox/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -187,9 +495,79 @@ const ShoutsIndexRoute = ShoutsIndexRouteImport.update({
   path: '/shouts/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShoutsShoutIdRoute = ShoutsShoutIdRouteImport.update({
+  id: '/shouts/$shoutId',
+  path: '/shouts/$shoutId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShoutsCreateRoute = ShoutsCreateRouteImport.update({
+  id: '/shouts/create',
+  path: '/shouts/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SpeedDatingIndexRoute = SpeedDatingIndexRouteImport.update({
+  id: '/speed-dating/',
+  path: '/speed-dating/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoriesStoryIdRoute = StoriesStoryIdRouteImport.update({
+  id: '/stories/$storyId',
+  path: '/stories/$storyId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TribesIndexRoute = TribesIndexRouteImport.update({
   id: '/tribes/',
   path: '/tribes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyIndexRoute = VerifyIndexRouteImport.update({
+  id: '/verify/',
+  path: '/verify/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VideoDatesIndexRoute = VideoDatesIndexRouteImport.update({
+  id: '/video-dates/',
+  path: '/video-dates/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VideoRouletteIndexRoute = VideoRouletteIndexRouteImport.update({
+  id: '/video-roulette/',
+  path: '/video-roulette/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VouchesIndexRoute = VouchesIndexRouteImport.update({
+  id: '/vouches/',
+  path: '/vouches/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeIndexRoute = WelcomeIndexRouteImport.update({
+  id: '/welcome/',
+  path: '/welcome/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WhoViewedMeIndexRoute = WhoViewedMeIndexRouteImport.update({
+  id: '/who-viewed-me/',
+  path: '/who-viewed-me/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiPhotoEnhanceIndexRoute = AiPhotoEnhanceIndexRouteImport.update({
+  id: '/ai/photo-enhance/',
+  path: '/ai/photo-enhance/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiPhotoRankerIndexRoute = AiPhotoRankerIndexRouteImport.update({
+  id: '/ai/photo-ranker/',
+  path: '/ai/photo-ranker/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiTranslationIndexRoute = AiTranslationIndexRouteImport.update({
+  id: '/ai/translation/',
+  path: '/ai/translation/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiVoiceIndexRoute = AiVoiceIndexRouteImport.update({
+  id: '/ai/voice/',
+  path: '/ai/voice/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAiIndexRoute = ApiAiIndexRouteImport.update({
@@ -197,9 +575,34 @@ const ApiAiIndexRoute = ApiAiIndexRouteImport.update({
   path: '/api/ai/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAlbumsIndexRoute = ApiAlbumsIndexRouteImport.update({
+  id: '/api/albums/',
+  path: '/api/albums/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBannersIndexRoute = ApiBannersIndexRouteImport.update({
+  id: '/api/banners/',
+  path: '/api/banners/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBlogIndexRoute = ApiBlogIndexRouteImport.update({
+  id: '/api/blog/',
+  path: '/api/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBoostIndexRoute = ApiBoostIndexRouteImport.update({
   id: '/api/boost/',
   path: '/api/boost/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCalendarIndexRoute = ApiCalendarIndexRouteImport.update({
+  id: '/api/calendar/',
+  path: '/api/calendar/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCallsIndexRoute = ApiCallsIndexRouteImport.update({
+  id: '/api/calls/',
+  path: '/api/calls/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiConversationsIndexRoute = ApiConversationsIndexRouteImport.update({
@@ -217,6 +620,11 @@ const ApiEventsIndexRoute = ApiEventsIndexRouteImport.update({
   path: '/api/events/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGiftsIndexRoute = ApiGiftsIndexRouteImport.update({
+  id: '/api/gifts/',
+  path: '/api/gifts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthIndexRoute = ApiHealthIndexRouteImport.update({
   id: '/api/health/',
   path: '/api/health/',
@@ -225,6 +633,11 @@ const ApiHealthIndexRoute = ApiHealthIndexRouteImport.update({
 const ApiKingPetIndexRoute = ApiKingPetIndexRouteImport.update({
   id: '/api/king-pet/',
   path: '/api/king-pet/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLiveIndexRoute = ApiLiveIndexRouteImport.update({
+  id: '/api/live/',
+  path: '/api/live/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMeetnowIndexRoute = ApiMeetnowIndexRouteImport.update({
@@ -267,9 +680,24 @@ const ApiSocialIndexRoute = ApiSocialIndexRouteImport.update({
   path: '/api/social/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSpeedDatingIndexRoute = ApiSpeedDatingIndexRouteImport.update({
+  id: '/api/speed-dating/',
+  path: '/api/speed-dating/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStoriesIndexRoute = ApiStoriesIndexRouteImport.update({
+  id: '/api/stories/',
+  path: '/api/stories/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiTapsIndexRoute = ApiTapsIndexRouteImport.update({
   id: '/api/taps/',
   path: '/api/taps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiVideoRouletteIndexRoute = ApiVideoRouletteIndexRouteImport.update({
+  id: '/api/video-roulette/',
+  path: '/api/video-roulette/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWalletIndexRoute = ApiWalletIndexRouteImport.update({
@@ -297,6 +725,22 @@ const ChatConversationIdIndexRoute = ChatConversationIdIndexRouteImport.update({
   path: '/chat/$conversationId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatEnhancedIndexRoute = ChatEnhancedIndexRouteImport.update({
+  id: '/chat/enhanced/',
+  path: '/chat/enhanced/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscoverCompatibilityIndexRoute =
+  DiscoverCompatibilityIndexRouteImport.update({
+    id: '/compatibility/',
+    path: '/compatibility/',
+    getParentRoute: () => DiscoverRoute,
+  } as any)
+const DiscoverPresetsIndexRoute = DiscoverPresetsIndexRouteImport.update({
+  id: '/presets/',
+  path: '/presets/',
+  getParentRoute: () => DiscoverRoute,
+} as any)
 const InterestTapsIndexRoute = InterestTapsIndexRouteImport.update({
   id: '/interest/taps/',
   path: '/interest/taps/',
@@ -307,14 +751,74 @@ const InterestViewsIndexRoute = InterestViewsIndexRouteImport.update({
   path: '/interest/views/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MatchesCompatibilityIndexRoute =
+  MatchesCompatibilityIndexRouteImport.update({
+    id: '/matches/compatibility/',
+    path: '/matches/compatibility/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const MatchesSecretAdmirerIndexRoute =
+  MatchesSecretAdmirerIndexRouteImport.update({
+    id: '/matches/secret-admirer/',
+    path: '/matches/secret-admirer/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const MonetizationPromoIndexRoute = MonetizationPromoIndexRouteImport.update({
+  id: '/monetization/promo/',
+  path: '/monetization/promo/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonetizationShopIndexRoute = MonetizationShopIndexRouteImport.update({
+  id: '/monetization/shop/',
+  path: '/monetization/shop/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileProfileIdIndexRoute = ProfileProfileIdIndexRouteImport.update({
   id: '/profile/$profileId/',
   path: '/profile/$profileId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileInsightsIndexRoute = ProfileInsightsIndexRouteImport.update({
+  id: '/profile/insights/',
+  path: '/profile/insights/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyEmergencyContactIndexRoute =
+  SafetyEmergencyContactIndexRouteImport.update({
+    id: '/safety/emergency-contact/',
+    path: '/safety/emergency-contact/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SafetyEmergencyIndexRoute = SafetyEmergencyIndexRouteImport.update({
+  id: '/safety/emergency/',
+  path: '/safety/emergency/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAccessibilityIndexRoute =
+  SettingsAccessibilityIndexRouteImport.update({
+    id: '/settings/accessibility/',
+    path: '/settings/accessibility/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsAccountSettingsIndexRoute =
+  SettingsAccountSettingsIndexRouteImport.update({
+    id: '/settings/account-settings/',
+    path: '/settings/account-settings/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SettingsAccountIndexRoute = SettingsAccountIndexRouteImport.update({
   id: '/settings/account/',
   path: '/settings/account/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAiTogglesIndexRoute = SettingsAiTogglesIndexRouteImport.update({
+  id: '/settings/ai-toggles/',
+  path: '/settings/ai-toggles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAppConfigIndexRoute = SettingsAppConfigIndexRouteImport.update({
+  id: '/settings/app-config/',
+  path: '/settings/app-config/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsAppIndexRoute = SettingsAppIndexRouteImport.update({
@@ -322,9 +826,63 @@ const SettingsAppIndexRoute = SettingsAppIndexRouteImport.update({
   path: '/settings/app/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsBackupRestoreIndexRoute =
+  SettingsBackupRestoreIndexRouteImport.update({
+    id: '/settings/backup-restore/',
+    path: '/settings/backup-restore/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsBlockedUsersIndexRoute =
+  SettingsBlockedUsersIndexRouteImport.update({
+    id: '/settings/blocked-users/',
+    path: '/settings/blocked-users/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SettingsBlockedIndexRoute = SettingsBlockedIndexRouteImport.update({
   id: '/settings/blocked/',
   path: '/settings/blocked/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsChangePasswordIndexRoute =
+  SettingsChangePasswordIndexRouteImport.update({
+    id: '/settings/change-password/',
+    path: '/settings/change-password/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsDataExportIndexRoute = SettingsDataExportIndexRouteImport.update({
+  id: '/settings/data-export/',
+  path: '/settings/data-export/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsDataIndexRoute = SettingsDataIndexRouteImport.update({
+  id: '/settings/data/',
+  path: '/settings/data/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsDeactivateIndexRoute = SettingsDeactivateIndexRouteImport.update({
+  id: '/settings/deactivate/',
+  path: '/settings/deactivate/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsDeletionIndexRoute = SettingsDeletionIndexRouteImport.update({
+  id: '/settings/deletion/',
+  path: '/settings/deletion/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsDiscreetIconIndexRoute =
+  SettingsDiscreetIconIndexRouteImport.update({
+    id: '/settings/discreet-icon/',
+    path: '/settings/discreet-icon/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsDndIndexRoute = SettingsDndIndexRouteImport.update({
+  id: '/settings/dnd/',
+  path: '/settings/dnd/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsExportIndexRoute = SettingsExportIndexRouteImport.update({
+  id: '/settings/export/',
+  path: '/settings/export/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsHiddenIndexRoute = SettingsHiddenIndexRouteImport.update({
@@ -332,6 +890,50 @@ const SettingsHiddenIndexRoute = SettingsHiddenIndexRouteImport.update({
   path: '/settings/hidden/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsLanguageIndexRoute = SettingsLanguageIndexRouteImport.update({
+  id: '/settings/language/',
+  path: '/settings/language/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsLocationIndexRoute = SettingsLocationIndexRouteImport.update({
+  id: '/settings/location/',
+  path: '/settings/location/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsMediaIndexRoute = SettingsMediaIndexRouteImport.update({
+  id: '/settings/media/',
+  path: '/settings/media/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsMultiAccountIndexRoute =
+  SettingsMultiAccountIndexRouteImport.update({
+    id: '/settings/multi-account/',
+    path: '/settings/multi-account/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsNotificationsIndexRoute =
+  SettingsNotificationsIndexRouteImport.update({
+    id: '/settings/notifications/',
+    path: '/settings/notifications/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsPermissionsIndexRoute =
+  SettingsPermissionsIndexRouteImport.update({
+    id: '/settings/permissions/',
+    path: '/settings/permissions/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsPinLockIndexRoute = SettingsPinLockIndexRouteImport.update({
+  id: '/settings/pin-lock/',
+  path: '/settings/pin-lock/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsPrivacyReportIndexRoute =
+  SettingsPrivacyReportIndexRouteImport.update({
+    id: '/settings/privacy-report/',
+    path: '/settings/privacy-report/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const SettingsPrivacyIndexRoute = SettingsPrivacyIndexRouteImport.update({
   id: '/settings/privacy/',
   path: '/settings/privacy/',
@@ -342,9 +944,239 @@ const SettingsProfileIndexRoute = SettingsProfileIndexRouteImport.update({
   path: '/settings/profile/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsStatsIndexRoute = SettingsStatsIndexRouteImport.update({
+  id: '/settings/stats/',
+  path: '/settings/stats/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsSubscriptionIndexRoute =
+  SettingsSubscriptionIndexRouteImport.update({
+    id: '/settings/subscription/',
+    path: '/settings/subscription/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SettingsTwoFactorIndexRoute = SettingsTwoFactorIndexRouteImport.update({
+  id: '/settings/two-factor/',
+  path: '/settings/two-factor/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyPhotoIndexRoute = VerifyPhotoIndexRouteImport.update({
+  id: '/verify/photo/',
+  path: '/verify/photo/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminKpisIndexRoute = ApiAdminKpisIndexRouteImport.update({
+  id: '/api/admin/kpis/',
+  path: '/api/admin/kpis/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminModerationIndexRoute = ApiAdminModerationIndexRouteImport.update({
+  id: '/api/admin/moderation/',
+  path: '/api/admin/moderation/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiAutoReplyIndexRoute = ApiAiAutoReplyIndexRouteImport.update({
+  id: '/api/ai/auto-reply/',
+  path: '/api/ai/auto-reply/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiAutocompleteIndexRoute = ApiAiAutocompleteIndexRouteImport.update({
+  id: '/api/ai/autocomplete/',
+  path: '/api/ai/autocomplete/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiBestTimeIndexRoute = ApiAiBestTimeIndexRouteImport.update({
+  id: '/api/ai/best-time/',
+  path: '/api/ai/best-time/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiCatfishIndexRoute = ApiAiCatfishIndexRouteImport.update({
+  id: '/api/ai/catfish/',
+  path: '/api/ai/catfish/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiChatSummaryIndexRoute = ApiAiChatSummaryIndexRouteImport.update({
+  id: '/api/ai/chat-summary/',
+  path: '/api/ai/chat-summary/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiContextRepliesIndexRoute =
+  ApiAiContextRepliesIndexRouteImport.update({
+    id: '/api/ai/context-replies/',
+    path: '/api/ai/context-replies/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAiDatePlannerIndexRoute = ApiAiDatePlannerIndexRouteImport.update({
+  id: '/api/ai/date-planner/',
+  path: '/api/ai/date-planner/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiDigestIndexRoute = ApiAiDigestIndexRouteImport.update({
+  id: '/api/ai/digest/',
+  path: '/api/ai/digest/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiEscalationIndexRoute = ApiAiEscalationIndexRouteImport.update({
+  id: '/api/ai/escalation/',
+  path: '/api/ai/escalation/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiIcebreakersIndexRoute = ApiAiIcebreakersIndexRouteImport.update({
+  id: '/api/ai/icebreakers/',
+  path: '/api/ai/icebreakers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiMemeSuggestIndexRoute = ApiAiMemeSuggestIndexRouteImport.update({
+  id: '/api/ai/meme-suggest/',
+  path: '/api/ai/meme-suggest/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiPhotoEnhanceIndexRoute = ApiAiPhotoEnhanceIndexRouteImport.update({
+  id: '/api/ai/photo-enhance/',
+  path: '/api/ai/photo-enhance/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiPickupLinesIndexRoute = ApiAiPickupLinesIndexRouteImport.update({
+  id: '/api/ai/pickup-lines/',
+  path: '/api/ai/pickup-lines/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiRizzMeterIndexRoute = ApiAiRizzMeterIndexRouteImport.update({
+  id: '/api/ai/rizz-meter/',
+  path: '/api/ai/rizz-meter/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiTranslationIndexRoute = ApiAiTranslationIndexRouteImport.update({
+  id: '/api/ai/translation/',
+  path: '/api/ai/translation/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiTrustScoreIndexRoute = ApiAiTrustScoreIndexRouteImport.update({
+  id: '/api/ai/trust-score/',
+  path: '/api/ai/trust-score/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiVoiceNoteIndexRoute = ApiAiVoiceNoteIndexRouteImport.update({
+  id: '/api/ai/voice-note/',
+  path: '/api/ai/voice-note/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiWingmanIndexRoute = ApiAiWingmanIndexRouteImport.update({
+  id: '/api/ai/wingman/',
+  path: '/api/ai/wingman/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuth2faIndexRoute = ApiAuth2faIndexRouteImport.update({
+  id: '/api/auth/2fa/',
+  path: '/api/auth/2fa/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthMeIndexRoute = ApiAuthMeIndexRouteImport.update({
   id: '/api/auth/me/',
   path: '/api/auth/me/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthPhoneIndexRoute = ApiAuthPhoneIndexRouteImport.update({
+  id: '/api/auth/phone/',
+  path: '/api/auth/phone/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSessionsIndexRoute = ApiAuthSessionsIndexRouteImport.update({
+  id: '/api/auth/sessions/',
+  path: '/api/auth/sessions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSocialIndexRoute = ApiAuthSocialIndexRouteImport.update({
+  id: '/api/auth/social/',
+  path: '/api/auth/social/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatBroadcastIndexRoute = ApiChatBroadcastIndexRouteImport.update({
+  id: '/api/chat/broadcast/',
+  path: '/api/chat/broadcast/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatEphemeralIndexRoute = ApiChatEphemeralIndexRouteImport.update({
+  id: '/api/chat/ephemeral/',
+  path: '/api/chat/ephemeral/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatLocationIndexRoute = ApiChatLocationIndexRouteImport.update({
+  id: '/api/chat/location/',
+  path: '/api/chat/location/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatPinnedIndexRoute = ApiChatPinnedIndexRouteImport.update({
+  id: '/api/chat/pinned/',
+  path: '/api/chat/pinned/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatPollsIndexRoute = ApiChatPollsIndexRouteImport.update({
+  id: '/api/chat/polls/',
+  path: '/api/chat/polls/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatQuietHoursIndexRoute = ApiChatQuietHoursIndexRouteImport.update({
+  id: '/api/chat/quiet-hours/',
+  path: '/api/chat/quiet-hours/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRewardedIndexRoute = ApiChatRewardedIndexRouteImport.update({
+  id: '/api/chat/rewarded/',
+  path: '/api/chat/rewarded/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatScheduledIndexRoute = ApiChatScheduledIndexRouteImport.update({
+  id: '/api/chat/scheduled/',
+  path: '/api/chat/scheduled/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatScreenshotIndexRoute = ApiChatScreenshotIndexRouteImport.update({
+  id: '/api/chat/screenshot/',
+  path: '/api/chat/screenshot/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatThemesIndexRoute = ApiChatThemesIndexRouteImport.update({
+  id: '/api/chat/themes/',
+  path: '/api/chat/themes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDiscoverCompatibilityIndexRoute =
+  ApiDiscoverCompatibilityIndexRouteImport.update({
+    id: '/api/discover/compatibility/',
+    path: '/api/discover/compatibility/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiDiscoverFreshIndexRoute = ApiDiscoverFreshIndexRouteImport.update({
+  id: '/api/discover/fresh/',
+  path: '/api/discover/fresh/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDiscoverGridPresetsIndexRoute =
+  ApiDiscoverGridPresetsIndexRouteImport.update({
+    id: '/api/discover/grid-presets/',
+    path: '/api/discover/grid-presets/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiDiscoverOnlineIndexRoute = ApiDiscoverOnlineIndexRouteImport.update({
+  id: '/api/discover/online/',
+  path: '/api/discover/online/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDiscoverPlacesIndexRoute = ApiDiscoverPlacesIndexRouteImport.update({
+  id: '/api/discover/places/',
+  path: '/api/discover/places/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDiscoverSavedSearchesIndexRoute =
+  ApiDiscoverSavedSearchesIndexRouteImport.update({
+    id: '/api/discover/saved-searches/',
+    path: '/api/discover/saved-searches/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiDiscoverTravelIndexRoute = ApiDiscoverTravelIndexRouteImport.update({
+  id: '/api/discover/travel/',
+  path: '/api/discover/travel/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFansitesSubscribeIndexRoute =
@@ -353,6 +1185,28 @@ const ApiFansitesSubscribeIndexRoute =
     path: '/api/fansites/subscribe/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiGrowthCompletionIndexRoute =
+  ApiGrowthCompletionIndexRouteImport.update({
+    id: '/api/growth/completion/',
+    path: '/api/growth/completion/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiGrowthEngagementIndexRoute =
+  ApiGrowthEngagementIndexRouteImport.update({
+    id: '/api/growth/engagement/',
+    path: '/api/growth/engagement/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiGrowthFunnelIndexRoute = ApiGrowthFunnelIndexRouteImport.update({
+  id: '/api/growth/funnel/',
+  path: '/api/growth/funnel/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGrowthStreakIndexRoute = ApiGrowthStreakIndexRouteImport.update({
+  id: '/api/growth/streak/',
+  path: '/api/growth/streak/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiInterestTabIndexRoute = ApiInterestTabIndexRouteImport.update({
   id: '/api/interest/$tab/',
   path: '/api/interest/$tab/',
@@ -374,18 +1228,175 @@ const ApiInterestStatsIndexRoute = ApiInterestStatsIndexRouteImport.update({
   path: '/api/interest/stats/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMatchesCompatibilityIndexRoute =
+  ApiMatchesCompatibilityIndexRouteImport.update({
+    id: '/api/matches/compatibility/',
+    path: '/api/matches/compatibility/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMatchesDailyPicksIndexRoute =
+  ApiMatchesDailyPicksIndexRouteImport.update({
+    id: '/api/matches/daily-picks/',
+    path: '/api/matches/daily-picks/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMatchesDealbreakersIndexRoute =
+  ApiMatchesDealbreakersIndexRouteImport.update({
+    id: '/api/matches/dealbreakers/',
+    path: '/api/matches/dealbreakers/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMatchesLikesYouIndexRoute = ApiMatchesLikesYouIndexRouteImport.update({
+  id: '/api/matches/likes-you/',
+  path: '/api/matches/likes-you/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMatchesSecretAdmirerIndexRoute =
+  ApiMatchesSecretAdmirerIndexRouteImport.update({
+    id: '/api/matches/secret-admirer/',
+    path: '/api/matches/secret-admirer/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiMessagesMessageIdIndexRoute =
   ApiMessagesMessageIdIndexRouteImport.update({
     id: '/api/messages/$messageId/',
     path: '/api/messages/$messageId/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiMonetizationConsumablesIndexRoute =
+  ApiMonetizationConsumablesIndexRouteImport.update({
+    id: '/api/monetization/consumables/',
+    path: '/api/monetization/consumables/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonetizationGiftMembershipIndexRoute =
+  ApiMonetizationGiftMembershipIndexRouteImport.update({
+    id: '/api/monetization/gift-membership/',
+    path: '/api/monetization/gift-membership/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonetizationPayPerReadIndexRoute =
+  ApiMonetizationPayPerReadIndexRouteImport.update({
+    id: '/api/monetization/pay-per-read/',
+    path: '/api/monetization/pay-per-read/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonetizationPromoIndexRoute =
+  ApiMonetizationPromoIndexRouteImport.update({
+    id: '/api/monetization/promo/',
+    path: '/api/monetization/promo/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonetizationReferralIndexRoute =
+  ApiMonetizationReferralIndexRouteImport.update({
+    id: '/api/monetization/referral/',
+    path: '/api/monetization/referral/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonetizationSpotlightIndexRoute =
+  ApiMonetizationSpotlightIndexRouteImport.update({
+    id: '/api/monetization/spotlight/',
+    path: '/api/monetization/spotlight/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonetizationVoucherIndexRoute =
+  ApiMonetizationVoucherIndexRouteImport.update({
+    id: '/api/monetization/voucher/',
+    path: '/api/monetization/voucher/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiOfflineBackupIndexRoute = ApiOfflineBackupIndexRouteImport.update({
+  id: '/api/offline/backup/',
+  path: '/api/offline/backup/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOfflineQueueIndexRoute = ApiOfflineQueueIndexRouteImport.update({
+  id: '/api/offline/queue/',
+  path: '/api/offline/queue/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiProfileProfileIdIndexRoute =
   ApiProfileProfileIdIndexRouteImport.update({
     id: '/api/profile/$profileId/',
     path: '/api/profile/$profileId/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiProfileAnalyticsIndexRoute =
+  ApiProfileAnalyticsIndexRouteImport.update({
+    id: '/api/profile/analytics/',
+    path: '/api/profile/analytics/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProfileAppConfigIndexRoute =
+  ApiProfileAppConfigIndexRouteImport.update({
+    id: '/api/profile/app-config/',
+    path: '/api/profile/app-config/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProfileDeletionIndexRoute = ApiProfileDeletionIndexRouteImport.update({
+  id: '/api/profile/deletion/',
+  path: '/api/profile/deletion/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileExportIndexRoute = ApiProfileExportIndexRouteImport.update({
+  id: '/api/profile/export/',
+  path: '/api/profile/export/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileHotPicsIndexRoute = ApiProfileHotPicsIndexRouteImport.update({
+  id: '/api/profile/hot-pics/',
+  path: '/api/profile/hot-pics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileMultiAccountIndexRoute =
+  ApiProfileMultiAccountIndexRouteImport.update({
+    id: '/api/profile/multi-account/',
+    path: '/api/profile/multi-account/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProfilePauseIndexRoute = ApiProfilePauseIndexRouteImport.update({
+  id: '/api/profile/pause/',
+  path: '/api/profile/pause/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfilePrivacyReportIndexRoute =
+  ApiProfilePrivacyReportIndexRouteImport.update({
+    id: '/api/profile/privacy-report/',
+    path: '/api/profile/privacy-report/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProfileSocialLinksIndexRoute =
+  ApiProfileSocialLinksIndexRouteImport.update({
+    id: '/api/profile/social-links/',
+    path: '/api/profile/social-links/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProfileStatsIndexRoute = ApiProfileStatsIndexRouteImport.update({
+  id: '/api/profile/stats/',
+  path: '/api/profile/stats/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiProfileVerificationIndexRoute =
+  ApiProfileVerificationIndexRouteImport.update({
+    id: '/api/profile/verification/',
+    path: '/api/profile/verification/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiProfileWishlistIndexRoute = ApiProfileWishlistIndexRouteImport.update({
+  id: '/api/profile/wishlist/',
+  path: '/api/profile/wishlist/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSafety2faIndexRoute = ApiSafety2faIndexRouteImport.update({
+  id: '/api/safety/2fa/',
+  path: '/api/safety/2fa/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSafetyAppealsIndexRoute = ApiSafetyAppealsIndexRouteImport.update({
+  id: '/api/safety/appeals/',
+  path: '/api/safety/appeals/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSafetyCheckInIndexRoute = ApiSafetyCheckInIndexRouteImport.update({
   id: '/api/safety/check-in/',
   path: '/api/safety/check-in/',
@@ -396,9 +1407,40 @@ const ApiSafetyContactsIndexRoute = ApiSafetyContactsIndexRouteImport.update({
   path: '/api/safety/contacts/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSafetyDeletionIndexRoute = ApiSafetyDeletionIndexRouteImport.update({
+  id: '/api/safety/deletion/',
+  path: '/api/safety/deletion/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSafetyEmergencyShareIndexRoute =
+  ApiSafetyEmergencyShareIndexRouteImport.update({
+    id: '/api/safety/emergency-share/',
+    path: '/api/safety/emergency-share/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiSafetyRateLimitIndexRoute = ApiSafetyRateLimitIndexRouteImport.update({
+  id: '/api/safety/rate-limit/',
+  path: '/api/safety/rate-limit/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSafetyReportsIndexRoute = ApiSafetyReportsIndexRouteImport.update({
   id: '/api/safety/reports/',
   path: '/api/safety/reports/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSearchGlobalIndexRoute = ApiSearchGlobalIndexRouteImport.update({
+  id: '/api/search/global/',
+  path: '/api/search/global/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSearchSavedIndexRoute = ApiSearchSavedIndexRouteImport.update({
+  id: '/api/search/saved/',
+  path: '/api/search/saved/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatPollsVoteIndexRoute = ApiChatPollsVoteIndexRouteImport.update({
+  id: '/api/chat/polls/vote/',
+  path: '/api/chat/polls/vote/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiConversationsConversationIdMessagesIndexRoute =
@@ -423,35 +1465,84 @@ const ApiSafetyCheckInResolveIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/discover': typeof DiscoverRoute
+  '/discover': typeof DiscoverRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/discover/map': typeof DiscoverMapRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/create': typeof EventsCreateRoute
+  '/groups/$groupId': typeof GroupsGroupIdRoute
+  '/groups/create': typeof GroupsCreateRoute
+  '/shouts/$shoutId': typeof ShoutsShoutIdRoute
+  '/shouts/create': typeof ShoutsCreateRoute
+  '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/agenda/': typeof AgendaIndexRoute
+  '/blind-date/': typeof BlindDateIndexRoute
   '/board/': typeof BoardIndexRoute
+  '/boost/': typeof BoostIndexRoute
+  '/calendar/': typeof CalendarIndexRoute
   '/chat/': typeof ChatIndexRoute
+  '/circles/': typeof CirclesIndexRoute
+  '/community-challenges/': typeof CommunityChallengesIndexRoute
+  '/dump-rify/': typeof DumpRifyIndexRoute
   '/events/': typeof EventsIndexRoute
   '/fansites/': typeof FansitesIndexRoute
+  '/faq/': typeof FaqIndexRoute
+  '/favorites/': typeof FavoritesIndexRoute
+  '/filters/': typeof FiltersIndexRoute
+  '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/gamechangers/': typeof GamechangersIndexRoute
   '/grid/': typeof GridIndexRoute
   '/groups/': typeof GroupsIndexRoute
+  '/growth/': typeof GrowthIndexRoute
   '/guide/': typeof GuideIndexRoute
+  '/image-viewer/': typeof ImageViewerIndexRoute
+  '/interested-in-me/': typeof InterestedInMeIndexRoute
   '/king-pet/': typeof KingPetIndexRoute
+  '/legal/': typeof LegalIndexRoute
+  '/login/': typeof LoginIndexRoute
   '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
+  '/offline/': typeof OfflineIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/paywall/': typeof PaywallIndexRoute
+  '/phone-login/': typeof PhoneLoginIndexRoute
+  '/photo-editor/': typeof PhotoEditorIndexRoute
+  '/platform/': typeof PlatformIndexRoute
   '/premium/': typeof PremiumIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/report-user/': typeof ReportUserIndexRoute
   '/right-now/': typeof RightNowIndexRoute
   '/safety/': typeof SafetyIndexRoute
+  '/search-inbox/': typeof SearchInboxIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/shouts/': typeof ShoutsIndexRoute
+  '/speed-dating/': typeof SpeedDatingIndexRoute
   '/tribes/': typeof TribesIndexRoute
+  '/verify/': typeof VerifyIndexRoute
+  '/video-dates/': typeof VideoDatesIndexRoute
+  '/video-roulette/': typeof VideoRouletteIndexRoute
+  '/vouches/': typeof VouchesIndexRoute
+  '/welcome/': typeof WelcomeIndexRoute
+  '/who-viewed-me/': typeof WhoViewedMeIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/ai/photo-enhance/': typeof AiPhotoEnhanceIndexRoute
+  '/ai/photo-ranker/': typeof AiPhotoRankerIndexRoute
+  '/ai/translation/': typeof AiTranslationIndexRoute
+  '/ai/voice/': typeof AiVoiceIndexRoute
   '/api/ai/': typeof ApiAiIndexRoute
+  '/api/albums/': typeof ApiAlbumsIndexRoute
+  '/api/banners/': typeof ApiBannersIndexRoute
+  '/api/blog/': typeof ApiBlogIndexRoute
   '/api/boost/': typeof ApiBoostIndexRoute
+  '/api/calendar/': typeof ApiCalendarIndexRoute
+  '/api/calls/': typeof ApiCallsIndexRoute
   '/api/conversations/': typeof ApiConversationsIndexRoute
   '/api/discover/': typeof ApiDiscoverIndexRoute
   '/api/events/': typeof ApiEventsIndexRoute
+  '/api/gifts/': typeof ApiGiftsIndexRoute
   '/api/health/': typeof ApiHealthIndexRoute
   '/api/king-pet/': typeof ApiKingPetIndexRoute
+  '/api/live/': typeof ApiLiveIndexRoute
   '/api/meetnow/': typeof ApiMeetnowIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
@@ -459,32 +1550,150 @@ export interface FileRoutesByFullPath {
   '/api/profiles/': typeof ApiProfilesIndexRoute
   '/api/settings/': typeof ApiSettingsIndexRoute
   '/api/social/': typeof ApiSocialIndexRoute
+  '/api/speed-dating/': typeof ApiSpeedDatingIndexRoute
+  '/api/stories/': typeof ApiStoriesIndexRoute
   '/api/taps/': typeof ApiTapsIndexRoute
+  '/api/video-roulette/': typeof ApiVideoRouletteIndexRoute
   '/api/wallet/': typeof ApiWalletIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/auth/sign-up/': typeof AuthSignUpIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
+  '/chat/enhanced/': typeof ChatEnhancedIndexRoute
+  '/discover/compatibility/': typeof DiscoverCompatibilityIndexRoute
+  '/discover/presets/': typeof DiscoverPresetsIndexRoute
   '/interest/taps/': typeof InterestTapsIndexRoute
   '/interest/views/': typeof InterestViewsIndexRoute
+  '/matches/compatibility/': typeof MatchesCompatibilityIndexRoute
+  '/matches/secret-admirer/': typeof MatchesSecretAdmirerIndexRoute
+  '/monetization/promo/': typeof MonetizationPromoIndexRoute
+  '/monetization/shop/': typeof MonetizationShopIndexRoute
   '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/profile/insights/': typeof ProfileInsightsIndexRoute
+  '/safety/emergency-contact/': typeof SafetyEmergencyContactIndexRoute
+  '/safety/emergency/': typeof SafetyEmergencyIndexRoute
+  '/settings/accessibility/': typeof SettingsAccessibilityIndexRoute
+  '/settings/account-settings/': typeof SettingsAccountSettingsIndexRoute
   '/settings/account/': typeof SettingsAccountIndexRoute
+  '/settings/ai-toggles/': typeof SettingsAiTogglesIndexRoute
+  '/settings/app-config/': typeof SettingsAppConfigIndexRoute
   '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/backup-restore/': typeof SettingsBackupRestoreIndexRoute
+  '/settings/blocked-users/': typeof SettingsBlockedUsersIndexRoute
   '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/change-password/': typeof SettingsChangePasswordIndexRoute
+  '/settings/data-export/': typeof SettingsDataExportIndexRoute
+  '/settings/data/': typeof SettingsDataIndexRoute
+  '/settings/deactivate/': typeof SettingsDeactivateIndexRoute
+  '/settings/deletion/': typeof SettingsDeletionIndexRoute
+  '/settings/discreet-icon/': typeof SettingsDiscreetIconIndexRoute
+  '/settings/dnd/': typeof SettingsDndIndexRoute
+  '/settings/export/': typeof SettingsExportIndexRoute
   '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/language/': typeof SettingsLanguageIndexRoute
+  '/settings/location/': typeof SettingsLocationIndexRoute
+  '/settings/media/': typeof SettingsMediaIndexRoute
+  '/settings/multi-account/': typeof SettingsMultiAccountIndexRoute
+  '/settings/notifications/': typeof SettingsNotificationsIndexRoute
+  '/settings/permissions/': typeof SettingsPermissionsIndexRoute
+  '/settings/pin-lock/': typeof SettingsPinLockIndexRoute
+  '/settings/privacy-report/': typeof SettingsPrivacyReportIndexRoute
   '/settings/privacy/': typeof SettingsPrivacyIndexRoute
   '/settings/profile/': typeof SettingsProfileIndexRoute
+  '/settings/stats/': typeof SettingsStatsIndexRoute
+  '/settings/subscription/': typeof SettingsSubscriptionIndexRoute
+  '/settings/two-factor/': typeof SettingsTwoFactorIndexRoute
+  '/verify/photo/': typeof VerifyPhotoIndexRoute
+  '/api/admin/kpis/': typeof ApiAdminKpisIndexRoute
+  '/api/admin/moderation/': typeof ApiAdminModerationIndexRoute
+  '/api/ai/auto-reply/': typeof ApiAiAutoReplyIndexRoute
+  '/api/ai/autocomplete/': typeof ApiAiAutocompleteIndexRoute
+  '/api/ai/best-time/': typeof ApiAiBestTimeIndexRoute
+  '/api/ai/catfish/': typeof ApiAiCatfishIndexRoute
+  '/api/ai/chat-summary/': typeof ApiAiChatSummaryIndexRoute
+  '/api/ai/context-replies/': typeof ApiAiContextRepliesIndexRoute
+  '/api/ai/date-planner/': typeof ApiAiDatePlannerIndexRoute
+  '/api/ai/digest/': typeof ApiAiDigestIndexRoute
+  '/api/ai/escalation/': typeof ApiAiEscalationIndexRoute
+  '/api/ai/icebreakers/': typeof ApiAiIcebreakersIndexRoute
+  '/api/ai/meme-suggest/': typeof ApiAiMemeSuggestIndexRoute
+  '/api/ai/photo-enhance/': typeof ApiAiPhotoEnhanceIndexRoute
+  '/api/ai/pickup-lines/': typeof ApiAiPickupLinesIndexRoute
+  '/api/ai/rizz-meter/': typeof ApiAiRizzMeterIndexRoute
+  '/api/ai/translation/': typeof ApiAiTranslationIndexRoute
+  '/api/ai/trust-score/': typeof ApiAiTrustScoreIndexRoute
+  '/api/ai/voice-note/': typeof ApiAiVoiceNoteIndexRoute
+  '/api/ai/wingman/': typeof ApiAiWingmanIndexRoute
+  '/api/auth/2fa/': typeof ApiAuth2faIndexRoute
   '/api/auth/me/': typeof ApiAuthMeIndexRoute
+  '/api/auth/phone/': typeof ApiAuthPhoneIndexRoute
+  '/api/auth/sessions/': typeof ApiAuthSessionsIndexRoute
+  '/api/auth/social/': typeof ApiAuthSocialIndexRoute
+  '/api/chat/broadcast/': typeof ApiChatBroadcastIndexRoute
+  '/api/chat/ephemeral/': typeof ApiChatEphemeralIndexRoute
+  '/api/chat/location/': typeof ApiChatLocationIndexRoute
+  '/api/chat/pinned/': typeof ApiChatPinnedIndexRoute
+  '/api/chat/polls/': typeof ApiChatPollsIndexRoute
+  '/api/chat/quiet-hours/': typeof ApiChatQuietHoursIndexRoute
+  '/api/chat/rewarded/': typeof ApiChatRewardedIndexRoute
+  '/api/chat/scheduled/': typeof ApiChatScheduledIndexRoute
+  '/api/chat/screenshot/': typeof ApiChatScreenshotIndexRoute
+  '/api/chat/themes/': typeof ApiChatThemesIndexRoute
+  '/api/discover/compatibility/': typeof ApiDiscoverCompatibilityIndexRoute
+  '/api/discover/fresh/': typeof ApiDiscoverFreshIndexRoute
+  '/api/discover/grid-presets/': typeof ApiDiscoverGridPresetsIndexRoute
+  '/api/discover/online/': typeof ApiDiscoverOnlineIndexRoute
+  '/api/discover/places/': typeof ApiDiscoverPlacesIndexRoute
+  '/api/discover/saved-searches/': typeof ApiDiscoverSavedSearchesIndexRoute
+  '/api/discover/travel/': typeof ApiDiscoverTravelIndexRoute
   '/api/fansites/subscribe/': typeof ApiFansitesSubscribeIndexRoute
+  '/api/growth/completion/': typeof ApiGrowthCompletionIndexRoute
+  '/api/growth/engagement/': typeof ApiGrowthEngagementIndexRoute
+  '/api/growth/funnel/': typeof ApiGrowthFunnelIndexRoute
+  '/api/growth/streak/': typeof ApiGrowthStreakIndexRoute
   '/api/interest/$tab/': typeof ApiInterestTabIndexRoute
   '/api/interest/favourite/': typeof ApiInterestFavouriteIndexRoute
   '/api/interest/like/': typeof ApiInterestLikeIndexRoute
   '/api/interest/stats/': typeof ApiInterestStatsIndexRoute
+  '/api/matches/compatibility/': typeof ApiMatchesCompatibilityIndexRoute
+  '/api/matches/daily-picks/': typeof ApiMatchesDailyPicksIndexRoute
+  '/api/matches/dealbreakers/': typeof ApiMatchesDealbreakersIndexRoute
+  '/api/matches/likes-you/': typeof ApiMatchesLikesYouIndexRoute
+  '/api/matches/secret-admirer/': typeof ApiMatchesSecretAdmirerIndexRoute
   '/api/messages/$messageId/': typeof ApiMessagesMessageIdIndexRoute
+  '/api/monetization/consumables/': typeof ApiMonetizationConsumablesIndexRoute
+  '/api/monetization/gift-membership/': typeof ApiMonetizationGiftMembershipIndexRoute
+  '/api/monetization/pay-per-read/': typeof ApiMonetizationPayPerReadIndexRoute
+  '/api/monetization/promo/': typeof ApiMonetizationPromoIndexRoute
+  '/api/monetization/referral/': typeof ApiMonetizationReferralIndexRoute
+  '/api/monetization/spotlight/': typeof ApiMonetizationSpotlightIndexRoute
+  '/api/monetization/voucher/': typeof ApiMonetizationVoucherIndexRoute
+  '/api/offline/backup/': typeof ApiOfflineBackupIndexRoute
+  '/api/offline/queue/': typeof ApiOfflineQueueIndexRoute
   '/api/profile/$profileId/': typeof ApiProfileProfileIdIndexRoute
+  '/api/profile/analytics/': typeof ApiProfileAnalyticsIndexRoute
+  '/api/profile/app-config/': typeof ApiProfileAppConfigIndexRoute
+  '/api/profile/deletion/': typeof ApiProfileDeletionIndexRoute
+  '/api/profile/export/': typeof ApiProfileExportIndexRoute
+  '/api/profile/hot-pics/': typeof ApiProfileHotPicsIndexRoute
+  '/api/profile/multi-account/': typeof ApiProfileMultiAccountIndexRoute
+  '/api/profile/pause/': typeof ApiProfilePauseIndexRoute
+  '/api/profile/privacy-report/': typeof ApiProfilePrivacyReportIndexRoute
+  '/api/profile/social-links/': typeof ApiProfileSocialLinksIndexRoute
+  '/api/profile/stats/': typeof ApiProfileStatsIndexRoute
+  '/api/profile/verification/': typeof ApiProfileVerificationIndexRoute
+  '/api/profile/wishlist/': typeof ApiProfileWishlistIndexRoute
+  '/api/safety/2fa/': typeof ApiSafety2faIndexRoute
+  '/api/safety/appeals/': typeof ApiSafetyAppealsIndexRoute
   '/api/safety/check-in/': typeof ApiSafetyCheckInIndexRoute
   '/api/safety/contacts/': typeof ApiSafetyContactsIndexRoute
+  '/api/safety/deletion/': typeof ApiSafetyDeletionIndexRoute
+  '/api/safety/emergency-share/': typeof ApiSafetyEmergencyShareIndexRoute
+  '/api/safety/rate-limit/': typeof ApiSafetyRateLimitIndexRoute
   '/api/safety/reports/': typeof ApiSafetyReportsIndexRoute
+  '/api/search/global/': typeof ApiSearchGlobalIndexRoute
+  '/api/search/saved/': typeof ApiSearchSavedIndexRoute
+  '/api/chat/polls/vote/': typeof ApiChatPollsVoteIndexRoute
   '/api/conversations/$conversationId/messages/': typeof ApiConversationsConversationIdMessagesIndexRoute
   '/api/messages/$messageId/react/': typeof ApiMessagesMessageIdReactIndexRoute
   '/api/safety/check-in/resolve/': typeof ApiSafetyCheckInResolveIndexRoute
@@ -492,35 +1701,84 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/discover': typeof DiscoverRoute
+  '/discover': typeof DiscoverRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/discover/map': typeof DiscoverMapRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/create': typeof EventsCreateRoute
+  '/groups/$groupId': typeof GroupsGroupIdRoute
+  '/groups/create': typeof GroupsCreateRoute
+  '/shouts/$shoutId': typeof ShoutsShoutIdRoute
+  '/shouts/create': typeof ShoutsCreateRoute
+  '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/agenda': typeof AgendaIndexRoute
+  '/blind-date': typeof BlindDateIndexRoute
   '/board': typeof BoardIndexRoute
+  '/boost': typeof BoostIndexRoute
+  '/calendar': typeof CalendarIndexRoute
   '/chat': typeof ChatIndexRoute
+  '/circles': typeof CirclesIndexRoute
+  '/community-challenges': typeof CommunityChallengesIndexRoute
+  '/dump-rify': typeof DumpRifyIndexRoute
   '/events': typeof EventsIndexRoute
   '/fansites': typeof FansitesIndexRoute
+  '/faq': typeof FaqIndexRoute
+  '/favorites': typeof FavoritesIndexRoute
+  '/filters': typeof FiltersIndexRoute
+  '/forgot-password': typeof ForgotPasswordIndexRoute
   '/gamechangers': typeof GamechangersIndexRoute
   '/grid': typeof GridIndexRoute
   '/groups': typeof GroupsIndexRoute
+  '/growth': typeof GrowthIndexRoute
   '/guide': typeof GuideIndexRoute
+  '/image-viewer': typeof ImageViewerIndexRoute
+  '/interested-in-me': typeof InterestedInMeIndexRoute
   '/king-pet': typeof KingPetIndexRoute
+  '/legal': typeof LegalIndexRoute
+  '/login': typeof LoginIndexRoute
   '/meetnow': typeof MeetnowIndexRoute
   '/notifications': typeof NotificationsIndexRoute
+  '/offline': typeof OfflineIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
+  '/paywall': typeof PaywallIndexRoute
+  '/phone-login': typeof PhoneLoginIndexRoute
+  '/photo-editor': typeof PhotoEditorIndexRoute
+  '/platform': typeof PlatformIndexRoute
   '/premium': typeof PremiumIndexRoute
   '/profile': typeof ProfileIndexRoute
+  '/report-user': typeof ReportUserIndexRoute
   '/right-now': typeof RightNowIndexRoute
   '/safety': typeof SafetyIndexRoute
+  '/search-inbox': typeof SearchInboxIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/shouts': typeof ShoutsIndexRoute
+  '/speed-dating': typeof SpeedDatingIndexRoute
   '/tribes': typeof TribesIndexRoute
+  '/verify': typeof VerifyIndexRoute
+  '/video-dates': typeof VideoDatesIndexRoute
+  '/video-roulette': typeof VideoRouletteIndexRoute
+  '/vouches': typeof VouchesIndexRoute
+  '/welcome': typeof WelcomeIndexRoute
+  '/who-viewed-me': typeof WhoViewedMeIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/ai/photo-enhance': typeof AiPhotoEnhanceIndexRoute
+  '/ai/photo-ranker': typeof AiPhotoRankerIndexRoute
+  '/ai/translation': typeof AiTranslationIndexRoute
+  '/ai/voice': typeof AiVoiceIndexRoute
   '/api/ai': typeof ApiAiIndexRoute
+  '/api/albums': typeof ApiAlbumsIndexRoute
+  '/api/banners': typeof ApiBannersIndexRoute
+  '/api/blog': typeof ApiBlogIndexRoute
   '/api/boost': typeof ApiBoostIndexRoute
+  '/api/calendar': typeof ApiCalendarIndexRoute
+  '/api/calls': typeof ApiCallsIndexRoute
   '/api/conversations': typeof ApiConversationsIndexRoute
   '/api/discover': typeof ApiDiscoverIndexRoute
   '/api/events': typeof ApiEventsIndexRoute
+  '/api/gifts': typeof ApiGiftsIndexRoute
   '/api/health': typeof ApiHealthIndexRoute
   '/api/king-pet': typeof ApiKingPetIndexRoute
+  '/api/live': typeof ApiLiveIndexRoute
   '/api/meetnow': typeof ApiMeetnowIndexRoute
   '/api/notes': typeof ApiNotesIndexRoute
   '/api/notifications': typeof ApiNotificationsIndexRoute
@@ -528,32 +1786,150 @@ export interface FileRoutesByTo {
   '/api/profiles': typeof ApiProfilesIndexRoute
   '/api/settings': typeof ApiSettingsIndexRoute
   '/api/social': typeof ApiSocialIndexRoute
+  '/api/speed-dating': typeof ApiSpeedDatingIndexRoute
+  '/api/stories': typeof ApiStoriesIndexRoute
   '/api/taps': typeof ApiTapsIndexRoute
+  '/api/video-roulette': typeof ApiVideoRouletteIndexRoute
   '/api/wallet': typeof ApiWalletIndexRoute
   '/auth/callback': typeof AuthCallbackIndexRoute
   '/auth/sign-in': typeof AuthSignInIndexRoute
   '/auth/sign-up': typeof AuthSignUpIndexRoute
   '/chat/$conversationId': typeof ChatConversationIdIndexRoute
+  '/chat/enhanced': typeof ChatEnhancedIndexRoute
+  '/discover/compatibility': typeof DiscoverCompatibilityIndexRoute
+  '/discover/presets': typeof DiscoverPresetsIndexRoute
   '/interest/taps': typeof InterestTapsIndexRoute
   '/interest/views': typeof InterestViewsIndexRoute
+  '/matches/compatibility': typeof MatchesCompatibilityIndexRoute
+  '/matches/secret-admirer': typeof MatchesSecretAdmirerIndexRoute
+  '/monetization/promo': typeof MonetizationPromoIndexRoute
+  '/monetization/shop': typeof MonetizationShopIndexRoute
   '/profile/$profileId': typeof ProfileProfileIdIndexRoute
+  '/profile/insights': typeof ProfileInsightsIndexRoute
+  '/safety/emergency-contact': typeof SafetyEmergencyContactIndexRoute
+  '/safety/emergency': typeof SafetyEmergencyIndexRoute
+  '/settings/accessibility': typeof SettingsAccessibilityIndexRoute
+  '/settings/account-settings': typeof SettingsAccountSettingsIndexRoute
   '/settings/account': typeof SettingsAccountIndexRoute
+  '/settings/ai-toggles': typeof SettingsAiTogglesIndexRoute
+  '/settings/app-config': typeof SettingsAppConfigIndexRoute
   '/settings/app': typeof SettingsAppIndexRoute
+  '/settings/backup-restore': typeof SettingsBackupRestoreIndexRoute
+  '/settings/blocked-users': typeof SettingsBlockedUsersIndexRoute
   '/settings/blocked': typeof SettingsBlockedIndexRoute
+  '/settings/change-password': typeof SettingsChangePasswordIndexRoute
+  '/settings/data-export': typeof SettingsDataExportIndexRoute
+  '/settings/data': typeof SettingsDataIndexRoute
+  '/settings/deactivate': typeof SettingsDeactivateIndexRoute
+  '/settings/deletion': typeof SettingsDeletionIndexRoute
+  '/settings/discreet-icon': typeof SettingsDiscreetIconIndexRoute
+  '/settings/dnd': typeof SettingsDndIndexRoute
+  '/settings/export': typeof SettingsExportIndexRoute
   '/settings/hidden': typeof SettingsHiddenIndexRoute
+  '/settings/language': typeof SettingsLanguageIndexRoute
+  '/settings/location': typeof SettingsLocationIndexRoute
+  '/settings/media': typeof SettingsMediaIndexRoute
+  '/settings/multi-account': typeof SettingsMultiAccountIndexRoute
+  '/settings/notifications': typeof SettingsNotificationsIndexRoute
+  '/settings/permissions': typeof SettingsPermissionsIndexRoute
+  '/settings/pin-lock': typeof SettingsPinLockIndexRoute
+  '/settings/privacy-report': typeof SettingsPrivacyReportIndexRoute
   '/settings/privacy': typeof SettingsPrivacyIndexRoute
   '/settings/profile': typeof SettingsProfileIndexRoute
+  '/settings/stats': typeof SettingsStatsIndexRoute
+  '/settings/subscription': typeof SettingsSubscriptionIndexRoute
+  '/settings/two-factor': typeof SettingsTwoFactorIndexRoute
+  '/verify/photo': typeof VerifyPhotoIndexRoute
+  '/api/admin/kpis': typeof ApiAdminKpisIndexRoute
+  '/api/admin/moderation': typeof ApiAdminModerationIndexRoute
+  '/api/ai/auto-reply': typeof ApiAiAutoReplyIndexRoute
+  '/api/ai/autocomplete': typeof ApiAiAutocompleteIndexRoute
+  '/api/ai/best-time': typeof ApiAiBestTimeIndexRoute
+  '/api/ai/catfish': typeof ApiAiCatfishIndexRoute
+  '/api/ai/chat-summary': typeof ApiAiChatSummaryIndexRoute
+  '/api/ai/context-replies': typeof ApiAiContextRepliesIndexRoute
+  '/api/ai/date-planner': typeof ApiAiDatePlannerIndexRoute
+  '/api/ai/digest': typeof ApiAiDigestIndexRoute
+  '/api/ai/escalation': typeof ApiAiEscalationIndexRoute
+  '/api/ai/icebreakers': typeof ApiAiIcebreakersIndexRoute
+  '/api/ai/meme-suggest': typeof ApiAiMemeSuggestIndexRoute
+  '/api/ai/photo-enhance': typeof ApiAiPhotoEnhanceIndexRoute
+  '/api/ai/pickup-lines': typeof ApiAiPickupLinesIndexRoute
+  '/api/ai/rizz-meter': typeof ApiAiRizzMeterIndexRoute
+  '/api/ai/translation': typeof ApiAiTranslationIndexRoute
+  '/api/ai/trust-score': typeof ApiAiTrustScoreIndexRoute
+  '/api/ai/voice-note': typeof ApiAiVoiceNoteIndexRoute
+  '/api/ai/wingman': typeof ApiAiWingmanIndexRoute
+  '/api/auth/2fa': typeof ApiAuth2faIndexRoute
   '/api/auth/me': typeof ApiAuthMeIndexRoute
+  '/api/auth/phone': typeof ApiAuthPhoneIndexRoute
+  '/api/auth/sessions': typeof ApiAuthSessionsIndexRoute
+  '/api/auth/social': typeof ApiAuthSocialIndexRoute
+  '/api/chat/broadcast': typeof ApiChatBroadcastIndexRoute
+  '/api/chat/ephemeral': typeof ApiChatEphemeralIndexRoute
+  '/api/chat/location': typeof ApiChatLocationIndexRoute
+  '/api/chat/pinned': typeof ApiChatPinnedIndexRoute
+  '/api/chat/polls': typeof ApiChatPollsIndexRoute
+  '/api/chat/quiet-hours': typeof ApiChatQuietHoursIndexRoute
+  '/api/chat/rewarded': typeof ApiChatRewardedIndexRoute
+  '/api/chat/scheduled': typeof ApiChatScheduledIndexRoute
+  '/api/chat/screenshot': typeof ApiChatScreenshotIndexRoute
+  '/api/chat/themes': typeof ApiChatThemesIndexRoute
+  '/api/discover/compatibility': typeof ApiDiscoverCompatibilityIndexRoute
+  '/api/discover/fresh': typeof ApiDiscoverFreshIndexRoute
+  '/api/discover/grid-presets': typeof ApiDiscoverGridPresetsIndexRoute
+  '/api/discover/online': typeof ApiDiscoverOnlineIndexRoute
+  '/api/discover/places': typeof ApiDiscoverPlacesIndexRoute
+  '/api/discover/saved-searches': typeof ApiDiscoverSavedSearchesIndexRoute
+  '/api/discover/travel': typeof ApiDiscoverTravelIndexRoute
   '/api/fansites/subscribe': typeof ApiFansitesSubscribeIndexRoute
+  '/api/growth/completion': typeof ApiGrowthCompletionIndexRoute
+  '/api/growth/engagement': typeof ApiGrowthEngagementIndexRoute
+  '/api/growth/funnel': typeof ApiGrowthFunnelIndexRoute
+  '/api/growth/streak': typeof ApiGrowthStreakIndexRoute
   '/api/interest/$tab': typeof ApiInterestTabIndexRoute
   '/api/interest/favourite': typeof ApiInterestFavouriteIndexRoute
   '/api/interest/like': typeof ApiInterestLikeIndexRoute
   '/api/interest/stats': typeof ApiInterestStatsIndexRoute
+  '/api/matches/compatibility': typeof ApiMatchesCompatibilityIndexRoute
+  '/api/matches/daily-picks': typeof ApiMatchesDailyPicksIndexRoute
+  '/api/matches/dealbreakers': typeof ApiMatchesDealbreakersIndexRoute
+  '/api/matches/likes-you': typeof ApiMatchesLikesYouIndexRoute
+  '/api/matches/secret-admirer': typeof ApiMatchesSecretAdmirerIndexRoute
   '/api/messages/$messageId': typeof ApiMessagesMessageIdIndexRoute
+  '/api/monetization/consumables': typeof ApiMonetizationConsumablesIndexRoute
+  '/api/monetization/gift-membership': typeof ApiMonetizationGiftMembershipIndexRoute
+  '/api/monetization/pay-per-read': typeof ApiMonetizationPayPerReadIndexRoute
+  '/api/monetization/promo': typeof ApiMonetizationPromoIndexRoute
+  '/api/monetization/referral': typeof ApiMonetizationReferralIndexRoute
+  '/api/monetization/spotlight': typeof ApiMonetizationSpotlightIndexRoute
+  '/api/monetization/voucher': typeof ApiMonetizationVoucherIndexRoute
+  '/api/offline/backup': typeof ApiOfflineBackupIndexRoute
+  '/api/offline/queue': typeof ApiOfflineQueueIndexRoute
   '/api/profile/$profileId': typeof ApiProfileProfileIdIndexRoute
+  '/api/profile/analytics': typeof ApiProfileAnalyticsIndexRoute
+  '/api/profile/app-config': typeof ApiProfileAppConfigIndexRoute
+  '/api/profile/deletion': typeof ApiProfileDeletionIndexRoute
+  '/api/profile/export': typeof ApiProfileExportIndexRoute
+  '/api/profile/hot-pics': typeof ApiProfileHotPicsIndexRoute
+  '/api/profile/multi-account': typeof ApiProfileMultiAccountIndexRoute
+  '/api/profile/pause': typeof ApiProfilePauseIndexRoute
+  '/api/profile/privacy-report': typeof ApiProfilePrivacyReportIndexRoute
+  '/api/profile/social-links': typeof ApiProfileSocialLinksIndexRoute
+  '/api/profile/stats': typeof ApiProfileStatsIndexRoute
+  '/api/profile/verification': typeof ApiProfileVerificationIndexRoute
+  '/api/profile/wishlist': typeof ApiProfileWishlistIndexRoute
+  '/api/safety/2fa': typeof ApiSafety2faIndexRoute
+  '/api/safety/appeals': typeof ApiSafetyAppealsIndexRoute
   '/api/safety/check-in': typeof ApiSafetyCheckInIndexRoute
   '/api/safety/contacts': typeof ApiSafetyContactsIndexRoute
+  '/api/safety/deletion': typeof ApiSafetyDeletionIndexRoute
+  '/api/safety/emergency-share': typeof ApiSafetyEmergencyShareIndexRoute
+  '/api/safety/rate-limit': typeof ApiSafetyRateLimitIndexRoute
   '/api/safety/reports': typeof ApiSafetyReportsIndexRoute
+  '/api/search/global': typeof ApiSearchGlobalIndexRoute
+  '/api/search/saved': typeof ApiSearchSavedIndexRoute
+  '/api/chat/polls/vote': typeof ApiChatPollsVoteIndexRoute
   '/api/conversations/$conversationId/messages': typeof ApiConversationsConversationIdMessagesIndexRoute
   '/api/messages/$messageId/react': typeof ApiMessagesMessageIdReactIndexRoute
   '/api/safety/check-in/resolve': typeof ApiSafetyCheckInResolveIndexRoute
@@ -562,35 +1938,84 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/discover': typeof DiscoverRoute
+  '/discover': typeof DiscoverRouteWithChildren
   '/api/$': typeof ApiSplatRoute
+  '/discover/map': typeof DiscoverMapRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/create': typeof EventsCreateRoute
+  '/groups/$groupId': typeof GroupsGroupIdRoute
+  '/groups/create': typeof GroupsCreateRoute
+  '/shouts/$shoutId': typeof ShoutsShoutIdRoute
+  '/shouts/create': typeof ShoutsCreateRoute
+  '/stories/$storyId': typeof StoriesStoryIdRoute
+  '/agenda/': typeof AgendaIndexRoute
+  '/blind-date/': typeof BlindDateIndexRoute
   '/board/': typeof BoardIndexRoute
+  '/boost/': typeof BoostIndexRoute
+  '/calendar/': typeof CalendarIndexRoute
   '/chat/': typeof ChatIndexRoute
+  '/circles/': typeof CirclesIndexRoute
+  '/community-challenges/': typeof CommunityChallengesIndexRoute
+  '/dump-rify/': typeof DumpRifyIndexRoute
   '/events/': typeof EventsIndexRoute
   '/fansites/': typeof FansitesIndexRoute
+  '/faq/': typeof FaqIndexRoute
+  '/favorites/': typeof FavoritesIndexRoute
+  '/filters/': typeof FiltersIndexRoute
+  '/forgot-password/': typeof ForgotPasswordIndexRoute
   '/gamechangers/': typeof GamechangersIndexRoute
   '/grid/': typeof GridIndexRoute
   '/groups/': typeof GroupsIndexRoute
+  '/growth/': typeof GrowthIndexRoute
   '/guide/': typeof GuideIndexRoute
+  '/image-viewer/': typeof ImageViewerIndexRoute
+  '/interested-in-me/': typeof InterestedInMeIndexRoute
   '/king-pet/': typeof KingPetIndexRoute
+  '/legal/': typeof LegalIndexRoute
+  '/login/': typeof LoginIndexRoute
   '/meetnow/': typeof MeetnowIndexRoute
   '/notifications/': typeof NotificationsIndexRoute
+  '/offline/': typeof OfflineIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
+  '/paywall/': typeof PaywallIndexRoute
+  '/phone-login/': typeof PhoneLoginIndexRoute
+  '/photo-editor/': typeof PhotoEditorIndexRoute
+  '/platform/': typeof PlatformIndexRoute
   '/premium/': typeof PremiumIndexRoute
   '/profile/': typeof ProfileIndexRoute
+  '/report-user/': typeof ReportUserIndexRoute
   '/right-now/': typeof RightNowIndexRoute
   '/safety/': typeof SafetyIndexRoute
+  '/search-inbox/': typeof SearchInboxIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/shouts/': typeof ShoutsIndexRoute
+  '/speed-dating/': typeof SpeedDatingIndexRoute
   '/tribes/': typeof TribesIndexRoute
+  '/verify/': typeof VerifyIndexRoute
+  '/video-dates/': typeof VideoDatesIndexRoute
+  '/video-roulette/': typeof VideoRouletteIndexRoute
+  '/vouches/': typeof VouchesIndexRoute
+  '/welcome/': typeof WelcomeIndexRoute
+  '/who-viewed-me/': typeof WhoViewedMeIndexRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/ai/photo-enhance/': typeof AiPhotoEnhanceIndexRoute
+  '/ai/photo-ranker/': typeof AiPhotoRankerIndexRoute
+  '/ai/translation/': typeof AiTranslationIndexRoute
+  '/ai/voice/': typeof AiVoiceIndexRoute
   '/api/ai/': typeof ApiAiIndexRoute
+  '/api/albums/': typeof ApiAlbumsIndexRoute
+  '/api/banners/': typeof ApiBannersIndexRoute
+  '/api/blog/': typeof ApiBlogIndexRoute
   '/api/boost/': typeof ApiBoostIndexRoute
+  '/api/calendar/': typeof ApiCalendarIndexRoute
+  '/api/calls/': typeof ApiCallsIndexRoute
   '/api/conversations/': typeof ApiConversationsIndexRoute
   '/api/discover/': typeof ApiDiscoverIndexRoute
   '/api/events/': typeof ApiEventsIndexRoute
+  '/api/gifts/': typeof ApiGiftsIndexRoute
   '/api/health/': typeof ApiHealthIndexRoute
   '/api/king-pet/': typeof ApiKingPetIndexRoute
+  '/api/live/': typeof ApiLiveIndexRoute
   '/api/meetnow/': typeof ApiMeetnowIndexRoute
   '/api/notes/': typeof ApiNotesIndexRoute
   '/api/notifications/': typeof ApiNotificationsIndexRoute
@@ -598,32 +2023,150 @@ export interface FileRoutesById {
   '/api/profiles/': typeof ApiProfilesIndexRoute
   '/api/settings/': typeof ApiSettingsIndexRoute
   '/api/social/': typeof ApiSocialIndexRoute
+  '/api/speed-dating/': typeof ApiSpeedDatingIndexRoute
+  '/api/stories/': typeof ApiStoriesIndexRoute
   '/api/taps/': typeof ApiTapsIndexRoute
+  '/api/video-roulette/': typeof ApiVideoRouletteIndexRoute
   '/api/wallet/': typeof ApiWalletIndexRoute
   '/auth/callback/': typeof AuthCallbackIndexRoute
   '/auth/sign-in/': typeof AuthSignInIndexRoute
   '/auth/sign-up/': typeof AuthSignUpIndexRoute
   '/chat/$conversationId/': typeof ChatConversationIdIndexRoute
+  '/chat/enhanced/': typeof ChatEnhancedIndexRoute
+  '/discover/compatibility/': typeof DiscoverCompatibilityIndexRoute
+  '/discover/presets/': typeof DiscoverPresetsIndexRoute
   '/interest/taps/': typeof InterestTapsIndexRoute
   '/interest/views/': typeof InterestViewsIndexRoute
+  '/matches/compatibility/': typeof MatchesCompatibilityIndexRoute
+  '/matches/secret-admirer/': typeof MatchesSecretAdmirerIndexRoute
+  '/monetization/promo/': typeof MonetizationPromoIndexRoute
+  '/monetization/shop/': typeof MonetizationShopIndexRoute
   '/profile/$profileId/': typeof ProfileProfileIdIndexRoute
+  '/profile/insights/': typeof ProfileInsightsIndexRoute
+  '/safety/emergency-contact/': typeof SafetyEmergencyContactIndexRoute
+  '/safety/emergency/': typeof SafetyEmergencyIndexRoute
+  '/settings/accessibility/': typeof SettingsAccessibilityIndexRoute
+  '/settings/account-settings/': typeof SettingsAccountSettingsIndexRoute
   '/settings/account/': typeof SettingsAccountIndexRoute
+  '/settings/ai-toggles/': typeof SettingsAiTogglesIndexRoute
+  '/settings/app-config/': typeof SettingsAppConfigIndexRoute
   '/settings/app/': typeof SettingsAppIndexRoute
+  '/settings/backup-restore/': typeof SettingsBackupRestoreIndexRoute
+  '/settings/blocked-users/': typeof SettingsBlockedUsersIndexRoute
   '/settings/blocked/': typeof SettingsBlockedIndexRoute
+  '/settings/change-password/': typeof SettingsChangePasswordIndexRoute
+  '/settings/data-export/': typeof SettingsDataExportIndexRoute
+  '/settings/data/': typeof SettingsDataIndexRoute
+  '/settings/deactivate/': typeof SettingsDeactivateIndexRoute
+  '/settings/deletion/': typeof SettingsDeletionIndexRoute
+  '/settings/discreet-icon/': typeof SettingsDiscreetIconIndexRoute
+  '/settings/dnd/': typeof SettingsDndIndexRoute
+  '/settings/export/': typeof SettingsExportIndexRoute
   '/settings/hidden/': typeof SettingsHiddenIndexRoute
+  '/settings/language/': typeof SettingsLanguageIndexRoute
+  '/settings/location/': typeof SettingsLocationIndexRoute
+  '/settings/media/': typeof SettingsMediaIndexRoute
+  '/settings/multi-account/': typeof SettingsMultiAccountIndexRoute
+  '/settings/notifications/': typeof SettingsNotificationsIndexRoute
+  '/settings/permissions/': typeof SettingsPermissionsIndexRoute
+  '/settings/pin-lock/': typeof SettingsPinLockIndexRoute
+  '/settings/privacy-report/': typeof SettingsPrivacyReportIndexRoute
   '/settings/privacy/': typeof SettingsPrivacyIndexRoute
   '/settings/profile/': typeof SettingsProfileIndexRoute
+  '/settings/stats/': typeof SettingsStatsIndexRoute
+  '/settings/subscription/': typeof SettingsSubscriptionIndexRoute
+  '/settings/two-factor/': typeof SettingsTwoFactorIndexRoute
+  '/verify/photo/': typeof VerifyPhotoIndexRoute
+  '/api/admin/kpis/': typeof ApiAdminKpisIndexRoute
+  '/api/admin/moderation/': typeof ApiAdminModerationIndexRoute
+  '/api/ai/auto-reply/': typeof ApiAiAutoReplyIndexRoute
+  '/api/ai/autocomplete/': typeof ApiAiAutocompleteIndexRoute
+  '/api/ai/best-time/': typeof ApiAiBestTimeIndexRoute
+  '/api/ai/catfish/': typeof ApiAiCatfishIndexRoute
+  '/api/ai/chat-summary/': typeof ApiAiChatSummaryIndexRoute
+  '/api/ai/context-replies/': typeof ApiAiContextRepliesIndexRoute
+  '/api/ai/date-planner/': typeof ApiAiDatePlannerIndexRoute
+  '/api/ai/digest/': typeof ApiAiDigestIndexRoute
+  '/api/ai/escalation/': typeof ApiAiEscalationIndexRoute
+  '/api/ai/icebreakers/': typeof ApiAiIcebreakersIndexRoute
+  '/api/ai/meme-suggest/': typeof ApiAiMemeSuggestIndexRoute
+  '/api/ai/photo-enhance/': typeof ApiAiPhotoEnhanceIndexRoute
+  '/api/ai/pickup-lines/': typeof ApiAiPickupLinesIndexRoute
+  '/api/ai/rizz-meter/': typeof ApiAiRizzMeterIndexRoute
+  '/api/ai/translation/': typeof ApiAiTranslationIndexRoute
+  '/api/ai/trust-score/': typeof ApiAiTrustScoreIndexRoute
+  '/api/ai/voice-note/': typeof ApiAiVoiceNoteIndexRoute
+  '/api/ai/wingman/': typeof ApiAiWingmanIndexRoute
+  '/api/auth/2fa/': typeof ApiAuth2faIndexRoute
   '/api/auth/me/': typeof ApiAuthMeIndexRoute
+  '/api/auth/phone/': typeof ApiAuthPhoneIndexRoute
+  '/api/auth/sessions/': typeof ApiAuthSessionsIndexRoute
+  '/api/auth/social/': typeof ApiAuthSocialIndexRoute
+  '/api/chat/broadcast/': typeof ApiChatBroadcastIndexRoute
+  '/api/chat/ephemeral/': typeof ApiChatEphemeralIndexRoute
+  '/api/chat/location/': typeof ApiChatLocationIndexRoute
+  '/api/chat/pinned/': typeof ApiChatPinnedIndexRoute
+  '/api/chat/polls/': typeof ApiChatPollsIndexRoute
+  '/api/chat/quiet-hours/': typeof ApiChatQuietHoursIndexRoute
+  '/api/chat/rewarded/': typeof ApiChatRewardedIndexRoute
+  '/api/chat/scheduled/': typeof ApiChatScheduledIndexRoute
+  '/api/chat/screenshot/': typeof ApiChatScreenshotIndexRoute
+  '/api/chat/themes/': typeof ApiChatThemesIndexRoute
+  '/api/discover/compatibility/': typeof ApiDiscoverCompatibilityIndexRoute
+  '/api/discover/fresh/': typeof ApiDiscoverFreshIndexRoute
+  '/api/discover/grid-presets/': typeof ApiDiscoverGridPresetsIndexRoute
+  '/api/discover/online/': typeof ApiDiscoverOnlineIndexRoute
+  '/api/discover/places/': typeof ApiDiscoverPlacesIndexRoute
+  '/api/discover/saved-searches/': typeof ApiDiscoverSavedSearchesIndexRoute
+  '/api/discover/travel/': typeof ApiDiscoverTravelIndexRoute
   '/api/fansites/subscribe/': typeof ApiFansitesSubscribeIndexRoute
+  '/api/growth/completion/': typeof ApiGrowthCompletionIndexRoute
+  '/api/growth/engagement/': typeof ApiGrowthEngagementIndexRoute
+  '/api/growth/funnel/': typeof ApiGrowthFunnelIndexRoute
+  '/api/growth/streak/': typeof ApiGrowthStreakIndexRoute
   '/api/interest/$tab/': typeof ApiInterestTabIndexRoute
   '/api/interest/favourite/': typeof ApiInterestFavouriteIndexRoute
   '/api/interest/like/': typeof ApiInterestLikeIndexRoute
   '/api/interest/stats/': typeof ApiInterestStatsIndexRoute
+  '/api/matches/compatibility/': typeof ApiMatchesCompatibilityIndexRoute
+  '/api/matches/daily-picks/': typeof ApiMatchesDailyPicksIndexRoute
+  '/api/matches/dealbreakers/': typeof ApiMatchesDealbreakersIndexRoute
+  '/api/matches/likes-you/': typeof ApiMatchesLikesYouIndexRoute
+  '/api/matches/secret-admirer/': typeof ApiMatchesSecretAdmirerIndexRoute
   '/api/messages/$messageId/': typeof ApiMessagesMessageIdIndexRoute
+  '/api/monetization/consumables/': typeof ApiMonetizationConsumablesIndexRoute
+  '/api/monetization/gift-membership/': typeof ApiMonetizationGiftMembershipIndexRoute
+  '/api/monetization/pay-per-read/': typeof ApiMonetizationPayPerReadIndexRoute
+  '/api/monetization/promo/': typeof ApiMonetizationPromoIndexRoute
+  '/api/monetization/referral/': typeof ApiMonetizationReferralIndexRoute
+  '/api/monetization/spotlight/': typeof ApiMonetizationSpotlightIndexRoute
+  '/api/monetization/voucher/': typeof ApiMonetizationVoucherIndexRoute
+  '/api/offline/backup/': typeof ApiOfflineBackupIndexRoute
+  '/api/offline/queue/': typeof ApiOfflineQueueIndexRoute
   '/api/profile/$profileId/': typeof ApiProfileProfileIdIndexRoute
+  '/api/profile/analytics/': typeof ApiProfileAnalyticsIndexRoute
+  '/api/profile/app-config/': typeof ApiProfileAppConfigIndexRoute
+  '/api/profile/deletion/': typeof ApiProfileDeletionIndexRoute
+  '/api/profile/export/': typeof ApiProfileExportIndexRoute
+  '/api/profile/hot-pics/': typeof ApiProfileHotPicsIndexRoute
+  '/api/profile/multi-account/': typeof ApiProfileMultiAccountIndexRoute
+  '/api/profile/pause/': typeof ApiProfilePauseIndexRoute
+  '/api/profile/privacy-report/': typeof ApiProfilePrivacyReportIndexRoute
+  '/api/profile/social-links/': typeof ApiProfileSocialLinksIndexRoute
+  '/api/profile/stats/': typeof ApiProfileStatsIndexRoute
+  '/api/profile/verification/': typeof ApiProfileVerificationIndexRoute
+  '/api/profile/wishlist/': typeof ApiProfileWishlistIndexRoute
+  '/api/safety/2fa/': typeof ApiSafety2faIndexRoute
+  '/api/safety/appeals/': typeof ApiSafetyAppealsIndexRoute
   '/api/safety/check-in/': typeof ApiSafetyCheckInIndexRoute
   '/api/safety/contacts/': typeof ApiSafetyContactsIndexRoute
+  '/api/safety/deletion/': typeof ApiSafetyDeletionIndexRoute
+  '/api/safety/emergency-share/': typeof ApiSafetyEmergencyShareIndexRoute
+  '/api/safety/rate-limit/': typeof ApiSafetyRateLimitIndexRoute
   '/api/safety/reports/': typeof ApiSafetyReportsIndexRoute
+  '/api/search/global/': typeof ApiSearchGlobalIndexRoute
+  '/api/search/saved/': typeof ApiSearchSavedIndexRoute
+  '/api/chat/polls/vote/': typeof ApiChatPollsVoteIndexRoute
   '/api/conversations/$conversationId/messages/': typeof ApiConversationsConversationIdMessagesIndexRoute
   '/api/messages/$messageId/react/': typeof ApiMessagesMessageIdReactIndexRoute
   '/api/safety/check-in/resolve/': typeof ApiSafetyCheckInResolveIndexRoute
@@ -635,33 +2178,82 @@ export interface FileRouteTypes {
     | '/about'
     | '/discover'
     | '/api/$'
+    | '/discover/map'
+    | '/events/$eventId'
+    | '/events/create'
+    | '/groups/$groupId'
+    | '/groups/create'
+    | '/shouts/$shoutId'
+    | '/shouts/create'
+    | '/stories/$storyId'
+    | '/agenda/'
+    | '/blind-date/'
     | '/board/'
+    | '/boost/'
+    | '/calendar/'
     | '/chat/'
+    | '/circles/'
+    | '/community-challenges/'
+    | '/dump-rify/'
     | '/events/'
     | '/fansites/'
+    | '/faq/'
+    | '/favorites/'
+    | '/filters/'
+    | '/forgot-password/'
     | '/gamechangers/'
     | '/grid/'
     | '/groups/'
+    | '/growth/'
     | '/guide/'
+    | '/image-viewer/'
+    | '/interested-in-me/'
     | '/king-pet/'
+    | '/legal/'
+    | '/login/'
     | '/meetnow/'
     | '/notifications/'
+    | '/offline/'
     | '/onboarding/'
+    | '/paywall/'
+    | '/phone-login/'
+    | '/photo-editor/'
+    | '/platform/'
     | '/premium/'
     | '/profile/'
+    | '/report-user/'
     | '/right-now/'
     | '/safety/'
+    | '/search-inbox/'
     | '/settings/'
     | '/shouts/'
+    | '/speed-dating/'
     | '/tribes/'
+    | '/verify/'
+    | '/video-dates/'
+    | '/video-roulette/'
+    | '/vouches/'
+    | '/welcome/'
+    | '/who-viewed-me/'
     | '/api/push/subscribe'
+    | '/ai/photo-enhance/'
+    | '/ai/photo-ranker/'
+    | '/ai/translation/'
+    | '/ai/voice/'
     | '/api/ai/'
+    | '/api/albums/'
+    | '/api/banners/'
+    | '/api/blog/'
     | '/api/boost/'
+    | '/api/calendar/'
+    | '/api/calls/'
     | '/api/conversations/'
     | '/api/discover/'
     | '/api/events/'
+    | '/api/gifts/'
     | '/api/health/'
     | '/api/king-pet/'
+    | '/api/live/'
     | '/api/meetnow/'
     | '/api/notes/'
     | '/api/notifications/'
@@ -669,32 +2261,150 @@ export interface FileRouteTypes {
     | '/api/profiles/'
     | '/api/settings/'
     | '/api/social/'
+    | '/api/speed-dating/'
+    | '/api/stories/'
     | '/api/taps/'
+    | '/api/video-roulette/'
     | '/api/wallet/'
     | '/auth/callback/'
     | '/auth/sign-in/'
     | '/auth/sign-up/'
     | '/chat/$conversationId/'
+    | '/chat/enhanced/'
+    | '/discover/compatibility/'
+    | '/discover/presets/'
     | '/interest/taps/'
     | '/interest/views/'
+    | '/matches/compatibility/'
+    | '/matches/secret-admirer/'
+    | '/monetization/promo/'
+    | '/monetization/shop/'
     | '/profile/$profileId/'
+    | '/profile/insights/'
+    | '/safety/emergency-contact/'
+    | '/safety/emergency/'
+    | '/settings/accessibility/'
+    | '/settings/account-settings/'
     | '/settings/account/'
+    | '/settings/ai-toggles/'
+    | '/settings/app-config/'
     | '/settings/app/'
+    | '/settings/backup-restore/'
+    | '/settings/blocked-users/'
     | '/settings/blocked/'
+    | '/settings/change-password/'
+    | '/settings/data-export/'
+    | '/settings/data/'
+    | '/settings/deactivate/'
+    | '/settings/deletion/'
+    | '/settings/discreet-icon/'
+    | '/settings/dnd/'
+    | '/settings/export/'
     | '/settings/hidden/'
+    | '/settings/language/'
+    | '/settings/location/'
+    | '/settings/media/'
+    | '/settings/multi-account/'
+    | '/settings/notifications/'
+    | '/settings/permissions/'
+    | '/settings/pin-lock/'
+    | '/settings/privacy-report/'
     | '/settings/privacy/'
     | '/settings/profile/'
+    | '/settings/stats/'
+    | '/settings/subscription/'
+    | '/settings/two-factor/'
+    | '/verify/photo/'
+    | '/api/admin/kpis/'
+    | '/api/admin/moderation/'
+    | '/api/ai/auto-reply/'
+    | '/api/ai/autocomplete/'
+    | '/api/ai/best-time/'
+    | '/api/ai/catfish/'
+    | '/api/ai/chat-summary/'
+    | '/api/ai/context-replies/'
+    | '/api/ai/date-planner/'
+    | '/api/ai/digest/'
+    | '/api/ai/escalation/'
+    | '/api/ai/icebreakers/'
+    | '/api/ai/meme-suggest/'
+    | '/api/ai/photo-enhance/'
+    | '/api/ai/pickup-lines/'
+    | '/api/ai/rizz-meter/'
+    | '/api/ai/translation/'
+    | '/api/ai/trust-score/'
+    | '/api/ai/voice-note/'
+    | '/api/ai/wingman/'
+    | '/api/auth/2fa/'
     | '/api/auth/me/'
+    | '/api/auth/phone/'
+    | '/api/auth/sessions/'
+    | '/api/auth/social/'
+    | '/api/chat/broadcast/'
+    | '/api/chat/ephemeral/'
+    | '/api/chat/location/'
+    | '/api/chat/pinned/'
+    | '/api/chat/polls/'
+    | '/api/chat/quiet-hours/'
+    | '/api/chat/rewarded/'
+    | '/api/chat/scheduled/'
+    | '/api/chat/screenshot/'
+    | '/api/chat/themes/'
+    | '/api/discover/compatibility/'
+    | '/api/discover/fresh/'
+    | '/api/discover/grid-presets/'
+    | '/api/discover/online/'
+    | '/api/discover/places/'
+    | '/api/discover/saved-searches/'
+    | '/api/discover/travel/'
     | '/api/fansites/subscribe/'
+    | '/api/growth/completion/'
+    | '/api/growth/engagement/'
+    | '/api/growth/funnel/'
+    | '/api/growth/streak/'
     | '/api/interest/$tab/'
     | '/api/interest/favourite/'
     | '/api/interest/like/'
     | '/api/interest/stats/'
+    | '/api/matches/compatibility/'
+    | '/api/matches/daily-picks/'
+    | '/api/matches/dealbreakers/'
+    | '/api/matches/likes-you/'
+    | '/api/matches/secret-admirer/'
     | '/api/messages/$messageId/'
+    | '/api/monetization/consumables/'
+    | '/api/monetization/gift-membership/'
+    | '/api/monetization/pay-per-read/'
+    | '/api/monetization/promo/'
+    | '/api/monetization/referral/'
+    | '/api/monetization/spotlight/'
+    | '/api/monetization/voucher/'
+    | '/api/offline/backup/'
+    | '/api/offline/queue/'
     | '/api/profile/$profileId/'
+    | '/api/profile/analytics/'
+    | '/api/profile/app-config/'
+    | '/api/profile/deletion/'
+    | '/api/profile/export/'
+    | '/api/profile/hot-pics/'
+    | '/api/profile/multi-account/'
+    | '/api/profile/pause/'
+    | '/api/profile/privacy-report/'
+    | '/api/profile/social-links/'
+    | '/api/profile/stats/'
+    | '/api/profile/verification/'
+    | '/api/profile/wishlist/'
+    | '/api/safety/2fa/'
+    | '/api/safety/appeals/'
     | '/api/safety/check-in/'
     | '/api/safety/contacts/'
+    | '/api/safety/deletion/'
+    | '/api/safety/emergency-share/'
+    | '/api/safety/rate-limit/'
     | '/api/safety/reports/'
+    | '/api/search/global/'
+    | '/api/search/saved/'
+    | '/api/chat/polls/vote/'
     | '/api/conversations/$conversationId/messages/'
     | '/api/messages/$messageId/react/'
     | '/api/safety/check-in/resolve/'
@@ -704,33 +2414,82 @@ export interface FileRouteTypes {
     | '/about'
     | '/discover'
     | '/api/$'
+    | '/discover/map'
+    | '/events/$eventId'
+    | '/events/create'
+    | '/groups/$groupId'
+    | '/groups/create'
+    | '/shouts/$shoutId'
+    | '/shouts/create'
+    | '/stories/$storyId'
+    | '/agenda'
+    | '/blind-date'
     | '/board'
+    | '/boost'
+    | '/calendar'
     | '/chat'
+    | '/circles'
+    | '/community-challenges'
+    | '/dump-rify'
     | '/events'
     | '/fansites'
+    | '/faq'
+    | '/favorites'
+    | '/filters'
+    | '/forgot-password'
     | '/gamechangers'
     | '/grid'
     | '/groups'
+    | '/growth'
     | '/guide'
+    | '/image-viewer'
+    | '/interested-in-me'
     | '/king-pet'
+    | '/legal'
+    | '/login'
     | '/meetnow'
     | '/notifications'
+    | '/offline'
     | '/onboarding'
+    | '/paywall'
+    | '/phone-login'
+    | '/photo-editor'
+    | '/platform'
     | '/premium'
     | '/profile'
+    | '/report-user'
     | '/right-now'
     | '/safety'
+    | '/search-inbox'
     | '/settings'
     | '/shouts'
+    | '/speed-dating'
     | '/tribes'
+    | '/verify'
+    | '/video-dates'
+    | '/video-roulette'
+    | '/vouches'
+    | '/welcome'
+    | '/who-viewed-me'
     | '/api/push/subscribe'
+    | '/ai/photo-enhance'
+    | '/ai/photo-ranker'
+    | '/ai/translation'
+    | '/ai/voice'
     | '/api/ai'
+    | '/api/albums'
+    | '/api/banners'
+    | '/api/blog'
     | '/api/boost'
+    | '/api/calendar'
+    | '/api/calls'
     | '/api/conversations'
     | '/api/discover'
     | '/api/events'
+    | '/api/gifts'
     | '/api/health'
     | '/api/king-pet'
+    | '/api/live'
     | '/api/meetnow'
     | '/api/notes'
     | '/api/notifications'
@@ -738,32 +2497,150 @@ export interface FileRouteTypes {
     | '/api/profiles'
     | '/api/settings'
     | '/api/social'
+    | '/api/speed-dating'
+    | '/api/stories'
     | '/api/taps'
+    | '/api/video-roulette'
     | '/api/wallet'
     | '/auth/callback'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/chat/$conversationId'
+    | '/chat/enhanced'
+    | '/discover/compatibility'
+    | '/discover/presets'
     | '/interest/taps'
     | '/interest/views'
+    | '/matches/compatibility'
+    | '/matches/secret-admirer'
+    | '/monetization/promo'
+    | '/monetization/shop'
     | '/profile/$profileId'
+    | '/profile/insights'
+    | '/safety/emergency-contact'
+    | '/safety/emergency'
+    | '/settings/accessibility'
+    | '/settings/account-settings'
     | '/settings/account'
+    | '/settings/ai-toggles'
+    | '/settings/app-config'
     | '/settings/app'
+    | '/settings/backup-restore'
+    | '/settings/blocked-users'
     | '/settings/blocked'
+    | '/settings/change-password'
+    | '/settings/data-export'
+    | '/settings/data'
+    | '/settings/deactivate'
+    | '/settings/deletion'
+    | '/settings/discreet-icon'
+    | '/settings/dnd'
+    | '/settings/export'
     | '/settings/hidden'
+    | '/settings/language'
+    | '/settings/location'
+    | '/settings/media'
+    | '/settings/multi-account'
+    | '/settings/notifications'
+    | '/settings/permissions'
+    | '/settings/pin-lock'
+    | '/settings/privacy-report'
     | '/settings/privacy'
     | '/settings/profile'
+    | '/settings/stats'
+    | '/settings/subscription'
+    | '/settings/two-factor'
+    | '/verify/photo'
+    | '/api/admin/kpis'
+    | '/api/admin/moderation'
+    | '/api/ai/auto-reply'
+    | '/api/ai/autocomplete'
+    | '/api/ai/best-time'
+    | '/api/ai/catfish'
+    | '/api/ai/chat-summary'
+    | '/api/ai/context-replies'
+    | '/api/ai/date-planner'
+    | '/api/ai/digest'
+    | '/api/ai/escalation'
+    | '/api/ai/icebreakers'
+    | '/api/ai/meme-suggest'
+    | '/api/ai/photo-enhance'
+    | '/api/ai/pickup-lines'
+    | '/api/ai/rizz-meter'
+    | '/api/ai/translation'
+    | '/api/ai/trust-score'
+    | '/api/ai/voice-note'
+    | '/api/ai/wingman'
+    | '/api/auth/2fa'
     | '/api/auth/me'
+    | '/api/auth/phone'
+    | '/api/auth/sessions'
+    | '/api/auth/social'
+    | '/api/chat/broadcast'
+    | '/api/chat/ephemeral'
+    | '/api/chat/location'
+    | '/api/chat/pinned'
+    | '/api/chat/polls'
+    | '/api/chat/quiet-hours'
+    | '/api/chat/rewarded'
+    | '/api/chat/scheduled'
+    | '/api/chat/screenshot'
+    | '/api/chat/themes'
+    | '/api/discover/compatibility'
+    | '/api/discover/fresh'
+    | '/api/discover/grid-presets'
+    | '/api/discover/online'
+    | '/api/discover/places'
+    | '/api/discover/saved-searches'
+    | '/api/discover/travel'
     | '/api/fansites/subscribe'
+    | '/api/growth/completion'
+    | '/api/growth/engagement'
+    | '/api/growth/funnel'
+    | '/api/growth/streak'
     | '/api/interest/$tab'
     | '/api/interest/favourite'
     | '/api/interest/like'
     | '/api/interest/stats'
+    | '/api/matches/compatibility'
+    | '/api/matches/daily-picks'
+    | '/api/matches/dealbreakers'
+    | '/api/matches/likes-you'
+    | '/api/matches/secret-admirer'
     | '/api/messages/$messageId'
+    | '/api/monetization/consumables'
+    | '/api/monetization/gift-membership'
+    | '/api/monetization/pay-per-read'
+    | '/api/monetization/promo'
+    | '/api/monetization/referral'
+    | '/api/monetization/spotlight'
+    | '/api/monetization/voucher'
+    | '/api/offline/backup'
+    | '/api/offline/queue'
     | '/api/profile/$profileId'
+    | '/api/profile/analytics'
+    | '/api/profile/app-config'
+    | '/api/profile/deletion'
+    | '/api/profile/export'
+    | '/api/profile/hot-pics'
+    | '/api/profile/multi-account'
+    | '/api/profile/pause'
+    | '/api/profile/privacy-report'
+    | '/api/profile/social-links'
+    | '/api/profile/stats'
+    | '/api/profile/verification'
+    | '/api/profile/wishlist'
+    | '/api/safety/2fa'
+    | '/api/safety/appeals'
     | '/api/safety/check-in'
     | '/api/safety/contacts'
+    | '/api/safety/deletion'
+    | '/api/safety/emergency-share'
+    | '/api/safety/rate-limit'
     | '/api/safety/reports'
+    | '/api/search/global'
+    | '/api/search/saved'
+    | '/api/chat/polls/vote'
     | '/api/conversations/$conversationId/messages'
     | '/api/messages/$messageId/react'
     | '/api/safety/check-in/resolve'
@@ -773,33 +2650,82 @@ export interface FileRouteTypes {
     | '/about'
     | '/discover'
     | '/api/$'
+    | '/discover/map'
+    | '/events/$eventId'
+    | '/events/create'
+    | '/groups/$groupId'
+    | '/groups/create'
+    | '/shouts/$shoutId'
+    | '/shouts/create'
+    | '/stories/$storyId'
+    | '/agenda/'
+    | '/blind-date/'
     | '/board/'
+    | '/boost/'
+    | '/calendar/'
     | '/chat/'
+    | '/circles/'
+    | '/community-challenges/'
+    | '/dump-rify/'
     | '/events/'
     | '/fansites/'
+    | '/faq/'
+    | '/favorites/'
+    | '/filters/'
+    | '/forgot-password/'
     | '/gamechangers/'
     | '/grid/'
     | '/groups/'
+    | '/growth/'
     | '/guide/'
+    | '/image-viewer/'
+    | '/interested-in-me/'
     | '/king-pet/'
+    | '/legal/'
+    | '/login/'
     | '/meetnow/'
     | '/notifications/'
+    | '/offline/'
     | '/onboarding/'
+    | '/paywall/'
+    | '/phone-login/'
+    | '/photo-editor/'
+    | '/platform/'
     | '/premium/'
     | '/profile/'
+    | '/report-user/'
     | '/right-now/'
     | '/safety/'
+    | '/search-inbox/'
     | '/settings/'
     | '/shouts/'
+    | '/speed-dating/'
     | '/tribes/'
+    | '/verify/'
+    | '/video-dates/'
+    | '/video-roulette/'
+    | '/vouches/'
+    | '/welcome/'
+    | '/who-viewed-me/'
     | '/api/push/subscribe'
+    | '/ai/photo-enhance/'
+    | '/ai/photo-ranker/'
+    | '/ai/translation/'
+    | '/ai/voice/'
     | '/api/ai/'
+    | '/api/albums/'
+    | '/api/banners/'
+    | '/api/blog/'
     | '/api/boost/'
+    | '/api/calendar/'
+    | '/api/calls/'
     | '/api/conversations/'
     | '/api/discover/'
     | '/api/events/'
+    | '/api/gifts/'
     | '/api/health/'
     | '/api/king-pet/'
+    | '/api/live/'
     | '/api/meetnow/'
     | '/api/notes/'
     | '/api/notifications/'
@@ -807,32 +2733,150 @@ export interface FileRouteTypes {
     | '/api/profiles/'
     | '/api/settings/'
     | '/api/social/'
+    | '/api/speed-dating/'
+    | '/api/stories/'
     | '/api/taps/'
+    | '/api/video-roulette/'
     | '/api/wallet/'
     | '/auth/callback/'
     | '/auth/sign-in/'
     | '/auth/sign-up/'
     | '/chat/$conversationId/'
+    | '/chat/enhanced/'
+    | '/discover/compatibility/'
+    | '/discover/presets/'
     | '/interest/taps/'
     | '/interest/views/'
+    | '/matches/compatibility/'
+    | '/matches/secret-admirer/'
+    | '/monetization/promo/'
+    | '/monetization/shop/'
     | '/profile/$profileId/'
+    | '/profile/insights/'
+    | '/safety/emergency-contact/'
+    | '/safety/emergency/'
+    | '/settings/accessibility/'
+    | '/settings/account-settings/'
     | '/settings/account/'
+    | '/settings/ai-toggles/'
+    | '/settings/app-config/'
     | '/settings/app/'
+    | '/settings/backup-restore/'
+    | '/settings/blocked-users/'
     | '/settings/blocked/'
+    | '/settings/change-password/'
+    | '/settings/data-export/'
+    | '/settings/data/'
+    | '/settings/deactivate/'
+    | '/settings/deletion/'
+    | '/settings/discreet-icon/'
+    | '/settings/dnd/'
+    | '/settings/export/'
     | '/settings/hidden/'
+    | '/settings/language/'
+    | '/settings/location/'
+    | '/settings/media/'
+    | '/settings/multi-account/'
+    | '/settings/notifications/'
+    | '/settings/permissions/'
+    | '/settings/pin-lock/'
+    | '/settings/privacy-report/'
     | '/settings/privacy/'
     | '/settings/profile/'
+    | '/settings/stats/'
+    | '/settings/subscription/'
+    | '/settings/two-factor/'
+    | '/verify/photo/'
+    | '/api/admin/kpis/'
+    | '/api/admin/moderation/'
+    | '/api/ai/auto-reply/'
+    | '/api/ai/autocomplete/'
+    | '/api/ai/best-time/'
+    | '/api/ai/catfish/'
+    | '/api/ai/chat-summary/'
+    | '/api/ai/context-replies/'
+    | '/api/ai/date-planner/'
+    | '/api/ai/digest/'
+    | '/api/ai/escalation/'
+    | '/api/ai/icebreakers/'
+    | '/api/ai/meme-suggest/'
+    | '/api/ai/photo-enhance/'
+    | '/api/ai/pickup-lines/'
+    | '/api/ai/rizz-meter/'
+    | '/api/ai/translation/'
+    | '/api/ai/trust-score/'
+    | '/api/ai/voice-note/'
+    | '/api/ai/wingman/'
+    | '/api/auth/2fa/'
     | '/api/auth/me/'
+    | '/api/auth/phone/'
+    | '/api/auth/sessions/'
+    | '/api/auth/social/'
+    | '/api/chat/broadcast/'
+    | '/api/chat/ephemeral/'
+    | '/api/chat/location/'
+    | '/api/chat/pinned/'
+    | '/api/chat/polls/'
+    | '/api/chat/quiet-hours/'
+    | '/api/chat/rewarded/'
+    | '/api/chat/scheduled/'
+    | '/api/chat/screenshot/'
+    | '/api/chat/themes/'
+    | '/api/discover/compatibility/'
+    | '/api/discover/fresh/'
+    | '/api/discover/grid-presets/'
+    | '/api/discover/online/'
+    | '/api/discover/places/'
+    | '/api/discover/saved-searches/'
+    | '/api/discover/travel/'
     | '/api/fansites/subscribe/'
+    | '/api/growth/completion/'
+    | '/api/growth/engagement/'
+    | '/api/growth/funnel/'
+    | '/api/growth/streak/'
     | '/api/interest/$tab/'
     | '/api/interest/favourite/'
     | '/api/interest/like/'
     | '/api/interest/stats/'
+    | '/api/matches/compatibility/'
+    | '/api/matches/daily-picks/'
+    | '/api/matches/dealbreakers/'
+    | '/api/matches/likes-you/'
+    | '/api/matches/secret-admirer/'
     | '/api/messages/$messageId/'
+    | '/api/monetization/consumables/'
+    | '/api/monetization/gift-membership/'
+    | '/api/monetization/pay-per-read/'
+    | '/api/monetization/promo/'
+    | '/api/monetization/referral/'
+    | '/api/monetization/spotlight/'
+    | '/api/monetization/voucher/'
+    | '/api/offline/backup/'
+    | '/api/offline/queue/'
     | '/api/profile/$profileId/'
+    | '/api/profile/analytics/'
+    | '/api/profile/app-config/'
+    | '/api/profile/deletion/'
+    | '/api/profile/export/'
+    | '/api/profile/hot-pics/'
+    | '/api/profile/multi-account/'
+    | '/api/profile/pause/'
+    | '/api/profile/privacy-report/'
+    | '/api/profile/social-links/'
+    | '/api/profile/stats/'
+    | '/api/profile/verification/'
+    | '/api/profile/wishlist/'
+    | '/api/safety/2fa/'
+    | '/api/safety/appeals/'
     | '/api/safety/check-in/'
     | '/api/safety/contacts/'
+    | '/api/safety/deletion/'
+    | '/api/safety/emergency-share/'
+    | '/api/safety/rate-limit/'
     | '/api/safety/reports/'
+    | '/api/search/global/'
+    | '/api/search/saved/'
+    | '/api/chat/polls/vote/'
     | '/api/conversations/$conversationId/messages/'
     | '/api/messages/$messageId/react/'
     | '/api/safety/check-in/resolve/'
@@ -841,35 +2885,83 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  DiscoverRoute: typeof DiscoverRoute
+  DiscoverRoute: typeof DiscoverRouteWithChildren
   ApiSplatRoute: typeof ApiSplatRoute
+  EventsEventIdRoute: typeof EventsEventIdRoute
+  EventsCreateRoute: typeof EventsCreateRoute
+  GroupsGroupIdRoute: typeof GroupsGroupIdRoute
+  GroupsCreateRoute: typeof GroupsCreateRoute
+  ShoutsShoutIdRoute: typeof ShoutsShoutIdRoute
+  ShoutsCreateRoute: typeof ShoutsCreateRoute
+  StoriesStoryIdRoute: typeof StoriesStoryIdRoute
+  AgendaIndexRoute: typeof AgendaIndexRoute
+  BlindDateIndexRoute: typeof BlindDateIndexRoute
   BoardIndexRoute: typeof BoardIndexRoute
+  BoostIndexRoute: typeof BoostIndexRoute
+  CalendarIndexRoute: typeof CalendarIndexRoute
   ChatIndexRoute: typeof ChatIndexRoute
+  CirclesIndexRoute: typeof CirclesIndexRoute
+  CommunityChallengesIndexRoute: typeof CommunityChallengesIndexRoute
+  DumpRifyIndexRoute: typeof DumpRifyIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   FansitesIndexRoute: typeof FansitesIndexRoute
+  FaqIndexRoute: typeof FaqIndexRoute
+  FavoritesIndexRoute: typeof FavoritesIndexRoute
+  FiltersIndexRoute: typeof FiltersIndexRoute
+  ForgotPasswordIndexRoute: typeof ForgotPasswordIndexRoute
   GamechangersIndexRoute: typeof GamechangersIndexRoute
   GridIndexRoute: typeof GridIndexRoute
   GroupsIndexRoute: typeof GroupsIndexRoute
+  GrowthIndexRoute: typeof GrowthIndexRoute
   GuideIndexRoute: typeof GuideIndexRoute
+  ImageViewerIndexRoute: typeof ImageViewerIndexRoute
+  InterestedInMeIndexRoute: typeof InterestedInMeIndexRoute
   KingPetIndexRoute: typeof KingPetIndexRoute
+  LegalIndexRoute: typeof LegalIndexRoute
+  LoginIndexRoute: typeof LoginIndexRoute
   MeetnowIndexRoute: typeof MeetnowIndexRoute
   NotificationsIndexRoute: typeof NotificationsIndexRoute
+  OfflineIndexRoute: typeof OfflineIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
+  PaywallIndexRoute: typeof PaywallIndexRoute
+  PhoneLoginIndexRoute: typeof PhoneLoginIndexRoute
+  PhotoEditorIndexRoute: typeof PhotoEditorIndexRoute
+  PlatformIndexRoute: typeof PlatformIndexRoute
   PremiumIndexRoute: typeof PremiumIndexRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
+  ReportUserIndexRoute: typeof ReportUserIndexRoute
   RightNowIndexRoute: typeof RightNowIndexRoute
   SafetyIndexRoute: typeof SafetyIndexRoute
+  SearchInboxIndexRoute: typeof SearchInboxIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   ShoutsIndexRoute: typeof ShoutsIndexRoute
+  SpeedDatingIndexRoute: typeof SpeedDatingIndexRoute
   TribesIndexRoute: typeof TribesIndexRoute
+  VerifyIndexRoute: typeof VerifyIndexRoute
+  VideoDatesIndexRoute: typeof VideoDatesIndexRoute
+  VideoRouletteIndexRoute: typeof VideoRouletteIndexRoute
+  VouchesIndexRoute: typeof VouchesIndexRoute
+  WelcomeIndexRoute: typeof WelcomeIndexRoute
+  WhoViewedMeIndexRoute: typeof WhoViewedMeIndexRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
+  AiPhotoEnhanceIndexRoute: typeof AiPhotoEnhanceIndexRoute
+  AiPhotoRankerIndexRoute: typeof AiPhotoRankerIndexRoute
+  AiTranslationIndexRoute: typeof AiTranslationIndexRoute
+  AiVoiceIndexRoute: typeof AiVoiceIndexRoute
   ApiAiIndexRoute: typeof ApiAiIndexRoute
+  ApiAlbumsIndexRoute: typeof ApiAlbumsIndexRoute
+  ApiBannersIndexRoute: typeof ApiBannersIndexRoute
+  ApiBlogIndexRoute: typeof ApiBlogIndexRoute
   ApiBoostIndexRoute: typeof ApiBoostIndexRoute
+  ApiCalendarIndexRoute: typeof ApiCalendarIndexRoute
+  ApiCallsIndexRoute: typeof ApiCallsIndexRoute
   ApiConversationsIndexRoute: typeof ApiConversationsIndexRoute
   ApiDiscoverIndexRoute: typeof ApiDiscoverIndexRoute
   ApiEventsIndexRoute: typeof ApiEventsIndexRoute
+  ApiGiftsIndexRoute: typeof ApiGiftsIndexRoute
   ApiHealthIndexRoute: typeof ApiHealthIndexRoute
   ApiKingPetIndexRoute: typeof ApiKingPetIndexRoute
+  ApiLiveIndexRoute: typeof ApiLiveIndexRoute
   ApiMeetnowIndexRoute: typeof ApiMeetnowIndexRoute
   ApiNotesIndexRoute: typeof ApiNotesIndexRoute
   ApiNotificationsIndexRoute: typeof ApiNotificationsIndexRoute
@@ -877,32 +2969,148 @@ export interface RootRouteChildren {
   ApiProfilesIndexRoute: typeof ApiProfilesIndexRoute
   ApiSettingsIndexRoute: typeof ApiSettingsIndexRoute
   ApiSocialIndexRoute: typeof ApiSocialIndexRoute
+  ApiSpeedDatingIndexRoute: typeof ApiSpeedDatingIndexRoute
+  ApiStoriesIndexRoute: typeof ApiStoriesIndexRoute
   ApiTapsIndexRoute: typeof ApiTapsIndexRoute
+  ApiVideoRouletteIndexRoute: typeof ApiVideoRouletteIndexRoute
   ApiWalletIndexRoute: typeof ApiWalletIndexRoute
   AuthCallbackIndexRoute: typeof AuthCallbackIndexRoute
   AuthSignInIndexRoute: typeof AuthSignInIndexRoute
   AuthSignUpIndexRoute: typeof AuthSignUpIndexRoute
   ChatConversationIdIndexRoute: typeof ChatConversationIdIndexRoute
+  ChatEnhancedIndexRoute: typeof ChatEnhancedIndexRoute
   InterestTapsIndexRoute: typeof InterestTapsIndexRoute
   InterestViewsIndexRoute: typeof InterestViewsIndexRoute
+  MatchesCompatibilityIndexRoute: typeof MatchesCompatibilityIndexRoute
+  MatchesSecretAdmirerIndexRoute: typeof MatchesSecretAdmirerIndexRoute
+  MonetizationPromoIndexRoute: typeof MonetizationPromoIndexRoute
+  MonetizationShopIndexRoute: typeof MonetizationShopIndexRoute
   ProfileProfileIdIndexRoute: typeof ProfileProfileIdIndexRoute
+  ProfileInsightsIndexRoute: typeof ProfileInsightsIndexRoute
+  SafetyEmergencyContactIndexRoute: typeof SafetyEmergencyContactIndexRoute
+  SafetyEmergencyIndexRoute: typeof SafetyEmergencyIndexRoute
+  SettingsAccessibilityIndexRoute: typeof SettingsAccessibilityIndexRoute
+  SettingsAccountSettingsIndexRoute: typeof SettingsAccountSettingsIndexRoute
   SettingsAccountIndexRoute: typeof SettingsAccountIndexRoute
+  SettingsAiTogglesIndexRoute: typeof SettingsAiTogglesIndexRoute
+  SettingsAppConfigIndexRoute: typeof SettingsAppConfigIndexRoute
   SettingsAppIndexRoute: typeof SettingsAppIndexRoute
+  SettingsBackupRestoreIndexRoute: typeof SettingsBackupRestoreIndexRoute
+  SettingsBlockedUsersIndexRoute: typeof SettingsBlockedUsersIndexRoute
   SettingsBlockedIndexRoute: typeof SettingsBlockedIndexRoute
+  SettingsChangePasswordIndexRoute: typeof SettingsChangePasswordIndexRoute
+  SettingsDataExportIndexRoute: typeof SettingsDataExportIndexRoute
+  SettingsDataIndexRoute: typeof SettingsDataIndexRoute
+  SettingsDeactivateIndexRoute: typeof SettingsDeactivateIndexRoute
+  SettingsDeletionIndexRoute: typeof SettingsDeletionIndexRoute
+  SettingsDiscreetIconIndexRoute: typeof SettingsDiscreetIconIndexRoute
+  SettingsDndIndexRoute: typeof SettingsDndIndexRoute
+  SettingsExportIndexRoute: typeof SettingsExportIndexRoute
   SettingsHiddenIndexRoute: typeof SettingsHiddenIndexRoute
+  SettingsLanguageIndexRoute: typeof SettingsLanguageIndexRoute
+  SettingsLocationIndexRoute: typeof SettingsLocationIndexRoute
+  SettingsMediaIndexRoute: typeof SettingsMediaIndexRoute
+  SettingsMultiAccountIndexRoute: typeof SettingsMultiAccountIndexRoute
+  SettingsNotificationsIndexRoute: typeof SettingsNotificationsIndexRoute
+  SettingsPermissionsIndexRoute: typeof SettingsPermissionsIndexRoute
+  SettingsPinLockIndexRoute: typeof SettingsPinLockIndexRoute
+  SettingsPrivacyReportIndexRoute: typeof SettingsPrivacyReportIndexRoute
   SettingsPrivacyIndexRoute: typeof SettingsPrivacyIndexRoute
   SettingsProfileIndexRoute: typeof SettingsProfileIndexRoute
+  SettingsStatsIndexRoute: typeof SettingsStatsIndexRoute
+  SettingsSubscriptionIndexRoute: typeof SettingsSubscriptionIndexRoute
+  SettingsTwoFactorIndexRoute: typeof SettingsTwoFactorIndexRoute
+  VerifyPhotoIndexRoute: typeof VerifyPhotoIndexRoute
+  ApiAdminKpisIndexRoute: typeof ApiAdminKpisIndexRoute
+  ApiAdminModerationIndexRoute: typeof ApiAdminModerationIndexRoute
+  ApiAiAutoReplyIndexRoute: typeof ApiAiAutoReplyIndexRoute
+  ApiAiAutocompleteIndexRoute: typeof ApiAiAutocompleteIndexRoute
+  ApiAiBestTimeIndexRoute: typeof ApiAiBestTimeIndexRoute
+  ApiAiCatfishIndexRoute: typeof ApiAiCatfishIndexRoute
+  ApiAiChatSummaryIndexRoute: typeof ApiAiChatSummaryIndexRoute
+  ApiAiContextRepliesIndexRoute: typeof ApiAiContextRepliesIndexRoute
+  ApiAiDatePlannerIndexRoute: typeof ApiAiDatePlannerIndexRoute
+  ApiAiDigestIndexRoute: typeof ApiAiDigestIndexRoute
+  ApiAiEscalationIndexRoute: typeof ApiAiEscalationIndexRoute
+  ApiAiIcebreakersIndexRoute: typeof ApiAiIcebreakersIndexRoute
+  ApiAiMemeSuggestIndexRoute: typeof ApiAiMemeSuggestIndexRoute
+  ApiAiPhotoEnhanceIndexRoute: typeof ApiAiPhotoEnhanceIndexRoute
+  ApiAiPickupLinesIndexRoute: typeof ApiAiPickupLinesIndexRoute
+  ApiAiRizzMeterIndexRoute: typeof ApiAiRizzMeterIndexRoute
+  ApiAiTranslationIndexRoute: typeof ApiAiTranslationIndexRoute
+  ApiAiTrustScoreIndexRoute: typeof ApiAiTrustScoreIndexRoute
+  ApiAiVoiceNoteIndexRoute: typeof ApiAiVoiceNoteIndexRoute
+  ApiAiWingmanIndexRoute: typeof ApiAiWingmanIndexRoute
+  ApiAuth2faIndexRoute: typeof ApiAuth2faIndexRoute
   ApiAuthMeIndexRoute: typeof ApiAuthMeIndexRoute
+  ApiAuthPhoneIndexRoute: typeof ApiAuthPhoneIndexRoute
+  ApiAuthSessionsIndexRoute: typeof ApiAuthSessionsIndexRoute
+  ApiAuthSocialIndexRoute: typeof ApiAuthSocialIndexRoute
+  ApiChatBroadcastIndexRoute: typeof ApiChatBroadcastIndexRoute
+  ApiChatEphemeralIndexRoute: typeof ApiChatEphemeralIndexRoute
+  ApiChatLocationIndexRoute: typeof ApiChatLocationIndexRoute
+  ApiChatPinnedIndexRoute: typeof ApiChatPinnedIndexRoute
+  ApiChatPollsIndexRoute: typeof ApiChatPollsIndexRoute
+  ApiChatQuietHoursIndexRoute: typeof ApiChatQuietHoursIndexRoute
+  ApiChatRewardedIndexRoute: typeof ApiChatRewardedIndexRoute
+  ApiChatScheduledIndexRoute: typeof ApiChatScheduledIndexRoute
+  ApiChatScreenshotIndexRoute: typeof ApiChatScreenshotIndexRoute
+  ApiChatThemesIndexRoute: typeof ApiChatThemesIndexRoute
+  ApiDiscoverCompatibilityIndexRoute: typeof ApiDiscoverCompatibilityIndexRoute
+  ApiDiscoverFreshIndexRoute: typeof ApiDiscoverFreshIndexRoute
+  ApiDiscoverGridPresetsIndexRoute: typeof ApiDiscoverGridPresetsIndexRoute
+  ApiDiscoverOnlineIndexRoute: typeof ApiDiscoverOnlineIndexRoute
+  ApiDiscoverPlacesIndexRoute: typeof ApiDiscoverPlacesIndexRoute
+  ApiDiscoverSavedSearchesIndexRoute: typeof ApiDiscoverSavedSearchesIndexRoute
+  ApiDiscoverTravelIndexRoute: typeof ApiDiscoverTravelIndexRoute
   ApiFansitesSubscribeIndexRoute: typeof ApiFansitesSubscribeIndexRoute
+  ApiGrowthCompletionIndexRoute: typeof ApiGrowthCompletionIndexRoute
+  ApiGrowthEngagementIndexRoute: typeof ApiGrowthEngagementIndexRoute
+  ApiGrowthFunnelIndexRoute: typeof ApiGrowthFunnelIndexRoute
+  ApiGrowthStreakIndexRoute: typeof ApiGrowthStreakIndexRoute
   ApiInterestTabIndexRoute: typeof ApiInterestTabIndexRoute
   ApiInterestFavouriteIndexRoute: typeof ApiInterestFavouriteIndexRoute
   ApiInterestLikeIndexRoute: typeof ApiInterestLikeIndexRoute
   ApiInterestStatsIndexRoute: typeof ApiInterestStatsIndexRoute
+  ApiMatchesCompatibilityIndexRoute: typeof ApiMatchesCompatibilityIndexRoute
+  ApiMatchesDailyPicksIndexRoute: typeof ApiMatchesDailyPicksIndexRoute
+  ApiMatchesDealbreakersIndexRoute: typeof ApiMatchesDealbreakersIndexRoute
+  ApiMatchesLikesYouIndexRoute: typeof ApiMatchesLikesYouIndexRoute
+  ApiMatchesSecretAdmirerIndexRoute: typeof ApiMatchesSecretAdmirerIndexRoute
   ApiMessagesMessageIdIndexRoute: typeof ApiMessagesMessageIdIndexRoute
+  ApiMonetizationConsumablesIndexRoute: typeof ApiMonetizationConsumablesIndexRoute
+  ApiMonetizationGiftMembershipIndexRoute: typeof ApiMonetizationGiftMembershipIndexRoute
+  ApiMonetizationPayPerReadIndexRoute: typeof ApiMonetizationPayPerReadIndexRoute
+  ApiMonetizationPromoIndexRoute: typeof ApiMonetizationPromoIndexRoute
+  ApiMonetizationReferralIndexRoute: typeof ApiMonetizationReferralIndexRoute
+  ApiMonetizationSpotlightIndexRoute: typeof ApiMonetizationSpotlightIndexRoute
+  ApiMonetizationVoucherIndexRoute: typeof ApiMonetizationVoucherIndexRoute
+  ApiOfflineBackupIndexRoute: typeof ApiOfflineBackupIndexRoute
+  ApiOfflineQueueIndexRoute: typeof ApiOfflineQueueIndexRoute
   ApiProfileProfileIdIndexRoute: typeof ApiProfileProfileIdIndexRoute
+  ApiProfileAnalyticsIndexRoute: typeof ApiProfileAnalyticsIndexRoute
+  ApiProfileAppConfigIndexRoute: typeof ApiProfileAppConfigIndexRoute
+  ApiProfileDeletionIndexRoute: typeof ApiProfileDeletionIndexRoute
+  ApiProfileExportIndexRoute: typeof ApiProfileExportIndexRoute
+  ApiProfileHotPicsIndexRoute: typeof ApiProfileHotPicsIndexRoute
+  ApiProfileMultiAccountIndexRoute: typeof ApiProfileMultiAccountIndexRoute
+  ApiProfilePauseIndexRoute: typeof ApiProfilePauseIndexRoute
+  ApiProfilePrivacyReportIndexRoute: typeof ApiProfilePrivacyReportIndexRoute
+  ApiProfileSocialLinksIndexRoute: typeof ApiProfileSocialLinksIndexRoute
+  ApiProfileStatsIndexRoute: typeof ApiProfileStatsIndexRoute
+  ApiProfileVerificationIndexRoute: typeof ApiProfileVerificationIndexRoute
+  ApiProfileWishlistIndexRoute: typeof ApiProfileWishlistIndexRoute
+  ApiSafety2faIndexRoute: typeof ApiSafety2faIndexRoute
+  ApiSafetyAppealsIndexRoute: typeof ApiSafetyAppealsIndexRoute
   ApiSafetyCheckInIndexRoute: typeof ApiSafetyCheckInIndexRoute
   ApiSafetyContactsIndexRoute: typeof ApiSafetyContactsIndexRoute
+  ApiSafetyDeletionIndexRoute: typeof ApiSafetyDeletionIndexRoute
+  ApiSafetyEmergencyShareIndexRoute: typeof ApiSafetyEmergencyShareIndexRoute
+  ApiSafetyRateLimitIndexRoute: typeof ApiSafetyRateLimitIndexRoute
   ApiSafetyReportsIndexRoute: typeof ApiSafetyReportsIndexRoute
+  ApiSearchGlobalIndexRoute: typeof ApiSearchGlobalIndexRoute
+  ApiSearchSavedIndexRoute: typeof ApiSearchSavedIndexRoute
+  ApiChatPollsVoteIndexRoute: typeof ApiChatPollsVoteIndexRoute
   ApiConversationsConversationIdMessagesIndexRoute: typeof ApiConversationsConversationIdMessagesIndexRoute
   ApiMessagesMessageIdReactIndexRoute: typeof ApiMessagesMessageIdReactIndexRoute
   ApiSafetyCheckInResolveIndexRoute: typeof ApiSafetyCheckInResolveIndexRoute
@@ -931,11 +3139,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DiscoverRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/agenda/': {
+      id: '/agenda/'
+      path: '/agenda'
+      fullPath: '/agenda/'
+      preLoaderRoute: typeof AgendaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/$': {
       id: '/api/$'
       path: '/api/$'
       fullPath: '/api/$'
       preLoaderRoute: typeof ApiSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blind-date/': {
+      id: '/blind-date/'
+      path: '/blind-date'
+      fullPath: '/blind-date/'
+      preLoaderRoute: typeof BlindDateIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/board/': {
@@ -945,11 +3167,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/boost/': {
+      id: '/boost/'
+      path: '/boost'
+      fullPath: '/boost/'
+      preLoaderRoute: typeof BoostIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calendar/': {
+      id: '/calendar/'
+      path: '/calendar'
+      fullPath: '/calendar/'
+      preLoaderRoute: typeof CalendarIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat/': {
       id: '/chat/'
       path: '/chat'
       fullPath: '/chat/'
       preLoaderRoute: typeof ChatIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/circles/': {
+      id: '/circles/'
+      path: '/circles'
+      fullPath: '/circles/'
+      preLoaderRoute: typeof CirclesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/community-challenges/': {
+      id: '/community-challenges/'
+      path: '/community-challenges'
+      fullPath: '/community-challenges/'
+      preLoaderRoute: typeof CommunityChallengesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discover/map': {
+      id: '/discover/map'
+      path: '/map'
+      fullPath: '/discover/map'
+      preLoaderRoute: typeof DiscoverMapRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/dump-rify/': {
+      id: '/dump-rify/'
+      path: '/dump-rify'
+      fullPath: '/dump-rify/'
+      preLoaderRoute: typeof DumpRifyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events/': {
@@ -959,11 +3223,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/$eventId': {
+      id: '/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof EventsEventIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/create': {
+      id: '/events/create'
+      path: '/events/create'
+      fullPath: '/events/create'
+      preLoaderRoute: typeof EventsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fansites/': {
       id: '/fansites/'
       path: '/fansites'
       fullPath: '/fansites/'
       preLoaderRoute: typeof FansitesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq/': {
+      id: '/faq/'
+      path: '/faq'
+      fullPath: '/faq/'
+      preLoaderRoute: typeof FaqIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favorites/': {
+      id: '/favorites/'
+      path: '/favorites'
+      fullPath: '/favorites/'
+      preLoaderRoute: typeof FavoritesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/filters/': {
+      id: '/filters/'
+      path: '/filters'
+      fullPath: '/filters/'
+      preLoaderRoute: typeof FiltersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password/': {
+      id: '/forgot-password/'
+      path: '/forgot-password'
+      fullPath: '/forgot-password/'
+      preLoaderRoute: typeof ForgotPasswordIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gamechangers/': {
@@ -987,6 +3293,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups/$groupId': {
+      id: '/groups/$groupId'
+      path: '/groups/$groupId'
+      fullPath: '/groups/$groupId'
+      preLoaderRoute: typeof GroupsGroupIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups/create': {
+      id: '/groups/create'
+      path: '/groups/create'
+      fullPath: '/groups/create'
+      preLoaderRoute: typeof GroupsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/growth/': {
+      id: '/growth/'
+      path: '/growth'
+      fullPath: '/growth/'
+      preLoaderRoute: typeof GrowthIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/guide/': {
       id: '/guide/'
       path: '/guide'
@@ -994,11 +3321,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/image-viewer/': {
+      id: '/image-viewer/'
+      path: '/image-viewer'
+      fullPath: '/image-viewer/'
+      preLoaderRoute: typeof ImageViewerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/interested-in-me/': {
+      id: '/interested-in-me/'
+      path: '/interested-in-me'
+      fullPath: '/interested-in-me/'
+      preLoaderRoute: typeof InterestedInMeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/king-pet/': {
       id: '/king-pet/'
       path: '/king-pet'
       fullPath: '/king-pet/'
       preLoaderRoute: typeof KingPetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/': {
+      id: '/legal/'
+      path: '/legal'
+      fullPath: '/legal/'
+      preLoaderRoute: typeof LegalIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login/'
+      preLoaderRoute: typeof LoginIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meetnow/': {
@@ -1015,11 +3370,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotificationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/offline/': {
+      id: '/offline/'
+      path: '/offline'
+      fullPath: '/offline/'
+      preLoaderRoute: typeof OfflineIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding/': {
       id: '/onboarding/'
       path: '/onboarding'
       fullPath: '/onboarding/'
       preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/paywall/': {
+      id: '/paywall/'
+      path: '/paywall'
+      fullPath: '/paywall/'
+      preLoaderRoute: typeof PaywallIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/phone-login/': {
+      id: '/phone-login/'
+      path: '/phone-login'
+      fullPath: '/phone-login/'
+      preLoaderRoute: typeof PhoneLoginIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/photo-editor/': {
+      id: '/photo-editor/'
+      path: '/photo-editor'
+      fullPath: '/photo-editor/'
+      preLoaderRoute: typeof PhotoEditorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/platform/': {
+      id: '/platform/'
+      path: '/platform'
+      fullPath: '/platform/'
+      preLoaderRoute: typeof PlatformIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/premium/': {
@@ -1036,6 +3426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/report-user/': {
+      id: '/report-user/'
+      path: '/report-user'
+      fullPath: '/report-user/'
+      preLoaderRoute: typeof ReportUserIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/right-now/': {
       id: '/right-now/'
       path: '/right-now'
@@ -1048,6 +3445,13 @@ declare module '@tanstack/react-router' {
       path: '/safety'
       fullPath: '/safety/'
       preLoaderRoute: typeof SafetyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search-inbox/': {
+      id: '/search-inbox/'
+      path: '/search-inbox'
+      fullPath: '/search-inbox/'
+      preLoaderRoute: typeof SearchInboxIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -1064,11 +3468,109 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShoutsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shouts/$shoutId': {
+      id: '/shouts/$shoutId'
+      path: '/shouts/$shoutId'
+      fullPath: '/shouts/$shoutId'
+      preLoaderRoute: typeof ShoutsShoutIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shouts/create': {
+      id: '/shouts/create'
+      path: '/shouts/create'
+      fullPath: '/shouts/create'
+      preLoaderRoute: typeof ShoutsCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/speed-dating/': {
+      id: '/speed-dating/'
+      path: '/speed-dating'
+      fullPath: '/speed-dating/'
+      preLoaderRoute: typeof SpeedDatingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stories/$storyId': {
+      id: '/stories/$storyId'
+      path: '/stories/$storyId'
+      fullPath: '/stories/$storyId'
+      preLoaderRoute: typeof StoriesStoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tribes/': {
       id: '/tribes/'
       path: '/tribes'
       fullPath: '/tribes/'
       preLoaderRoute: typeof TribesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/': {
+      id: '/verify/'
+      path: '/verify'
+      fullPath: '/verify/'
+      preLoaderRoute: typeof VerifyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/video-dates/': {
+      id: '/video-dates/'
+      path: '/video-dates'
+      fullPath: '/video-dates/'
+      preLoaderRoute: typeof VideoDatesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/video-roulette/': {
+      id: '/video-roulette/'
+      path: '/video-roulette'
+      fullPath: '/video-roulette/'
+      preLoaderRoute: typeof VideoRouletteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vouches/': {
+      id: '/vouches/'
+      path: '/vouches'
+      fullPath: '/vouches/'
+      preLoaderRoute: typeof VouchesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome/': {
+      id: '/welcome/'
+      path: '/welcome'
+      fullPath: '/welcome/'
+      preLoaderRoute: typeof WelcomeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/who-viewed-me/': {
+      id: '/who-viewed-me/'
+      path: '/who-viewed-me'
+      fullPath: '/who-viewed-me/'
+      preLoaderRoute: typeof WhoViewedMeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai/photo-enhance/': {
+      id: '/ai/photo-enhance/'
+      path: '/ai/photo-enhance'
+      fullPath: '/ai/photo-enhance/'
+      preLoaderRoute: typeof AiPhotoEnhanceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai/photo-ranker/': {
+      id: '/ai/photo-ranker/'
+      path: '/ai/photo-ranker'
+      fullPath: '/ai/photo-ranker/'
+      preLoaderRoute: typeof AiPhotoRankerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai/translation/': {
+      id: '/ai/translation/'
+      path: '/ai/translation'
+      fullPath: '/ai/translation/'
+      preLoaderRoute: typeof AiTranslationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai/voice/': {
+      id: '/ai/voice/'
+      path: '/ai/voice'
+      fullPath: '/ai/voice/'
+      preLoaderRoute: typeof AiVoiceIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/ai/': {
@@ -1078,11 +3580,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAiIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/albums/': {
+      id: '/api/albums/'
+      path: '/api/albums'
+      fullPath: '/api/albums/'
+      preLoaderRoute: typeof ApiAlbumsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/banners/': {
+      id: '/api/banners/'
+      path: '/api/banners'
+      fullPath: '/api/banners/'
+      preLoaderRoute: typeof ApiBannersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/blog/': {
+      id: '/api/blog/'
+      path: '/api/blog'
+      fullPath: '/api/blog/'
+      preLoaderRoute: typeof ApiBlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/boost/': {
       id: '/api/boost/'
       path: '/api/boost'
       fullPath: '/api/boost/'
       preLoaderRoute: typeof ApiBoostIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/calendar/': {
+      id: '/api/calendar/'
+      path: '/api/calendar'
+      fullPath: '/api/calendar/'
+      preLoaderRoute: typeof ApiCalendarIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/calls/': {
+      id: '/api/calls/'
+      path: '/api/calls'
+      fullPath: '/api/calls/'
+      preLoaderRoute: typeof ApiCallsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/conversations/': {
@@ -1106,6 +3643,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiEventsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/gifts/': {
+      id: '/api/gifts/'
+      path: '/api/gifts'
+      fullPath: '/api/gifts/'
+      preLoaderRoute: typeof ApiGiftsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health/': {
       id: '/api/health/'
       path: '/api/health'
@@ -1118,6 +3662,13 @@ declare module '@tanstack/react-router' {
       path: '/api/king-pet'
       fullPath: '/api/king-pet/'
       preLoaderRoute: typeof ApiKingPetIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/live/': {
+      id: '/api/live/'
+      path: '/api/live'
+      fullPath: '/api/live/'
+      preLoaderRoute: typeof ApiLiveIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/meetnow/': {
@@ -1176,11 +3727,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSocialIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/speed-dating/': {
+      id: '/api/speed-dating/'
+      path: '/api/speed-dating'
+      fullPath: '/api/speed-dating/'
+      preLoaderRoute: typeof ApiSpeedDatingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stories/': {
+      id: '/api/stories/'
+      path: '/api/stories'
+      fullPath: '/api/stories/'
+      preLoaderRoute: typeof ApiStoriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/taps/': {
       id: '/api/taps/'
       path: '/api/taps'
       fullPath: '/api/taps/'
       preLoaderRoute: typeof ApiTapsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/video-roulette/': {
+      id: '/api/video-roulette/'
+      path: '/api/video-roulette'
+      fullPath: '/api/video-roulette/'
+      preLoaderRoute: typeof ApiVideoRouletteIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/wallet/': {
@@ -1218,6 +3790,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChatConversationIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat/enhanced/': {
+      id: '/chat/enhanced/'
+      path: '/chat/enhanced'
+      fullPath: '/chat/enhanced/'
+      preLoaderRoute: typeof ChatEnhancedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discover/compatibility/': {
+      id: '/discover/compatibility/'
+      path: '/compatibility'
+      fullPath: '/discover/compatibility/'
+      preLoaderRoute: typeof DiscoverCompatibilityIndexRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
+    '/discover/presets/': {
+      id: '/discover/presets/'
+      path: '/presets'
+      fullPath: '/discover/presets/'
+      preLoaderRoute: typeof DiscoverPresetsIndexRouteImport
+      parentRoute: typeof DiscoverRoute
+    }
     '/interest/taps/': {
       id: '/interest/taps/'
       path: '/interest/taps'
@@ -1232,11 +3825,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InterestViewsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/matches/compatibility/': {
+      id: '/matches/compatibility/'
+      path: '/matches/compatibility'
+      fullPath: '/matches/compatibility/'
+      preLoaderRoute: typeof MatchesCompatibilityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/matches/secret-admirer/': {
+      id: '/matches/secret-admirer/'
+      path: '/matches/secret-admirer'
+      fullPath: '/matches/secret-admirer/'
+      preLoaderRoute: typeof MatchesSecretAdmirerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monetization/promo/': {
+      id: '/monetization/promo/'
+      path: '/monetization/promo'
+      fullPath: '/monetization/promo/'
+      preLoaderRoute: typeof MonetizationPromoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monetization/shop/': {
+      id: '/monetization/shop/'
+      path: '/monetization/shop'
+      fullPath: '/monetization/shop/'
+      preLoaderRoute: typeof MonetizationShopIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/$profileId/': {
       id: '/profile/$profileId/'
       path: '/profile/$profileId'
       fullPath: '/profile/$profileId/'
       preLoaderRoute: typeof ProfileProfileIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/insights/': {
+      id: '/profile/insights/'
+      path: '/profile/insights'
+      fullPath: '/profile/insights/'
+      preLoaderRoute: typeof ProfileInsightsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/emergency-contact/': {
+      id: '/safety/emergency-contact/'
+      path: '/safety/emergency-contact'
+      fullPath: '/safety/emergency-contact/'
+      preLoaderRoute: typeof SafetyEmergencyContactIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/emergency/': {
+      id: '/safety/emergency/'
+      path: '/safety/emergency'
+      fullPath: '/safety/emergency/'
+      preLoaderRoute: typeof SafetyEmergencyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/accessibility/': {
+      id: '/settings/accessibility/'
+      path: '/settings/accessibility'
+      fullPath: '/settings/accessibility/'
+      preLoaderRoute: typeof SettingsAccessibilityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/account-settings/': {
+      id: '/settings/account-settings/'
+      path: '/settings/account-settings'
+      fullPath: '/settings/account-settings/'
+      preLoaderRoute: typeof SettingsAccountSettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/account/': {
@@ -1246,11 +3902,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAccountIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/ai-toggles/': {
+      id: '/settings/ai-toggles/'
+      path: '/settings/ai-toggles'
+      fullPath: '/settings/ai-toggles/'
+      preLoaderRoute: typeof SettingsAiTogglesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/app-config/': {
+      id: '/settings/app-config/'
+      path: '/settings/app-config'
+      fullPath: '/settings/app-config/'
+      preLoaderRoute: typeof SettingsAppConfigIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/app/': {
       id: '/settings/app/'
       path: '/settings/app'
       fullPath: '/settings/app/'
       preLoaderRoute: typeof SettingsAppIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/backup-restore/': {
+      id: '/settings/backup-restore/'
+      path: '/settings/backup-restore'
+      fullPath: '/settings/backup-restore/'
+      preLoaderRoute: typeof SettingsBackupRestoreIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/blocked-users/': {
+      id: '/settings/blocked-users/'
+      path: '/settings/blocked-users'
+      fullPath: '/settings/blocked-users/'
+      preLoaderRoute: typeof SettingsBlockedUsersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/blocked/': {
@@ -1260,11 +3944,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsBlockedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/change-password/': {
+      id: '/settings/change-password/'
+      path: '/settings/change-password'
+      fullPath: '/settings/change-password/'
+      preLoaderRoute: typeof SettingsChangePasswordIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/data-export/': {
+      id: '/settings/data-export/'
+      path: '/settings/data-export'
+      fullPath: '/settings/data-export/'
+      preLoaderRoute: typeof SettingsDataExportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/data/': {
+      id: '/settings/data/'
+      path: '/settings/data'
+      fullPath: '/settings/data/'
+      preLoaderRoute: typeof SettingsDataIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/deactivate/': {
+      id: '/settings/deactivate/'
+      path: '/settings/deactivate'
+      fullPath: '/settings/deactivate/'
+      preLoaderRoute: typeof SettingsDeactivateIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/deletion/': {
+      id: '/settings/deletion/'
+      path: '/settings/deletion'
+      fullPath: '/settings/deletion/'
+      preLoaderRoute: typeof SettingsDeletionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/discreet-icon/': {
+      id: '/settings/discreet-icon/'
+      path: '/settings/discreet-icon'
+      fullPath: '/settings/discreet-icon/'
+      preLoaderRoute: typeof SettingsDiscreetIconIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/dnd/': {
+      id: '/settings/dnd/'
+      path: '/settings/dnd'
+      fullPath: '/settings/dnd/'
+      preLoaderRoute: typeof SettingsDndIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/export/': {
+      id: '/settings/export/'
+      path: '/settings/export'
+      fullPath: '/settings/export/'
+      preLoaderRoute: typeof SettingsExportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/hidden/': {
       id: '/settings/hidden/'
       path: '/settings/hidden'
       fullPath: '/settings/hidden/'
       preLoaderRoute: typeof SettingsHiddenIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/language/': {
+      id: '/settings/language/'
+      path: '/settings/language'
+      fullPath: '/settings/language/'
+      preLoaderRoute: typeof SettingsLanguageIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/location/': {
+      id: '/settings/location/'
+      path: '/settings/location'
+      fullPath: '/settings/location/'
+      preLoaderRoute: typeof SettingsLocationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/media/': {
+      id: '/settings/media/'
+      path: '/settings/media'
+      fullPath: '/settings/media/'
+      preLoaderRoute: typeof SettingsMediaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/multi-account/': {
+      id: '/settings/multi-account/'
+      path: '/settings/multi-account'
+      fullPath: '/settings/multi-account/'
+      preLoaderRoute: typeof SettingsMultiAccountIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/notifications/': {
+      id: '/settings/notifications/'
+      path: '/settings/notifications'
+      fullPath: '/settings/notifications/'
+      preLoaderRoute: typeof SettingsNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/permissions/': {
+      id: '/settings/permissions/'
+      path: '/settings/permissions'
+      fullPath: '/settings/permissions/'
+      preLoaderRoute: typeof SettingsPermissionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/pin-lock/': {
+      id: '/settings/pin-lock/'
+      path: '/settings/pin-lock'
+      fullPath: '/settings/pin-lock/'
+      preLoaderRoute: typeof SettingsPinLockIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/privacy-report/': {
+      id: '/settings/privacy-report/'
+      path: '/settings/privacy-report'
+      fullPath: '/settings/privacy-report/'
+      preLoaderRoute: typeof SettingsPrivacyReportIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/privacy/': {
@@ -1281,6 +4077,181 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProfileIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/stats/': {
+      id: '/settings/stats/'
+      path: '/settings/stats'
+      fullPath: '/settings/stats/'
+      preLoaderRoute: typeof SettingsStatsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/subscription/': {
+      id: '/settings/subscription/'
+      path: '/settings/subscription'
+      fullPath: '/settings/subscription/'
+      preLoaderRoute: typeof SettingsSubscriptionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/two-factor/': {
+      id: '/settings/two-factor/'
+      path: '/settings/two-factor'
+      fullPath: '/settings/two-factor/'
+      preLoaderRoute: typeof SettingsTwoFactorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/photo/': {
+      id: '/verify/photo/'
+      path: '/verify/photo'
+      fullPath: '/verify/photo/'
+      preLoaderRoute: typeof VerifyPhotoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/kpis/': {
+      id: '/api/admin/kpis/'
+      path: '/api/admin/kpis'
+      fullPath: '/api/admin/kpis/'
+      preLoaderRoute: typeof ApiAdminKpisIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/moderation/': {
+      id: '/api/admin/moderation/'
+      path: '/api/admin/moderation'
+      fullPath: '/api/admin/moderation/'
+      preLoaderRoute: typeof ApiAdminModerationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/auto-reply/': {
+      id: '/api/ai/auto-reply/'
+      path: '/api/ai/auto-reply'
+      fullPath: '/api/ai/auto-reply/'
+      preLoaderRoute: typeof ApiAiAutoReplyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/autocomplete/': {
+      id: '/api/ai/autocomplete/'
+      path: '/api/ai/autocomplete'
+      fullPath: '/api/ai/autocomplete/'
+      preLoaderRoute: typeof ApiAiAutocompleteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/best-time/': {
+      id: '/api/ai/best-time/'
+      path: '/api/ai/best-time'
+      fullPath: '/api/ai/best-time/'
+      preLoaderRoute: typeof ApiAiBestTimeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/catfish/': {
+      id: '/api/ai/catfish/'
+      path: '/api/ai/catfish'
+      fullPath: '/api/ai/catfish/'
+      preLoaderRoute: typeof ApiAiCatfishIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/chat-summary/': {
+      id: '/api/ai/chat-summary/'
+      path: '/api/ai/chat-summary'
+      fullPath: '/api/ai/chat-summary/'
+      preLoaderRoute: typeof ApiAiChatSummaryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/context-replies/': {
+      id: '/api/ai/context-replies/'
+      path: '/api/ai/context-replies'
+      fullPath: '/api/ai/context-replies/'
+      preLoaderRoute: typeof ApiAiContextRepliesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/date-planner/': {
+      id: '/api/ai/date-planner/'
+      path: '/api/ai/date-planner'
+      fullPath: '/api/ai/date-planner/'
+      preLoaderRoute: typeof ApiAiDatePlannerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/digest/': {
+      id: '/api/ai/digest/'
+      path: '/api/ai/digest'
+      fullPath: '/api/ai/digest/'
+      preLoaderRoute: typeof ApiAiDigestIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/escalation/': {
+      id: '/api/ai/escalation/'
+      path: '/api/ai/escalation'
+      fullPath: '/api/ai/escalation/'
+      preLoaderRoute: typeof ApiAiEscalationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/icebreakers/': {
+      id: '/api/ai/icebreakers/'
+      path: '/api/ai/icebreakers'
+      fullPath: '/api/ai/icebreakers/'
+      preLoaderRoute: typeof ApiAiIcebreakersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/meme-suggest/': {
+      id: '/api/ai/meme-suggest/'
+      path: '/api/ai/meme-suggest'
+      fullPath: '/api/ai/meme-suggest/'
+      preLoaderRoute: typeof ApiAiMemeSuggestIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/photo-enhance/': {
+      id: '/api/ai/photo-enhance/'
+      path: '/api/ai/photo-enhance'
+      fullPath: '/api/ai/photo-enhance/'
+      preLoaderRoute: typeof ApiAiPhotoEnhanceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/pickup-lines/': {
+      id: '/api/ai/pickup-lines/'
+      path: '/api/ai/pickup-lines'
+      fullPath: '/api/ai/pickup-lines/'
+      preLoaderRoute: typeof ApiAiPickupLinesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/rizz-meter/': {
+      id: '/api/ai/rizz-meter/'
+      path: '/api/ai/rizz-meter'
+      fullPath: '/api/ai/rizz-meter/'
+      preLoaderRoute: typeof ApiAiRizzMeterIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/translation/': {
+      id: '/api/ai/translation/'
+      path: '/api/ai/translation'
+      fullPath: '/api/ai/translation/'
+      preLoaderRoute: typeof ApiAiTranslationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/trust-score/': {
+      id: '/api/ai/trust-score/'
+      path: '/api/ai/trust-score'
+      fullPath: '/api/ai/trust-score/'
+      preLoaderRoute: typeof ApiAiTrustScoreIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/voice-note/': {
+      id: '/api/ai/voice-note/'
+      path: '/api/ai/voice-note'
+      fullPath: '/api/ai/voice-note/'
+      preLoaderRoute: typeof ApiAiVoiceNoteIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/wingman/': {
+      id: '/api/ai/wingman/'
+      path: '/api/ai/wingman'
+      fullPath: '/api/ai/wingman/'
+      preLoaderRoute: typeof ApiAiWingmanIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/2fa/': {
+      id: '/api/auth/2fa/'
+      path: '/api/auth/2fa'
+      fullPath: '/api/auth/2fa/'
+      preLoaderRoute: typeof ApiAuth2faIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/me/': {
       id: '/api/auth/me/'
       path: '/api/auth/me'
@@ -1288,11 +4259,179 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthMeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/phone/': {
+      id: '/api/auth/phone/'
+      path: '/api/auth/phone'
+      fullPath: '/api/auth/phone/'
+      preLoaderRoute: typeof ApiAuthPhoneIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/sessions/': {
+      id: '/api/auth/sessions/'
+      path: '/api/auth/sessions'
+      fullPath: '/api/auth/sessions/'
+      preLoaderRoute: typeof ApiAuthSessionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/social/': {
+      id: '/api/auth/social/'
+      path: '/api/auth/social'
+      fullPath: '/api/auth/social/'
+      preLoaderRoute: typeof ApiAuthSocialIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/broadcast/': {
+      id: '/api/chat/broadcast/'
+      path: '/api/chat/broadcast'
+      fullPath: '/api/chat/broadcast/'
+      preLoaderRoute: typeof ApiChatBroadcastIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/ephemeral/': {
+      id: '/api/chat/ephemeral/'
+      path: '/api/chat/ephemeral'
+      fullPath: '/api/chat/ephemeral/'
+      preLoaderRoute: typeof ApiChatEphemeralIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/location/': {
+      id: '/api/chat/location/'
+      path: '/api/chat/location'
+      fullPath: '/api/chat/location/'
+      preLoaderRoute: typeof ApiChatLocationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/pinned/': {
+      id: '/api/chat/pinned/'
+      path: '/api/chat/pinned'
+      fullPath: '/api/chat/pinned/'
+      preLoaderRoute: typeof ApiChatPinnedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/polls/': {
+      id: '/api/chat/polls/'
+      path: '/api/chat/polls'
+      fullPath: '/api/chat/polls/'
+      preLoaderRoute: typeof ApiChatPollsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/quiet-hours/': {
+      id: '/api/chat/quiet-hours/'
+      path: '/api/chat/quiet-hours'
+      fullPath: '/api/chat/quiet-hours/'
+      preLoaderRoute: typeof ApiChatQuietHoursIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/rewarded/': {
+      id: '/api/chat/rewarded/'
+      path: '/api/chat/rewarded'
+      fullPath: '/api/chat/rewarded/'
+      preLoaderRoute: typeof ApiChatRewardedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/scheduled/': {
+      id: '/api/chat/scheduled/'
+      path: '/api/chat/scheduled'
+      fullPath: '/api/chat/scheduled/'
+      preLoaderRoute: typeof ApiChatScheduledIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/screenshot/': {
+      id: '/api/chat/screenshot/'
+      path: '/api/chat/screenshot'
+      fullPath: '/api/chat/screenshot/'
+      preLoaderRoute: typeof ApiChatScreenshotIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/themes/': {
+      id: '/api/chat/themes/'
+      path: '/api/chat/themes'
+      fullPath: '/api/chat/themes/'
+      preLoaderRoute: typeof ApiChatThemesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/compatibility/': {
+      id: '/api/discover/compatibility/'
+      path: '/api/discover/compatibility'
+      fullPath: '/api/discover/compatibility/'
+      preLoaderRoute: typeof ApiDiscoverCompatibilityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/fresh/': {
+      id: '/api/discover/fresh/'
+      path: '/api/discover/fresh'
+      fullPath: '/api/discover/fresh/'
+      preLoaderRoute: typeof ApiDiscoverFreshIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/grid-presets/': {
+      id: '/api/discover/grid-presets/'
+      path: '/api/discover/grid-presets'
+      fullPath: '/api/discover/grid-presets/'
+      preLoaderRoute: typeof ApiDiscoverGridPresetsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/online/': {
+      id: '/api/discover/online/'
+      path: '/api/discover/online'
+      fullPath: '/api/discover/online/'
+      preLoaderRoute: typeof ApiDiscoverOnlineIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/places/': {
+      id: '/api/discover/places/'
+      path: '/api/discover/places'
+      fullPath: '/api/discover/places/'
+      preLoaderRoute: typeof ApiDiscoverPlacesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/saved-searches/': {
+      id: '/api/discover/saved-searches/'
+      path: '/api/discover/saved-searches'
+      fullPath: '/api/discover/saved-searches/'
+      preLoaderRoute: typeof ApiDiscoverSavedSearchesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/discover/travel/': {
+      id: '/api/discover/travel/'
+      path: '/api/discover/travel'
+      fullPath: '/api/discover/travel/'
+      preLoaderRoute: typeof ApiDiscoverTravelIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/fansites/subscribe/': {
       id: '/api/fansites/subscribe/'
       path: '/api/fansites/subscribe'
       fullPath: '/api/fansites/subscribe/'
       preLoaderRoute: typeof ApiFansitesSubscribeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/growth/completion/': {
+      id: '/api/growth/completion/'
+      path: '/api/growth/completion'
+      fullPath: '/api/growth/completion/'
+      preLoaderRoute: typeof ApiGrowthCompletionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/growth/engagement/': {
+      id: '/api/growth/engagement/'
+      path: '/api/growth/engagement'
+      fullPath: '/api/growth/engagement/'
+      preLoaderRoute: typeof ApiGrowthEngagementIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/growth/funnel/': {
+      id: '/api/growth/funnel/'
+      path: '/api/growth/funnel'
+      fullPath: '/api/growth/funnel/'
+      preLoaderRoute: typeof ApiGrowthFunnelIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/growth/streak/': {
+      id: '/api/growth/streak/'
+      path: '/api/growth/streak'
+      fullPath: '/api/growth/streak/'
+      preLoaderRoute: typeof ApiGrowthStreakIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/interest/$tab/': {
@@ -1323,6 +4462,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInterestStatsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/matches/compatibility/': {
+      id: '/api/matches/compatibility/'
+      path: '/api/matches/compatibility'
+      fullPath: '/api/matches/compatibility/'
+      preLoaderRoute: typeof ApiMatchesCompatibilityIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/matches/daily-picks/': {
+      id: '/api/matches/daily-picks/'
+      path: '/api/matches/daily-picks'
+      fullPath: '/api/matches/daily-picks/'
+      preLoaderRoute: typeof ApiMatchesDailyPicksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/matches/dealbreakers/': {
+      id: '/api/matches/dealbreakers/'
+      path: '/api/matches/dealbreakers'
+      fullPath: '/api/matches/dealbreakers/'
+      preLoaderRoute: typeof ApiMatchesDealbreakersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/matches/likes-you/': {
+      id: '/api/matches/likes-you/'
+      path: '/api/matches/likes-you'
+      fullPath: '/api/matches/likes-you/'
+      preLoaderRoute: typeof ApiMatchesLikesYouIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/matches/secret-admirer/': {
+      id: '/api/matches/secret-admirer/'
+      path: '/api/matches/secret-admirer'
+      fullPath: '/api/matches/secret-admirer/'
+      preLoaderRoute: typeof ApiMatchesSecretAdmirerIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/messages/$messageId/': {
       id: '/api/messages/$messageId/'
       path: '/api/messages/$messageId'
@@ -1330,11 +4504,172 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMessagesMessageIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/monetization/consumables/': {
+      id: '/api/monetization/consumables/'
+      path: '/api/monetization/consumables'
+      fullPath: '/api/monetization/consumables/'
+      preLoaderRoute: typeof ApiMonetizationConsumablesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monetization/gift-membership/': {
+      id: '/api/monetization/gift-membership/'
+      path: '/api/monetization/gift-membership'
+      fullPath: '/api/monetization/gift-membership/'
+      preLoaderRoute: typeof ApiMonetizationGiftMembershipIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monetization/pay-per-read/': {
+      id: '/api/monetization/pay-per-read/'
+      path: '/api/monetization/pay-per-read'
+      fullPath: '/api/monetization/pay-per-read/'
+      preLoaderRoute: typeof ApiMonetizationPayPerReadIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monetization/promo/': {
+      id: '/api/monetization/promo/'
+      path: '/api/monetization/promo'
+      fullPath: '/api/monetization/promo/'
+      preLoaderRoute: typeof ApiMonetizationPromoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monetization/referral/': {
+      id: '/api/monetization/referral/'
+      path: '/api/monetization/referral'
+      fullPath: '/api/monetization/referral/'
+      preLoaderRoute: typeof ApiMonetizationReferralIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monetization/spotlight/': {
+      id: '/api/monetization/spotlight/'
+      path: '/api/monetization/spotlight'
+      fullPath: '/api/monetization/spotlight/'
+      preLoaderRoute: typeof ApiMonetizationSpotlightIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monetization/voucher/': {
+      id: '/api/monetization/voucher/'
+      path: '/api/monetization/voucher'
+      fullPath: '/api/monetization/voucher/'
+      preLoaderRoute: typeof ApiMonetizationVoucherIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/offline/backup/': {
+      id: '/api/offline/backup/'
+      path: '/api/offline/backup'
+      fullPath: '/api/offline/backup/'
+      preLoaderRoute: typeof ApiOfflineBackupIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/offline/queue/': {
+      id: '/api/offline/queue/'
+      path: '/api/offline/queue'
+      fullPath: '/api/offline/queue/'
+      preLoaderRoute: typeof ApiOfflineQueueIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/profile/$profileId/': {
       id: '/api/profile/$profileId/'
       path: '/api/profile/$profileId'
       fullPath: '/api/profile/$profileId/'
       preLoaderRoute: typeof ApiProfileProfileIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/analytics/': {
+      id: '/api/profile/analytics/'
+      path: '/api/profile/analytics'
+      fullPath: '/api/profile/analytics/'
+      preLoaderRoute: typeof ApiProfileAnalyticsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/app-config/': {
+      id: '/api/profile/app-config/'
+      path: '/api/profile/app-config'
+      fullPath: '/api/profile/app-config/'
+      preLoaderRoute: typeof ApiProfileAppConfigIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/deletion/': {
+      id: '/api/profile/deletion/'
+      path: '/api/profile/deletion'
+      fullPath: '/api/profile/deletion/'
+      preLoaderRoute: typeof ApiProfileDeletionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/export/': {
+      id: '/api/profile/export/'
+      path: '/api/profile/export'
+      fullPath: '/api/profile/export/'
+      preLoaderRoute: typeof ApiProfileExportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/hot-pics/': {
+      id: '/api/profile/hot-pics/'
+      path: '/api/profile/hot-pics'
+      fullPath: '/api/profile/hot-pics/'
+      preLoaderRoute: typeof ApiProfileHotPicsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/multi-account/': {
+      id: '/api/profile/multi-account/'
+      path: '/api/profile/multi-account'
+      fullPath: '/api/profile/multi-account/'
+      preLoaderRoute: typeof ApiProfileMultiAccountIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/pause/': {
+      id: '/api/profile/pause/'
+      path: '/api/profile/pause'
+      fullPath: '/api/profile/pause/'
+      preLoaderRoute: typeof ApiProfilePauseIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/privacy-report/': {
+      id: '/api/profile/privacy-report/'
+      path: '/api/profile/privacy-report'
+      fullPath: '/api/profile/privacy-report/'
+      preLoaderRoute: typeof ApiProfilePrivacyReportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/social-links/': {
+      id: '/api/profile/social-links/'
+      path: '/api/profile/social-links'
+      fullPath: '/api/profile/social-links/'
+      preLoaderRoute: typeof ApiProfileSocialLinksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/stats/': {
+      id: '/api/profile/stats/'
+      path: '/api/profile/stats'
+      fullPath: '/api/profile/stats/'
+      preLoaderRoute: typeof ApiProfileStatsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/verification/': {
+      id: '/api/profile/verification/'
+      path: '/api/profile/verification'
+      fullPath: '/api/profile/verification/'
+      preLoaderRoute: typeof ApiProfileVerificationIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/profile/wishlist/': {
+      id: '/api/profile/wishlist/'
+      path: '/api/profile/wishlist'
+      fullPath: '/api/profile/wishlist/'
+      preLoaderRoute: typeof ApiProfileWishlistIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/2fa/': {
+      id: '/api/safety/2fa/'
+      path: '/api/safety/2fa'
+      fullPath: '/api/safety/2fa/'
+      preLoaderRoute: typeof ApiSafety2faIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/appeals/': {
+      id: '/api/safety/appeals/'
+      path: '/api/safety/appeals'
+      fullPath: '/api/safety/appeals/'
+      preLoaderRoute: typeof ApiSafetyAppealsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/safety/check-in/': {
@@ -1351,11 +4686,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSafetyContactsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/safety/deletion/': {
+      id: '/api/safety/deletion/'
+      path: '/api/safety/deletion'
+      fullPath: '/api/safety/deletion/'
+      preLoaderRoute: typeof ApiSafetyDeletionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/emergency-share/': {
+      id: '/api/safety/emergency-share/'
+      path: '/api/safety/emergency-share'
+      fullPath: '/api/safety/emergency-share/'
+      preLoaderRoute: typeof ApiSafetyEmergencyShareIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/safety/rate-limit/': {
+      id: '/api/safety/rate-limit/'
+      path: '/api/safety/rate-limit'
+      fullPath: '/api/safety/rate-limit/'
+      preLoaderRoute: typeof ApiSafetyRateLimitIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/safety/reports/': {
       id: '/api/safety/reports/'
       path: '/api/safety/reports'
       fullPath: '/api/safety/reports/'
       preLoaderRoute: typeof ApiSafetyReportsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/search/global/': {
+      id: '/api/search/global/'
+      path: '/api/search/global'
+      fullPath: '/api/search/global/'
+      preLoaderRoute: typeof ApiSearchGlobalIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/search/saved/': {
+      id: '/api/search/saved/'
+      path: '/api/search/saved'
+      fullPath: '/api/search/saved/'
+      preLoaderRoute: typeof ApiSearchSavedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat/polls/vote/': {
+      id: '/api/chat/polls/vote/'
+      path: '/api/chat/polls/vote'
+      fullPath: '/api/chat/polls/vote/'
+      preLoaderRoute: typeof ApiChatPollsVoteIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/conversations/$conversationId/messages/': {
@@ -1382,38 +4759,102 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DiscoverRouteChildren {
+  DiscoverMapRoute: typeof DiscoverMapRoute
+  DiscoverCompatibilityIndexRoute: typeof DiscoverCompatibilityIndexRoute
+  DiscoverPresetsIndexRoute: typeof DiscoverPresetsIndexRoute
+}
+
+const DiscoverRouteChildren: DiscoverRouteChildren = {
+  DiscoverMapRoute: DiscoverMapRoute,
+  DiscoverCompatibilityIndexRoute: DiscoverCompatibilityIndexRoute,
+  DiscoverPresetsIndexRoute: DiscoverPresetsIndexRoute,
+}
+
+const DiscoverRouteWithChildren = DiscoverRoute._addFileChildren(
+  DiscoverRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  DiscoverRoute: DiscoverRoute,
+  DiscoverRoute: DiscoverRouteWithChildren,
   ApiSplatRoute: ApiSplatRoute,
+  EventsEventIdRoute: EventsEventIdRoute,
+  EventsCreateRoute: EventsCreateRoute,
+  GroupsGroupIdRoute: GroupsGroupIdRoute,
+  GroupsCreateRoute: GroupsCreateRoute,
+  ShoutsShoutIdRoute: ShoutsShoutIdRoute,
+  ShoutsCreateRoute: ShoutsCreateRoute,
+  StoriesStoryIdRoute: StoriesStoryIdRoute,
+  AgendaIndexRoute: AgendaIndexRoute,
+  BlindDateIndexRoute: BlindDateIndexRoute,
   BoardIndexRoute: BoardIndexRoute,
+  BoostIndexRoute: BoostIndexRoute,
+  CalendarIndexRoute: CalendarIndexRoute,
   ChatIndexRoute: ChatIndexRoute,
+  CirclesIndexRoute: CirclesIndexRoute,
+  CommunityChallengesIndexRoute: CommunityChallengesIndexRoute,
+  DumpRifyIndexRoute: DumpRifyIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   FansitesIndexRoute: FansitesIndexRoute,
+  FaqIndexRoute: FaqIndexRoute,
+  FavoritesIndexRoute: FavoritesIndexRoute,
+  FiltersIndexRoute: FiltersIndexRoute,
+  ForgotPasswordIndexRoute: ForgotPasswordIndexRoute,
   GamechangersIndexRoute: GamechangersIndexRoute,
   GridIndexRoute: GridIndexRoute,
   GroupsIndexRoute: GroupsIndexRoute,
+  GrowthIndexRoute: GrowthIndexRoute,
   GuideIndexRoute: GuideIndexRoute,
+  ImageViewerIndexRoute: ImageViewerIndexRoute,
+  InterestedInMeIndexRoute: InterestedInMeIndexRoute,
   KingPetIndexRoute: KingPetIndexRoute,
+  LegalIndexRoute: LegalIndexRoute,
+  LoginIndexRoute: LoginIndexRoute,
   MeetnowIndexRoute: MeetnowIndexRoute,
   NotificationsIndexRoute: NotificationsIndexRoute,
+  OfflineIndexRoute: OfflineIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
+  PaywallIndexRoute: PaywallIndexRoute,
+  PhoneLoginIndexRoute: PhoneLoginIndexRoute,
+  PhotoEditorIndexRoute: PhotoEditorIndexRoute,
+  PlatformIndexRoute: PlatformIndexRoute,
   PremiumIndexRoute: PremiumIndexRoute,
   ProfileIndexRoute: ProfileIndexRoute,
+  ReportUserIndexRoute: ReportUserIndexRoute,
   RightNowIndexRoute: RightNowIndexRoute,
   SafetyIndexRoute: SafetyIndexRoute,
+  SearchInboxIndexRoute: SearchInboxIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   ShoutsIndexRoute: ShoutsIndexRoute,
+  SpeedDatingIndexRoute: SpeedDatingIndexRoute,
   TribesIndexRoute: TribesIndexRoute,
+  VerifyIndexRoute: VerifyIndexRoute,
+  VideoDatesIndexRoute: VideoDatesIndexRoute,
+  VideoRouletteIndexRoute: VideoRouletteIndexRoute,
+  VouchesIndexRoute: VouchesIndexRoute,
+  WelcomeIndexRoute: WelcomeIndexRoute,
+  WhoViewedMeIndexRoute: WhoViewedMeIndexRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,
+  AiPhotoEnhanceIndexRoute: AiPhotoEnhanceIndexRoute,
+  AiPhotoRankerIndexRoute: AiPhotoRankerIndexRoute,
+  AiTranslationIndexRoute: AiTranslationIndexRoute,
+  AiVoiceIndexRoute: AiVoiceIndexRoute,
   ApiAiIndexRoute: ApiAiIndexRoute,
+  ApiAlbumsIndexRoute: ApiAlbumsIndexRoute,
+  ApiBannersIndexRoute: ApiBannersIndexRoute,
+  ApiBlogIndexRoute: ApiBlogIndexRoute,
   ApiBoostIndexRoute: ApiBoostIndexRoute,
+  ApiCalendarIndexRoute: ApiCalendarIndexRoute,
+  ApiCallsIndexRoute: ApiCallsIndexRoute,
   ApiConversationsIndexRoute: ApiConversationsIndexRoute,
   ApiDiscoverIndexRoute: ApiDiscoverIndexRoute,
   ApiEventsIndexRoute: ApiEventsIndexRoute,
+  ApiGiftsIndexRoute: ApiGiftsIndexRoute,
   ApiHealthIndexRoute: ApiHealthIndexRoute,
   ApiKingPetIndexRoute: ApiKingPetIndexRoute,
+  ApiLiveIndexRoute: ApiLiveIndexRoute,
   ApiMeetnowIndexRoute: ApiMeetnowIndexRoute,
   ApiNotesIndexRoute: ApiNotesIndexRoute,
   ApiNotificationsIndexRoute: ApiNotificationsIndexRoute,
@@ -1421,32 +4862,149 @@ const rootRouteChildren: RootRouteChildren = {
   ApiProfilesIndexRoute: ApiProfilesIndexRoute,
   ApiSettingsIndexRoute: ApiSettingsIndexRoute,
   ApiSocialIndexRoute: ApiSocialIndexRoute,
+  ApiSpeedDatingIndexRoute: ApiSpeedDatingIndexRoute,
+  ApiStoriesIndexRoute: ApiStoriesIndexRoute,
   ApiTapsIndexRoute: ApiTapsIndexRoute,
+  ApiVideoRouletteIndexRoute: ApiVideoRouletteIndexRoute,
   ApiWalletIndexRoute: ApiWalletIndexRoute,
   AuthCallbackIndexRoute: AuthCallbackIndexRoute,
   AuthSignInIndexRoute: AuthSignInIndexRoute,
   AuthSignUpIndexRoute: AuthSignUpIndexRoute,
   ChatConversationIdIndexRoute: ChatConversationIdIndexRoute,
+  ChatEnhancedIndexRoute: ChatEnhancedIndexRoute,
   InterestTapsIndexRoute: InterestTapsIndexRoute,
   InterestViewsIndexRoute: InterestViewsIndexRoute,
+  MatchesCompatibilityIndexRoute: MatchesCompatibilityIndexRoute,
+  MatchesSecretAdmirerIndexRoute: MatchesSecretAdmirerIndexRoute,
+  MonetizationPromoIndexRoute: MonetizationPromoIndexRoute,
+  MonetizationShopIndexRoute: MonetizationShopIndexRoute,
   ProfileProfileIdIndexRoute: ProfileProfileIdIndexRoute,
+  ProfileInsightsIndexRoute: ProfileInsightsIndexRoute,
+  SafetyEmergencyContactIndexRoute: SafetyEmergencyContactIndexRoute,
+  SafetyEmergencyIndexRoute: SafetyEmergencyIndexRoute,
+  SettingsAccessibilityIndexRoute: SettingsAccessibilityIndexRoute,
+  SettingsAccountSettingsIndexRoute: SettingsAccountSettingsIndexRoute,
   SettingsAccountIndexRoute: SettingsAccountIndexRoute,
+  SettingsAiTogglesIndexRoute: SettingsAiTogglesIndexRoute,
+  SettingsAppConfigIndexRoute: SettingsAppConfigIndexRoute,
   SettingsAppIndexRoute: SettingsAppIndexRoute,
+  SettingsBackupRestoreIndexRoute: SettingsBackupRestoreIndexRoute,
+  SettingsBlockedUsersIndexRoute: SettingsBlockedUsersIndexRoute,
   SettingsBlockedIndexRoute: SettingsBlockedIndexRoute,
+  SettingsChangePasswordIndexRoute: SettingsChangePasswordIndexRoute,
+  SettingsDataExportIndexRoute: SettingsDataExportIndexRoute,
+  SettingsDataIndexRoute: SettingsDataIndexRoute,
+  SettingsDeactivateIndexRoute: SettingsDeactivateIndexRoute,
+  SettingsDeletionIndexRoute: SettingsDeletionIndexRoute,
+  SettingsDiscreetIconIndexRoute: SettingsDiscreetIconIndexRoute,
+  SettingsDndIndexRoute: SettingsDndIndexRoute,
+  SettingsExportIndexRoute: SettingsExportIndexRoute,
   SettingsHiddenIndexRoute: SettingsHiddenIndexRoute,
+  SettingsLanguageIndexRoute: SettingsLanguageIndexRoute,
+  SettingsLocationIndexRoute: SettingsLocationIndexRoute,
+  SettingsMediaIndexRoute: SettingsMediaIndexRoute,
+  SettingsMultiAccountIndexRoute: SettingsMultiAccountIndexRoute,
+  SettingsNotificationsIndexRoute: SettingsNotificationsIndexRoute,
+  SettingsPermissionsIndexRoute: SettingsPermissionsIndexRoute,
+  SettingsPinLockIndexRoute: SettingsPinLockIndexRoute,
+  SettingsPrivacyReportIndexRoute: SettingsPrivacyReportIndexRoute,
   SettingsPrivacyIndexRoute: SettingsPrivacyIndexRoute,
   SettingsProfileIndexRoute: SettingsProfileIndexRoute,
+  SettingsStatsIndexRoute: SettingsStatsIndexRoute,
+  SettingsSubscriptionIndexRoute: SettingsSubscriptionIndexRoute,
+  SettingsTwoFactorIndexRoute: SettingsTwoFactorIndexRoute,
+  VerifyPhotoIndexRoute: VerifyPhotoIndexRoute,
+  ApiAdminKpisIndexRoute: ApiAdminKpisIndexRoute,
+  ApiAdminModerationIndexRoute: ApiAdminModerationIndexRoute,
+  ApiAiAutoReplyIndexRoute: ApiAiAutoReplyIndexRoute,
+  ApiAiAutocompleteIndexRoute: ApiAiAutocompleteIndexRoute,
+  ApiAiBestTimeIndexRoute: ApiAiBestTimeIndexRoute,
+  ApiAiCatfishIndexRoute: ApiAiCatfishIndexRoute,
+  ApiAiChatSummaryIndexRoute: ApiAiChatSummaryIndexRoute,
+  ApiAiContextRepliesIndexRoute: ApiAiContextRepliesIndexRoute,
+  ApiAiDatePlannerIndexRoute: ApiAiDatePlannerIndexRoute,
+  ApiAiDigestIndexRoute: ApiAiDigestIndexRoute,
+  ApiAiEscalationIndexRoute: ApiAiEscalationIndexRoute,
+  ApiAiIcebreakersIndexRoute: ApiAiIcebreakersIndexRoute,
+  ApiAiMemeSuggestIndexRoute: ApiAiMemeSuggestIndexRoute,
+  ApiAiPhotoEnhanceIndexRoute: ApiAiPhotoEnhanceIndexRoute,
+  ApiAiPickupLinesIndexRoute: ApiAiPickupLinesIndexRoute,
+  ApiAiRizzMeterIndexRoute: ApiAiRizzMeterIndexRoute,
+  ApiAiTranslationIndexRoute: ApiAiTranslationIndexRoute,
+  ApiAiTrustScoreIndexRoute: ApiAiTrustScoreIndexRoute,
+  ApiAiVoiceNoteIndexRoute: ApiAiVoiceNoteIndexRoute,
+  ApiAiWingmanIndexRoute: ApiAiWingmanIndexRoute,
+  ApiAuth2faIndexRoute: ApiAuth2faIndexRoute,
   ApiAuthMeIndexRoute: ApiAuthMeIndexRoute,
+  ApiAuthPhoneIndexRoute: ApiAuthPhoneIndexRoute,
+  ApiAuthSessionsIndexRoute: ApiAuthSessionsIndexRoute,
+  ApiAuthSocialIndexRoute: ApiAuthSocialIndexRoute,
+  ApiChatBroadcastIndexRoute: ApiChatBroadcastIndexRoute,
+  ApiChatEphemeralIndexRoute: ApiChatEphemeralIndexRoute,
+  ApiChatLocationIndexRoute: ApiChatLocationIndexRoute,
+  ApiChatPinnedIndexRoute: ApiChatPinnedIndexRoute,
+  ApiChatPollsIndexRoute: ApiChatPollsIndexRoute,
+  ApiChatQuietHoursIndexRoute: ApiChatQuietHoursIndexRoute,
+  ApiChatRewardedIndexRoute: ApiChatRewardedIndexRoute,
+  ApiChatScheduledIndexRoute: ApiChatScheduledIndexRoute,
+  ApiChatScreenshotIndexRoute: ApiChatScreenshotIndexRoute,
+  ApiChatThemesIndexRoute: ApiChatThemesIndexRoute,
+  ApiDiscoverCompatibilityIndexRoute: ApiDiscoverCompatibilityIndexRoute,
+  ApiDiscoverFreshIndexRoute: ApiDiscoverFreshIndexRoute,
+  ApiDiscoverGridPresetsIndexRoute: ApiDiscoverGridPresetsIndexRoute,
+  ApiDiscoverOnlineIndexRoute: ApiDiscoverOnlineIndexRoute,
+  ApiDiscoverPlacesIndexRoute: ApiDiscoverPlacesIndexRoute,
+  ApiDiscoverSavedSearchesIndexRoute: ApiDiscoverSavedSearchesIndexRoute,
+  ApiDiscoverTravelIndexRoute: ApiDiscoverTravelIndexRoute,
   ApiFansitesSubscribeIndexRoute: ApiFansitesSubscribeIndexRoute,
+  ApiGrowthCompletionIndexRoute: ApiGrowthCompletionIndexRoute,
+  ApiGrowthEngagementIndexRoute: ApiGrowthEngagementIndexRoute,
+  ApiGrowthFunnelIndexRoute: ApiGrowthFunnelIndexRoute,
+  ApiGrowthStreakIndexRoute: ApiGrowthStreakIndexRoute,
   ApiInterestTabIndexRoute: ApiInterestTabIndexRoute,
   ApiInterestFavouriteIndexRoute: ApiInterestFavouriteIndexRoute,
   ApiInterestLikeIndexRoute: ApiInterestLikeIndexRoute,
   ApiInterestStatsIndexRoute: ApiInterestStatsIndexRoute,
+  ApiMatchesCompatibilityIndexRoute: ApiMatchesCompatibilityIndexRoute,
+  ApiMatchesDailyPicksIndexRoute: ApiMatchesDailyPicksIndexRoute,
+  ApiMatchesDealbreakersIndexRoute: ApiMatchesDealbreakersIndexRoute,
+  ApiMatchesLikesYouIndexRoute: ApiMatchesLikesYouIndexRoute,
+  ApiMatchesSecretAdmirerIndexRoute: ApiMatchesSecretAdmirerIndexRoute,
   ApiMessagesMessageIdIndexRoute: ApiMessagesMessageIdIndexRoute,
+  ApiMonetizationConsumablesIndexRoute: ApiMonetizationConsumablesIndexRoute,
+  ApiMonetizationGiftMembershipIndexRoute:
+    ApiMonetizationGiftMembershipIndexRoute,
+  ApiMonetizationPayPerReadIndexRoute: ApiMonetizationPayPerReadIndexRoute,
+  ApiMonetizationPromoIndexRoute: ApiMonetizationPromoIndexRoute,
+  ApiMonetizationReferralIndexRoute: ApiMonetizationReferralIndexRoute,
+  ApiMonetizationSpotlightIndexRoute: ApiMonetizationSpotlightIndexRoute,
+  ApiMonetizationVoucherIndexRoute: ApiMonetizationVoucherIndexRoute,
+  ApiOfflineBackupIndexRoute: ApiOfflineBackupIndexRoute,
+  ApiOfflineQueueIndexRoute: ApiOfflineQueueIndexRoute,
   ApiProfileProfileIdIndexRoute: ApiProfileProfileIdIndexRoute,
+  ApiProfileAnalyticsIndexRoute: ApiProfileAnalyticsIndexRoute,
+  ApiProfileAppConfigIndexRoute: ApiProfileAppConfigIndexRoute,
+  ApiProfileDeletionIndexRoute: ApiProfileDeletionIndexRoute,
+  ApiProfileExportIndexRoute: ApiProfileExportIndexRoute,
+  ApiProfileHotPicsIndexRoute: ApiProfileHotPicsIndexRoute,
+  ApiProfileMultiAccountIndexRoute: ApiProfileMultiAccountIndexRoute,
+  ApiProfilePauseIndexRoute: ApiProfilePauseIndexRoute,
+  ApiProfilePrivacyReportIndexRoute: ApiProfilePrivacyReportIndexRoute,
+  ApiProfileSocialLinksIndexRoute: ApiProfileSocialLinksIndexRoute,
+  ApiProfileStatsIndexRoute: ApiProfileStatsIndexRoute,
+  ApiProfileVerificationIndexRoute: ApiProfileVerificationIndexRoute,
+  ApiProfileWishlistIndexRoute: ApiProfileWishlistIndexRoute,
+  ApiSafety2faIndexRoute: ApiSafety2faIndexRoute,
+  ApiSafetyAppealsIndexRoute: ApiSafetyAppealsIndexRoute,
   ApiSafetyCheckInIndexRoute: ApiSafetyCheckInIndexRoute,
   ApiSafetyContactsIndexRoute: ApiSafetyContactsIndexRoute,
+  ApiSafetyDeletionIndexRoute: ApiSafetyDeletionIndexRoute,
+  ApiSafetyEmergencyShareIndexRoute: ApiSafetyEmergencyShareIndexRoute,
+  ApiSafetyRateLimitIndexRoute: ApiSafetyRateLimitIndexRoute,
   ApiSafetyReportsIndexRoute: ApiSafetyReportsIndexRoute,
+  ApiSearchGlobalIndexRoute: ApiSearchGlobalIndexRoute,
+  ApiSearchSavedIndexRoute: ApiSearchSavedIndexRoute,
+  ApiChatPollsVoteIndexRoute: ApiChatPollsVoteIndexRoute,
   ApiConversationsConversationIdMessagesIndexRoute:
     ApiConversationsConversationIdMessagesIndexRoute,
   ApiMessagesMessageIdReactIndexRoute: ApiMessagesMessageIdReactIndexRoute,

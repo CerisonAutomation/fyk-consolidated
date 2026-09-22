@@ -6,8 +6,8 @@ import {
 	publicProfile,
 	readPagination,
 	requireCaller,
-} from "#/lib/api-helpers";
-import { ApiError } from "#/middleware";
+} from "@/lib/api-helpers";
+import { ApiError } from "@/middleware";
 
 /**
  * `users.interests`, `tribes`, `photos` and `meetnow_posts.tags` are all

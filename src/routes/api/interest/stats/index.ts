@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, count, eq, or, sql } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller } from "#/lib/api-helpers";
-import { json, withSecurity } from "#/middleware";
-import { favorites, footprints, matches, taps } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller } from "@/lib/api-helpers";
+import { json, withSecurity } from "@/middleware";
+import { favorites, footprints, matches, taps } from "@/schema";
 
 /**
  * `GET /api/interest/stats` — the four counters above the Likes screen.

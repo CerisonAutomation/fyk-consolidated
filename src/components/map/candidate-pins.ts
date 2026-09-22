@@ -3,7 +3,7 @@
  * Each pin is fuzzed with fuzzPin() for privacy — no exact coordinates shown.
  */
 
-import { fuzzPin, pairHash } from "#/lib/geo";
+import { fuzzPin, pairHash } from "@/lib/geo";
 import type { MapPinItem } from "./FYKMap";
 
 interface Candidate {

@@ -1,4 +1,4 @@
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 
 /**
  * The premium screen's API client: bones, the shop, the membership.

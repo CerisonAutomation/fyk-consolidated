@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, sql } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	unexpected,
 	z,
-} from "#/lib/api-helpers";
+} from "@/lib/api-helpers";
 import {
 	DAILY_REWARD,
 	findShopItem,
@@ -21,7 +21,7 @@ import {
 	TOPUP_PACKS,
 	tierName,
 	tierPrice,
-} from "#/lib/economy";
+} from "@/lib/economy";
 import {
 	activeSubscription,
 	currentTier,
@@ -33,9 +33,9 @@ import {
 	setTier,
 	upsertConsumable,
 	walletBalance,
-} from "#/lib/wallet.server";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { consumablesInventory } from "#/schema";
+} from "@/lib/wallet.server";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { consumablesInventory } from "@/schema";
 
 /**
  * `GET/POST /api/wallet` — bones, the shop, and the membership.

@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull, lt } from "drizzle-orm";
-import { type DbLike, db } from "#/db";
-import { notifications, safetyCheckins, safetyContacts, users } from "#/schema";
+import { type DbLike, db } from "@/db";
+import { notifications, safetyCheckins, safetyContacts, users } from "@/schema";
 
 /**
  * Server-side half of the safety check-in (0021).

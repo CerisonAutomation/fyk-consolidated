@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
-import { db } from "#/db";
-import { asStringArray, cleanText, methodNotAllowed } from "#/lib/api-helpers";
-import type { ProfileUser } from "#/lib/types";
-import { json, withSecurity } from "#/middleware";
-import { users } from "#/schema";
+import { db } from "@/db";
+import { asStringArray, cleanText, methodNotAllowed } from "@/lib/api-helpers";
+import type { ProfileUser } from "@/lib/types";
+import { json, withSecurity } from "@/middleware";
+import { users } from "@/schema";
 
 /**
  * `GET /api/auth/me` — "who am I, and is my profile provisioned?"

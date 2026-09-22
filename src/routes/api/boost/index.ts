@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
-import { db } from "#/db";
-import { methodNotAllowed, requireCaller, z } from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { consumablesInventory, users } from "#/schema";
+import { db } from "@/db";
+import { methodNotAllowed, requireCaller, z } from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { consumablesInventory, users } from "@/schema";
 
 /**
  * `POST /api/boost` — spend one booster to go to the top of discovery.

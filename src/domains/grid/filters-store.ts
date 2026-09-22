@@ -4,8 +4,8 @@ import {
 	defaultFilters,
 	setPreferences,
 	getPreferences,
-} from "#/domains/settings/preferences";
-import { deepEqual } from "#/core/lib/deep-equal";
+} from "@/domains/settings/preferences";
+import { deepEqual } from "@/core/lib/deep-equal";
 
 interface GridSearchFiltersState {
 	value: GridSearchFilters | null;

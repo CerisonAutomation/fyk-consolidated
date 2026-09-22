@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { pingDatabase } from "#/db";
-import { methodNotAllowed } from "#/lib/api-helpers";
-import { publicCacheHeaders } from "#/lib/security";
-import { isAuthConfigured } from "#/lib/supabase-auth.server";
-import { json } from "#/middleware";
+import { pingDatabase } from "@/db";
+import { methodNotAllowed } from "@/lib/api-helpers";
+import { publicCacheHeaders } from "@/lib/security";
+import { isAuthConfigured } from "@/lib/supabase-auth.server";
+import { json } from "@/middleware";
 
 /**
  * Liveness/readiness endpoint.

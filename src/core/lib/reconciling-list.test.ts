@@ -11,8 +11,8 @@ vi.mock("#/core/lib/error-toast", () => ({
 }));
 
 import { ReconcilingListState } from "./reconciling-list";
-import { reconciler } from "#/domains/presence/reconciler";
-import { showErrorToast } from "#/core/lib/error-toast";
+import { reconciler } from "@/domains/presence/reconciler";
+import { showErrorToast } from "@/core/lib/error-toast";
 
 interface TestItem {
 	id: number;

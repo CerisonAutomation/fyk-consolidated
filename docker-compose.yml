@@ -1,36 +1,99 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-# FYK Consolidated — Local Development Stack
-# ═══════════════════════════════════════════════════════════════════════════════
+# FYK Consolidated — Production Compose (Divine 15/10)
+# Includes: app, postgres, redis (rate limiting), supabase edge functions mock
 
-version: '3.8'
+version: "3.8"
 
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: fyk
-      POSTGRES_USER: fyk
-      POSTGRES_PASSWORD: fyk_dev
-    ports:
-      - '5432:5432'
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U fyk -d fyk']
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   app:
     build: .
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://fyk:fyk_dev@db:5432/fyk
-      AUTH_SECRET: dev-secret
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/fyk
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - PUSH_INTERNAL_TOKEN=${PUSH_INTERNAL_TOKEN}
+      - CRON_INTERNAL_TOKEN=${CRON_INTERNAL_TOKEN}
+      - DIVINE_INTERNAL_TOKEN=${DIVINE_INTERNAL_TOKEN}
+      - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+      - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+      - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+      - VITE_MAPBOX_ACCESS_TOKEN=${VITE_MAPBOX_ACCESS_TOKEN}
+      - VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=fyk
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-fyk_redis_pass}
+
+  # Edge functions runner (for local dev, production uses Supabase cloud)
+  edge:
+    image: denoland/deno:1.40.0
+    working_dir: /app
+    volumes:
+      - ./supabase/functions:/app/supabase/functions
+    ports:
+      - "54321:54321"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - PUSH_INTERNAL_TOKEN=${PUSH_INTERNAL_TOKEN}
+      - CRON_INTERNAL_TOKEN=${CRON_INTERNAL_TOKEN}
+      - DIVINE_INTERNAL_TOKEN=${DIVINE_INTERNAL_TOKEN}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_SUBJECT=${VAPID_SUBJECT}
+      - VITE_VAPID_PUBLIC_KEY=${VITE_VAPID_PUBLIC_KEY}
+    command: deno run --allow-all --unstable supabase/functions/divine-complete/index.ts
+    restart: unless-stopped
+    profiles:
+      - edge
 
 volumes:
-  pgdata:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: fyk-network

@@ -14,11 +14,11 @@ import {
 	GlassCard,
 	GoldDivider,
 	SectionHeader,
-} from "#/core/ui/fyk-primitives";
-import { signOut } from "#/domains/auth/services/sign-out";
-import { useAuthStore } from "#/domains/auth/store";
-import { demoEnabled, demoMeProfileId } from "#/domains/demo";
-import { requireDocumentSession } from "#/lib/document-auth";
+} from "@/core/ui/fyk-primitives";
+import { signOut } from "@/domains/auth/services/sign-out";
+import { useAuthStore } from "@/domains/auth/store";
+import { demoEnabled, demoMeProfileId } from "@/domains/demo";
+import { requireDocumentSession } from "@/lib/document-auth";
 
 export const Route = createFileRoute("/settings/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no

@@ -115,14 +115,14 @@ function generateReasons(
   const reasons: string[] = [];
 
   if (dimensions.interests >= 70) {
-    const shared = profile.tagCodes.filter(t => target.tagCodes.includes(t));
+    const shared = profile.tagCodes.filter((t: string) => target.tagCodes.includes(t));
     if (shared.length > 0) {
-      reasons.push(`Shared interests: ${shared.slice(0, 3).join(', ')}`);
+      reasons.push(`Shared interests: ${shared.slice(0, 3).join(", ")}`);
     }
   }
 
   if (dimensions.goals >= 70) {
-    const sharedIntents = profile.intents.filter(i => target.intents.includes(i));
+    const sharedIntents = profile.intents.filter((i: string) => target.intents.includes(i));
     if (sharedIntents.length > 0) {
       reasons.push(`Compatible goals: ${sharedIntents.slice(0, 2).join(', ')}`);
     }
@@ -133,7 +133,7 @@ function generateReasons(
   }
 
   if (dimensions.lifestyle >= 70) {
-    const sharedLangs = profile.languages.filter(l => target.languages.includes(l));
+    const sharedLangs = profile.languages.filter((l: string) => target.languages.includes(l));
     if (sharedLangs.length > 0) {
       reasons.push(`Common languages: ${sharedLangs.join(', ')}`);
     }

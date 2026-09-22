@@ -19,12 +19,12 @@ import {
 	MoreHorizontal,
 	LogOut,
 } from "lucide-react";
-import { cn } from "#/lib/utils";
+import { cn } from "@/lib/utils";
 
-import { useConversationsStore } from "#/domains/chat/store";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
-import { signOut } from "#/domains/auth/services/sign-out";
-import { UserDropdown } from "#/components/UserDropdown";
+import { useConversationsStore } from "@/domains/chat/store";
+import { useSupabaseSession } from "@/integrations/supabase/session-provider";
+import { signOut } from "@/domains/auth/services/sign-out";
+import { UserDropdown } from "@/components/UserDropdown";
 
 /* ================================================================== */
 /*  FYKLogo — crown icon + "FYK" text in gold                         */

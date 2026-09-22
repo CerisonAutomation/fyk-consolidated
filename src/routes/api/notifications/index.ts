@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, count, desc, eq, inArray, isNull, or } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	methodNotAllowed,
@@ -9,9 +9,9 @@ import {
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { notifications, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { notifications, users } from "@/schema";
 
 /**
  * Notification inbox.

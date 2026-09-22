@@ -16,7 +16,7 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Avatar } from "#/components/ui/Avatar";
+import { Avatar } from "@/components/ui/Avatar";
 import { Badge, Button, EmptyState, Spinner } from "@/components/ui/primitives";
 import { getSupabase } from "@/integrations/supabase/client";
 import { api } from "@/lib/client";

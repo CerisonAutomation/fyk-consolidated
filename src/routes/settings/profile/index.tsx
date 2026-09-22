@@ -7,9 +7,9 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useAuthStore } from "#/domains/auth/store";
-import { getSupabase } from "#/integrations/supabase/client";
-import { requireDocumentSession } from "#/lib/document-auth";
+import { useAuthStore } from "@/domains/auth/store";
+import { getSupabase } from "@/integrations/supabase/client";
+import { requireDocumentSession } from "@/lib/document-auth";
 
 export const Route = createFileRoute("/settings/profile/")({
 	// AUDIT §3.3: a private screen must not be rendered for a request that carries no

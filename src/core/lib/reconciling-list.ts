@@ -1,5 +1,5 @@
-import { showErrorToast } from "#/core/lib/error-toast";
-import { reconciler } from "#/domains/presence/reconciler";
+import { showErrorToast } from "@/core/lib/error-toast";
+import { reconciler } from "@/domains/presence/reconciler";
 
 export abstract class ReconcilingListState<TItem, TSnapshot, TKey = number> {
 	loading = true;

@@ -1,4 +1,4 @@
-import { getSupabase } from "#/integrations/supabase/client";
+import { getSupabase } from "@/integrations/supabase/client";
 import { signOut } from "./sign-out";
 
 let pending: Promise<void> | null = null;

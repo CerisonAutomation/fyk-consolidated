@@ -7,8 +7,8 @@
  * everything that only *looks* like one.
  */
 import { describe, expect, it } from "vitest";
-import { documentDecision } from "#/lib/document-auth.server";
-import { tokenFromCookieHeader } from "#/lib/supabase-auth.server";
+import { documentDecision } from "@/lib/document-auth.server";
+import { tokenFromCookieHeader } from "@/lib/supabase-auth.server";
 
 /** The JSON supabase-js persists, base64url-encoded the way `@supabase/ssr` does. */
 function sessionCookieValue(session: unknown): string {

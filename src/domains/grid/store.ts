@@ -11,10 +11,10 @@ import { useGridSearchFiltersStore } from "./filters-store";
 import {
 	getPreferencesSnapshot,
 	setPreferences,
-} from "#/domains/settings/preferences";
-import { autoLocation } from "#/domains/location/auto-location";
-import { registerAccountCache } from "#/core/api/account-caches";
-import { WEIGHT_KG_MAX, WEIGHT_KG_MIN } from "#/core/model/browse/grid/filters";
+} from "@/domains/settings/preferences";
+import { autoLocation } from "@/domains/location/auto-location";
+import { registerAccountCache } from "@/core/api/account-caches";
+import { WEIGHT_KG_MAX, WEIGHT_KG_MIN } from "@/core/model/browse/grid/filters";
 
 interface GridState {
 	items: GridProfile[];

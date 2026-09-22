@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "#/lib/client";
+import { api } from "@/lib/client";
 
 /**
  * The star on a card. `POST /api/social { action }` owns the toggle, so two tabs

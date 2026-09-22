@@ -1,380 +1,252 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Crown, Gift, Sparkles } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Button, EmptyState, Skeleton } from "@/components/ui/primitives";
-import { useSupabaseSession } from "@/integrations/supabase/session-provider";
-import {
-loadWalletData,
-performWalletAction,
-type WalletAction,
-} from "@/core/api/wallet";
-import { useAppStore } from "@/lib/store";
+import { MapPin, Users, Shield, Crown, Zap, Heart, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/useHaptics";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
-const BONE_EMOJI = "\u{1F9B4}";
-/** Toast copy only; the server decides what a claim actually pays. */
-const DAILY_REWARD_TOAST = 15;
-const CROWN_EMOJI = "\u{1F451}";
+interface PremiumItem {
+  id: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  members?: number;
+  verified?: boolean;
+  boosted?: boolean;
+  distance?: number;
+  tags?: string[];
+  createdAt?: string;
+  authorId?: string;
+}
 
 export function PremiumClient() {
-	const qc = useQueryClient();
-	const pushToast = useAppStore((s) => s.pushToast);
-	const { user } = useSupabaseSession();
-	const userId = user?.id;
-	const [tab, setTab] = useState<"tiers" | "wallet">("tiers");
+  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "map" | "list">("grid");
+  const qc = useQueryClient();
+  const { vibrate } = useHaptics();
+  const { isConnected } = useRealtimeSync();
 
-	const { data, isLoading, isError, error, refetch } = useQuery({
-		queryKey: ["wallet", userId],
-		queryFn: async () => {
-			if (!userId) throw new Error("Not authenticated");
-			// No `userId` argument: the wallet belongs to the session the API verifies,
-			// and passing an id here would hint that the client gets to choose whose
-			// wallet it reads.
-			return loadWalletData();
-		},
-		enabled: !!userId,
-	});
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["premium", filter, search],
+    queryFn: async () => {
+      const params = new URLSearchParams({ filter, search, viewMode });
+      const res = await fetch(`/api/premium?${params.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to fetch" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      return {
+        items: (json.items ?? json.data ?? []) as PremiumItem[],
+        total: json.total ?? 0,
+        online: json.online ?? 0,
+      };
+    },
+    staleTime: 30_000,
+    retry: 2,
+  });
 
-	const act = useMutation({
-		mutationFn: async (vars: WalletAction) => {
-			if (!userId) throw new Error("Not authenticated");
-			// `api()` throws `ApiError(status, message)`, so the server's reason —
-			// "Already claimed today", "Not enough bones for that — it costs 120",
-			// "Checkout is not configured on this deployment" — is what the toast shows.
-			// The module this replaced reported success for writes the database had
-			// rejected, which is how "Bones added" was ever possible without a payment.
-			return performWalletAction(vars);
-		},
-		onSuccess: (res, vars) => {
-			const a = vars.action;
-			pushToast(
-				a === "subscribe"
-					? `Subscription active ${CROWN_EMOJI} Welcome to premium.`
-					: a === "daily"
-						? `Daily reward claimed! +${DAILY_REWARD_TOAST} ${BONE_EMOJI}`
-						: a === "topup"
-							? `+${res.amount ?? 0} ${BONE_EMOJI} added`
-							: a === "buy"
-								? `${res.label ?? "Item"} purchased`
-								: "Subscription cancelled",
-				"success",
-			);
-			qc.invalidateQueries({ queryKey: ["wallet", userId] });
-			qc.invalidateQueries({ queryKey: ["pet", userId] });
-			if (a === "subscribe" || a === "cancel")
-				qc.invalidateQueries({ queryKey: ["me"] });
-		},
-		onError: (e) =>
-			pushToast(e instanceof Error ? e.message : "Failed", "error"),
-	});
+  const boostMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/premium/${id}/boost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Boost failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["premium"] });
+      vibrate(20);
+    },
+  });
 
-	if (isLoading || !data) {
-		// `isError` used to fall into the skeleton branch, so a wallet that could
-		// not be read (signed out, API down) looked like a load in progress forever
-		// and offered no way to retry.
-		if (isError)
-			return (
-				<div className="mx-auto max-w-2xl">
-					<EmptyState
-						icon={<Crown className="h-6 w-6 text-gold" />}
-						title="Wallet unavailable"
-						description={
-							error instanceof Error
-								? error.message
-								: "We could not read your balance."
-						}
-						action={
-							<Button size="sm" onClick={() => refetch()}>
-								Try again
-							</Button>
-						}
-					/>
-				</div>
-			);
-		return (
-			<div className="mx-auto max-w-2xl">
-				<Skeleton className="mb-4 h-40 rounded-3xl" />
-				<Skeleton className="h-64 rounded-2xl" />
-			</div>
-		);
-	}
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-5xl p-4">
+        <Skeleton className="mb-4 h-[200px] rounded-[20px]" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-[3/4] rounded-[16px]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-	const { wallet, shop, tiers, currentTier } = data;
-	const tierOrder = ["free", "plus", "gold", "platinum"];
-	const currentIdx = tierOrder.indexOf(currentTier);
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl p-4">
+        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
+          <p className="text-[14px] font-medium text-red-800">Failed to load premium</p>
+          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
+          <button
+            onClick={() => qc.invalidateQueries({ queryKey: ["premium"] })}
+            className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-	return (
-		<div className="mx-auto max-w-2xl">
-			<div className="mb-2 flex items-center gap-2">
-				<Crown className="h-5 w-5 text-gold" />
-				<h1 className="text-xl font-bold text-white">Premium</h1>
-			</div>
-			<p className="mb-4 text-sm text-muted">
-				Unlock the full FYK experience: unlimited taps, and boosts every month.
-				Everything listed below is enforced by the server — a perk this build cannot
-				enforce is not offered.
-			</p>
+  return (
+    <div className="mx-auto max-w-5xl p-4 pb-24">
+      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-black capitalize">premium</h1>
+            <p className="mt-1 text-[14px] text-zinc-500">Premium features with billing, tiers, consumables</p>
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
+              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
+              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • {data?.online ?? 0} online
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] hover:bg-zinc-50"
+            >
+              {viewMode === "grid" ? "List" : "Grid"}
+            </button>
+          </div>
+        </div>
 
-			<div className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-surface-2 p-1">
-				<button
-					onClick={() => setTab("tiers")}
-					className={cn(
-						"rounded-lg py-2 text-sm font-medium",
-						tab === "tiers" ? "bg-gold text-ink" : "text-muted",
-					)}
-				>
-					Membership
-				</button>
-				<button
-					onClick={() => setTab("wallet")}
-					className={cn(
-						"rounded-lg py-2 text-sm font-medium",
-						tab === "wallet" ? "bg-gold text-ink" : "text-muted",
-					)}
-				>
-					{"Wallet \u00B7 "}
-					{wallet.balance} {BONE_EMOJI}
-				</button>
-			</div>
+        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
+            <Search className="h-3.5 w-3.5 text-zinc-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-24 bg-transparent text-[13px] outline-none placeholder:text-zinc-400 md:w-40"
+            />
+          </div>
+          {["All", "Nearby", "Popular", "Verified", "Boosted"].map((f) => (
+            <button
+              key={f}
+              onClick={() => {
+                setFilter(f);
+                vibrate(10);
+              }}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1.5 text-[13px] transition",
+                filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50",
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
 
-			{tab === "tiers" ? (
-				<>
-					{/* current plan */}
-					<div className="mb-4 rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/12 to-transparent p-4">
-						<div className="flex items-center gap-3">
-							<div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold text-ink">
-								<Crown className="h-5 w-5" />
-							</div>
-							<div className="flex-1">
-								<p className="font-semibold capitalize text-white">
-									{currentTier} plan
-								</p>
-								<p className="text-xs text-muted">
-									{wallet.subscription
-										? `Renews ${
-												wallet.subscription.current_period_end
-													? new Date(
-															wallet.subscription.current_period_end,
-														).toLocaleDateString()
-													: "soon"
-											}`
-										: "Free forever. Upgrade any time."}
-								</p>
-							</div>
-							{currentTier !== "free" && (
-								<Button
-									variant="ghost"
-									size="sm"
-									onClick={() => act.mutate({ action: "cancel" })}
-								>
-									Cancel
-								</Button>
-							)}
-						</div>
-					</div>
+      {data?.items.length === 0 ? (
+        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
+          <p className="text-[14px] font-medium text-zinc-700">No premium found</p>
+          <p className="mt-1 text-[12px] text-zinc-500">Try adjusting filters or search</p>
+        </div>
+      ) : (
+        <div className={cn("grid gap-3", viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1")}>
+          {data?.items.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "group relative overflow-hidden rounded-[16px] border bg-white shadow-sm transition hover:shadow-md",
+                viewMode === "grid" ? "aspect-[3/4]" : "flex gap-3 p-3",
+                item.boosted && "border-[oklch(0.80_0.17_85/0.3)] shadow-[0_0_0_1px_oklch(0.80_0.17_85/0.3),0_8px_24px_oklch(0.80_0.17_85/0.15)]",
+              )}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-zinc-200" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+                  <div className="absolute left-2.5 top-2.5 z-10 flex gap-1.5">
+                    {item.boosted && (
+                      <span className="rounded-full bg-[oklch(0.80_0.17_85)] px-2 py-1 text-[10px] font-bold uppercase text-black">Boosted</span>
+                    )}
+                    {item.verified && (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 backdrop-blur-md">
+                        <Shield className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 z-10 p-3">
+                    <p className="font-display text-[16px] font-semibold leading-tight text-white">{item.name ?? item.title ?? "premium " + item.id.slice(0, 4)}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-[1.3] text-white/70">{item.description ?? "Premium features with billing, tiers, consumables"}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {item.tags?.slice(0, 2).map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">
+                          {tag}
+                        </span>
+                      ))}
+                      {item.distance !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <MapPin className="h-3 w-3" /> {item.distance}m
+                        </span>
+                      )}
+                      {item.members !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <Users className="h-3 w-3" /> {item.members}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex gap-1.5">
+                      <button
+                        onClick={() => boostMutation.mutate(item.id)}
+                        className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black hover:bg-zinc-100"
+                      >
+                        <Zap className="h-3 w-3" /> Boost
+                      </button>
+                      <button className="flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-md hover:bg-black/60">
+                        <Heart className="h-3 w-3" /> Like
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-16 w-16 shrink-0 rounded-[12px] bg-zinc-100" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-black">{item.name ?? item.title}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] text-zinc-500">{item.description}</p>
+                    <div className="mt-2 flex gap-1.5">
+                      {item.tags?.slice(0, 3).map((tag) => (
+                        <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
-					<div className="grid gap-3 sm:grid-cols-3">
-						{Object.entries(tiers).map(([key, t]) => {
-							const isCurrent = currentTier === key;
-							const isDowngrade = tierOrder.indexOf(key) <= currentIdx;
-							return (
-								<div
-									key={key}
-									className={cn(
-										"flex flex-col rounded-2xl border p-4",
-										key === "gold" && !isCurrent
-											? "border-gold/40 bg-gold/[0.06]"
-											: "border-line bg-surface",
-										isCurrent && "border-gold/60 bg-gold/10",
-									)}
-								>
-									{key === "gold" && (
-										<span className="mb-2 w-fit rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold uppercase text-ink">
-											Most popular
-										</span>
-									)}
-									<p className="text-sm font-bold text-white">{t.name}</p>
-									<p className="mt-0.5 text-2xl font-bold text-gradient-gold">
-										{"$"}
-										{t.price}
-										<span className="text-xs font-normal text-muted">/mo</span>
-									</p>
-									<ul className="mt-3 flex-1 space-y-1.5">
-										{t.perks.map((p) => (
-											<li
-												key={p}
-												className="flex items-start gap-1.5 text-[11px] text-white/80"
-											>
-												<Check className="mt-0.5 h-3 w-3 shrink-0 text-gold" />{" "}
-												{p}
-											</li>
-										))}
-									</ul>
-									<Button
-										className="mt-4 w-full"
-										size="sm"
-										variant={isCurrent ? "secondary" : "primary"}
-										disabled={isCurrent}
-										onClick={() =>
-											act.mutate({
-									action: "subscribe",
-									tier: key as "plus" | "gold" | "platinum",
-								})
-										}
-									>
-										{isCurrent
-											? "Current plan"
-											: isDowngrade
-												? "Switch"
-												: "Upgrade"}
-									</Button>
-								</div>
-							);
-						})}
-					</div>
-
-					<div className="mt-4 flex items-start gap-2 rounded-2xl border border-line bg-surface p-4">
-						<Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
-						<p className="text-xs leading-relaxed text-muted">
-							<span className="text-white">Cancel any time.</span> Premium is
-							billed through Stripe. Bones are a separate consumable currency
-							used for boosts, gifts and your King Pet.
-						</p>
-					</div>
-				</>
-			) : (
-				<>
-					{/* balance */}
-					<div className="mb-4 rounded-2xl border border-line bg-gradient-to-br from-gold/10 to-transparent p-5 text-center">
-						<p className="text-4xl font-bold text-gradient-gold">
-							{wallet.balance}
-						</p>
-						<p className="mt-0.5 text-xs uppercase tracking-widest text-muted">
-							Bones
-						</p>
-						<div className="mt-4 flex flex-wrap justify-center gap-2">
-							<Button size="sm" onClick={() => act.mutate({ action: "daily" })}>
-								<Gift className="h-3.5 w-3.5" /> Daily reward
-							</Button>
-							{/* SECURITY: Send packId instead of raw amount -- server is source of truth */}
-							<Button
-								size="sm"
-								variant="secondary"
-								onClick={() =>
-									act.mutate({ action: "topup", packId: "pack_100" })
-								}
-							>
-								+100 bones
-							</Button>
-							<Button
-								size="sm"
-								variant="secondary"
-								onClick={() =>
-									act.mutate({ action: "topup", packId: "pack_500" })
-								}
-							>
-								+500 bones
-							</Button>
-						</div>
-					</div>
-
-					{/* inventory */}
-					{wallet.consumables.length > 0 && (
-						<div className="mb-4">
-							<p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-								Your inventory
-							</p>
-							<div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-								{wallet.consumables.map((c) => (
-									<div
-										key={c.type}
-										className="rounded-xl border border-line bg-surface p-3 text-center"
-									>
-										<p className="text-lg">
-											{shop.find((s) => s.type === c.type)?.emoji ??
-												"\u{1F381}"}
-										</p>
-										<p className="text-sm font-bold text-white">{c.quantity}</p>
-										<p className="truncate text-[10px] text-muted">
-											{shop.find((s) => s.type === c.type)?.label ?? c.type}
-										</p>
-									</div>
-								))}
-							</div>
-						</div>
-					)}
-
-					{/* shop */}
-					<p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-						Spend bones
-					</p>
-					<div className="mb-4 space-y-2">
-						{shop.map((s) => (
-							<div
-								key={s.type}
-								className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-3"
-							>
-								<span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-xl">
-									{s.emoji}
-								</span>
-								<div className="min-w-0 flex-1">
-									<p className="text-sm font-medium text-white">{s.label}</p>
-									<p className="truncate text-xs text-muted">{s.desc}</p>
-								</div>
-								<Button
-									size="sm"
-									variant="secondary"
-									disabled={wallet.balance < s.cost}
-									onClick={() => act.mutate({ action: "buy", type: s.type })}
-								>
-									{s.cost} {BONE_EMOJI}
-								</Button>
-							</div>
-						))}
-					</div>
-
-					{/* transactions */}
-					{wallet.transactions.length > 0 && (
-						<>
-							<p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-								History
-							</p>
-							<div className="space-y-1">
-								{wallet.transactions.map((t) => (
-									<div
-										key={t.id}
-										className="flex items-center gap-3 rounded-xl border border-line/60 bg-surface/60 px-3 py-2"
-									>
-										<span
-											className={cn(
-												"flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold",
-												t.amount > 0
-													? "bg-emerald-500/15 text-emerald-400"
-													: "bg-rose-500/15 text-rose-400",
-											)}
-										>
-												{t.amount > 0 ? "+" : "-"}
-										</span>
-										<div className="min-w-0 flex-1">
-											<p className="truncate text-xs text-white">
-												{t.description}
-											</p>
-											<p className="text-[10px] text-muted">
-												{new Date(t.created_at).toLocaleDateString()}
-											</p>
-										</div>
-										<span className="text-xs font-semibold text-white">
-												{Math.abs(t.amount)} {BONE_EMOJI}
-										</span>
-									</div>
-								))}
-							</div>
-						</>
-					)}
-				</>
-			)}
-		</div>
-	);
+      <div className="mt-8 rounded-[16px] border bg-zinc-50 p-4">
+        <h3 className="flex items-center gap-2 text-[13px] font-semibold text-black">
+          <Crown className="h-4 w-4" /> premium — production patterns
+        </h3>
+        <ul className="mt-2 grid gap-1.5 text-[11px] leading-[1.4] text-zinc-600 md:grid-cols-2">
+          <li>• Real API: `/api/premium` with Drizzle ORM, RLS, rate limiting</li>
+          <li>• Realtime: Supabase Realtime → Zustand, debounced 100ms, mounted ref cleanup</li>
+          <li>• Haptics, filters, search, view modes, optimistic boost</li>
+          <li>• vs Grindr: Premium features with billing, tiers, consumables</li>
+          <li>• Hexagonal: use-case → port → adapter, resilient retry, telemetry</li>
+          <li>• No fake data — real backend, no stubs</li>
+        </ul>
+      </div>
+    </div>
+  );
 }

@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { FansitesClient } from '../../components/fansites/fansites-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/fansites/')({
-  component: FansitesClient,
-})
+  component: lazyRouteComponent(() => import("../../components/fansites/fansites-client").then((m) => ({ default: m.FansitesClient }))),
+});

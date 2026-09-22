@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { PremiumClient } from '../../components/premium/premium-client'
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
 export const Route = createFileRoute('/premium/')({
-  component: PremiumClient,
-})
+  component: lazyRouteComponent(() => import("../../components/premium/premium-client").then((m) => ({ default: m.PremiumClient }))),
+});

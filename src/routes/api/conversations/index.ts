@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cardSelection,
 	cleanText,
@@ -9,10 +9,10 @@ import {
 	requireCaller,
 	toProfileCard,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import type { ChatPeer, ConversationWithMeta } from "#/lib/types";
-import { conversationMembers, conversations, messages, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import type { ChatPeer, ConversationWithMeta } from "@/lib/types";
+import { conversationMembers, conversations, messages, users } from "@/schema";
 
 /**
  * `GET /api/conversations` and `POST /api/conversations` — the chat inbox.

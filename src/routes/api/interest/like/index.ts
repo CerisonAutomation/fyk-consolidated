@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	methodNotAllowed,
 	readJson,
 	requireCaller,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { notifications, taps } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { notifications, taps } from "@/schema";
 
 /**
  * `POST /api/interest/like` — "like back" from the Likes-you tab.

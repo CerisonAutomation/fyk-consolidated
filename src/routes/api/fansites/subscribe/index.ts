@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq } from "drizzle-orm";
-import { db } from "#/db";
+import { db } from "@/db";
 import {
 	cleanText,
 	methodNotAllowed,
@@ -8,9 +8,9 @@ import {
 	requireCaller,
 	unexpected,
 	z,
-} from "#/lib/api-helpers";
-import { json, jsonError, withSecurity } from "#/middleware";
-import { fansiteSubscribers, fansites, notifications, users } from "#/schema";
+} from "@/lib/api-helpers";
+import { json, jsonError, withSecurity } from "@/middleware";
+import { fansiteSubscribers, fansites, notifications, users } from "@/schema";
 
 /**
  * `POST /api/fansites/subscribe` — follow and unfollow a fansite.

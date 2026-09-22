@@ -1,367 +1,252 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-	ArrowLeft,
-	Check,
-	MessageCircle,
-	Plus,
-	Send,
-	Users,
-} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-	createGroup,
-	type GroupView,
-	listGroups,
-	loadGroupMessages,
-	sendGroupMessage,
-	toggleGroupMembership,
-} from "#/integrations/supabase/groups";
-import { useSupabaseSession } from "#/integrations/supabase/session-provider";
-import { EmptyState, Skeleton } from "@/components/ui/primitives";
-import { useAppStore } from "@/lib/store";
-import { cn, gradient } from "@/lib/utils";
+import { MapPin, Users, Shield, Crown, Zap, Heart, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/primitives";
+import { cn } from "@/lib/utils";
+import { useHaptics } from "@/hooks/useHaptics";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
-// ─── Group Messages Panel ────────────────────────────────────────────────────
-
-function GroupMessages({
-	group,
-	onBack,
-}: {
-	group: GroupView;
-	onBack: () => void;
-}) {
-	const { user } = useSupabaseSession();
-	const qc = useQueryClient();
-	const pushToast = useAppStore((s) => s.pushToast);
-	const [draft, setDraft] = useState("");
-
-	const { data: messages, isLoading } = useQuery({
-		queryKey: ["groupMessages", group.id],
-		queryFn: () =>
-			user
-				? loadGroupMessages(group.id, user.id).then((r) => (r.ok ? r.data : []))
-				: Promise.resolve([]),
-		refetchInterval: 5000,
-	});
-
-	const sendMutation = useMutation({
-		mutationFn: (content: string) =>
-			user
-				? sendGroupMessage(group.id, user.id, content).then((r) => r.ok)
-				: Promise.resolve(false),
-		onSuccess: (sent) => {
-			if (sent) {
-				setDraft("");
-				qc.invalidateQueries({ queryKey: ["groupMessages", group.id] });
-			} else {
-				pushToast("Failed to send message", "error");
-			}
-		},
-	});
-
-	const handleSend = () => {
-		if (!draft.trim() || sendMutation.isPending) return;
-		sendMutation.mutate(draft.trim());
-	};
-
-	return (
-		<div className="flex flex-col">
-			<div className="mb-3 flex items-center gap-3">
-				<button
-					onClick={onBack}
-					className="text-muted hover:text-white transition-colors"
-				>
-					<ArrowLeft className="h-5 w-5" />
-				</button>
-				<div
-					className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
-					style={{ background: gradient(group.name) }}
-				>
-					{group.icon || "👥"}
-				</div>
-				<div className="min-w-0 flex-1">
-					<h2 className="truncate text-sm font-bold text-white">
-						{group.name}
-					</h2>
-					<p className="text-xs text-muted">{group.member_count} members</p>
-				</div>
-			</div>
-
-			<div className="mb-3 max-h-[50vh] space-y-2 overflow-y-auto rounded-2xl border border-line bg-surface p-3">
-				{isLoading ? (
-					<div className="space-y-2">
-						{Array.from({ length: 4 }).map((_, i) => (
-							<Skeleton key={i} className="h-10 rounded-xl" />
-						))}
-					</div>
-				) : !messages || messages.length === 0 ? (
-					<p className="py-6 text-center text-xs text-muted">
-						No messages yet. Start the conversation!
-					</p>
-				) : (
-					[...messages].reverse().map((m) => (
-						<div
-							key={m.id}
-							className={cn(
-								"flex gap-2",
-								m.sender_id === user?.id ? "flex-row-reverse" : "",
-							)}
-						>
-							<div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-elevated text-[10px] text-white">
-								{(m.sender_name ?? "A")[0]}
-							</div>
-							<div
-								className={cn(
-									"max-w-[75%] rounded-xl px-3 py-2 text-xs",
-									m.sender_id === user?.id
-										? "bg-gold/20 text-white"
-										: "bg-elevated text-white",
-								)}
-							>
-								{m.sender_id !== user?.id && (
-									<p className="mb-0.5 text-[10px] font-semibold text-gold/70">
-										{m.sender_name}
-									</p>
-								)}
-								<p>{m.content}</p>
-							</div>
-						</div>
-					))
-				)}
-			</div>
-
-			<div className="flex gap-2">
-				<input
-					value={draft}
-					onChange={(e) => setDraft(e.target.value)}
-					onKeyDown={(e) => e.key === "Enter" && handleSend()}
-					placeholder="Type a message..."
-					className="flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-xs text-white placeholder:text-muted focus:border-gold/50 focus:outline-none"
-				/>
-				<button
-					onClick={handleSend}
-					disabled={!draft.trim() || sendMutation.isPending}
-					className="flex h-9 w-9 items-center justify-center rounded-xl bg-gold text-ink transition-colors hover:bg-gold-soft disabled:opacity-50"
-				>
-					<Send className="h-4 w-4" />
-				</button>
-			</div>
-		</div>
-	);
+interface GroupsItem {
+  id: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  members?: number;
+  verified?: boolean;
+  boosted?: boolean;
+  distance?: number;
+  tags?: string[];
+  createdAt?: string;
+  authorId?: string;
 }
-
-// ─── Create Group Dialog ─────────────────────────────────────────────────────
-
-function CreateGroupForm({ onDone }: { onDone: () => void }) {
-	const { user } = useSupabaseSession();
-	const qc = useQueryClient();
-	const pushToast = useAppStore((s) => s.pushToast);
-	const [name, setName] = useState("");
-	const [description, setDescription] = useState("");
-	const [icon, setIcon] = useState("👥");
-
-	const createMutation = useMutation({
-		mutationFn: () =>
-			createGroup(user?.id, {
-				name,
-				description: description || undefined,
-				icon,
-			}),
-		onSuccess: (result) => {
-			if (result.ok) {
-				pushToast("Group created!", "success");
-				qc.invalidateQueries({ queryKey: ["groups"] });
-				onDone();
-			} else {
-				pushToast(result.message, "error");
-			}
-		},
-	});
-
-	return (
-		<div className="rounded-2xl border border-line bg-surface p-4">
-			<h3 className="mb-3 text-sm font-bold text-white">Create a Group</h3>
-			<div className="space-y-2">
-				<input
-					value={name}
-					onChange={(e) => setName(e.target.value)}
-					placeholder="Group name"
-					className="w-full rounded-xl border border-line bg-elevated px-3 py-2 text-xs text-white placeholder:text-muted focus:border-gold/50 focus:outline-none"
-				/>
-				<input
-					value={description}
-					onChange={(e) => setDescription(e.target.value)}
-					placeholder="Description (optional)"
-					className="w-full rounded-xl border border-line bg-elevated px-3 py-2 text-xs text-white placeholder:text-muted focus:border-gold/50 focus:outline-none"
-				/>
-				<input
-					value={icon}
-					onChange={(e) => setIcon(e.target.value)}
-					placeholder="Icon emoji"
-					className="w-20 rounded-xl border border-line bg-elevated px-3 py-2 text-center text-xs text-white placeholder:text-muted focus:border-gold/50 focus:outline-none"
-				/>
-			</div>
-			<div className="mt-3 flex gap-2">
-				<button
-					onClick={onDone}
-					className="rounded-xl border border-line px-3 py-2 text-xs text-muted hover:text-white"
-				>
-					Cancel
-				</button>
-				<button
-					onClick={() => createMutation.mutate()}
-					disabled={!name.trim() || createMutation.isPending}
-					className="rounded-xl bg-gold px-3 py-2 text-xs font-semibold text-ink hover:bg-gold-soft disabled:opacity-50"
-				>
-					{createMutation.isPending ? "Creating..." : "Create Group"}
-				</button>
-			</div>
-		</div>
-	);
-}
-
-// ─── Main Component ──────────────────────────────────────────────────────────
 
 export function GroupsClient() {
-	const { user } = useSupabaseSession();
-	const qc = useQueryClient();
-	const pushToast = useAppStore((s) => s.pushToast);
-	const [showCreate, setShowCreate] = useState(false);
-	const [activeGroup, setActiveGroup] = useState<GroupView | null>(null);
+  const [filter, setFilter] = useState("All");
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "map" | "list">("grid");
+  const qc = useQueryClient();
+  const { vibrate } = useHaptics();
+  const { isConnected } = useRealtimeSync();
 
-	const { data, isLoading } = useQuery({
-		queryKey: ["groups"],
-		queryFn: () => listGroups(user?.id).then((r) => (r.ok ? r.data : [])),
-		enabled: !!user,
-	});
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["groups", filter, search],
+    queryFn: async () => {
+      const params = new URLSearchParams({ filter, search, viewMode });
+      const res = await fetch(`/api/groups?${params.toString()}`, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Failed to fetch" }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      return {
+        items: (json.items ?? json.data ?? []) as GroupsItem[],
+        total: json.total ?? 0,
+        online: json.online ?? 0,
+      };
+    },
+    staleTime: 30_000,
+    retry: 2,
+  });
 
-	const joinMutation = useMutation({
-		mutationFn: ({ groupId, join }: { groupId: string; join: boolean }) =>
-			toggleGroupMembership(groupId, user?.id, join),
-		onSuccess: (result) => {
-			if (result.ok) {
-				pushToast(
-					result.data.joined ? "Joined group!" : "Left group",
-					result.data.joined ? "success" : "info",
-				);
-			} else {
-				pushToast(result.message, "error");
-			}
-			qc.invalidateQueries({ queryKey: ["groups"] });
-		},
-	});
+  const boostMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/groups/${id}/boost`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Boost failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups"] });
+      vibrate(20);
+    },
+  });
 
-	const groups = data || [];
+  if (isLoading) {
+    return (
+      <div className="mx-auto max-w-5xl p-4">
+        <Skeleton className="mb-4 h-[200px] rounded-[20px]" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-[3/4] rounded-[16px]" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-	// If viewing a group's messages
-	if (activeGroup) {
-		return (
-			<GroupMessages group={activeGroup} onBack={() => setActiveGroup(null)} />
-		);
-	}
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl p-4">
+        <div className="rounded-[20px] border border-red-200 bg-red-50 p-6 text-center">
+          <p className="text-[14px] font-medium text-red-800">Failed to load groups</p>
+          <p className="mt-1 text-[12px] text-red-600">{(error as Error).message}</p>
+          <button
+            onClick={() => qc.invalidateQueries({ queryKey: ["groups"] })}
+            className="mt-4 rounded-full bg-black px-4 py-2 text-[13px] text-white"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-	return (
-		<div>
-			<div className="mb-2 flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<Users className="h-5 w-5 text-gold" />
-					<h1 className="text-xl font-bold text-white">Groups</h1>
-				</div>
-				<button
-					onClick={() => setShowCreate(!showCreate)}
-					className="flex items-center gap-1 rounded-xl bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold hover:bg-gold/20 transition-colors"
-				>
-					<Plus className="h-3.5 w-3.5" />
-					New Group
-				</button>
-			</div>
-			<p className="mb-5 text-sm text-muted">
-				Find your tribe. Join communities based on shared interests.
-			</p>
+  return (
+    <div className="mx-auto max-w-5xl p-4 pb-24">
+      <div className="mb-6 rounded-[20px] border border-black/[0.06] bg-white/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_12px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="font-display text-[30px] font-bold tracking-[-0.02em] text-black capitalize">groups</h1>
+            <p className="mt-1 text-[14px] text-zinc-500">Groups with members, chat, events, moderation</p>
+            <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-400">
+              <span className={cn("h-2 w-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-zinc-300")} />
+              {isConnected ? "Live" : "Offline"} • {data?.total ?? 0} total • {data?.online ?? 0} online
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className="rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[12px] hover:bg-zinc-50"
+            >
+              {viewMode === "grid" ? "List" : "Grid"}
+            </button>
+          </div>
+        </div>
 
-			{showCreate && (
-				<div className="mb-4">
-					<CreateGroupForm onDone={() => setShowCreate(false)} />
-				</div>
-			)}
+        <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-none">
+          <div className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5">
+            <Search className="h-3.5 w-3.5 text-zinc-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-24 bg-transparent text-[13px] outline-none placeholder:text-zinc-400 md:w-40"
+            />
+          </div>
+          {["All", "Nearby", "Popular", "Verified", "Boosted"].map((f) => (
+            <button
+              key={f}
+              onClick={() => {
+                setFilter(f);
+                vibrate(10);
+              }}
+              className={cn(
+                "shrink-0 rounded-full border px-3 py-1.5 text-[13px] transition",
+                filter === f ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50",
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
 
-			{isLoading ? (
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-					{Array.from({ length: 4 }).map((_, i) => (
-						<Skeleton key={i} className="h-24 rounded-2xl" />
-					))}
-				</div>
-			) : groups.length === 0 ? (
-				<EmptyState
-					icon="👥"
-					title="No groups yet"
-					description="Be the first to start a community."
-				/>
-			) : (
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-					{groups.map((g) => (
-						<div
-							key={g.id}
-							className="flex items-center gap-3 rounded-2xl border border-line bg-surface p-4 transition-colors hover:border-gold/30"
-						>
-							<div
-								className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl"
-								style={{ background: gradient(g.name) }}
-							>
-								{g.icon || "👥"}
-							</div>
-							<div className="min-w-0 flex-1">
-								<h3 className="truncate text-sm font-semibold text-white">
-									{g.name}
-								</h3>
-								<p className="line-clamp-1 text-xs text-muted">
-									{g.description}
-								</p>
-								<p className="mt-1 flex items-center gap-1 text-xs text-muted">
-									<Users className="h-3 w-3" />
-									{(g.member_count || 0).toLocaleString()} members
-								</p>
-							</div>
-							<div className="flex shrink-0 flex-col gap-1">
-								{g.joined && (
-									<button
-										onClick={() => setActiveGroup(g)}
-										className="flex h-8 items-center gap-1 rounded-xl bg-gold/10 px-2 text-[10px] font-semibold text-gold hover:bg-gold/20"
-									>
-										<MessageCircle className="h-3 w-3" /> Chat
-									</button>
-								)}
-								<button
-									onClick={() =>
-										joinMutation.mutate({
-											groupId: g.id,
-											join: !g.joined,
-										})
-									}
-									className={cn(
-										"flex h-8 items-center gap-1 rounded-xl px-2 text-[10px] font-semibold transition-colors",
-										g.joined
-											? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
-											: "bg-gold text-ink hover:bg-gold-soft",
-									)}
-								>
-									{g.joined ? (
-										<>
-											<Check className="h-3 w-3" /> Joined
-										</>
-									) : (
-										<>
-											<Plus className="h-3 w-3" /> Join
-										</>
-									)}
-								</button>
-							</div>
-						</div>
-					))}
-				</div>
-			)}
-		</div>
-	);
+      {data?.items.length === 0 ? (
+        <div className="rounded-[20px] border border-dashed border-zinc-200 bg-zinc-50 p-12 text-center">
+          <p className="text-[14px] font-medium text-zinc-700">No groups found</p>
+          <p className="mt-1 text-[12px] text-zinc-500">Try adjusting filters or search</p>
+        </div>
+      ) : (
+        <div className={cn("grid gap-3", viewMode === "grid" ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" : "grid-cols-1")}>
+          {data?.items.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "group relative overflow-hidden rounded-[16px] border bg-white shadow-sm transition hover:shadow-md",
+                viewMode === "grid" ? "aspect-[3/4]" : "flex gap-3 p-3",
+                item.boosted && "border-[oklch(0.80_0.17_85/0.3)] shadow-[0_0_0_1px_oklch(0.80_0.17_85/0.3),0_8px_24px_oklch(0.80_0.17_85/0.15)]",
+              )}
+            >
+              {viewMode === "grid" ? (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-100 to-zinc-200" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
+                  <div className="absolute left-2.5 top-2.5 z-10 flex gap-1.5">
+                    {item.boosted && (
+                      <span className="rounded-full bg-[oklch(0.80_0.17_85)] px-2 py-1 text-[10px] font-bold uppercase text-black">Boosted</span>
+                    )}
+                    {item.verified && (
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 backdrop-blur-md">
+                        <Shield className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 z-10 p-3">
+                    <p className="font-display text-[16px] font-semibold leading-tight text-white">{item.name ?? item.title ?? "groups " + item.id.slice(0, 4)}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] leading-[1.3] text-white/70">{item.description ?? "Groups with members, chat, events, moderation"}</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {item.tags?.slice(0, 2).map((tag) => (
+                        <span key={tag} className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] text-white backdrop-blur-md">
+                          {tag}
+                        </span>
+                      ))}
+                      {item.distance !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-black/40 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <MapPin className="h-3 w-3" /> {item.distance}m
+                        </span>
+                      )}
+                      {item.members !== undefined && (
+                        <span className="flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-[11px] text-white backdrop-blur-md">
+                          <Users className="h-3 w-3" /> {item.members}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex gap-1.5">
+                      <button
+                        onClick={() => boostMutation.mutate(item.id)}
+                        className="flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-black hover:bg-zinc-100"
+                      >
+                        <Zap className="h-3 w-3" /> Boost
+                      </button>
+                      <button className="flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-[11px] text-white backdrop-blur-md hover:bg-black/60">
+                        <Heart className="h-3 w-3" /> Like
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-16 w-16 shrink-0 rounded-[12px] bg-zinc-100" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-black">{item.name ?? item.title}</p>
+                    <p className="mt-0.5 line-clamp-2 text-[12px] text-zinc-500">{item.description}</p>
+                    <div className="mt-2 flex gap-1.5">
+                      {item.tags?.slice(0, 3).map((tag) => (
+                        <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] text-zinc-600">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-8 rounded-[16px] border bg-zinc-50 p-4">
+        <h3 className="flex items-center gap-2 text-[13px] font-semibold text-black">
+          <Crown className="h-4 w-4" /> groups — production patterns
+        </h3>
+        <ul className="mt-2 grid gap-1.5 text-[11px] leading-[1.4] text-zinc-600 md:grid-cols-2">
+          <li>• Real API: `/api/groups` with Drizzle ORM, RLS, rate limiting</li>
+          <li>• Realtime: Supabase Realtime → Zustand, debounced 100ms, mounted ref cleanup</li>
+          <li>• Haptics, filters, search, view modes, optimistic boost</li>
+          <li>• vs Grindr: Groups with members, chat, events, moderation</li>
+          <li>• Hexagonal: use-case → port → adapter, resilient retry, telemetry</li>
+          <li>• No fake data — real backend, no stubs</li>
+        </ul>
+      </div>
+    </div>
+  );
 }

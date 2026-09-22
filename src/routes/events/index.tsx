@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { EventsClient } from "../../components/events/events-client";
+import { createFileRoute, lazyRouteComponent } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/events/")({
-  component: EventsClient,
+export const Route = createFileRoute('/events/')({
+  component: lazyRouteComponent(() => import("../../components/events/events-client").then((m) => ({ default: m.EventsClient }))),
 });
