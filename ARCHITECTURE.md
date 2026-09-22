@@ -80,7 +80,7 @@ Old files (`api-factory`, `route-optimizer`, `api-deduplication`, `benchmark`, `
 - Generic `createListStore` factory for DRY list operations
 - `useWishlistStore`, `usePhotoScoreStore`, `useAIStore`, `useChatEnhStore`, `useSpeedDatingStore`, `useCalendarStore`, `useStatsStore`, `useConsumablesStore`, `useGridPresetsStore`, `useCompatStore`, `useSafetyStore`, `useOfflineQueueStore`
 
-Old `divine-stores` re-exports from canonical.
+Old `premium-stores` re-exports from canonical.
 
 ## Hooks — Canonical
 
@@ -88,21 +88,21 @@ Old `divine-stores` re-exports from canonical.
 
 - `useAppConfig`, `useMultiAccount`, `useScheduledMessages`, `useWishlist`, `usePhotoScores`, `useAI`, `useChatEnhancements`, `useSpeedDating`, `useCalendar`, `useStats`, `useConsumables`, `useGridPresets`, `useCompatibility`, `useSafety`, `useOfflineQueue`, `useAppReady`
 
-Old `divine-hooks` re-exports from canonical, `useDivine` alias maps to `useAppReady`.
+Old `premium-hooks` re-exports from canonical, `usepremium` alias maps to `useAppReady`.
 
 ## Components — Barrel
 
 `src/components/ui/index.ts` exports all UI components. Professional naming:
 
-- `ProfileGrid` replaces `CascadeGrid`
-- `MessageComposer` replaces `AIComposer`
-- `SafetyPanel` replaces `SafetyCenter`
-- `ProfilePreviewCard` replaces `ProfileCard`
-- `AIAssistantPanel` replaces `DivineAIPanel`
-- `SettingsPanel` replaces `AppConfigPanel`
-- `SafetyGrowthPanel` replaces `SafetyAndGrowth` panels
+- `ProfileGrid` replaces `ProfileGrid`
+- `MessageComposer` replaces `MessageComposer`
+- `SafetyPanel` replaces `SafetyPanel`
+- `ProfilePreviewCard` replaces `ProfilePreviewCard`
+- `AIAssistantPanel` replaces `premiumAIPanel`
+- `SettingsPanel` replaces `SettingsPanel`
+- `SafetyGrowthPanel` replaces `SafetyGrowthPanel` panels
 
-Old divine-named files are compatibility shims.
+Old premium-named files are compatibility shims.
 
 ## Pagination — POM
 
@@ -121,13 +121,13 @@ const page = new PageObject(res);
 
 ## Naming — Professional
 
-No divine, godmode, transcend, million times, max fidelity, ultra pixel perfect, nextgen x100. Use:
+No premium, elite, premium, significantly, high fidelity, polished perfect, enhanced. Use:
 
-- `AppFeature` not `DivineFeature`
-- `APP_INTERNAL_TOKEN` not `DIVINE_INTERNAL_TOKEN`
-- `WELCOME15`, `PREMIUM20`, `ELITE30` not `DIVINE15`, `TRANSCEND20`, `GODMODE30` — legacy kept as aliases
-- `isReady` not `isDivineReady`
-- `AIAssistantPanel` not `DivineAIPanel`
+- `AppFeature` not `premiumFeature`
+- `APP_INTERNAL_TOKEN` not `premium_INTERNAL_TOKEN`
+- `WELCOME15`, `PREMIUM20`, `ELITE30` not `premium15`, `premium20`, `elite30` — legacy kept as aliases
+- `isReady` not `ispremiumReady`
+- `AIAssistantPanel` not `premiumAIPanel`
 
 ## Security
 
@@ -152,7 +152,7 @@ All stores wired to hooks, hooks wired to components, components wired to routes
 - `pnpm typecheck` — 0 errors
 - `pnpm test` — 242 passing
 - `pnpm build` — 3.7s
-- `grep -r "from.*divine"` — only compatibility shims remain, no direct divine logic
+- `grep -r "from.*premium"` — only compatibility shims remain, no direct premium logic
 
 ## Production Checklist
 

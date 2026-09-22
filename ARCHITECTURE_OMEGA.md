@@ -1,4 +1,4 @@
-# ARCHITECTURE OMEGA — Hexagonal, Expert Designed, Million Times Better Polished
+# ARCHITECTURE enhanced — Hexagonal, Expert Designed, significantly Better Polished
 
 ## Competitor Gap Analysis — Grindr vs Romeo vs MachoBB vs Omolink vs FYK
 
@@ -18,7 +18,7 @@
 - No photo enhancer blocking catfish (we have quality/lighting/blur/smile/background/appeal + safe fixes only)
 - No emergency share live location SMS (we have one-tap, trusted contacts, 24h expiry)
 - No offline queue (we have IndexedDB + stale-while-revalidate + resilient retry 3x exponential backoff jitter)
-- No promo canonical with legacy aliases (we have WELCOME15/PREMIUM20/ELITE30 + DIVINE15 aliases)
+- No promo canonical with legacy aliases (we have WELCOME15/PREMIUM20/ELITE30 + premium15 aliases)
 - No bundle optimization 70% (we have 768KB → 230KB initial)
 
 ### Romeo (PlanetRomeo 5.0.4) — Strengths & Gaps
@@ -51,20 +51,20 @@
 - No offline queue, no promo system, no bundle optimization
 - No photo enhancer, no translation, no rizz-meter
 - No hexagonal architecture, no enterprise patterns
-- No award-winning UI, product design photography
+- No polished UI, clean design
 
-### FYK Consolidated — Our Edge — Practical Gamechanging Real
+### FYK Consolidated — Our Edge — Practical practical Real
 - On-device translation first (Transformers.js) + server fallback (LibreTranslate) + cache 100+ langs
 - Photo enhancer scores quality/lighting/blur/smile/background/appeal, safe fixes only, blocks identity alter
 - Emergency share one-tap live location via SMS with trusted contacts, check-in delayed ping, expires 24h
 - Compatibility 5 dimensions explainable (interests 28% weighted Jaccard rarity + lifestyle 24% lookingFor/intents + communication 20% languages/replyRate + values 14% tribes/verification + activity 14% online/distance/recency)
 - Grid ordering multi-factor O(n log n) distance 30% + compatibility 25% + online 20% + recency 15% + verification 10%
 - Offline queue with IndexedDB, stale-while-revalidate, resilient retry 3x exponential backoff jitter timeout 3s circuit breaker bulkhead
-- Promo canonical WELCOME15/PREMIUM20/ELITE30 with legacy DIVINE15 aliases resolved via canonicalMap
+- Promo canonical WELCOME15/PREMIUM20/ELITE30 with legacy premium15 aliases resolved via canonicalMap
 - Bundle optimization 768KB to 230KB initial 70% savings via critical cached + lazy code-split + ultra-lazy on-demand
 - Hexagonal architecture with ports and adapters — domain types single source, ports interfaces, adapters implementations, routing barrel, ui barrel, enterprise barrel — DRY KISS POM pagination PageObject
 - Telemetry self-healing observability security-hardened error-handling performance accessibility reliability validation matching-algorithms — enterprise gold but practical
-- Award-winning UI: ray-traced cinematic lighting, product design photography, Behance top 1%, bento rhythm asymmetry, content-visibility auto, backdrop-blur, focus-visible WCAG AA, Korean 14px, palette black primary gold accent not default AI blue #3B82F6
+- polished UI: detailed subtle lighting, clean design, high-quality, bento rhythm asymmetry, content-visibility auto, backdrop-blur, focus-visible WCAG AA, Korean 14px, palette black primary gold accent not default AI blue #3B82F6
 
 ## Hexagonal Architecture — Centralised, Organised, Reusable, Max Simplify
 
@@ -119,32 +119,32 @@
 - `EnhancePhotoUseCase` — quality scoring, safe fixes, block identity alter
 - `AnalyzeCompatibilityUseCase` — 5 dims explainable, weighted Jaccard, haversine, Gaussian
 - `PurchaseConsumableUseCase` — idempotency, wallet transaction atomicity
-- `ValidatePromoUseCase` — canonical WELCOME15 + legacy DIVINE15 aliases, tier eligibility
+- `ValidatePromoUseCase` — canonical WELCOME15 + legacy premium15 aliases, tier eligibility
 
-### Design System — Award-Winning, Behance Top 1%
-- Tokens: shadows xs/sm/md/lg/gold/emerald/black/product, radius sm/md/lg/full, gradients cinematic/subtle/gold/emerald, colors primary black not blue #3B82F6 gold oklch(0.80 0.17 85) emerald oklch(0.74 0.19 160), typography Space Grotesk tracking-tight JetBrains Mono, spacing xs/sm/md/lg/xl, animation fast/normal/slow spring, blur sm/md/lg/product, zIndex base/dropdown/sticky/modal/tooltip/toast, bento grid2/grid3 large/wide/tall, performance content-visibility auto, focus ring WCAG AA
+### Design System — polished, high-quality
+- Tokens: shadows xs/sm/md/lg/gold/emerald/black/product, radius sm/md/lg/full, gradients soft/subtle/gold/emerald, colors primary black not blue #3B82F6 gold oklch(0.80 0.17 85) emerald oklch(0.74 0.19 160), typography Space Grotesk tracking-tight JetBrains Mono, spacing xs/sm/md/lg/xl, animation fast/normal/slow spring, blur sm/md/lg/product, zIndex base/dropdown/sticky/modal/tooltip/toast, bento grid2/grid3 large/wide/tall, performance content-visibility auto, focus ring WCAG AA
 - Components: ProfileGrid aspect 3/4 rounded 16px shadow gold boosted backdrop-blur verified online pulse compatibility progress, ProfilePreviewCard rounded 20px border black 0.06 shadow xs/md backdrop-blur-md verification badge tribes zinc-100 border zinc-200/50 11px tracking-wide interests gold 12% border gold 15% tap bg black rounded-full 13px semibold tracking-wide, MessageComposer border black 0.06 bg white/80 backdrop-blur-xl ghost text autocomplete rizz-meter, SafetyPanel red accent not alarming timeline avatar velocity grace period visualization, Pagination POM sibling count ellipsis previous/next icons total display aria-label keyboard focus ring
 
-### Tidy Up Messy Codebase — Million Times Better Polished
+### Tidy Up Messy Codebase — significantly Better Polished
 - **Before:** 589 files, styles.css 64KB huge, routeTree.gen.ts 156KB generated, middleware.ts 11KB, 26 thin API routes <60 lines, 9 thin UI routes 6 lines, no clear architecture, overlapping concerns, direct heavy imports in routes (router 788KB)
-- **After:** Hexagonal with clear layers, centralised domain entities single source, ports interfaces, adapters implementations, application use cases, infrastructure swappable, design system tokens, reusable components, max simplify and connect, lazyRouteComponent code-split, enterprise patterns telemetry self-healing observability security-hardened, award-winning UI ray-traced cinematic lighting product design photography
+- **After:** Hexagonal with clear layers, centralised domain entities single source, ports interfaces, adapters implementations, application use cases, infrastructure swappable, design system tokens, reusable components, max simplify and connect, lazyRouteComponent code-split, enterprise patterns telemetry self-healing observability security-hardened, polished UI detailed subtle lighting clean design
 - **Principles:** DRY (Don't Repeat Yourself), KISS (Keep It Simple Stupid), POM (PageObject Model for pagination), SOLID, Dependency Rule outer → inner, tech-agnostic core, self-tested domain, ports and adapters, bento rhythm asymmetry, gradient restraint, Korean 14px, content hierarchy no repetitive eyebrow/title/description
 
-### All Aspects Checked — Visually Functionally Quality Wire In Logic Usable Max Fidelity Only
-- **Visually:** Award-winning UI ultra-detailed ray-traced cinematic lighting product design photography Behance top 1%, no shadows on every surface only elevation/interaction, palette rationale black primary gold accent not default AI blue/purple #3B82F6, layout rhythm bento varied card weights asymmetry, gradient restraint, Korean readability 14px, content hierarchy, focus-visible WCAG AA, backdrop-blur-product 12px saturate 180%, online-pulse emerald shadow pulse, content-visibility auto contain layout style paint, aspect 3/4 product photography
-- **Functionally:** All 51 UI routes working, 121 API routes DB persisted RLS indexes, 88 components, 90+ canonical paths, 5 deduplication entries saves 8640 lines 216KB, 19 AI features, 9 monetization, 9 safety, offline queue IndexedDB, emergency share SMS live location, check-in armed/safe/missed, compatibility 5 dims explainable, grid ordering multi-factor O(n log n), promo canonical WELCOME15 + DIVINE15 aliases, bundle optimization 70% savings
+### All Aspects Checked — Visually Functionally Quality Wire In Logic Usable high fidelity Only
+- **Visually:** polished UI detailed detailed subtle lighting clean design high-quality, no shadows on every surface only elevation/interaction, palette rationale black primary gold accent not default AI blue/purple #3B82F6, layout rhythm bento varied card weights asymmetry, gradient restraint, Korean readability 14px, content hierarchy, focus-visible WCAG AA, backdrop-blur-product 12px saturate 180%, online-pulse emerald shadow pulse, content-visibility auto contain layout style paint, aspect 3/4 product photography
+- **Functionally:** All 51 UI routes working, 121 API routes DB persisted RLS indexes, 88 components, 90+ canonical paths, 5 deduplication entries saves 8640 lines 216KB, 19 AI features, 9 monetization, 9 safety, offline queue IndexedDB, emergency share SMS live location, check-in armed/safe/missed, compatibility 5 dims explainable, grid ordering multi-factor O(n log n), promo canonical WELCOME15 + premium15 aliases, bundle optimization 70% savings
 - **Quality:** Typecheck 0, tests 242 (18 files), build 4.21s, router 783KB (230KB initial via optimization), no console.log uses logger.error structured, no hardcoded secrets env validation fails fast logger redact, Docker healthy, CI green, icons:build, app-shell.test.ts, enterprise gold telemetry self-healing security-hardened error-handling observability performance accessibility reliability validation matching-algorithms api-gold
 - **Wire In Logic:** All hooks wired via AppWiringPanel (16 hooks deadcode connected), useGridStore, useGridSearchFiltersStore, useCompatibility, useSafety, useConsumables, useCalendar, useSpeedDating, useStats, useOfflineQueue, useWishlist, useGridPresets, useAppReady, useMultiAccount, useAppConfig, usePhotoScores, useAI — no unused exports, all logic usable
-- **Usable Max Fidelity Only:** Practical gamechanging real features, nothing cliche/cringe/fluff, compare competitors best make it better, no slop/chaos, no lazy/incomplete/skipping, deep aggressive loops Ralph x10 parse 1000% codebase, max depth features max enrich all, stop wasting time on shit and overengineering
+- **Usable high fidelity Only:** Practical practical real features, nothing cliche/cringe/fluff, compare competitors best make it better, no slop/chaos, no lazy/incomplete/skipping, deep aggressive loops Ralph x10 parse 1000% codebase, max depth features max enrich all, stop wasting time on shit and overengineering
 
-## Implementation Roadmap — Omega Oracle Swarm Refactor
+## Implementation Roadmap — enhanced Oracle Swarm Refactor
 
 ### Phase 1 — Foundation (Done)
 - [x] Create hexagonal structure: entities, value-objects, services, ports, use-cases, adapters
 - [x] Design system tokens: shadows, radius, gradients, colors, typography, spacing, animation, blur, zIndex, bento, performance, focus
 - [x] Enrich 25 thin API routes to production-level >80 lines with enterprise patterns
 - [x] Code-split 12 heavy routes via lazyRouteComponent (grid, chat, premium, board, events, fansites, gamechangers, groups, guide, king-pet, meetnow, shouts, tribes, discover, onboarding, safety)
-- [x] Award-winning UI: ProfileGrid, ProfilePreviewCard, MessageComposer with ray-traced cinematic lighting
+- [x] polished UI: ProfileGrid, ProfilePreviewCard, MessageComposer with detailed subtle lighting
 
 ### Phase 2 — Enrich Thin UI Routes (In Progress)
 - [ ] Board: practical community features — posts, upvotes, categories, moderation, offline queue
@@ -169,7 +169,7 @@
 - [ ] Tidy middleware.ts 11KB with enterprise patterns
 
 ### Phase 4 — Polish & Expert Designed (Final)
-- [ ] Award-winning UI for all components: ray-traced shadows, backdrop-blur, bento rhythm, content-visibility, focus-visible WCAG AA
+- [ ] polished UI for all components: detailed shadows, backdrop-blur, bento rhythm, content-visibility, focus-visible WCAG AA
 - [ ] Wire all logic via AppWiringPanel, ensure no unused exports
 - [ ] E2E tests for 5 user flows: onboarding → discovery → match → chat → AI powered → safety trust → monetization
 - [ ] Performance budgets in CI: LCP 2.5s, INP 200ms, CLS 0.1, bundle 300KB initial

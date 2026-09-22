@@ -2,7 +2,7 @@
  * SendMessage Use Case — Hexagonal Architecture
  * Compared to Grindr: unsend, expiring photos, private albums, screenshot blocking, translation
  * Compared to Romeo: unlimited free chat, QuickShare, instant messaging
- * Practical, max fidelity, secure, with enterprise patterns
+ * Practical, high fidelity, secure, with enterprise patterns
  */
 
 import type { Message, MessageId, ConversationId } from '../../domain/entities/message';

@@ -41,7 +41,7 @@ All tables have RLS, indexes, constraints, and are idempotent.
 
 - **Hexagonal** — core/domain types, core/ports interfaces, core/adapters implementations, lib/routing barrel, components/ui barrel
 - **DRY KISS** — Generic list store factory, CRUD factory, canonical schemas single source, POM pagination PageObject
-- **Professional naming** — No divine, godmode, transcend. AppFeature not DivineFeature, APP_INTERNAL_TOKEN not DIVINE_INTERNAL_TOKEN, WELCOME15/PREMIUM20/ELITE30 not DIVINE15/TRANSCEND20/GODMODE30 (legacy kept as aliases)
+- **Professional naming** — No premium, elite, premium. AppFeature not premiumFeature, APP_INTERNAL_TOKEN not premium_INTERNAL_TOKEN, WELCOME15/PREMIUM20/ELITE30 not premium15/premium20/elite30 (legacy kept as aliases)
 - **Barrel exports** — src/components/ui/index.ts, src/lib/routing/index.ts
 - **Pagination** — POM pattern with Pagination, CursorPagination, PageObject, parsePagination, buildPageResponse
 

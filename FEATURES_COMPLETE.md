@@ -70,7 +70,7 @@ Calls, video-roulette (waiting/matched/ended, matchedWith), meetnow posts (type/
 
 ## 9. Monetization (9 features)
 
-Wallet (balance derived from ledger trigger, not writable), boost (inventory decrement, boostExpiresAt ordering), spotlight, referral (clicks/conversions/rewardDays/rewardCoins), gift-membership, pay-per-read (unlocks), consumables (catalog: boost 100 coins 60m, super_like 50, read_receipt 10, spotlight 150, extra_likes 20), promo (WELCOME15/PREMIUM20/ELITE30 with legacy DIVINE15 aliases, expiry, max uses, unique per user), paywall.
+Wallet (balance derived from ledger trigger, not writable), boost (inventory decrement, boostExpiresAt ordering), spotlight, referral (clicks/conversions/rewardDays/rewardCoins), gift-membership, pay-per-read (unlocks), consumables (catalog: boost 100 coins 60m, super_like 50, read_receipt 10, spotlight 150, extra_likes 20), promo (WELCOME15/PREMIUM20/ELITE30 with legacy premium15 aliases, expiry, max uses, unique per user), paywall.
 
 ## 10. Safety (9 features)
 
@@ -99,19 +99,19 @@ Backup (full/messages/media/settings, encrypted AES-GCM, expiry), queue (offline
 
 ## Components — Professional Naming
 
-- `ProfileGrid` not CascadeGrid
-- `MessageComposer` not AIComposer
-- `SafetyPanel` not SafetyCenter
-- `ProfilePreviewCard` not ProfileCard
-- `AIAssistantPanel` not DivineAIPanel
-- `SettingsPanel` not AppConfigPanel
-- `SafetyGrowthPanel` not SafetyAndGrowth
+- `ProfileGrid` not ProfileGrid
+- `MessageComposer` not MessageComposer
+- `SafetyPanel` not SafetyPanel
+- `ProfilePreviewCard` not ProfilePreviewCard
+- `AIAssistantPanel` not premiumAIPanel
+- `SettingsPanel` not SettingsPanel
+- `SafetyGrowthPanel` not SafetyGrowthPanel
 
 ## Stores and Hooks — Canonical
 
 - `src/lib/stores/app-stores.ts` — canonical, DRY factory `createListStore`
 - `src/hooks/app-hooks.ts` — canonical hooks
-- Old divine-stores and divine-hooks are deprecated shims re-exporting canonical
+- Old premium-stores and premium-hooks are deprecated shims re-exporting canonical
 
 ## Security
 

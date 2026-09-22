@@ -2,7 +2,7 @@
  * GetNearbyProfiles Use Case — Hexagonal Architecture — Application Layer
  * Compared to Grindr: location-first grid, distance, online, fresh, filters
  * Compared to Romeo: 120+ search options, travel mode 2 weeks prior
- * Practical, max fidelity, reusable, testable
+ * Practical, high fidelity, reusable, testable
  */
 
 import type { GridFilters, GridProfile } from '../../domain/entities/grid';

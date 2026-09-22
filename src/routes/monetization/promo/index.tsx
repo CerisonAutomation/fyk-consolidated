@@ -96,7 +96,7 @@ function PromoPage() {
           <li>Single source for promo logic</li>
           <li>DB tables: promo_codes and promo_redemptions, unique per user</li>
           <li>Validates expiry, max uses, minimum tier</li>
-          <li>Seed codes: WELCOME15 (15% off plus), PREMIUM20 (20% gold), ELITE30 (30% platinum) — legacy codes DIVINE15 etc remain as aliases for compatibility</li>
+          <li>Seed codes: WELCOME15 (15% off plus), PREMIUM20 (20% gold), ELITE30 (30% platinum) — legacy codes premium15 etc remain as aliases for compatibility</li>
         </ul>
       </div>
     </div>

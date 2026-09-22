@@ -1,4 +1,4 @@
-# GAP ANALYSIS — FYK OMEGALEVEL PRD v3.0 vs Current Codebase
+# GAP ANALYSIS — FYK production PRD v3.0 vs Current Codebase
 
 ## Current State (607 files, 40 API categories, 50 component folders, 6 hooks folder)
 
@@ -157,7 +157,7 @@
 | Transitions | ease cubic-bezier(0.4, 0, 0.2, 1), spring cubic-bezier(0.16, 1, 0.3, 1), bounce cubic-bezier(0.34, 1.56, 0.64, 1), fast 0.15s normal 0.2s slow 0.35s | Have fast 150ms normal 200ms slow 300ms spring cubic-bezier(0.175, 0.885, 0.32, 1.275) — need PRD exact | 🟡 Need PRD transitions |
 | Tier Colors | Free #555555 dim, Gold #D4AF37, Platinum #FF073A red | Have Free zinc, Gold oklch, Platinum? — need PRD exact | 🟡 Need PRD tier colors |
 
-## Summary — Gaps to Close for OMEGALEVEL PRD v3.0
+## Summary — Gaps to Close for production PRD v3.0
 
 ### Critical Gaps (Must Fix for 100% Grounded)
 
@@ -173,7 +173,7 @@
 10. **Real-Time** — Need master hook useRealtimeSync, mapping, optimization debounced 100ms, typing indicators auto-stop 4s, online presence as PRD 13
 11. **Design System** — Need exact tokens as PRD 14: colors bg #0a0a0a etc., fonts Bebas Neue, border radius 6/8/10/14, transitions ease spring bounce fast 0.15s normal 0.2s slow 0.35s, tier colors Free #555555 Gold #D4AF37 Platinum #FF073A
 
-### Implementation Plan — Omega Oracle Swarm Refactor
+### Implementation Plan — enhanced Oracle Swarm Refactor
 
 **Phase 1 — Stores (12) — 2 hours**
 - Implement useNavigationStore, useAuthStore, useChatStore, useDiscoverStore (with freshFaces, lastSwipe, savedFilters), useEventsStore, useNotificationsStore, useCommunityStore, useSafetyStore, useSettingsStore (with dnd, pinLock, discreetIcon, videoDate, meetNow, boost), useImageViewerStore, useDumpRifyStore (gamified keep/dump), useVoiceStore
@@ -193,4 +193,4 @@
 **Phase 6 — Security, Billing, Real-Time, Design System — 2 hours**
 - Implement 6 layers security as PRD 11, billing Free/Gold/Platinum € pricing as PRD 12, real-time master hook as PRD 13, design system exact tokens as PRD 14
 
-**Total: 14 hours — Omega Level — 100% Grounded in Real Code**
+**Total: 14 hours — enhanced Level — 100% Grounded in Real Code**

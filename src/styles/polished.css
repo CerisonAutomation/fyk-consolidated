@@ -1,0 +1,206 @@
+/**
+ * polished UI — detailed, layered, soft lighting, product card design, high-quality
+ * Practical gamechanging real, nothing cliche/cringe/fluff
+ * Palette rationale not default AI blue/purple #3B82F6, layout rhythm bento varied card weights asymmetry, gradient restraint, Korean readability at least 14px, content hierarchy no repetitive eyebrow/title/description/extra p
+ */
+
+:root {
+  /* soft lighting — layered shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 16px 48px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12), 0 24px 64px rgba(0,0,0,0.12);
+  --shadow-gold: 0 0 0 1px oklch(0.80 0.17 85 / 0.3), 0 8px 24px oklch(0.80 0.17 85 / 0.15);
+  --shadow-emerald: 0 0 8px oklch(0.74 0.19 160 / 0.8);
+
+  /* product card design — rounded, backdrop-blur */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* soft lighting — gradients subtle not harsh */
+  --gradient-soft: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.15), transparent);
+  --gradient-subtle: linear-gradient(to bottom right, rgba(255,255,255,0.08), transparent);
+  --gradient-gold: linear-gradient(to bottom right, oklch(0.80 0.17 85 / 0.12), transparent);
+
+  /* Typography — Space Grotesk tracking-tight, JetBrains Mono */
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Layout rhythm — bento, asymmetry, varied weights */
+  --gap-xs: 4px;
+  --gap-sm: 8px;
+  --gap-md: 12px;
+  --gap-lg: 16px;
+  --gap-xl: 24px;
+
+  /* Content visibility — performance */
+  --content-visibility: auto;
+  --contain: layout style paint;
+}
+
+/* layered soft lighting — product design */
+.layered {
+  box-shadow: var(--shadow-sm);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.layered:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.layered-boosted {
+  box-shadow: var(--shadow-gold);
+}
+
+.layered-boosted:hover {
+  box-shadow: 0 0 0 1px oklch(0.80 0.17 85 / 0.4), 0 12px 32px oklch(0.80 0.17 85 / 0.2);
+}
+
+/* soft lighting — gradients */
+.soft-gradient {
+  background: var(--gradient-soft);
+}
+
+.soft-subtle {
+  background: var(--gradient-subtle);
+}
+
+/* product card design — rounded, backdrop-blur */
+.product-card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: white;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 300ms ease;
+}
+
+.product-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.product-card-backdrop {
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Bento rhythm — asymmetry, varied weights */
+.bento-grid {
+  display: grid;
+  gap: var(--gap-md);
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.bento-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.bento-grid .bento-large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.bento-grid .bento-wide {
+  grid-column: span 2;
+}
+
+/* Content visibility — performance */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain: var(--contain);
+}
+
+/* Focus visible — WCAG 2.2 AA */
+.focus-visible:focus-visible {
+  outline: 2px solid black;
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Korean readability — at least 14px body */
+body {
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: var(--font-display);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Content hierarchy — no repetitive eyebrow/title/description/extra p */
+h1, h2, h3 {
+  tracking-tight: -0.02em;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+h3 {
+  font-size: 18px;
+}
+
+/* Palette rationale — not default AI blue/purple #3B82F6 */
+:root {
+  --color-primary: oklch(0.10 0 0); /* Black, not blue */
+  --color-gold: oklch(0.80 0.17 85); /* Gold accent, not purple */
+  --color-emerald: oklch(0.74 0.19 160); /* Emerald for online, not green-500 */
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-700: #3f3f46;
+}
+
+/* Gradient restraint — only for elevation/interaction, not every surface */
+.gradient-restraint {
+  background: white;
+}
+
+.gradient-restraint-elevated {
+  background: linear-gradient(to bottom, white, rgba(0,0,0,0.02));
+}
+
+/* Scrollbar none — for horizontal scroll */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Animate pulse with delay — for skeletons */
+.animate-pulse-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animate-pulse-delay-200 {
+  animation-delay: 200ms;
+}
+
+/* Backdrop blur — product design */
+.backdrop-blur-product {
+  backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(255,255,255,0.85);
+}
+
+/* layered shadow for online dot pulse */
+.online-pulse {
+  box-shadow: var(--shadow-emerald);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

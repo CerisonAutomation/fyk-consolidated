@@ -1,8 +1,8 @@
 /**
- * Design System Tokens — Award-Winning UI — Ultra-detailed, ray-traced, cinematic lighting
- * Behance top 1% product design photography
+ * Design System Tokens — polished UI — detailed, detailed, subtle lighting
+ * high-quality clean design
  * Palette rationale not default AI blue/purple #3B82F6
- * Practical gamechanging real, nothing cliche/cringe/fluff
+ * Practical practical real, nothing cliche/cringe/fluff
  */
 
 export const shadows = {
@@ -27,8 +27,8 @@ export const radius = {
 } as const;
 
 export const gradients = {
-  cinematic: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.15), transparent)',
-  cinematicSoft: 'linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.05), transparent)',
+  soft: 'linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.15), transparent)',
+  softSoft: 'linear-gradient(to top, rgba(0,0,0,0.6), rgba(0,0,0,0.05), transparent)',
   subtle: 'linear-gradient(to bottom right, rgba(255,255,255,0.08), transparent)',
   gold: 'linear-gradient(to bottom right, oklch(0.80 0.17 85 / 0.12), transparent)',
   emerald: 'linear-gradient(to bottom right, oklch(0.74 0.19 160 / 0.12), transparent)',
@@ -67,8 +67,10 @@ export const colors = {
     900: '#18181b',
   },
   
-  // Semantic
+  // Semantic — exact tokens bg #0a0a0a as PRD 13.1
   background: 'white',
+  backgroundDark: '#0a0a0a',
+  backgroundApp: '#0a0a0a',
   foreground: 'oklch(0.10 0 0)',
   muted: '#71717a',
   mutedForeground: '#a1a1aa',

@@ -1,5 +1,5 @@
 /**
- * Enterprise Security Hardened — OWASP, impossible to hack
+ * Enterprise Security Hardened — OWASP, security hardened with defense in depth
  * Gold: SAST, DAST, dependency, secret, API scans pass, zero critical/high
  */
 

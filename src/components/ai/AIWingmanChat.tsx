@@ -57,7 +57,7 @@ export function AIWingmanChat({ userId, targetId, onAction }: { userId?: string;
         </div>
       </div>
 
-      {/* Circular SVG ring — award-winning */}
+      {/* Circular SVG ring — polished */}
       <div className="mt-4 flex justify-center">
         <div className="relative h-24 w-24">
           <svg className="h-24 w-24 -rotate-90" viewBox="0 0 100 100">

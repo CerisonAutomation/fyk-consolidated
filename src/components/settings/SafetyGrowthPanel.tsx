@@ -166,7 +166,7 @@ export function PromoPanel() {
   return (
     <div className="border rounded-xl p-4 space-y-2">
       <h3 className="font-semibold">Promo Codes</h3>
-      <p className="text-xs text-muted-foreground">WELCOME15, PREMIUM20, ELITE30 canonical — legacy DIVINE15 aliases supported</p>
+      <p className="text-xs text-muted-foreground">WELCOME15, PREMIUM20, ELITE30 canonical — legacy premium15 aliases supported</p>
       <div className="flex gap-2">
         <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="WELCOME15" className="flex-1 border rounded p-2 text-sm" />
         <button type="button" onClick={redeem} className="px-3 py-1 bg-primary text-white rounded text-sm">Redeem</button>

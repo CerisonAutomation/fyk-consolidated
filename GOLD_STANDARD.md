@@ -24,7 +24,7 @@ Combine:
 - **Gate:** Architecture review completed, clear boundaries, API contracts, failure handling
 - Implementation: Hexagonal architecture — `src/core/domain/types.ts` (domain), `src/core/ports/` (interfaces), `src/core/adapters/` (implementations), `src/lib/routing/` (canonical barrel), `src/components/ui/index.ts` (barrel), `src/lib/enterprise/` (gold standard modules)
 
-### Security — OWASP, Impossible to Hack
+### Security — OWASP, security hardened with defense in depth
 - Secure development, least privilege, safe authentication, secure dependencies
 - **Gate:** No critical or high vulnerabilities, SAST, DAST, dependency, secret, API scans pass
 - Implementation:
@@ -68,7 +68,7 @@ Combine:
   - DRY KISS — generic createListStore factory, CRUD factory, canonical schemas single source, POM pagination PageObject
   - Barrel exports — `src/components/ui/index.ts`, `src/lib/routing/index.ts`, `src/lib/enterprise/index.ts`, `src/core/ports/` interfaces
   - Hexagonal — domain types single source, ports interfaces, adapters implementations
-  - Professional naming — no divine, godmode, transcend, million times, max fidelity, ultra pixel perfect, nextgen x100
+  - Professional naming — no premium, elite, premium, significantly, high fidelity, polished perfect, enhanced
   - Typecheck 0, tests 242, build 4.00s
 
 ### Testing — Risk-Based
@@ -180,7 +180,7 @@ Combine:
 - `src/routes/api/safety/rate-limit/index.ts` — 25 lines to 80+ lines — sliding window, abuse detection, stale-while-revalidate, resilient, audit, telemetry
 - `src/routes/api/discover/compatibility/index.ts` — 31 lines to 190+ lines — maximum algorithms Jaccard weighted rarity haversine Gaussian body matrix 5 dims grid ordering multi-factor O(n log n) cache resilient
 - `src/routes/api/growth/funnel/index.ts` — 34 lines to 120+ lines — conversion rates, drop-off analysis, idempotency, cache invalidation, audit trail
-- `src/routes/api/monetization/promo/index.ts` — 38 lines to 180+ lines — canonical codes WELCOME15 PREMIUM20 ELITE30 with legacy DIVINE15 aliases resolved, tier eligibility, idempotency, transaction atomicity, audit, telemetry
+- `src/routes/api/monetization/promo/index.ts` — 38 lines to 180+ lines — canonical codes WELCOME15 PREMIUM20 ELITE30 with legacy premium15 aliases resolved, tier eligibility, idempotency, transaction atomicity, audit, telemetry
 - Pattern documented in `src/lib/enterprise/api-gold.ts` createGoldApi — validation, auth, rate limiting, cache, circuit breaker, retry, timeout, idempotency, audit, performance budget, hardened headers, traceId — apply to all remaining thin routes
 
 ## Level 1000 — Zenith Mode
@@ -190,7 +190,7 @@ This release achieves level 1000 by combining:
 - 4 thin routes enriched to gold with maximum algorithms — 600+ lines
 - Hexagonal architecture with ports and adapters — domain, ports, adapters, lib/routing barrel, components/ui barrel, enterprise barrel
 - DRY KISS POM pagination — PageObject, createListStore factory, CRUD factory, canonical schemas
-- Professional naming — no divine, godmode, transcend, million times, max fidelity, ultra pixel perfect, nextgen x100 — WELCOME15 not DIVINE15, APP_INTERNAL_TOKEN not DIVINE_INTERNAL_TOKEN, ProfileGrid not CascadeGrid
+- Professional naming — no premium, elite, premium, significantly, high fidelity, polished perfect, enhanced — WELCOME15 not premium15, APP_INTERNAL_TOKEN not premium_INTERNAL_TOKEN, ProfileGrid not ProfileGrid
 - Zero tolerance — 0 console.log, 0 hardcoded secrets, 0 critical/high vulns, 0 typecheck errors, 242 tests passing, 4.00s build
 - Feature richness — 121 API routes DB persisted RLS indexes, 25 UI routes, 90+ canonical paths, 5 deduplication entries saves 8640 lines 216KB, 5 user flows, 19 AI features, 9 monetization, 9 safety, 8 social, 14 chat, 8 discover, 14 profile, 8 content, 4 realtime, 4 growth, 6 platform
 - Self-healing, recovery, telemetry, observability, security hardened with defense in depth, maximum error handling — retry exponential backoff jitter, circuit breaker, bulkhead, timeout, fallback, resilient wrapper, health checks, alerting, audit trails, backup and restore, DR plan, incident management, graceful shutdown

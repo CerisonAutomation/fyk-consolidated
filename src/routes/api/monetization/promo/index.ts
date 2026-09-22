@@ -18,10 +18,10 @@ const redeemSchema = z.object({
 
 const CANONICAL_CODES = ["WELCOME15", "PREMIUM20", "ELITE30", "WELCOME10", "FYKFREE7"] as const;
 const LEGACY_ALIASES: Record<string, string> = {
-  DIVINE15: "WELCOME15",
-  TRANSCEND20: "PREMIUM20",
-  GODMODE30: "ELITE30",
-  DIVINE10: "WELCOME10",
+  premium15: "WELCOME15",
+  premium20: "PREMIUM20",
+  elite30: "ELITE30",
+  premium10: "WELCOME10",
 };
 
 function resolveCanonicalCode(input: string): string {

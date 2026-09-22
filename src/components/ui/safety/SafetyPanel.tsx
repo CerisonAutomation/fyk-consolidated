@@ -1,6 +1,6 @@
 /**
  * SafetyPanel — Canonical safety center, professional naming
- * Replaces SafetyCenter (divine naming)
+ * Replaces SafetyCenter (premium naming)
  */
 
 import { useEffect, useState } from "react";

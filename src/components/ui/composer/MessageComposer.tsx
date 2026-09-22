@@ -1,5 +1,5 @@
 /**
- * MessageComposer — Award-winning cinematic lighting practical gamechanging real: context-aware one-tap 2-3 from last 10 msgs stage tone, autocomplete keyboard-style own voice ghost text, GIF/location/gift actions icons, rizz-meter live gauge engagement/momentum/tone drift progress ring
+ * MessageComposer — polished subtle lighting practical practical real: context-aware one-tap 2-3 from last 10 msgs stage tone, autocomplete keyboard-style own voice ghost text, GIF/location/gift actions icons, rizz-meter live gauge engagement/momentum/tone drift progress ring
  */
 
 import { useState, useEffect, useCallback } from "react";

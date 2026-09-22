@@ -1,6 +1,6 @@
 /**
- * ProfilePreviewCard — Award-winning ultra-detailed ray-traced cinematic lighting product design photography Behance top 1%
- * Practical gamechanging real: photo pager dot indicators swipe, verification badge ray-traced shadow backdrop-blur, tribes/interests chips subtle border not harsh, tap/favorite/message haptic feedback, bio line-clamp 2, distance icon, online pulse, city muted, age bold, displayName semibold
+ * ProfilePreviewCard — polished detailed detailed subtle lighting clean design high-quality
+ * Practical practical real: photo pager dot indicators swipe, verification badge detailed shadow backdrop-blur, tribes/interests chips subtle border not harsh, tap/favorite/message haptic feedback, bio line-clamp 2, distance icon, online pulse, city muted, age bold, displayName semibold
  */
 
 import { useState } from "react";
@@ -33,7 +33,7 @@ export function ProfilePreviewCard({ profile, onTap, onFavorite }: { profile: Pr
           <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-muted to-muted-foreground/10">◐</div>
         )}
 
-        {/* Cinematic lighting */}
+        {/* subtle lighting */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.12] via-transparent to-transparent pointer-events-none" />
 

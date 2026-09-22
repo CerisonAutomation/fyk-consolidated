@@ -1,6 +1,6 @@
 /**
- * ProfileGrid — Award-winning, ultra-detailed, ray-traced cinematic lighting, product design photography, Behance top 1%
- * Practical gamechanging real: content-visibility auto, contain layout style paint, aspect 3/4 product photography, boosted subtle glow not harsh shadow, fresh 2px border accent, verified backdrop-blur, 2-up/3-up toggle bento rhythm asymmetry not perfect uniform grid, intersection observer lazy loading blur-up placeholder, infinite scroll skeleton, distance muted foreground, online green dot pulse, compatibility progress ring
+ * ProfileGrid — polished, detailed, detailed subtle lighting, clean design, high-quality
+ * Practical practical real: content-visibility auto, contain layout style paint, aspect 3/4 product photography, boosted subtle glow not harsh shadow, fresh 2px border accent, verified backdrop-blur, 2-up/3-up toggle bento rhythm asymmetry not perfect uniform grid, intersection observer lazy loading blur-up placeholder, infinite scroll skeleton, distance muted foreground, online green dot pulse, compatibility progress ring
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -60,7 +60,7 @@ export function ProfileGrid({ profiles, columns = 2, onProfileClick }: { profile
               transition: "transform 200ms ease, box-shadow 200ms ease",
             }}
           >
-            {/* Ray-traced cinematic lighting — product design photography */}
+            {/* detailed subtle lighting — clean design */}
             <img
               src={profile.photo}
               alt={`${profile.name}, ${profile.age}`}
@@ -70,7 +70,7 @@ export function ProfileGrid({ profiles, columns = 2, onProfileClick }: { profile
               style={{ contentVisibility: "auto" } as React.CSSProperties}
             />
 
-            {/* Cinematic gradient — not harsh, ultra-detailed */}
+            {/* soft gradient — not harsh, detailed */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent opacity-90 group-hover:opacity-100 transition-opacity" />
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.08] via-transparent to-transparent pointer-events-none" />
 
@@ -89,7 +89,7 @@ export function ProfileGrid({ profiles, columns = 2, onProfileClick }: { profile
               )}
             </div>
 
-            {/* Bottom info — ultra-detailed, product design */}
+            {/* Bottom info — detailed, product design */}
             <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-[15px] tracking-tight truncate">{profile.name}, {profile.age}</span>
@@ -118,7 +118,7 @@ export function ProfileGrid({ profiles, columns = 2, onProfileClick }: { profile
       )}
 
       <div className="text-[11px] text-muted-foreground text-center pt-2">
-        Showing {visible.length} of {profiles.length} — {columns === 2 ? "2-up bento" : "3-up"} with ray-traced cinematic lighting, product photography, content-visibility auto, intersection observer 200px rootMargin
+        Showing {visible.length} of {profiles.length} — {columns === 2 ? "2-up bento" : "3-up"} with detailed subtle lighting, product photography, content-visibility auto, intersection observer 200px rootMargin
       </div>
     </div>
   );
